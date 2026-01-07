@@ -3,12 +3,15 @@
 DOTFILES_DIR="$(cd "$(dirname "$0")" && pwd)"
 HOME_DIR="$HOME"
 
-# Find all dotfiles/dotdirs in the repo (excluding .git)
+# Find all dotfiles/dotdirs in the repo (excluding .git and gitignored items)
 for item in "$DOTFILES_DIR"/.*; do
   name=$(basename "$item")
 
   # Skip . .. and .git
   [[ "$name" == "." || "$name" == ".." || "$name" == ".git" ]] && continue
+
+  # Skip gitignored items
+  git -C "$DOTFILES_DIR" check-ignore -q "$item" && continue
 
   target="$HOME_DIR/$name"
 
