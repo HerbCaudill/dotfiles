@@ -14,3 +14,7 @@
 [rerere]
 	enabled = true
 	autoupdate = true
+[safe]
+	directory = *
+	directory = /Users/herbcaudill/dotfiles
+	directory = /Users/herbcaudill/dotfiles
