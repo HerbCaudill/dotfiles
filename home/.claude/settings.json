@@ -44,6 +44,6 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "npx tsx $HOME/.claude/statusline.ts"
+    "command": "node $HOME/.claude/statusline.js"
   }
 }
