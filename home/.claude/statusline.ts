@@ -6,7 +6,11 @@ import { readFileSync } from 'fs'
 // ANSI color codes
 const CYAN = '\x1b[36m'
 const GREEN = '\x1b[32m'
+const YELLOW = '\x1b[33m'
+const MAGENTA = '\x1b[35m'
+const RED = '\x1b[31m'
 const RESET = '\x1b[0m'
+const DIM = '\x1b[2m'
 
 interface StatusLineInput {
   session_id: string
@@ -39,7 +43,6 @@ interface StatusLineInput {
 
 function getGitBranch(cwd: string): string | null {
   try {
-    // Add safe directory and get branch name
     execSync(`git -c core.fileMode=false config --global --add safe.directory "${cwd}"`, {
       cwd,
       stdio: 'ignore',
@@ -69,26 +72,62 @@ function isGitDirty(cwd: string): boolean {
   }
 }
 
+function formatNumber(num: number): string {
+  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`
+  if (num >= 1000) return `${(num / 1000).toFixed(1)}K`
+  return num.toString()
+}
+
 function main() {
   // Read JSON input from stdin
   const input = readFileSync(0, 'utf-8')
   const data: StatusLineInput = JSON.parse(input)
 
-  // Extract current working directory
+  const parts: string[] = []
+
+  // 1. WORKSPACE INFO
   const cwd = data.workspace.current_dir
   const dir = cwd.split('/').pop() || cwd
+  parts.push(`${CYAN}${dir}${RESET}`)
 
-  // Get git branch
+  // 2. GIT BRANCH
   const branch = getGitBranch(cwd)
-
-  // Build status line
   if (branch) {
     const dirty = isGitDirty(cwd)
     const branchDisplay = dirty ? `${branch}*` : branch
-    process.stdout.write(`${CYAN}${dir}${RESET} ${GREEN}${branchDisplay}${RESET}`)
-  } else {
-    process.stdout.write(`${CYAN}${dir}${RESET}`)
+    parts.push(`${GREEN}${branchDisplay}${RESET}`)
   }
+
+  // 3. MODEL INFO
+  parts.push(`${MAGENTA}${data.model.display_name}${RESET}`)
+
+  // 4. CONTEXT WINDOW USAGE
+  if (data.context_window.current_usage) {
+    const usage = data.context_window.current_usage
+    const currentTokens =
+      usage.input_tokens + usage.cache_creation_input_tokens + usage.cache_read_input_tokens
+    const contextSize = data.context_window.context_window_size
+    const percentage = Math.round((currentTokens / contextSize) * 100)
+
+    // Color code based on usage percentage
+    let color = GREEN
+    if (percentage >= 80) color = RED
+    else if (percentage >= 60) color = YELLOW
+
+    parts.push(`${color}${percentage}% ctx${RESET}`)
+  }
+
+  // 5. SESSION TOTALS (cumulative across all messages)
+  const totalIn = data.context_window.total_input_tokens
+  const totalOut = data.context_window.total_output_tokens
+  if (totalIn > 0 || totalOut > 0) {
+    parts.push(
+      `${DIM}${YELLOW}${formatNumber(totalIn)}↓ ${formatNumber(totalOut)}↑${RESET}`
+    )
+  }
+
+  // Output the complete status line
+  process.stdout.write(parts.join(' │ '))
 }
 
 main()
