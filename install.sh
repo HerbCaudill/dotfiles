@@ -1,30 +1,50 @@
 #!/bin/bash
 
 # Symlink dotfiles from this repo to home directory
-# Symlinks individual files, except for .claude/skills which is linked as a directory
+# Paths listed in symlink-dirs.conf are linked as directories
+# All other files are linked individually
 
 DOTFILES_DIR="$(cd "$(dirname "$0")" && pwd)"
 HOME_DIR="$DOTFILES_DIR/home"
+CONFIG_FILE="$DOTFILES_DIR/symlink-dirs.conf"
 
 echo "Installing dotfiles from $DOTFILES_DIR"
 
-# Handle .claude/skills as a directory symlink
-skills_src="$HOME_DIR/.claude/skills"
-skills_target="$HOME/.claude/skills"
-if [ -d "$skills_src" ]; then
-  mkdir -p "$HOME/.claude"
-  if [ -L "$skills_target" ] || [ -d "$skills_target" ]; then
-    echo "Removing existing: $skills_target"
-    rm -rf "$skills_target"
-  fi
-  echo "Linking directory: .claude/skills"
-  ln -s "$skills_src" "$skills_target"
+# Build grep pattern from config file (skip comments and empty lines)
+dir_patterns=""
+if [ -f "$CONFIG_FILE" ]; then
+  while IFS= read -r line; do
+    # Skip comments and empty lines
+    [[ "$line" =~ ^#.*$ || -z "$line" ]] && continue
+
+    dir_src="$HOME_DIR/$line"
+    dir_target="$HOME/$line"
+
+    if [ -d "$dir_src" ]; then
+      mkdir -p "$(dirname "$dir_target")"
+      if [ -L "$dir_target" ] || [ -d "$dir_target" ]; then
+        echo "Removing existing: $dir_target"
+        rm -rf "$dir_target"
+      fi
+      echo "Linking directory: $line"
+      ln -s "$dir_src" "$dir_target"
+
+      # Add to exclusion pattern
+      [ -n "$dir_patterns" ] && dir_patterns="$dir_patterns|"
+      dir_patterns="$dir_patterns$line"
+    fi
+  done < "$CONFIG_FILE"
 fi
 
-# Find all files (not directories) in home/, excluding .claude/skills
-find "$HOME_DIR" -type f | grep -v '\.claude/skills' | while read -r file; do
-  # Get the relative path from home/
+# Find all files, excluding directory-linked paths
+find "$HOME_DIR" -type f | while read -r file; do
   rel_path="${file#$HOME_DIR/}"
+
+  # Skip if file is under a directory-linked path
+  if [ -n "$dir_patterns" ] && echo "$rel_path" | grep -qE "^($dir_patterns)/"; then
+    continue
+  fi
+
   target="$HOME/$rel_path"
 
   # Create parent directory if needed
