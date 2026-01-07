@@ -75,6 +75,14 @@ function formatNumber(num: number): string {
   return num.toString()
 }
 
+function stripAnsi(str: string): string {
+  return str.replace(/\x1b\[[0-9;]*m/g, '')
+}
+
+function visibleLength(str: string): number {
+  return stripAnsi(str).length
+}
+
 function main() {
   // Read JSON input from stdin
   const input = readFileSync(0, 'utf-8')
@@ -114,10 +122,16 @@ function main() {
     rightParts.push(`${formatNumber(totalIn)}↓ ${formatNumber(totalOut)}↑`)
   }
 
-  // Output: left (colored) ... right (gray)
+  // Output: left (colored) ... right (gray, right-aligned)
   const left = leftParts.join(' ')
   const right = `${DIM}${rightParts.join(' · ')}${RESET}`
-  process.stdout.write(`${left}  ${right}`)
+
+  const termWidth = process.stdout.columns || 80
+  const leftLen = visibleLength(left)
+  const rightLen = visibleLength(right)
+  const padding = Math.max(1, termWidth - leftLen - rightLen)
+
+  process.stdout.write(`${left}${' '.repeat(padding)}${right}`)
 }
 
 main()
