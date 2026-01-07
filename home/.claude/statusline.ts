@@ -6,9 +6,6 @@ import { readFileSync } from 'fs'
 // ANSI color codes
 const CYAN = '\x1b[36m'
 const GREEN = '\x1b[32m'
-const YELLOW = '\x1b[33m'
-const MAGENTA = '\x1b[35m'
-const RED = '\x1b[31m'
 const RESET = '\x1b[0m'
 const DIM = '\x1b[2m'
 
@@ -83,51 +80,44 @@ function main() {
   const input = readFileSync(0, 'utf-8')
   const data: StatusLineInput = JSON.parse(input)
 
-  const parts: string[] = []
+  // LEFT SIDE: directory and branch
+  const leftParts: string[] = []
 
-  // 1. WORKSPACE INFO
   const cwd = data.workspace.current_dir
   const dir = cwd.split('/').pop() || cwd
-  parts.push(`${CYAN}${dir}${RESET}`)
+  leftParts.push(`${CYAN}${dir}${RESET}`)
 
-  // 2. GIT BRANCH
   const branch = getGitBranch(cwd)
   if (branch) {
     const dirty = isGitDirty(cwd)
     const branchDisplay = dirty ? `${branch}*` : branch
-    parts.push(`${GREEN}${branchDisplay}${RESET}`)
+    leftParts.push(`${GREEN}${branchDisplay}${RESET}`)
   }
 
-  // 3. MODEL INFO
-  parts.push(`${MAGENTA}${data.model.display_name}${RESET}`)
+  // RIGHT SIDE: model, context, tokens (all gray)
+  const rightParts: string[] = []
 
-  // 4. CONTEXT WINDOW USAGE
+  rightParts.push(data.model.display_name)
+
   if (data.context_window.current_usage) {
     const usage = data.context_window.current_usage
     const currentTokens =
       usage.input_tokens + usage.cache_creation_input_tokens + usage.cache_read_input_tokens
     const contextSize = data.context_window.context_window_size
     const percentage = Math.round((currentTokens / contextSize) * 100)
-
-    // Color code based on usage percentage
-    let color = GREEN
-    if (percentage >= 80) color = RED
-    else if (percentage >= 60) color = YELLOW
-
-    parts.push(`${color}${percentage}% ctx${RESET}`)
+    rightParts.push(`${percentage}%`)
   }
 
-  // 5. SESSION TOTALS (cumulative across all messages)
   const totalIn = data.context_window.total_input_tokens
   const totalOut = data.context_window.total_output_tokens
   if (totalIn > 0 || totalOut > 0) {
-    parts.push(
-      `${DIM}${YELLOW}${formatNumber(totalIn)}↓ ${formatNumber(totalOut)}↑${RESET}`
-    )
+    rightParts.push(`${formatNumber(totalIn)}↓ ${formatNumber(totalOut)}↑`)
   }
 
-  // Output the complete status line
-  process.stdout.write(parts.join(' │ '))
+  // Output: left (colored) ... right (gray)
+  const left = leftParts.join(' ')
+  const right = `${DIM}${rightParts.join(' · ')}${RESET}`
+  process.stdout.write(`${left}  ${right}`)
 }
 
 main()
