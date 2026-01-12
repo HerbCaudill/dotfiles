@@ -1,10 +1,4 @@
 {
-  "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": ["shadcn", "context7"],
-  "enabledPlugins": {
-    "frontend-design@claude-plugins-official": true,
-    "superpowers@superpowers-marketplace": true
-  },
   "permissions": {
     "allow": [
       "Skill(superpowers:*)",
@@ -42,8 +36,18 @@
       "Bash(claude mcp:*)"
     ]
   },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "shadcn",
+    "context7"
+  ],
   "statusLine": {
     "type": "command",
     "command": "node $HOME/.claude/statusline.js"
+  },
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": true,
+    "superpowers@superpowers-marketplace": true,
+    "code-simplifier@claude-plugins-official": true
   }
 }
