@@ -52,14 +52,21 @@ const porkbun = async (endpoint: string, data: Record<string, string> = {}) => {
 // --- Main ---
 
 const main = async () => {
-  const projectName = process.argv[2]
+  let projectName = process.argv[2]
 
+  // If no argument, infer from current directory
   if (!projectName) {
-    console.error("Usage: setup-vercel-domain <project-name>")
-    console.error("Example: setup-vercel-domain myproject")
-    console.error("")
-    console.error("This will deploy herbcaudill/<project-name> to <project-name>.herbcaudill.com")
-    process.exit(1)
+    const cwd = process.cwd()
+    const match = cwd.match(/\/code\/herbcaudill\/([^/]+)/)
+    if (match) {
+      projectName = match[1]
+    } else {
+      console.error("Usage: setup-vercel-domain [project-name]")
+      console.error("Example: setup-vercel-domain myproject")
+      console.error("")
+      console.error("Or run from ~/code/herbcaudill/<project-name> with no arguments.")
+      process.exit(1)
+    }
   }
 
   const repo = `${GITHUB_ORG}/${projectName}`

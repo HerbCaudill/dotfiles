@@ -1,7 +1,7 @@
 ---
 name: deploy
 description: Deploy a project to Vercel with a custom domain and Porkbun DNS configuration
-user_invocation: deploy <project-name>
+user_invocation: deploy [project-name]
 ---
 
 # Deploy to Vercel
@@ -12,7 +12,8 @@ Deploys `herbcaudill/<project-name>` to `<project-name>.herbcaudill.com` by link
 
 ## Usage
 
-`/deploy <project-name>`
+`/deploy` - deploys current project (when in `~/code/herbcaudill/<project>`)
+`/deploy <project-name>` - deploys specified project
 
 Example: `/deploy myproject` deploys to `myproject.herbcaudill.com`
 
@@ -33,9 +34,11 @@ Example: `/deploy myproject` deploys to `myproject.herbcaudill.com`
 
 ## Process
 
-Run the setup script:
+Run the setup script (from project directory, or specify name):
 
 ```bash
+setup-vercel-domain.ts
+# or
 setup-vercel-domain.ts <project-name>
 ```
 

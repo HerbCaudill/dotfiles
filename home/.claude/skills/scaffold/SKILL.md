@@ -237,7 +237,4 @@ Once the project is verified working, ask the user if they want to deploy it:
 
 > "Project scaffolded successfully. Would you like me to deploy it to `<project-name>.herbcaudill.com`?"
 
-If yes, use the `/deploy` skill:
-```
-/deploy <project-name>
-```
+If yes, run `/deploy` (no arguments needed since we're in the project directory).
