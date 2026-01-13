@@ -1,4 +1,5 @@
 #!/usr/bin/env -S npx tsx
+/// <reference types="node" />
 
 /**
  * Sets up a Vercel project with a subdomain of herbcaudill.com and configures Porkbun DNS.
