@@ -33,8 +33,17 @@
       "TodoWrite(*)",
       "mcp__context7:*",
       "Bash(tree:*)",
-      "Bash(claude mcp:*)"
-    ]
+      "Bash(claude mcp:*)",
+      "Bash(pnpm install)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm run build:*)",
+      "Bash(pnpm remove:*)",
+      "Skill(creating-web-apps)",
+      "Bash(curl:*)"
+    ],
+    "deny": [],
+    "ask": [],
+    "defaultMode": "dontAsk"
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
@@ -47,8 +56,17 @@
   },
   "enabledPlugins": {
     "frontend-design@claude-plugins-official": true,
-    "superpowers@superpowers-marketplace": true,
     "code-simplifier@claude-plugins-official": true,
-    "example-skills@anthropic-agent-skills": true
-  }
+    "example-skills@anthropic-agent-skills": true,
+    "context7@claude-plugins-official": true,
+    "github@claude-plugins-official": true,
+    "code-review@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": false,
+    "git-worktrees@skills-marketplace": true,
+    "playwright@claude-plugins-official": true,
+    "vercel@claude-plugins-official": true,
+    "ralph-loop@claude-plugins-official": true
+  },
+  "autoUpdatesChannel": "stable",
+  "minimumVersion": "2.1.6"
 }

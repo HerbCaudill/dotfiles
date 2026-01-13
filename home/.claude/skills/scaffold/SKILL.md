@@ -235,9 +235,9 @@ The project name is provided as an argument (e.g., `/scaffold foo` creates `~/co
 
 Once the project is verified working, ask the user if they want to deploy it:
 
-> "Project scaffolded successfully. Would you like me to deploy it to Vercel with a custom domain? If so, what domain should I use?"
+> "Project scaffolded successfully. Would you like me to deploy it to `<project-name>.herbcaudill.com`?"
 
-If they provide a domain, use the `/deploy` skill:
+If yes, use the `/deploy` skill:
 ```
-/deploy herbcaudill/<project-name> <domain>
+/deploy <project-name>
 ```

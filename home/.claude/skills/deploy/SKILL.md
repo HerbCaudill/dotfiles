@@ -1,22 +1,20 @@
 ---
 name: deploy
 description: Deploy a project to Vercel with a custom domain and Porkbun DNS configuration
-user_invocation: deploy <repo> <domain>
+user_invocation: deploy <project-name>
 ---
 
 # Deploy to Vercel
 
 ## Overview
 
-Sets up a Vercel project linked to a GitHub repo, adds a custom domain, and configures Porkbun DNS automatically.
+Deploys `herbcaudill/<project-name>` to `<project-name>.herbcaudill.com` by linking the repo to Vercel and configuring Porkbun DNS.
 
 ## Usage
 
-`/deploy <repo> <domain>`
+`/deploy <project-name>`
 
-Examples:
-- `/deploy herbcaudill/myproject example.com`
-- `/deploy herbcaudill/foo foo.dev`
+Example: `/deploy myproject` deploys to `myproject.herbcaudill.com`
 
 ## Prerequisites
 
@@ -38,23 +36,19 @@ Examples:
 Run the setup script:
 
 ```bash
-setup-vercel-domain.ts <repo> <domain>
+setup-vercel-domain.ts <project-name>
 ```
 
 The script will:
-1. Link the Vercel project to the GitHub repo
-2. Add the domain to Vercel
-3. Get the verification TXT record from Vercel
-4. Add DNS records to Porkbun:
-   - TXT record for `_vercel` (verification)
-   - CNAME record for `www` → `cname.vercel-dns.com`
-   - A record for `@` → `76.76.21.21`
+1. Link the Vercel project to `herbcaudill/<project-name>`
+2. Add `<project-name>.herbcaudill.com` to Vercel
+3. Add CNAME record to Porkbun: `<project-name>` → `cname.vercel-dns.com`
 
 ## After Deployment
 
 1. **Verify DNS propagation:**
    ```bash
-   vercel domains inspect <domain>
+   vercel domains inspect <project-name>.herbcaudill.com
    ```
 
 2. **Trigger a deployment** (if not automatic):
@@ -62,7 +56,7 @@ The script will:
    vercel --prod
    ```
 
-3. **Check the site** at `https://<domain>`
+3. **Check the site** at `https://<project-name>.herbcaudill.com`
 
 ## Troubleshooting
 
@@ -70,5 +64,5 @@ The script will:
 |-------|-----|
 | "Missing PORKBUN_API_KEY" | Set env vars or add to ~/.zshrc |
 | Domain already added | Safe to ignore, script continues |
-| DNS not propagating | Wait 5-10 minutes, check with `dig <domain>` |
+| DNS not propagating | Wait 5-10 minutes, check with `dig <project-name>.herbcaudill.com` |
 | Vercel not linked | Run `vercel login` first |

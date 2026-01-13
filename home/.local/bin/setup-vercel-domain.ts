@@ -1,10 +1,15 @@
 #!/usr/bin/env -S npx tsx
 
 /**
- * Sets up a Vercel project with a custom domain and configures Porkbun DNS.
+ * Sets up a Vercel project with a subdomain of herbcaudill.com and configures Porkbun DNS.
  *
- * Usage: setup-vercel-domain <repo> <domain>
- * Example: setup-vercel-domain herbcaudill/myproject example.com
+ * Usage: setup-vercel-domain <project-name>
+ * Example: setup-vercel-domain myproject
+ *
+ * This will:
+ * - Link the repo herbcaudill/<project-name> to Vercel
+ * - Add myproject.herbcaudill.com as the domain
+ * - Configure DNS on Porkbun
  *
  * Environment variables:
  *   PORKBUN_API_KEY - Porkbun API key
@@ -14,6 +19,8 @@
 import { execSync } from "node:child_process"
 
 const PORKBUN_API = "https://api.porkbun.com/api/json/v3"
+const BASE_DOMAIN = "herbcaudill.com"
+const GITHUB_ORG = "herbcaudill"
 
 // --- Helpers ---
 
@@ -45,15 +52,21 @@ const porkbun = async (endpoint: string, data: Record<string, string> = {}) => {
 // --- Main ---
 
 const main = async () => {
-  const [repo, domain] = process.argv.slice(2)
+  const projectName = process.argv[2]
 
-  if (!repo || !domain) {
-    console.error("Usage: setup-vercel-domain <repo> <domain>")
-    console.error("Example: setup-vercel-domain herbcaudill/myproject example.com")
+  if (!projectName) {
+    console.error("Usage: setup-vercel-domain <project-name>")
+    console.error("Example: setup-vercel-domain myproject")
+    console.error("")
+    console.error("This will deploy herbcaudill/<project-name> to <project-name>.herbcaudill.com")
     process.exit(1)
   }
 
-  console.log(`\n🚀 Setting up ${domain} for ${repo}\n`)
+  const repo = `${GITHUB_ORG}/${projectName}`
+  const subdomain = projectName
+  const fullDomain = `${subdomain}.${BASE_DOMAIN}`
+
+  console.log(`\n🚀 Setting up ${fullDomain} for ${repo}\n`)
 
   // 1. Link Vercel project to repo
   console.log("--- Linking Vercel project ---")
@@ -62,58 +75,31 @@ const main = async () => {
   // 2. Add domain to Vercel
   console.log("\n--- Adding domain to Vercel ---")
   try {
-    run(`vercel domains add ${domain}`)
+    run(`vercel domains add ${fullDomain}`)
   } catch {
     console.log("Domain may already be added, continuing...")
   }
 
-  // 3. Get verification info from Vercel
-  console.log("\n--- Getting domain verification info ---")
-  const inspectOutput = run(`vercel domains inspect ${domain}`)
-
-  // Parse verification TXT record if present
-  const verificationMatch = inspectOutput.match(/TXT\s+_vercel\s+(\S+)/)
-  const verification = verificationMatch?.[1]
-
-  // 4. Configure Porkbun DNS
+  // 3. Configure Porkbun DNS - add CNAME for subdomain
   console.log("\n--- Configuring Porkbun DNS ---")
-
-  // Add verification TXT record if needed
-  if (verification) {
-    console.log(`Adding TXT record: _vercel -> ${verification}`)
-    await porkbun(`/dns/create/${domain}`, {
-      type: "TXT",
-      name: "_vercel",
-      content: verification,
-    })
-  }
-
-  // Add CNAME for www
-  console.log(`Adding CNAME: www -> cname.vercel-dns.com`)
+  console.log(`Adding CNAME: ${subdomain} -> cname.vercel-dns.com`)
   try {
-    await porkbun(`/dns/create/${domain}`, {
+    await porkbun(`/dns/create/${BASE_DOMAIN}`, {
       type: "CNAME",
-      name: "www",
+      name: subdomain,
       content: "cname.vercel-dns.com",
     })
-  } catch (e) {
-    console.log("www CNAME may already exist, continuing...")
+  } catch (e: any) {
+    if (e.message?.includes("already exists")) {
+      console.log("CNAME already exists, continuing...")
+    } else {
+      throw e
+    }
   }
 
-  // Add A record for root (Vercel's IP)
-  console.log(`Adding A record: @ -> 76.76.21.21`)
-  try {
-    await porkbun(`/dns/create/${domain}`, {
-      type: "A",
-      name: "",
-      content: "76.76.21.21",
-    })
-  } catch (e) {
-    console.log("A record may already exist, continuing...")
-  }
-
-  console.log("\n✅ Done! DNS changes may take a few minutes to propagate.")
-  console.log(`   Check status: vercel domains inspect ${domain}`)
+  console.log(`\n✅ Done! ${fullDomain} is configured.`)
+  console.log(`   DNS changes may take a few minutes to propagate.`)
+  console.log(`   Check status: vercel domains inspect ${fullDomain}`)
 }
 
 main().catch((e) => {
