@@ -57,7 +57,7 @@ const main = async () => {
   // If no argument, infer from current directory
   if (!projectName) {
     const cwd = process.cwd()
-    const match = cwd.match(/\/code\/herbcaudill\/([^/]+)/)
+    const match = cwd.match(/\/code\/herbcaudill\/([^/]+)/i)
     if (match) {
       projectName = match[1]
     } else {
