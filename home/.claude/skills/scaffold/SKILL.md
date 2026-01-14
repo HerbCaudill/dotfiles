@@ -20,6 +20,7 @@ Scaffold a frontend-only PWA with React, TypeScript, Vite, Tailwind v4, shadcn/u
 - **UI:** React + Tailwind CSS v4 + shadcn/ui
 - **Fonts:** IBM Plex Sans, Mono, Serif (via Google Fonts)
 - **PWA:** Installable + offline-capable
+- **Testing:** Vitest + Playwright
 - **Package manager:** pnpm
 
 ## Process
@@ -27,6 +28,7 @@ Scaffold a frontend-only PWA with React, TypeScript, Vite, Tailwind v4, shadcn/u
 The project name is provided as an argument (e.g., `/scaffold foo` creates `~/code/herbcaudill/foo`).
 
 1. **Create project:**
+
    ```bash
    cd ~/code/herbcaudill
    pnpm create vite <project-name> --template react-ts
@@ -34,13 +36,15 @@ The project name is provided as an argument (e.g., `/scaffold foo` creates `~/co
    pnpm install
    ```
 
-3. **Install dependencies:**
+2. **Install dependencies:**
+
    ```bash
-   pnpm add -D tailwindcss @tailwindcss/vite vite-plugin-pwa prettier prettier-plugin-tailwindcss
+   pnpm add -D tailwindcss @tailwindcss/vite vite-plugin-pwa prettier prettier-plugin-tailwindcss vitest @testing-library/react @testing-library/dom jsdom @playwright/test @types/node
    pnpm add lucide-react
    ```
 
-4. **Configure vite.config.ts:**
+3. **Configure vite.config.ts:**
+
    ```ts
    import { defineConfig } from "vite"
    import react from "@vitejs/plugin-react"
@@ -75,7 +79,8 @@ The project name is provided as an argument (e.g., `/scaffold foo` creates `~/co
    })
    ```
 
-5. **Update tsconfig.json** - add path alias to compilerOptions:
+4. **Update tsconfig.json** - add path alias to compilerOptions:
+
    ```json
    {
      "compilerOptions": {
@@ -87,7 +92,8 @@ The project name is provided as an argument (e.g., `/scaffold foo` creates `~/co
    }
    ```
 
-6. **Update tsconfig.app.json** - add path alias to compilerOptions:
+5. **Update tsconfig.app.json** - add path alias to compilerOptions:
+
    ```json
    {
      "compilerOptions": {
@@ -99,13 +105,15 @@ The project name is provided as an argument (e.g., `/scaffold foo` creates `~/co
    }
    ```
 
-7. **Initialize shadcn/ui** (this sets up index.css with Tailwind v4 syntax):
+6. **Initialize shadcn/ui** (this sets up index.css with Tailwind v4 syntax):
+
    ```bash
    pnpm dlx shadcn@latest init -d
    pnpm dlx shadcn@latest add button
    ```
 
-8. **Add IBM Plex fonts to src/index.css** - add to the existing @theme block:
+7. **Add IBM Plex fonts to src/index.css** - add to the existing @theme block:
+
    ```css
    @theme {
      --font-sans: "IBM Plex Sans", system-ui, sans-serif;
@@ -114,9 +122,10 @@ The project name is provided as an argument (e.g., `/scaffold foo` creates `~/co
    }
    ```
 
-9. **Update index.html** - add IBM Plex fonts:
+8. **Update index.html** - add IBM Plex fonts:
+
    ```html
-   <!doctype html>
+   <!DOCTYPE html>
    <html lang="en">
      <head>
        <meta charset="UTF-8" />
@@ -137,18 +146,20 @@ The project name is provided as an argument (e.g., `/scaffold foo` creates `~/co
    </html>
    ```
 
-10. **Replace src/App.tsx:**
-    ```tsx
-    export default function App() {
-      return (
-        <div className="flex min-h-screen items-center justify-center">
-          <h1 className="text-4xl font-bold">Hello, world</h1>
-        </div>
-      )
-    }
-    ```
+9. **Replace src/App.tsx:**
 
-11. **Update src/main.tsx** (remove App.css import if present):
+   ```tsx
+   export default function App() {
+     return (
+       <div className="flex min-h-screen items-center justify-center">
+         <h1 className="text-4xl font-bold">Hello, world</h1>
+       </div>
+     )
+   }
+   ```
+
+10. **Update src/main.tsx** (remove App.css import if present):
+
     ```tsx
     import { StrictMode } from "react"
     import { createRoot } from "react-dom/client"
@@ -162,7 +173,8 @@ The project name is provided as an argument (e.g., `/scaffold foo` creates `~/co
     )
     ```
 
-12. **Add .prettierrc:**
+11. **Add .prettierrc:**
+
     ```json
     {
       "arrowParens": "avoid",
@@ -179,18 +191,159 @@ The project name is provided as an argument (e.g., `/scaffold foo` creates `~/co
     }
     ```
 
-13. **Clean up Vite boilerplate:**
+12. **Clean up Vite boilerplate:**
+
     ```bash
     rm -f src/App.css src/assets/react.svg public/vite.svg
     ```
 
-14. **Verify:**
+13. **Add vitest.config.ts:**
+
+    ```ts
+    import { defineConfig } from "vitest/config"
+    import react from "@vitejs/plugin-react"
+    import path from "path"
+
+    export default defineConfig({
+      plugins: [react()],
+      test: {
+        environment: "jsdom",
+        globals: true,
+      },
+      resolve: {
+        alias: {
+          "@": path.resolve(__dirname, "./src"),
+        },
+      },
+    })
+    ```
+
+14. **Add playwright.config.ts:**
+
+    ```ts
+    import { defineConfig, devices } from "@playwright/test"
+
+    export default defineConfig({
+      testDir: "./e2e",
+      fullyParallel: true,
+      forbidOnly: !!process.env.CI,
+      retries: process.env.CI ? 2 : 0,
+      workers: process.env.CI ? 1 : undefined,
+      reporter: "html",
+      use: {
+        baseURL: "http://localhost:5173",
+        trace: "on-first-retry",
+      },
+      projects: [
+        {
+          name: "chromium",
+          use: { ...devices["Desktop Chrome"] },
+        },
+      ],
+      webServer: {
+        command: "pnpm dev",
+        url: "http://localhost:5173",
+        reuseExistingServer: !process.env.CI,
+      },
+    })
+    ```
+
+15. **Add src/App.test.tsx:**
+
+    ```tsx
+    import { render, screen } from "@testing-library/react"
+    import { describe, it, expect } from "vitest"
+    import App from "./App"
+
+    describe("App", () => {
+      it("renders hello world", () => {
+        render(<App />)
+        expect(screen.getByText("Hello, world")).toBeInTheDocument()
+      })
+    })
+    ```
+
+16. **Add src/vitest-setup.ts:**
+
+    ```ts
+    import "@testing-library/jest-dom/vitest"
+    ```
+
+17. **Update vitest.config.ts to include setup file** - add to test config:
+
+    ```ts
+    test: {
+      environment: "jsdom",
+      globals: true,
+      setupFiles: ["./src/vitest-setup.ts"],
+    },
+    ```
+
+18. **Create e2e directory and add e2e/app.spec.ts:**
+
+    ```ts
+    import { test, expect } from "@playwright/test"
+
+    test("displays hello world", async ({ page }) => {
+      await page.goto("/")
+      await expect(page.getByRole("heading", { name: "Hello, world" })).toBeVisible()
+    })
+    ```
+
+19. **Update package.json scripts:**
+
+    ```json
+    {
+      "scripts": {
+        "dev": "vite --open",
+        "build": "tsc -b && vite build",
+        "lint": "eslint .",
+        "preview": "vite preview",
+        "test": "vitest",
+        "test:pw": "playwright test",
+        "test:pw:ui": "playwright test --ui",
+        "test:pw:headed": "playwright test --headed",
+        "test:all": "pnpm typecheck && pnpm test run && pnpm test:pw --max-failures=1",
+        "typecheck": "tsc --noEmit",
+        "format": "prettier --write .",
+        "ralph": "ralph"
+      }
+    }
+    ```
+
+20. **Install Playwright browsers:**
+
+    ```bash
+    pnpm exec playwright install chromium
+    ```
+
+21. **Initialize git and push to GitHub:**
+
+    ```bash
+    git init
+    git add .
+    git commit -m "Initial commit"
+    gh repo create <project-name> --public --source=. --push
+    ```
+
+22. **Verify:**
+
     ```bash
     pnpm dev
     ```
+
     Should display "Hello, world" centered on screen with IBM Plex Sans font.
 
-15. **Open in VS Code:**
+23. **Run tests:**
+
+    ```bash
+    pnpm test run
+    pnpm test:pw
+    ```
+
+    Both should pass.
+
+24. **Open in VS Code:**
     ```bash
     code .
     ```
@@ -205,10 +358,16 @@ The project name is provided as an argument (e.g., `/scaffold foo` creates `~/co
 │   ├── lib/
 │   │   └── utils.ts     # shadcn utils (cn function)
 │   ├── App.tsx          # "Hello, world"
+│   ├── App.test.tsx     # Vitest unit test
 │   ├── main.tsx
-│   └── index.css        # Tailwind v4 + shadcn theme
+│   ├── index.css        # Tailwind v4 + shadcn theme
+│   └── vitest-setup.ts  # Testing library setup
+├── e2e/
+│   └── app.spec.ts      # Playwright e2e test
 ├── index.html           # IBM Plex fonts loaded
 ├── vite.config.ts       # Tailwind + PWA + path alias
+├── vitest.config.ts     # Vitest config
+├── playwright.config.ts # Playwright config
 ├── tsconfig.json
 ├── tsconfig.app.json
 ├── components.json      # shadcn config
@@ -218,12 +377,15 @@ The project name is provided as an argument (e.g., `/scaffold foo` creates `~/co
 
 ## Common Issues
 
-| Issue | Fix |
-|-------|-----|
-| Path alias not working | Ensure both tsconfig.json and tsconfig.app.json have baseUrl and paths |
-| Fonts not loading | Check Google Fonts link in index.html, verify network tab |
-| PWA not installing | Run `pnpm build && pnpm preview` - PWA only works in production |
-| shadcn init fails | Ensure @tailwindcss/vite is installed and in vite.config.ts |
+| Issue                        | Fix                                                                    |
+| ---------------------------- | ---------------------------------------------------------------------- |
+| Path alias not working       | Ensure both tsconfig.json and tsconfig.app.json have baseUrl and paths |
+| Fonts not loading            | Check Google Fonts link in index.html, verify network tab              |
+| PWA not installing           | Run `pnpm build && pnpm preview` - PWA only works in production        |
+| shadcn init fails            | Ensure @tailwindcss/vite is installed and in vite.config.ts            |
+| Vitest toBeInTheDocument     | Ensure vitest-setup.ts imports @testing-library/jest-dom/vitest        |
+| Playwright browser not found | Run `pnpm exec playwright install chromium`                            |
+| gh repo create fails         | Ensure you're logged in with `gh auth login`                           |
 
 ## Tailwind v4 Notes
 
