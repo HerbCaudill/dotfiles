@@ -32,6 +32,14 @@ function copyTemplate(templatePath: string, destPath: string, vars?: Record<stri
   writeFileSync(destPath, content)
 }
 
+function parseJsonWithComments(content: string): unknown {
+  // Strip single-line comments (// ...) and multi-line comments (/* ... */)
+  const stripped = content
+    .replace(/\/\*[\s\S]*?\*\//g, "") // multi-line comments
+    .replace(/\/\/.*$/gm, "") // single-line comments
+  return JSON.parse(stripped)
+}
+
 function main() {
   const projectName = process.argv[2]
   if (!projectName) {
@@ -50,26 +58,28 @@ function main() {
 
   console.log(`\nScaffolding ${projectName} at ${projectPath}...\n`)
 
-  // 1. Create Vite project
+  // Create Vite project
   run(`pnpm create vite ${projectName} --template react-ts`, PROJECT_DIR)
   run("pnpm install", projectPath)
 
-  // 2. Install dependencies
+  // Install dependencies
   run(
     "pnpm add -D tailwindcss @tailwindcss/vite vite-plugin-pwa prettier prettier-plugin-tailwindcss vitest @testing-library/react @testing-library/dom @testing-library/jest-dom jsdom @playwright/test @types/node",
     projectPath,
   )
   run("pnpm add @tabler/icons-react", projectPath)
 
-  // 3. Copy config files
+  // Copy config files
   copyTemplate("vite.config.ts", join(projectPath, "vite.config.ts"), vars)
   copyTemplate("vitest.config.ts", join(projectPath, "vitest.config.ts"))
   copyTemplate("playwright.config.ts", join(projectPath, "playwright.config.ts"))
   copyTemplate(".prettierrc", join(projectPath, ".prettierrc"))
 
-  // 4. Update tsconfig.json
+  // Update tsconfig.json
   const tsconfigPath = join(projectPath, "tsconfig.json")
-  const tsconfig = JSON.parse(readFileSync(tsconfigPath, "utf-8"))
+  const tsconfig = parseJsonWithComments(readFileSync(tsconfigPath, "utf-8")) as {
+    compilerOptions?: Record<string, unknown>
+  }
   tsconfig.compilerOptions = {
     ...tsconfig.compilerOptions,
     baseUrl: ".",
@@ -77,9 +87,11 @@ function main() {
   }
   writeFileSync(tsconfigPath, JSON.stringify(tsconfig, null, 2) + "\n")
 
-  // 5. Update tsconfig.app.json
+  // Update tsconfig.app.json
   const tsconfigAppPath = join(projectPath, "tsconfig.app.json")
-  const tsconfigApp = JSON.parse(readFileSync(tsconfigAppPath, "utf-8"))
+  const tsconfigApp = parseJsonWithComments(readFileSync(tsconfigAppPath, "utf-8")) as {
+    compilerOptions?: Record<string, unknown>
+  }
   tsconfigApp.compilerOptions = {
     ...tsconfigApp.compilerOptions,
     baseUrl: ".",
@@ -87,12 +99,15 @@ function main() {
   }
   writeFileSync(tsconfigAppPath, JSON.stringify(tsconfigApp, null, 2) + "\n")
 
-  // 6. Initialize shadcn/ui
+  // Set up Tailwind CSS v4 in index.css before shadcn init
+  const indexCssPath = join(projectPath, "src/index.css")
+  writeFileSync(indexCssPath, '@import "tailwindcss";\n')
+
+  // Initialize shadcn/ui
   run("pnpm dlx shadcn@latest init -d", projectPath)
   run("pnpm dlx shadcn@latest add button", projectPath)
 
-  // 7. Update src/index.css - add IBM Plex fonts to @theme block
-  const indexCssPath = join(projectPath, "src/index.css")
+  // Update src/index.css - add IBM Plex fonts to @theme block
   let indexCss = readFileSync(indexCssPath, "utf-8")
   indexCss = indexCss.replace(
     /@theme\s*\{/,
@@ -103,7 +118,7 @@ function main() {
   )
   writeFileSync(indexCssPath, indexCss)
 
-  // 8. Copy source files
+  // Copy source files
   copyTemplate("index.html", join(projectPath, "index.html"), vars)
   copyTemplate("src/App.tsx", join(projectPath, "src/App.tsx"), vars)
   copyTemplate("src/main.tsx", join(projectPath, "src/main.tsx"))
@@ -111,7 +126,7 @@ function main() {
   copyTemplate("src/App.test.tsx", join(projectPath, "src/App.test.tsx"))
   copyTemplate("e2e/app.spec.ts", join(projectPath, "e2e/app.spec.ts"))
 
-  // 9. Clean up Vite boilerplate
+  // Clean up Vite boilerplate
   const filesToRemove = ["src/App.css", "src/assets/react.svg", "public/vite.svg", "README.md"]
   for (const file of filesToRemove) {
     const filePath = join(projectPath, file)
@@ -120,7 +135,7 @@ function main() {
     }
   }
 
-  // 10. Update package.json scripts
+  // Update package.json scripts
   const packageJsonPath = join(projectPath, "package.json")
   const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8"))
   packageJson.scripts = {
@@ -138,25 +153,26 @@ function main() {
   }
   writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + "\n")
 
-  // 11. Install Playwright browsers
+  // Install Playwright browsers
   run("pnpm exec playwright install chromium", projectPath)
 
-  // 12. Format everything
+  // Format everything
   run("pnpm format", projectPath)
 
-  // 13. Initialize git and push to GitHub
+  // Initialize git and push to GitHub
   run("git init", projectPath)
   run("git add .", projectPath)
   run('git commit -m "Initial commit"', projectPath)
   run(`gh repo create ${projectName} --public --source=. --push`, projectPath)
 
-  // 14. Run tests to verify
+  // Run tests to verify
   console.log("\n--- Running tests ---")
   run("pnpm test:all", projectPath)
 
+  // Open in VS Code
+  run(`code ${projectPath}`, projectPath)
+
   console.log(`\n✅ Project ${projectName} scaffolded successfully!`)
-  console.log(`  cd ${projectPath}`)
-  console.log(`  pnpm dev`)
 }
 
 main()

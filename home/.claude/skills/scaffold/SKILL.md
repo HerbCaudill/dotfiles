@@ -33,22 +33,24 @@ npx tsx ~/.claude/skills/scaffold/scaffold.ts <project-name>
 
 The script handles everything:
 
-1. Creates Vite project with React + TypeScript template
-2. Installs dependencies (Tailwind, shadcn, Vitest, Playwright, etc.)
-3. Configures vite.config.ts with Tailwind, PWA, and path aliases
-4. Updates tsconfig.json and tsconfig.app.json with path aliases
-5. Initializes shadcn/ui with button component
-6. Adds IBM Plex fonts to index.css and index.html
-7. Creates App.tsx with "Hello, world"
-8. Adds .prettierrc with project settings
-9. Cleans up Vite boilerplate (App.css, SVGs, README)
-10. Creates vitest.config.ts and playwright.config.ts
-11. Adds sample unit test (App.test.tsx) and e2e test (e2e/app.spec.ts)
-12. Updates package.json with all scripts
-13. Installs Playwright Chromium browser
-14. Formats everything with Prettier
-15. Initializes git and pushes to GitHub
-16. Runs tests to verify everything works
+- Creates Vite project with React + TypeScript template
+- Installs dependencies (Tailwind, shadcn, Vitest, Playwright, etc.)
+- Configures vite.config.ts with Tailwind, PWA, and path aliases
+- Updates tsconfig.json and tsconfig.app.json with path aliases
+- Sets up Tailwind CSS v4 in index.css (required before shadcn init)
+- Initializes shadcn/ui with button component
+- Adds IBM Plex fonts to index.css and index.html
+- Creates App.tsx with "Hello, world"
+- Adds .prettierrc with project settings
+- Cleans up Vite boilerplate (App.css, SVGs, README)
+- Creates vitest.config.ts (excludes e2e/ to avoid Playwright conflicts) and playwright.config.ts
+- Adds sample unit test (App.test.tsx) and e2e test (e2e/app.spec.ts)
+- Updates package.json with all scripts
+- Installs Playwright Chromium browser
+- Formats everything with Prettier
+- Initializes git and pushes to GitHub
+- Runs tests to verify everything works
+- Opens the project in VS Code
 
 ## Result
 
@@ -94,10 +96,11 @@ The script handles everything:
 
 ## Common Issues
 
-| Issue                        | Fix                                      |
-| ---------------------------- | ---------------------------------------- |
-| gh repo create fails         | Run `gh auth login` first                |
+| Issue                        | Fix                                         |
+| ---------------------------- | ------------------------------------------- |
+| gh repo create fails         | Run `gh auth login` first                   |
 | Playwright browser not found | Run `pnpm exec playwright install chromium` |
+| Vercel CLI not found         | Run `pnpm add -g vercel`                    |
 
 ## After Scaffolding
 

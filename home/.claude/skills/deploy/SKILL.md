@@ -47,19 +47,25 @@ The script will:
 2. Add `<project-name>.herbcaudill.com` to Vercel
 3. Add CNAME record to Porkbun: `<project-name>` → `cname.vercel-dns.com`
 
-## After Deployment
+## After Running Setup Script
 
-1. **Verify DNS propagation:**
+1. **Trigger a production deployment:**
    ```bash
-   vercel domains inspect <project-name>.herbcaudill.com
+   vercel --prod --yes
    ```
 
-2. **Trigger a deployment** (if not automatic):
+2. **Add domain to the project** (if not already attached):
    ```bash
-   vercel --prod
+   vercel domains add <project-name>.herbcaudill.com
    ```
 
-3. **Check the site** at `https://<project-name>.herbcaudill.com`
+3. **Verify DNS propagation:**
+   ```bash
+   dig <project-name>.herbcaudill.com CNAME +short
+   # Should return: cname.vercel-dns.com.
+   ```
+
+4. **Check the site** at `https://<project-name>.herbcaudill.com`
 
 ## Troubleshooting
 
