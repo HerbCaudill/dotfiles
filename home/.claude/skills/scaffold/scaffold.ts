@@ -44,7 +44,7 @@ function main() {
     "pnpm add -D tailwindcss @tailwindcss/vite vite-plugin-pwa prettier prettier-plugin-tailwindcss vitest @testing-library/react @testing-library/dom @testing-library/jest-dom jsdom @playwright/test @types/node",
     projectPath
   )
-  run("pnpm add lucide-react", projectPath)
+  run("pnpm add @tabler/icons-react", projectPath)
 
   // 3. Write vite.config.ts
   writeFileSync(
