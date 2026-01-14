@@ -105,7 +105,7 @@ function main() {
 
   // 8. Copy source files
   copyTemplate("index.html", join(projectPath, "index.html"), vars)
-  copyTemplate("src/App.tsx", join(projectPath, "src/App.tsx"))
+  copyTemplate("src/App.tsx", join(projectPath, "src/App.tsx"), vars)
   copyTemplate("src/main.tsx", join(projectPath, "src/main.tsx"))
   copyTemplate("src/vitest-setup.ts", join(projectPath, "src/vitest-setup.ts"))
   copyTemplate("src/App.test.tsx", join(projectPath, "src/App.test.tsx"))
