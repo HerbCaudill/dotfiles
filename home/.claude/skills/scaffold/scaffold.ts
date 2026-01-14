@@ -57,7 +57,7 @@ function main() {
   // 2. Install dependencies
   run(
     "pnpm add -D tailwindcss @tailwindcss/vite vite-plugin-pwa prettier prettier-plugin-tailwindcss vitest @testing-library/react @testing-library/dom @testing-library/jest-dom jsdom @playwright/test @types/node",
-    projectPath
+    projectPath,
   )
   run("pnpm add @tabler/icons-react", projectPath)
 
@@ -99,7 +99,7 @@ function main() {
     `@theme {
   --font-sans: "IBM Plex Sans", system-ui, sans-serif;
   --font-serif: "IBM Plex Serif", Georgia, serif;
-  --font-mono: "IBM Plex Mono", monospace;`
+  --font-mono: "IBM Plex Mono", monospace;`,
   )
   writeFileSync(indexCssPath, indexCss)
 
@@ -126,7 +126,6 @@ function main() {
   packageJson.scripts = {
     dev: "vite --open",
     build: "tsc -b && vite build",
-    lint: "eslint .",
     preview: "vite preview",
     test: "vitest",
     "test:pw": "playwright test",
@@ -135,7 +134,7 @@ function main() {
     "test:all": "pnpm typecheck && pnpm test run && pnpm test:pw --max-failures=1",
     typecheck: "tsc --noEmit",
     format: "prettier --write .",
-    ralph: "ralph",
+    ralph: "npx @herbcaudill/ralph",
   }
   writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + "\n")
 
@@ -153,10 +152,9 @@ function main() {
 
   // 14. Run tests to verify
   console.log("\n--- Running tests ---")
-  run("pnpm test run", projectPath)
-  run("pnpm test:pw", projectPath)
+  run("pnpm test:all", projectPath)
 
-  console.log(`\n✓ Project ${projectName} scaffolded successfully!`)
+  console.log(`\n✅ Project ${projectName} scaffolded successfully!`)
   console.log(`  cd ${projectPath}`)
   console.log(`  pnpm dev`)
 }
