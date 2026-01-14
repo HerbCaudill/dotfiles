@@ -194,7 +194,7 @@ The project name is provided as an argument (e.g., `/scaffold foo` creates `~/co
 12. **Clean up Vite boilerplate:**
 
     ```bash
-    rm -f src/App.css src/assets/react.svg public/vite.svg
+    rm -f src/App.css src/assets/react.svg public/vite.svg README.md
     ```
 
 13. **Add vitest.config.ts:**
