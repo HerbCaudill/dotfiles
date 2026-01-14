@@ -37,9 +37,9 @@ Example: `/deploy myproject` deploys to `myproject.herbcaudill.com`
 Run the setup script (from project directory, or specify name):
 
 ```bash
-setup-vercel-domain.ts
+~/.claude/skills/deploy/setup-vercel-domain.ts
 # or
-setup-vercel-domain.ts <project-name>
+~/.claude/skills/deploy/setup-vercel-domain.ts <project-name>
 ```
 
 The script will:

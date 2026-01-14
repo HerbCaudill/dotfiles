@@ -177,9 +177,6 @@ compdef _gt_yargs_completions gt
 
 export PATH="$HOME/.local/bin:$PATH"
 
-# Custom scripts from dotfiles
-export PATH="$HOME/Code/HerbCaudill/dotfiles/home/.local/bin:$PATH"
-
 # proto
 export PROTO_HOME="$HOME/.proto";
 export PATH="$PROTO_HOME/shims:$PROTO_HOME/bin:$PATH";
