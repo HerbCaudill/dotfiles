@@ -107,6 +107,12 @@ function main() {
   run("pnpm dlx shadcn@latest init -d", projectPath)
   run("pnpm dlx shadcn@latest add button", projectPath)
 
+  // Configure shadcn to use Tabler icons
+  const componentsJsonPath = join(projectPath, "components.json")
+  const componentsJson = JSON.parse(readFileSync(componentsJsonPath, "utf-8"))
+  componentsJson.iconLibrary = "tabler"
+  writeFileSync(componentsJsonPath, JSON.stringify(componentsJson, null, 2) + "\n")
+
   // Update src/index.css - add IBM Plex fonts to @theme block
   let indexCss = readFileSync(indexCssPath, "utf-8")
   indexCss = indexCss.replace(
