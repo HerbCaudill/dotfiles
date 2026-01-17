@@ -65,7 +65,8 @@
     "git-worktrees@skills-marketplace": true,
     "playwright@claude-plugins-official": true,
     "vercel@claude-plugins-official": true,
-    "ralph-loop@claude-plugins-official": true
+    "ralph-loop@claude-plugins-official": true,
+    "beads@beads-marketplace": true
   },
   "autoUpdatesChannel": "stable",
   "minimumVersion": "2.1.6"

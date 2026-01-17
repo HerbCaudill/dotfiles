@@ -25,11 +25,11 @@ Example: `/deploy myproject` deploys to `myproject.herbcaudill.com`
    vercel login
    ```
 
-2. **Porkbun API credentials** set as environment variables:
+2. **Porkbun API credentials** available in `~/.secrets`:
    ```bash
-   export PORKBUN_API_KEY="pk1_..."
-   export PORKBUN_SECRET_KEY="sk1_..."
+   source ~/.secrets
    ```
+   The file should contain `PORKBUN_API_KEY` and `PORKBUN_SECRET_KEY`.
    Get these from https://porkbun.com/account/api
 
 ## Process
@@ -45,7 +45,8 @@ Run the setup script (from project directory, or specify name):
 The script will:
 1. Link the Vercel project to `herbcaudill/<project-name>`
 2. Add `<project-name>.herbcaudill.com` to Vercel
-3. Add CNAME record to Porkbun: `<project-name>` → `cname.vercel-dns.com`
+3. Query Vercel API for project-specific CNAME
+4. Add/update CNAME record in Porkbun with the project-specific value
 
 ## After Running Setup Script
 
@@ -62,7 +63,7 @@ The script will:
 3. **Verify DNS propagation:**
    ```bash
    dig <project-name>.herbcaudill.com CNAME +short
-   # Should return: cname.vercel-dns.com.
+   # Should return: <hash>.vercel-dns-xxx.com.
    ```
 
 4. **Check the site** at `https://<project-name>.herbcaudill.com`
@@ -71,7 +72,7 @@ The script will:
 
 | Issue | Fix |
 |-------|-----|
-| "Missing PORKBUN_API_KEY" | Set env vars or add to ~/.zshrc |
+| "Missing PORKBUN_API_KEY" | Run `source ~/.secrets` first |
 | Domain already added | Safe to ignore, script continues |
 | DNS not propagating | Wait 5-10 minutes, check with `dig <project-name>.herbcaudill.com` |
 | Vercel not linked | Run `vercel login` first |
