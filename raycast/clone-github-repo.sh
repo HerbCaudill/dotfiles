@@ -3,7 +3,7 @@
 # Required parameters:
 # @raycast.schemaVersion 1
 # @raycast.title Clone GitHub Repo
-# @raycast.mode compact
+# @raycast.mode fullOutput
 # @raycast.packageName Developer Utils
 
 # Optional parameters:
@@ -26,8 +26,13 @@ get_github_url() {
 # Parse org and repo from GitHub URL
 parse_github_url() {
   local url="$1"
-  # Handle various GitHub URL formats
-  echo "$url" | sed -E 's|.*github\.com[:/]([^/]+)/([^/.]+).*|\1/\2|'
+  # Strip query string and hash
+  url="${url%%\?*}"
+  url="${url%%#*}"
+  # Strip .git suffix
+  url="${url%.git}"
+  # Extract org/repo (handles https://github.com/org/repo/anything/else)
+  echo "$url" | sed -E 's|.*github\.com[:/]([^/]+)/([^/]+).*|\1/\2|'
 }
 
 # Detect package manager and install
