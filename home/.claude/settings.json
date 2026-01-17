@@ -52,17 +52,17 @@
     "command": "node $HOME/.claude/statusline.js"
   },
   "enabledPlugins": {
-    "frontend-design@claude-plugins-official": true,
-    "code-simplifier@claude-plugins-official": true,
-    "example-skills@anthropic-agent-skills": true,
+    "frontend-design@claude-plugins-official": false,
+    "code-simplifier@claude-plugins-official": false,
+    "example-skills@anthropic-agent-skills": false,
     "context7@claude-plugins-official": false,
-    "code-review@claude-plugins-official": true,
+    "code-review@claude-plugins-official": false,
     "typescript-lsp@claude-plugins-official": false,
-    "git-worktrees@skills-marketplace": true,
+    "git-worktrees@skills-marketplace": false,
     "playwright@claude-plugins-official": false,
-    "vercel@claude-plugins-official": true,
-    "ralph-loop@claude-plugins-official": true,
-    "beads@beads-marketplace": true
+    "vercel@claude-plugins-official": false,
+    "ralph-loop@claude-plugins-official": false,
+    "beads@beads-marketplace": false
   },
   "autoUpdatesChannel": "stable",
   "minimumVersion": "2.1.6"
