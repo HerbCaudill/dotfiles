@@ -171,6 +171,12 @@ function main() {
   }
   writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + "\n")
 
+  // Update .gitignore
+  const gitignorePath = join(projectPath, ".gitignore")
+  let gitignore = readFileSync(gitignorePath, "utf-8")
+  gitignore += "\n# Logs\n**/*.log\n\n# Test output\ntest-results\nplaywright-report\n"
+  writeFileSync(gitignorePath, gitignore)
+
   // Install Playwright browsers
   run("pnpm exec playwright install chromium", projectPath)
 
