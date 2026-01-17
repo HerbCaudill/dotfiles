@@ -127,7 +127,13 @@ function main() {
   copyTemplate("e2e/app.spec.ts", join(projectPath, "e2e/app.spec.ts"))
 
   // Clean up Vite boilerplate
-  const filesToRemove = ["src/App.css", "src/assets/react.svg", "public/vite.svg", "README.md"]
+  const filesToRemove = [
+    "src/App.css",
+    "src/assets/react.svg",
+    "public/vite.svg",
+    "README.md",
+    "eslint.config.js",
+  ]
   for (const file of filesToRemove) {
     const filePath = join(projectPath, file)
     if (existsSync(filePath)) {
@@ -135,9 +141,21 @@ function main() {
     }
   }
 
-  // Update package.json scripts
+  // Update package.json - remove ESLint dependencies and update scripts
   const packageJsonPath = join(projectPath, "package.json")
   const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8"))
+
+  // Remove ESLint-related dependencies
+  const eslintPackages = ["eslint", "@eslint/js", "globals", "typescript-eslint"]
+  const eslintPrefixes = ["eslint-plugin-", "eslint-config-"]
+  if (packageJson.devDependencies) {
+    for (const dep of Object.keys(packageJson.devDependencies)) {
+      if (eslintPackages.includes(dep) || eslintPrefixes.some(prefix => dep.startsWith(prefix))) {
+        delete packageJson.devDependencies[dep]
+      }
+    }
+  }
+
   packageJson.scripts = {
     dev: "vite --open",
     build: "tsc -b && vite build",
