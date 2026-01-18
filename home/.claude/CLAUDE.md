@@ -32,6 +32,7 @@ I generally use:
 ## Planning
 
 - At the end of each plan, include a list of unresolved questions, if any.
+- In planning mode, the output should always be (1) a plan document stored in the repository, and (2) a granular set of tasks. If the repository uses beads (`bd`) for issue management, you should file those tasks as issues, with appropriate dependencies, and grouped into epics as necessary.
 
 ## Workflow
 

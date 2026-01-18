@@ -54,7 +54,7 @@ alias bs="pnpm build && pnpm start"
 alias bench="pnpm benchmark"
 alias up="pnpm update -i --latest"
 alias type="pnpm typecheck"
-alias ralph="cls && pnpm dlx @herbcaudill/ralph"
+alias ralph="cls && pnpm ralph"
 
 # purge node_modules/dist/etc. & reinstall
 alias pg="rm -rf **/node_modules; rm -rf **/dist; rm -rf .next; i"
