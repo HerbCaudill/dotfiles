@@ -57,10 +57,7 @@ Once the user has approved the plan, proceed to breaking it down into
 
 Check if the project uses beads by looking for a `.beads` folder in the root of the repository.
 
-- If beads is not set up, use the `beads-setup` skill to do that.
-
-**If beads is available:**
-
+- If beads is not set up, use `/beads:init` to do that.
 - Create one or more epics for the project
 - File individual issues for each task
 - Set dependencies between issues where applicable
