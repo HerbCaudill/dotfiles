@@ -30,7 +30,9 @@ Identify distinct issues from user's input. For each issue, determine type, prio
 
 ### 4. Create issues
 
-Create each issue. After creation, add any dependencies. If tasks need to be organized into epics, do so.
+Create each issue using `bd create`. After creation, add any dependencies. If tasks need to be organized into epics, do so.
+
+IMPORTANT: Do not work on the tasks! Only file them.
 
 ### 5. Repeat
 
