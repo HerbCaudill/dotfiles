@@ -1,4 +1,45 @@
 {
+  "autoUpdatesChannel": "stable",
+  "enableAllProjectMcpServers": false,
+  "enabledMcpjsonServers": [],
+  "enabledPlugins": {
+    "beads@beads-marketplace": false,
+    "code-review@claude-plugins-official": false,
+    "code-simplifier@claude-plugins-official": false,
+    "context7@claude-plugins-official": false,
+    "example-skills@anthropic-agent-skills": false,
+    "frontend-design@claude-plugins-official": false,
+    "git-worktrees@skills-marketplace": false,
+    "playwright@claude-plugins-official": false,
+    "ralph-loop@claude-plugins-official": false,
+    "typescript-lsp@claude-plugins-official": false,
+    "vercel@claude-plugins-official": false
+  },
+  "hooks": {
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "command": "bd prime",
+            "type": "command"
+          }
+        ],
+        "matcher": ""
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "bd prime",
+            "type": "command"
+          }
+        ],
+        "matcher": ""
+      }
+    ]
+  },
+  "minimumVersion": "2.1.6",
   "permissions": {
     "allow": [
       "Skill(superpowers:*)",
@@ -41,29 +82,12 @@
       "Skill(creating-web-apps)",
       "Bash(curl:*)"
     ],
-    "deny": [],
     "ask": [],
-    "defaultMode": "dontAsk"
+    "defaultMode": "dontAsk",
+    "deny": []
   },
-  "enableAllProjectMcpServers": false,
-  "enabledMcpjsonServers": [],
   "statusLine": {
-    "type": "command",
-    "command": "node $HOME/.claude/statusline.js"
-  },
-  "enabledPlugins": {
-    "frontend-design@claude-plugins-official": false,
-    "code-simplifier@claude-plugins-official": false,
-    "example-skills@anthropic-agent-skills": false,
-    "context7@claude-plugins-official": false,
-    "code-review@claude-plugins-official": false,
-    "typescript-lsp@claude-plugins-official": false,
-    "git-worktrees@skills-marketplace": false,
-    "playwright@claude-plugins-official": false,
-    "vercel@claude-plugins-official": false,
-    "ralph-loop@claude-plugins-official": false,
-    "beads@beads-marketplace": false
-  },
-  "autoUpdatesChannel": "stable",
-  "minimumVersion": "2.1.6"
+    "command": "node $HOME/.claude/statusline.js",
+    "type": "command"
+  }
 }
