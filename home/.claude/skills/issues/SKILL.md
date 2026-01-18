@@ -8,18 +8,11 @@ user_invocation: issues
 
 ## Overview
 
-Creates beads issues from a user-provided list. Analyzes each item and determines appropriate:
-
-- Issue type (task, bug, feature)
-- Priority (0-4)
-- Dependencies between issues
-- Epic groupings if applicable
+Creates beads issues from a user-provided list. Analyzes each item and determines appropriate classification.
 
 ## Usage
 
-`/issues` then describe the issues to file
-
-Example: `/issues` followed by "We need to add dark mode, fix the login bug, and refactor the API client"
+`/issues` then describe the issues to file.
 
 ## Process
 
@@ -27,61 +20,55 @@ Example: `/issues` followed by "We need to add dark mode, fix the login bug, and
 
 Check for `.beads` folder. If not present, run `/beads:init`.
 
-### 2. Parse the user's input
+### 2. Wait for input
 
-Identify distinct issues from the description. Each issue may be:
+Indicate that you're ready to add issues.
 
-- A feature request
-- A bug report
-- A task/chore
-- An epic containing sub-issues
+### 3. Process input
 
-### 3. Determine metadata
-
-For each issue, determine:
-
-**Type:**
-
-- `feature` - New functionality
-- `bug` - Something broken
-- `task` - Chores, refactoring, documentation
-
-**Priority (0-4):**
-
-- 0 (P0) - Critical/blocking
-- 1 (P1) - High priority
-- 2 (P2) - Medium (default)
-- 3 (P3) - Low priority
-- 4 (P4) - Backlog
-
-**Dependencies:**
-
-- If issue B requires issue A to be done first, add dependency
-- Use `bd dep add <child> <parent>` after creation
-
-**Epics:**
-
-- Group related issues under an epic if there are 3+ related items
-- Create epic first, then link child issues
+Identify distinct issues from user's input. For each issue, determine type, priority, and dependencies.
 
 ### 4. Create issues
 
-```bash
-bd create --title="..." --type=task|bug|feature --priority=2
-```
+Create each issue. After creation, add any dependencies. If tasks need to be organized into epics, do so.
 
-After creation, add any dependencies:
+### 5. Repeat
 
-```bash
-bd dep add <dependent-issue> <dependency>
-```
-
-Then end your turn to wait for more issues.
+Return to step 2: Let the user know you're waiting for further input.
 
 ## Guidelines
 
+- Don't be chatty
 - Keep titles concise but descriptive
 - Default to priority 2 unless urgency is indicated
 - Bugs default to priority 1
 - Look for implicit dependencies (e.g., "tests for X" depends on "implement X")
 - Don't over-organize - only create epics when genuinely helpful
+
+## Sample interaction
+
+> /issues
+
+OK, let me know what issues to add.
+
+> We need to add dark mode
+
+_...bd commands_
+
+I've filed that issue. What else?
+
+> fix the login bug
+
+_...bd commands_
+
+Done.
+
+> refactor the API client
+
+_...bd commands_
+
+You got it. Anything else?
+
+```
+
+```
