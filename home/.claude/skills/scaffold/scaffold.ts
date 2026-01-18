@@ -177,6 +177,9 @@ function main() {
   }
   writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + "\n")
 
+  // Sync dependencies after removing ESLint packages
+  run("pnpm install", projectPath)
+
   // Update .gitignore
   const gitignorePath = join(projectPath, ".gitignore")
   let gitignore = readFileSync(gitignorePath, "utf-8")
