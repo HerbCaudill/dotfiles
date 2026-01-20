@@ -17,11 +17,30 @@ I generally use:
 
 ## Code style
 
-- In general each component and every helper function should be in its own file with the same name.
+- One component, one file. One function, one file.
+- Shared types should be in a `types.ts` file
+- Shared constants should be in a `constants.ts` file.
 - React components should always have a `Props` type. The type definition should be at the end of the file.
 - When combining lists of class names, use `cx` rather than string interpolation.
 - Use named exports. Don't use default exports unless we're in a framework (like Next.js) that requires them
 - Name test files `foo.test.ts`
+- Don't put big headings in comments with ASCII borders:
+
+  ```ts
+  // ❌ don't do this
+  // =============================================================================
+  // CodexAdapter
+  // =============================================================================
+
+  // ❌ don't do this
+  // ┌────────────────────────────────┐
+  // │          CodexAdapter          │
+  // └────────────────────────────────┘
+
+  // ✅ easy does it
+
+  // ---- CodexAdapter ----
+  ```
 
 ## Testing
 
