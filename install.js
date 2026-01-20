@@ -10,6 +10,27 @@ const HOME = process.env.HOME
 
 console.log(`Installing dotfiles from ${DOTFILES_DIR}`)
 
+const EXTRA_SYMLINKS = [
+  { src: ".claude/CLAUDE.md", target: ".codex/AGENTS.md" },
+  { src: ".claude/skills", target: ".codex/skills" },
+]
+
+const removeExisting = target => {
+  try {
+    const stat = lstatSync(target)
+    console.log(`Removing existing: ${target}`)
+
+    if (stat.isDirectory() && !stat.isSymbolicLink()) {
+      rmSync(target, { recursive: true, force: true })
+      return
+    }
+
+    unlinkSync(target)
+  } catch {
+    // Target doesn't exist, that's fine
+  }
+}
+
 // Read directory symlink paths from config
 const dirPaths = existsSync(CONFIG_FILE)
   ? readFileSync(CONFIG_FILE, "utf-8")
@@ -27,10 +48,7 @@ for (const dirPath of dirPaths) {
 
   mkdirSync(dirname(target), { recursive: true })
 
-  if (existsSync(target) || lstatSync(target).isSymbolicLink()) {
-    console.log(`Removing existing: ${target}`)
-    rmSync(target, { recursive: true, force: true })
-  }
+  removeExisting(target)
 
   console.log(`Linking directory: ${dirPath}`)
   symlinkSync(src, target)
@@ -58,17 +76,23 @@ for (const file of getAllFiles(HOME_DIR)) {
 
   mkdirSync(dirname(target), { recursive: true })
 
-  try {
-    if (lstatSync(target).isSymbolicLink() || existsSync(target)) {
-      console.log(`Removing existing: ${target}`)
-      unlinkSync(target)
-    }
-  } catch {
-    // File doesn't exist, that's fine
-  }
+  removeExisting(target)
 
   console.log(`Linking: ${relPath}`)
   symlinkSync(file, target)
+}
+
+for (const { src, target } of EXTRA_SYMLINKS) {
+  const absSrc = join(HOME, src)
+  const absTarget = join(HOME, target)
+
+  if (!existsSync(absSrc)) continue
+
+  mkdirSync(dirname(absTarget), { recursive: true })
+  removeExisting(absTarget)
+
+  console.log(`Linking: ${target} -> ${src}`)
+  symlinkSync(absSrc, absTarget)
 }
 
 console.log("Done!")
