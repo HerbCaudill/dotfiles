@@ -37,6 +37,7 @@ alias insiders="open -a 'Visual Studio Code - Insiders'"
 alias nodets="node --loader ts-node/esm --experimental-specifier-resolution=node"
 
 alias updatepnpm="curl -fsSL https://get.pnpm.io/install.sh | sh -"
+alias updateclaude="claude install latest --force"
 
 alias new="npx degit herbcaudill/starter"
 
