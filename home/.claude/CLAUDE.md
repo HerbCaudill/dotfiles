@@ -31,14 +31,14 @@ I generally use:
   // =============================================================================
   // CodexAdapter
   // =============================================================================
-  
+
   // ❌ don't do this
   // ┌────────────────────────────────┐
   // │          CodexAdapter          │
   // └────────────────────────────────┘
-  
+
   // ✅ easy does it
-  
+
   // ---- CodexAdapter ----
   ```
 
@@ -66,9 +66,9 @@ After completing a request:
 
 ## Dotfiles
 
-This file lives in `~/Code/HerbCaudill/dotfiles`, a repo that manages global configuration files
-using symlinks. The `home/.claude/` directory contains Claude Code settings that are symlinked to
-`~/.claude/`:
+The `~/Code/HerbCaudill/dotfiles` repo manages global configuration files using symlinks.
+
+The `home/.claude/` directory contains Claude Code settings that are symlinked to `~/.claude/`:
 
 - `CLAUDE.md` - Global instructions (this file)
 - `settings.json` - Claude Code settings
@@ -77,3 +77,15 @@ using symlinks. The `home/.claude/` directory contains Claude Code settings that
 
 **Important:** When modifying any of these files, make changes in the dotfiles repo (not in `~/.claude/`
 directly), then commit and push.
+
+Other files managed by this repo:
+
+- `home/.zshrc` - Zsh configuration
+- `home/.gitconfig` - Git settings
+- `home/.gitignore` - Global gitignore
+- `home/.asdfrc` - asdf version manager config
+- `home/.prettierrc` - Prettier formatting defaults
+- `home/.oh-my-zsh/custom/themes/herb.zsh-theme` - Custom Zsh theme
+- `raycast/clone-github-repo.sh` - Raycast script for cloning repos
+- `install.js` - Symlink installer script
+- `symlink-dirs.conf` - Directories to symlink
