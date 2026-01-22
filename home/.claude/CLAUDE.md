@@ -95,24 +95,24 @@ After completing a request:
 
 ## Worktrees
 
-Worktrees for a repo should be placed in a sibling directory to the repo named `.{repo name}-worktrees`.
+The following shell commands are available:
+
+| Command                   | Description                                |
+| ------------------------- | ------------------------------------------ |
+| `wt <branch> [base]`      | Create worktree with new branch            |
+| `wtt <branch>`            | Create worktree tracking existing branch   |
+| `wtcd [branch]`           | Navigate to worktree (no args = main repo) |
+| `wtls`                    | List worktrees with status                 |
+| `wtrm <branch> [-f] [-b]` | Remove worktree (`-b` also deletes branch) |
+| `wtclean`                 | Remove worktrees for merged branches       |
+| `wtclone <url> [name]`    | Clone repo optimized for worktrees         |
+
+Worktrees for a repo will be placed in a sibling directory to the repo named `.{repo name}-worktrees`.
 
 ```bash
 ~/Code/herbcaudill/ralph # repository
 ~/Code/herbcaudill/.ralph-worktrees
 ```
-
-### Shell helpers
-
-| Command | Description |
-|---------|-------------|
-| `wt <branch> [base]` | Create worktree with new branch |
-| `wtt <branch>` | Create worktree tracking existing branch |
-| `wtcd [branch]` | Navigate to worktree (no args = main repo) |
-| `wtls` | List worktrees with status |
-| `wtrm <branch> [-f] [-b]` | Remove worktree (`-b` also deletes branch) |
-| `wtclean` | Remove worktrees for merged branches |
-| `wtclone <url> [name]` | Clone repo optimized for worktrees |
 
 ## Dotfiles
 
@@ -132,7 +132,7 @@ Custom agents are available in `~/.claude/agents/`. Each agent specifies its mod
 
 ```yaml
 ---
-model: haiku  # or sonnet, opus
+model: haiku # or sonnet, opus
 ---
 ```
 
