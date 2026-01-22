@@ -19,24 +19,18 @@ Systematically reviews every TypeScript file in a repository for code style comp
 ### 1. Setup worktree
 
 ```bash
-# Get repo info
-REPO_NAME=$(basename $(git rev-parse --show-toplevel))
-REPO_ROOT=$(git rev-parse --show-toplevel)
-WORKTREE_DIR=$(dirname $REPO_ROOT)/.$REPO_NAME-worktrees/style-review
-
-# Create worktree directory if needed
-mkdir -p $(dirname $WORKTREE_DIR)
-
 # Create a new branch and worktree for the review
-git worktree add -b style-review $WORKTREE_DIR
+wt style-review
+
+# Navigate to the worktree
+wtcd style-review
 ```
 
-If `style-review` branch already exists, remove it first or use a timestamped name like `style-review-20250122`.
+If `style-review` branch already exists, remove it first with `wtrm style-review -b` or use a timestamped name like `style-review-20250122`.
 
 ### 2. Find TypeScript files
 
 ```bash
-cd $WORKTREE_DIR
 find . -name "*.ts" -o -name "*.tsx" | grep -v node_modules | grep -v dist | grep -v .next | grep -v coverage
 ```
 
@@ -65,7 +59,7 @@ After all files are reviewed:
 4. Then merge style-review into main:
 
 ```bash
-cd $REPO_ROOT
+wtcd              # Return to main repo
 git checkout main
 git merge style-review --no-edit
 ```
@@ -73,11 +67,8 @@ git merge style-review --no-edit
 ### 5. Cleanup
 
 ```bash
-# Remove the worktree
-git worktree remove $WORKTREE_DIR
-
-# Optionally delete the branch
-git branch -d style-review
+# Remove the worktree and delete the branch
+wtrm style-review -b
 ```
 
 ## Output format
@@ -85,7 +76,7 @@ git branch -d style-review
 **Progress updates:**
 
 ```
-Creating worktree at ~/.ralph-worktrees/style-review...
+Creating worktree for style-review...
 Found 47 TypeScript files to review.
 
 Reviewing files (batch 1/8):
