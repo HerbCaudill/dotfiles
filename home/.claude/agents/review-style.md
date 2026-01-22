@@ -31,6 +31,7 @@ A file path to review:
 
 ### Comments
 
+- **No file-level comments** above the imports
 - **Block comments required** - every function, class, property, method needs `/** ... */`
 - **Parameter docs inline** - use inline `/** comment */` before parameters, not `@param`
 - **No ASCII borders** - remove `===` lines, box borders from comments
@@ -41,7 +42,10 @@ A file path to review:
 2. Classify: component, utility function, test, types, constants
 3. Check each applicable rule
 4. Fix violations using the Edit tool
-5. Report changes made
+5. Run tests for the modified file (look for `*.test.ts` alongside it)
+6. Format with `pnpm format` (or project's formatter)
+7. Commit the changes with message: `style: fix code style in {filename}`
+8. Report changes made
 
 ## Output format
 
