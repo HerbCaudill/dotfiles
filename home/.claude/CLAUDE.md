@@ -17,30 +17,59 @@ I generally use:
 
 ## Code style
 
-- One component, one file. One function, one file.
+### React components
+
+- Each component should be in its own file.
+- There should not be multiple components in a single file.
+- Helper functions should not be in the same file as components.
+- React components should always have a `Props` type, listed at the end of the file.
+- The first thing I see in a component file, after the imports, should be the component itself.
+- All interfaces and type definitions should be at the end of the file.
+
+### General
+
+- Each function should be in its own file.
+- Don't put multiple helper functions in a single file; put each function in its own file.
 - Shared types should be in a `types.ts` file
 - Shared constants should be in a `constants.ts` file.
-- React components should always have a `Props` type. The type definition should be at the end of the file.
-- When combining lists of class names, use `cx` rather than string interpolation.
+- When combining lists of Tailwind class names, use `cx` rather than string interpolation.
 - Use named exports. Don't use default exports unless we're in a framework (like Next.js) that requires them
 - Name test files `foo.test.ts`
-- Don't put big headings in comments with ASCII borders:
 
-  ```ts
-  // ❌ don't do this
-  // =============================================================================
-  // CodexAdapter
-  // =============================================================================
+### Comments
 
-  // ❌ don't do this
-  // ┌────────────────────────────────┐
-  // │          CodexAdapter          │
-  // └────────────────────────────────┘
+Every function, class, property, parameter, method, etc. should be preceded by a block comment starting with `/**`. Function parameters should be documented independently, not using jsdoc syntax.
 
-  // ✅ easy does it
+```ts
+/**
+ * Check if there's a recent saved iteration state that can be restored.
+ * This is called on reconnection to determine whether to auto-resume.
+ */
+export async function checkForSavedIterationState(
+  /** The iteration instance */
+  instanceId?: string,
+): Promise<IterationState | null> {
+  const targetInstanceId = instanceId ?? useAppStore.getState().activeInstanceId
+  return getIterationState(targetInstanceId)
+}
+```
 
-  // ---- CodexAdapter ----
-  ```
+Don't put big headings in comments with ASCII borders:
+
+```ts
+// ❌ don't do this
+// =============================================================================
+// CodexAdapter
+// =============================================================================
+
+// ❌ don't do this
+// ┌────────────────────────────────┐
+// │          CodexAdapter          │
+// └────────────────────────────────┘
+
+// ✅ easy does it
+// ---- CodexAdapter ----
+```
 
 ## Testing
 
