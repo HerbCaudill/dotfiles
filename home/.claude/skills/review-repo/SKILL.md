@@ -44,26 +44,20 @@ Launch 4-6 review-style agents simultaneously:
 1. Read the review-style agent prompt from `~/.claude/agents/review-style.md`
 2. Use the Task tool with:
    - `subagent_type: "general-purpose"`
-   - `model: "haiku"`
+   - `model: "sonnet"`
    - The agent prompt plus: `"Review: \`{filepath}\`"`
 3. Each agent fixes violations and commits changes
 
 **b. Merge batch into main**
 
-After the batch completes:
+After the batch completes, use the safe-merge agent to merge the style-review branch into main:
 
-```bash
-# Return to main repo
-wtcd
-
-# Merge the style-review commits into main
-git checkout main
-git merge style-review --no-edit
-
-# Go back to worktree and reset to main (to stay in sync)
-wtcd style-review
-git reset --hard main
-```
+1. Navigate to main repo: `wtcd`
+2. Checkout main: `git checkout main`
+3. Use the Task tool with:
+   - `subagent_type: "general-purpose"`
+   - `model: "haiku"`
+   - Prompt: the safe-merge agent instructions from `~/.claude/agents/safe-merge.md`, plus: `"Merge the style-review branch into main (not the other way around). After merging, go back to the worktree with 'wtcd style-review' and reset to main with 'git reset --hard main'."`
 
 **c. Continue with next batch**
 
