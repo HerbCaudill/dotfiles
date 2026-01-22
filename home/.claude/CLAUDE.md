@@ -1,3 +1,6 @@
+> **Note:** Global Claude settings (skills, settings, status line, CLAUDE.md) are managed in
+> `~/code/herbcaudill/dotfiles/home/.claude`. Commit and push changes in the dotfiles repo.
+
 In planning documents and other interactions, be as concise as possible.
 
 ## Technology choices
