@@ -175,6 +175,7 @@ Other files managed by this repo:
 - `home/.asdfrc` - asdf version manager config
 - `home/.prettierrc` - Prettier formatting defaults
 - `home/.oh-my-zsh/custom/themes/herb.zsh-theme` - Custom Zsh theme
+- `home/.local/bin/` - Worktree helper scripts (symlinked to `~/.local/bin`)
 - Raycast scripts in the `raycast/` directory
 
 **Important:** When modifying any of these files, make changes in the dotfiles repo, then commit and push.
