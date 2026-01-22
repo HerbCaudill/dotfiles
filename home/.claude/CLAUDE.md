@@ -103,6 +103,29 @@ The `home/.claude/` directory contains Claude Code settings that are symlinked t
 - `settings.json` - Claude Code settings
 - `statusline.js` - Custom status line configuration
 - Skills in the `skills/` directory
+- Agents in the `agents/` directory
+
+## Agents
+
+Custom agents are available in `~/.claude/agents/`. To use an agent:
+
+1. Read the agent prompt from the file
+2. Use the Task tool with `subagent_type: "general-purpose"` and `model: "haiku"`
+3. Pass the agent prompt content plus your specific instructions
+
+### review-style
+
+Reviews TypeScript/React files against the code style rules in this document. Fixes violations directly using the Edit tool.
+
+**Usage:** "Use the review-style agent on `src/components/UserCard.tsx`"
+
+**What it checks:**
+- One component/function per file
+- Component first, types at end
+- Named exports only
+- Block comments on functions/classes
+- No ASCII borders in comments
+- `cx()` for Tailwind class combinations
 
 Other files managed by this repo:
 
