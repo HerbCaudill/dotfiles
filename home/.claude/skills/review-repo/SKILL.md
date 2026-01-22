@@ -8,7 +8,7 @@ user_invocation: review-repo
 
 ## Overview
 
-Systematically reviews every TypeScript file in a repository for code style compliance. Uses a worktree to isolate changes, runs the review-style agent on each file, then merges the cleaned-up code into main.
+Systematically reviews every TypeScript file in a repository for code style compliance. Uses a worktree to isolate changes, runs the review-style agent on each file, and merges changes into main after each batch to minimize drift.
 
 ## Usage
 
@@ -19,14 +19,11 @@ Systematically reviews every TypeScript file in a repository for code style comp
 ### 1. Setup worktree
 
 ```bash
-# Create a new branch and worktree for the review
 wt style-review
-
-# Navigate to the worktree
 wtcd style-review
 ```
 
-If `style-review` branch already exists, remove it first with `wtrm style-review -b` or use a timestamped name like `style-review-20250122`.
+If `style-review` branch already exists, remove it first with `wtrm style-review -b`.
 
 ### 2. Find TypeScript files
 
@@ -34,40 +31,47 @@ If `style-review` branch already exists, remove it first with `wtrm style-review
 find . -name "*.ts" -o -name "*.tsx" | grep -v node_modules | grep -v dist | grep -v .next | grep -v coverage
 ```
 
-### 3. Review each file
+### 3. Review files in batches
 
-For each TypeScript file found:
+Process files in batches of 4-6, merging after each batch:
+
+#### For each batch:
+
+**a. Review files in parallel**
+
+Launch 4-6 review-style agents simultaneously:
 
 1. Read the review-style agent prompt from `~/.claude/agents/review-style.md`
 2. Use the Task tool with:
    - `subagent_type: "general-purpose"`
    - `model: "haiku"`
    - The agent prompt plus: `"Review: \`{filepath}\`"`
-3. The agent will fix violations and commit changes
+3. Each agent fixes violations and commits changes
 
-**Parallelization:** Launch multiple review agents in parallel (4-6 at a time) to speed up the process. Each agent works on a different file.
+**b. Merge batch into main**
 
-### 4. Merge into main
-
-After all files are reviewed:
-
-1. Ensure all changes are committed in the worktree
-2. Read the safe-merge agent prompt from `~/.claude/agents/safe-merge.md`
-3. Use the Task tool to run safe-merge, which:
-   - Merges main into style-review (resolves conflicts in the feature branch)
-   - Verifies tests pass
-4. Then merge style-review into main:
+After the batch completes:
 
 ```bash
-wtcd              # Return to main repo
+# Return to main repo
+wtcd
+
+# Merge the style-review commits into main
 git checkout main
 git merge style-review --no-edit
+
+# Go back to worktree and reset to main (to stay in sync)
+wtcd style-review
+git reset --hard main
 ```
 
-### 5. Cleanup
+**c. Continue with next batch**
+
+Repeat until all files are reviewed.
+
+### 4. Cleanup
 
 ```bash
-# Remove the worktree and delete the branch
 wtrm style-review -b
 ```
 
@@ -79,15 +83,17 @@ wtrm style-review -b
 Creating worktree for style-review...
 Found 47 TypeScript files to review.
 
-Reviewing files (batch 1/8):
-  - src/components/App.tsx
-  - src/components/Header.tsx
-  - src/components/Footer.tsx
-  - src/lib/utils.ts
+Batch 1/8 (6 files):
+  ✓ src/components/App.tsx - 2 fixes
+  ✓ src/components/Header.tsx - no violations
+  ✓ src/components/Footer.tsx - 1 fix
+  ✓ src/lib/utils.ts - 3 fixes
+  ✓ src/lib/api.ts - no violations
+  ✓ src/hooks/useAuth.ts - 1 fix
+Merged batch 1 into main.
 
-[Agent results for each file...]
-
-Batch 1 complete. 3 files fixed, 1 clean.
+Batch 2/8 (6 files):
+  ...
 ```
 
 **Final summary:**
@@ -105,14 +111,14 @@ Changes:
   - 8 default exports converted to named exports
   - 3 files flagged for manual review (multiple components)
 
-Merged into main via style-review branch.
+All changes merged into main.
 Worktree cleaned up.
 ```
 
 ## Guidelines
 
+- **Merge after each batch** - keeps main up to date and minimizes drift
 - **Work in the worktree** - never modify files in the original repo directly
 - **Batch agents** - launch 4-6 agents in parallel for efficiency
-- **Commit incrementally** - the review-style agent commits after each file
-- **Verify before merge** - always run tests before merging into main
+- **Reset after merge** - sync worktree to main before next batch
 - **Report manual items** - some issues can't be auto-fixed; list them clearly
