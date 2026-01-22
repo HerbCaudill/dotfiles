@@ -39,6 +39,7 @@ A file path to review:
 - **Block comments required** - every function, class, property, method needs `/** ... */`
 - **Parameter docs inline** - use inline `/** comment */` before parameters, not `@param`
 - **No ASCII borders** - remove `===` lines, box borders from comments
+- **In test files** `describe`/`test`/`it` calls don't need to be documented by a comment, the name of the test should be sufficient
 
 ## Process
 
