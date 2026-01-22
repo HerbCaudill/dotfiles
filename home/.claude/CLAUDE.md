@@ -1,6 +1,3 @@
-> **Note:** Global Claude settings (skills, settings, status line, CLAUDE.md) are managed in
-> `~/code/herbcaudill/dotfiles/home/.claude`. Commit and push changes in the dotfiles repo.
-
 In planning documents and other interactions, be as concise as possible.
 
 ## Technology choices
@@ -34,14 +31,14 @@ I generally use:
   // =============================================================================
   // CodexAdapter
   // =============================================================================
-
+  
   // ❌ don't do this
   // ┌────────────────────────────────┐
   // │          CodexAdapter          │
   // └────────────────────────────────┘
-
+  
   // ✅ easy does it
-
+  
   // ---- CodexAdapter ----
   ```
 
@@ -66,3 +63,17 @@ After completing a request:
 - Run `pnpm format` to format code with Prettier before committing.
 - Commit the changes immediately without being asked. If a request requires a series of significant changes, make intermediate commits as well. Commit messages should succinctly summarize changes. Where applicable, prefix with the name of the primary class/function/component being edited, followed by a colon. Example: `EditTemplatePage: refactor data source handling`
 - Update the project's documentation and CLAUDE.md file with new information or changes.
+
+## Dotfiles
+
+This file lives in `~/Code/HerbCaudill/dotfiles`, a repo that manages global configuration files
+using symlinks. The `home/.claude/` directory contains Claude Code settings that are symlinked to
+`~/.claude/`:
+
+- `CLAUDE.md` - Global instructions (this file)
+- `settings.json` - Claude Code settings
+- `statusline.js` - Custom status line configuration
+- Skills in the `skills/` directory
+
+**Important:** When modifying any of these files, make changes in the dotfiles repo (not in `~/.claude/`
+directly), then commit and push.
