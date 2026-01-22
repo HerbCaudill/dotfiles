@@ -1,5 +1,5 @@
 ---
-model: haiku
+model: sonnet
 ---
 
 # Code Style Reviewer Agent

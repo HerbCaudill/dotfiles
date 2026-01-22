@@ -184,96 +184,13 @@ export PROTO_HOME="$HOME/.proto";
 export PATH="$PROTO_HOME/shims:$PROTO_HOME/bin:$PATH";
 
 # ---- Git Worktree Helpers ----
+# Scripts in ~/.local/bin handle the work; these wrappers handle cd
 # Worktrees stored in sibling directory: my-project → .my-project-worktrees/
 
-_wt_dir() {
-  local root=$(git rev-parse --show-toplevel 2>/dev/null) || return 1
-  [[ -f "$root/.git" ]] && root=$(git -C "$root" rev-parse --git-common-dir | xargs dirname)
-  echo "$(dirname "$root")/.$(basename "$root")-worktrees"
-}
-
-# wt <branch> [base] - Create worktree with new branch
-wt() {
-  [[ -z "$1" ]] && { echo "Usage: wt <branch> [base]"; return 1; }
-  local branch="$1" base="${2:-HEAD}"
-  local wt_dir=$(_wt_dir) || return 1
-  mkdir -p "$wt_dir"
-  git worktree add -b "$branch" "$wt_dir/$branch" "$base" && cd "$wt_dir/$branch"
-}
-
-# wtt <branch> - Create worktree tracking existing branch
-wtt() {
-  [[ -z "$1" ]] && { echo "Usage: wtt <branch>"; return 1; }
-  local wt_dir=$(_wt_dir) || return 1
-  mkdir -p "$wt_dir"
-  git worktree add "$wt_dir/$1" "$1" && cd "$wt_dir/$1"
-}
-
-# wtcd [branch] - Navigate to worktree (no args = main repo)
-wtcd() {
-  if [[ -z "$1" ]]; then
-    local root=$(git rev-parse --show-toplevel 2>/dev/null) || return 1
-    [[ -f "$root/.git" ]] && root=$(git -C "$root" rev-parse --git-common-dir | xargs dirname)
-    cd "$root"
-  else
-    local wt_dir=$(_wt_dir) || return 1
-    [[ -d "$wt_dir/$1" ]] && cd "$wt_dir/$1" || { echo "Not found: $1"; return 1; }
-  fi
-}
-
-# wtls - List worktrees with status
-wtls() {
-  local wt_dir=$(_wt_dir) || return 1
-  git worktree list --porcelain | awk '/^worktree/{print $2}' | while read wt; do
-    local name=$(basename "$wt")
-    local branch=$(git -C "$wt" branch --show-current 2>/dev/null)
-    local dirty=$(git -C "$wt" status --porcelain 2>/dev/null | wc -l | tr -d ' ')
-    local marker=""
-    [[ "$dirty" -gt 0 ]] && marker=" ●"
-    printf "%-20s %s%s\n" "$name" "$branch" "$marker"
-  done
-}
-
-# wtrm <branch> [-f] [-b] - Remove worktree (-b also deletes branch)
-wtrm() {
-  [[ -z "$1" ]] && { echo "Usage: wtrm <branch> [-f] [-b]"; return 1; }
-  local branch="$1" force="" delbranch=false
-  shift
-  while [[ $# -gt 0 ]]; do
-    case "$1" in
-      -f) force="--force" ;;
-      -b) delbranch=true ;;
-    esac
-    shift
-  done
-  local wt_dir=$(_wt_dir) || return 1
-  git worktree remove $force "$wt_dir/$branch" && $delbranch && git branch -D "$branch"
-}
-
-# wtclean - Remove worktrees for merged branches
-wtclean() {
-  local wt_dir=$(_wt_dir) || return 1
-  local main=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
-  [[ -z "$main" ]] && main="main"
-  git branch --merged "$main" | grep -v "$main" | tr -d ' ' | while read branch; do
-    [[ -d "$wt_dir/$branch" ]] || continue
-    echo -n "Remove $branch (merged)? [y/N] "
-    read -r yn
-    [[ "$yn" =~ ^[Yy]$ ]] && git worktree remove "$wt_dir/$branch" && git branch -d "$branch"
-  done
-}
-
-# wtclone <url> [name] - Clone repo optimized for worktrees
-wtclone() {
-  [[ -z "$1" ]] && { echo "Usage: wtclone <url> [name]"; return 1; }
-  local url="$1" name="${2:-$(basename "$1" .git)}"
-  git clone --bare "$url" "$name/.bare"
-  echo "gitdir: .bare" > "$name/.git"
-  git -C "$name" config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
-  git -C "$name" fetch origin
-  cd "$name"
-  echo "Cloned. Use 'wt <branch>' to create worktrees."
-}
+wt() { local dir; dir=$(command wt "$@") && cd "$dir"; }
+wtt() { local dir; dir=$(command wtt "$@") && cd "$dir"; }
+wtcd() { local dir; dir=$(command wtcd "$@") && cd "$dir"; }
+wtclone() { local dir; dir=$(command wtclone "$@") && cd "$dir"; }
 
 # Tab completion for wtcd/wtrm
 _wt_branches() {
