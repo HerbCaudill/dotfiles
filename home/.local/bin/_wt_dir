@@ -1,0 +1,12 @@
+#!/bin/bash
+# Helper: outputs the worktree directory path for the current repo
+# Worktrees stored in sibling directory: my-project → .my-project-worktrees/
+
+root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 1
+
+# If inside a worktree, find the main repo
+if [[ -f "$root/.git" ]]; then
+  root=$(dirname "$(git -C "$root" rev-parse --git-common-dir)")
+fi
+
+echo "$(dirname "$root")/.$(basename "$root")-worktrees"

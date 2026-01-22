@@ -1,0 +1,13 @@
+#!/bin/bash
+# wtls - List worktrees with status
+
+wt_dir=$(_wt_dir) || exit 1
+
+git worktree list --porcelain | awk '/^worktree/{print $2}' | while read wt; do
+  name=$(basename "$wt")
+  branch=$(git -C "$wt" branch --show-current 2>/dev/null)
+  dirty=$(git -C "$wt" status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+  marker=""
+  [[ "$dirty" -gt 0 ]] && marker=" ●"
+  printf "%-20s %s%s\n" "$name" "$branch" "$marker"
+done

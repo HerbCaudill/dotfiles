@@ -1,2 +1,6 @@
 .vscode/
 .DS_Store
+
+# Large binaries and external symlinks in ~/.local/bin
+home/.local/bin/bd
+home/.local/bin/claude

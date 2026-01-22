@@ -1,0 +1,17 @@
+#!/bin/bash
+# wt <branch> [base] - Create worktree with new branch
+# Prints the worktree path on success (for cd integration)
+
+if [[ -z "$1" ]]; then
+  echo "Usage: wt <branch> [base]" >&2
+  exit 1
+fi
+
+branch="$1"
+base="${2:-HEAD}"
+
+wt_dir=$(_wt_dir) || exit 1
+mkdir -p "$wt_dir"
+
+git worktree add -b "$branch" "$wt_dir/$branch" "$base" || exit 1
+echo "$wt_dir/$branch"

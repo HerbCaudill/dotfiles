@@ -1,0 +1,19 @@
+#!/bin/bash
+# wtclone <url> [name] - Clone repo optimized for worktrees
+# Prints the cloned directory path on success (for cd integration)
+
+if [[ -z "$1" ]]; then
+  echo "Usage: wtclone <url> [name]" >&2
+  exit 1
+fi
+
+url="$1"
+name="${2:-$(basename "$1" .git)}"
+
+git clone --bare "$url" "$name/.bare" || exit 1
+echo "gitdir: .bare" > "$name/.git"
+git -C "$name" config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
+git -C "$name" fetch origin
+
+echo "Cloned. Use 'wt <branch>' to create worktrees." >&2
+echo "$name"

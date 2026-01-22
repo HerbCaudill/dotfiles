@@ -1,0 +1,19 @@
+#!/bin/bash
+# wtcd [branch] - Output worktree path (no args = main repo)
+# Use with: cd $(wtcd branch)
+
+if [[ -z "$1" ]]; then
+  root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 1
+  if [[ -f "$root/.git" ]]; then
+    root=$(dirname "$(git -C "$root" rev-parse --git-common-dir)")
+  fi
+  echo "$root"
+else
+  wt_dir=$(_wt_dir) || exit 1
+  if [[ -d "$wt_dir/$1" ]]; then
+    echo "$wt_dir/$1"
+  else
+    echo "Not found: $1" >&2
+    exit 1
+  fi
+fi

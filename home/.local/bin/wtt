@@ -1,0 +1,14 @@
+#!/bin/bash
+# wtt <branch> - Create worktree tracking existing branch
+# Prints the worktree path on success (for cd integration)
+
+if [[ -z "$1" ]]; then
+  echo "Usage: wtt <branch>" >&2
+  exit 1
+fi
+
+wt_dir=$(_wt_dir) || exit 1
+mkdir -p "$wt_dir"
+
+git worktree add "$wt_dir/$1" "$1" || exit 1
+echo "$wt_dir/$1"

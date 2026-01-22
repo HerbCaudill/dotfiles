@@ -1,0 +1,27 @@
+#!/bin/bash
+# wtrm <branch> [-f] [-b] - Remove worktree (-b also deletes branch)
+
+if [[ -z "$1" ]]; then
+  echo "Usage: wtrm <branch> [-f] [-b]" >&2
+  exit 1
+fi
+
+branch="$1"
+force=""
+delbranch=false
+shift
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -f) force="--force" ;;
+    -b) delbranch=true ;;
+  esac
+  shift
+done
+
+wt_dir=$(_wt_dir) || exit 1
+
+git worktree remove $force "$wt_dir/$branch" || exit 1
+if $delbranch; then
+  git branch -D "$branch"
+fi

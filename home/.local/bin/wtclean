@@ -1,0 +1,14 @@
+#!/bin/bash
+# wtclean - Remove worktrees for merged branches
+
+wt_dir=$(_wt_dir) || exit 1
+
+main=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
+[[ -z "$main" ]] && main="main"
+
+git branch --merged "$main" | grep -v "$main" | tr -d ' ' | while read branch; do
+  [[ -d "$wt_dir/$branch" ]] || continue
+  echo -n "Remove $branch (merged)? [y/N] "
+  read -r yn
+  [[ "$yn" =~ ^[Yy]$ ]] && git worktree remove "$wt_dir/$branch" && git branch -d "$branch"
+done
