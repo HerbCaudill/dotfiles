@@ -93,6 +93,15 @@ After completing a request:
 - Commit the changes immediately without being asked. If a request requires a series of significant changes, make intermediate commits as well. Commit messages should succinctly summarize changes. Where applicable, prefix with the name of the primary class/function/component being edited, followed by a colon. Example: `EditTemplatePage: refactor data source handling`
 - Update the project's documentation and CLAUDE.md file with new information or changes.
 
+## Worktrees
+
+Worktrees for a repo should be placed in a sibling directory to the repo named `.{repo name}-worktrees`.
+
+```bash
+~/Code/herbcaudill/ralph # repository
+~/Code/herbcaudill/.ralph-worktrees
+```
+
 ## Dotfiles
 
 The `~/Code/HerbCaudill/dotfiles` repo manages global configuration files using symlinks.
@@ -120,6 +129,7 @@ Reviews TypeScript/React files against the code style rules in this document. Fi
 **Usage:** "Use the review-style agent on `src/components/UserCard.tsx`"
 
 **What it checks:**
+
 - One component/function per file
 - Component first, types at end
 - Named exports only
