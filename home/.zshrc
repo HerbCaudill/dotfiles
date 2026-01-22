@@ -189,7 +189,7 @@ export PATH="$PROTO_HOME/shims:$PROTO_HOME/bin:$PATH";
 _wt_dir() {
   local root=$(git rev-parse --show-toplevel 2>/dev/null) || return 1
   [[ -f "$root/.git" ]] && root=$(git -C "$root" rev-parse --git-common-dir | xargs dirname)
-  echo ".${root}-worktrees"
+  echo "$(dirname "$root")/.$(basename "$root")-worktrees"
 }
 
 # wt <branch> [base] - Create worktree with new branch
