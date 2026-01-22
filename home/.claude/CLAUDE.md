@@ -102,6 +102,18 @@ Worktrees for a repo should be placed in a sibling directory to the repo named `
 ~/Code/herbcaudill/.ralph-worktrees
 ```
 
+### Shell helpers
+
+| Command | Description |
+|---------|-------------|
+| `wt <branch> [base]` | Create worktree with new branch |
+| `wtt <branch>` | Create worktree tracking existing branch |
+| `wtcd [branch]` | Navigate to worktree (no args = main repo) |
+| `wtls` | List worktrees with status |
+| `wtrm <branch> [-f] [-b]` | Remove worktree (`-b` also deletes branch) |
+| `wtclean` | Remove worktrees for merged branches |
+| `wtclone <url> [name]` | Clone repo optimized for worktrees |
+
 ## Dotfiles
 
 The `~/Code/HerbCaudill/dotfiles` repo manages global configuration files using symlinks.
