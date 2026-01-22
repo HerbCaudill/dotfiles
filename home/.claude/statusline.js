@@ -135,7 +135,7 @@ function main() {
   }
 
   // Output: left (colored) ... right (gray, right-aligned)
-  const left = leftParts.join('')
+  const left = leftParts.join(' ')
   const right = `${DIM}${rightParts.join(' · ')}${RESET}`
 
   process.stdout.write(`${left} ${right}`)
