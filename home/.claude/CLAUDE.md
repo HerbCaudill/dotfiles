@@ -116,11 +116,15 @@ The `home/.claude/` directory contains Claude Code settings that are symlinked t
 
 ## Agents
 
-Custom agents are available in `~/.claude/agents/`. To use an agent:
+Custom agents are available in `~/.claude/agents/`. Each agent specifies its model via YAML frontmatter:
 
-1. Read the agent prompt from the file
-2. Use the Task tool with `subagent_type: "general-purpose"` and `model: "haiku"`
-3. Pass the agent prompt content plus your specific instructions
+```yaml
+---
+model: haiku  # or sonnet, opus
+---
+```
+
+To invoke an agent manually, use the Task tool with `subagent_type: "general-purpose"` and the model specified in its frontmatter.
 
 ### review-style
 
