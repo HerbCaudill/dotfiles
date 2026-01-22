@@ -75,9 +75,6 @@ The `home/.claude/` directory contains Claude Code settings that are symlinked t
 - `statusline.js` - Custom status line configuration
 - Skills in the `skills/` directory
 
-**Important:** When modifying any of these files, make changes in the dotfiles repo (not in `~/.claude/`
-directly), then commit and push.
-
 Other files managed by this repo:
 
 - `home/.zshrc` - Zsh configuration
@@ -86,6 +83,6 @@ Other files managed by this repo:
 - `home/.asdfrc` - asdf version manager config
 - `home/.prettierrc` - Prettier formatting defaults
 - `home/.oh-my-zsh/custom/themes/herb.zsh-theme` - Custom Zsh theme
-- `raycast/clone-github-repo.sh` - Raycast script for cloning repos
-- `install.js` - Symlink installer script
-- `symlink-dirs.conf` - Directories to symlink
+- Raycast scripts in the `raycast/` directory
+
+**Important:** When modifying any of these files, make changes in the dotfiles repo, then commit and push.

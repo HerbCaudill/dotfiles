@@ -6,6 +6,7 @@ const { readFileSync } = require('fs')
 // ANSI color codes
 const CYAN = '\x1b[36m'
 const GREEN = '\x1b[32m'
+const MAGENTA = '\x1b[35m'
 const RESET = '\x1b[0m'
 const DIM = '\x1b[2m'
 
@@ -46,6 +47,40 @@ function formatNumber(num) {
   return num.toString()
 }
 
+function getActiveSkill(transcriptPath) {
+  if (!transcriptPath) return null
+  try {
+    const lines = readFileSync(transcriptPath, 'utf-8').split('\n').filter(Boolean)
+    let lastSkill = null
+    for (const line of lines) {
+      try {
+        const entry = JSON.parse(line)
+        // Check for user-invoked skills via <command-name> tag
+        if (entry.type === 'user' && typeof entry.message?.content === 'string') {
+          const match = entry.message.content.match(/<command-name>\/([^<]+)<\/command-name>/)
+          if (match) {
+            lastSkill = match[1]
+          }
+        }
+        // Also check for Skill tool uses (when assistant invokes skills)
+        const content = entry.message?.content
+        if (Array.isArray(content)) {
+          for (const item of content) {
+            if (item.type === 'tool_use' && item.name === 'Skill' && item.input?.skill) {
+              lastSkill = item.input.skill
+            }
+          }
+        }
+      } catch {
+        // Skip invalid JSON lines
+      }
+    }
+    return lastSkill
+  } catch {
+    return null
+  }
+}
+
 function stripAnsi(str) {
   return str.replace(/\x1b\[[0-9;]*m/g, '')
 }
@@ -59,6 +94,7 @@ function main() {
   const input = readFileSync(0, 'utf-8')
   const data = JSON.parse(input)
 
+
   // LEFT SIDE: directory and branch
   const leftParts = []
 
@@ -71,6 +107,11 @@ function main() {
     const dirty = isGitDirty(cwd)
     const branchDisplay = dirty ? `${branch}*` : branch
     leftParts.push(`${GREEN}${branchDisplay}${RESET}`)
+  }
+
+  const skill = getActiveSkill(data.transcript_path)
+  if (skill) {
+    leftParts.push(`${MAGENTA}/${skill}${RESET}`)
   }
 
   // RIGHT SIDE: model, context, tokens (all gray)
@@ -94,15 +135,10 @@ function main() {
   }
 
   // Output: left (colored) ... right (gray, right-aligned)
-  const left = leftParts.join(' ')
+  const left = leftParts.join('')
   const right = `${DIM}${rightParts.join(' · ')}${RESET}`
 
-  const termWidth = process.stdout.columns || 80
-  const leftLen = visibleLength(left)
-  const rightLen = visibleLength(right)
-  const padding = Math.max(1, termWidth - leftLen - rightLen)
-
-  process.stdout.write(`${left}${' '.repeat(padding)}${right}`)
+  process.stdout.write(`${left} ${right}`)
 }
 
 main()
