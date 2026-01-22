@@ -101,9 +101,7 @@ alias cls="clear"
 alias l="ls -lah"
 alias c="code ."
 alias cl="cls && claude --dangerously-skip-permissions"
-clbd() {
-  cls && claude --dangerously-skip-permissions --append-system-prompt "$(cat ui/server/prompts/task-chat-system.md)" --disallowedTools 'Edit(*),Write(*),Bash(git commit:*)'
-}
+alias clbd="cls && claude '/issues' --dangerously-skip-permissions"
 alias x="open ."
 alias h="cd ~"
 alias nm="open ./node_modules"

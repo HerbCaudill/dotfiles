@@ -1,1 +1,0 @@
-/Users/herbcaudill/Code/HerbCaudill/ralph/ui/server/prompts/task-chat-system.md
