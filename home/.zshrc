@@ -32,7 +32,12 @@ alias zshconfig="code ~/.zshrc"
 alias ohmyzsh="code ~/.oh-my-zsh"
 alias theme="code ~/.oh-my-zsh/custom/themes/herb.zsh-theme"
 
-alias insiders="open -a 'Visual Studio Code - Insiders'"
+# cross-platform open command
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  alias insiders="open -a 'Visual Studio Code - Insiders'"
+else
+  alias open="xdg-open"
+fi
 
 alias nodets="node --loader ts-node/esm --experimental-specifier-resolution=node"
 
@@ -147,16 +152,20 @@ set enable-bracketed-paste Off
 export VISUAL=code
 export EDITOR="$VISUAL"
 
-echo "source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR:-$HOME}/.zshrcsource /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-
 # pnpm
-export PNPM_HOME="/Users/herbcaudill/Library/pnpm"
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  export PNPM_HOME="$HOME/Library/pnpm"
+else
+  export PNPM_HOME="$HOME/.local/share/pnpm"
+fi
 case ":$PATH:" in
   *":$PNPM_HOME:"*) ;;
   *) export PATH="$PNPM_HOME:$PATH" ;;
 esac
 # pnpm end
+
+# asdf
+[[ -f "$HOME/.asdf/asdf.sh" ]] && source "$HOME/.asdf/asdf.sh"
 #compdef gt
 ###-begin-gt-completions-###
 #
