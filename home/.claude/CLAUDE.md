@@ -153,12 +153,6 @@ Reviews TypeScript/React files against the code style rules in this document. Fi
 - No ASCII borders in comments
 - `cx()` for Tailwind class combinations
 
-### safe-merge
-
-Safely merges main into the current branch. Handles conflicts intelligently and verifies tests pass before completing.
-
-**Usage:** "Use the safe-merge agent to update from main"
-
 ## Skills
 
 ### /review-repo
@@ -166,6 +160,12 @@ Safely merges main into the current branch. Handles conflicts intelligently and 
 Runs repo-wide code style review. Creates a worktree, reviews every TypeScript file with the review-style agent in parallel, then merges into main.
 
 **Usage:** `/review-repo` from any git repository
+
+### /safe-merge
+
+Safely merges main into the current branch. Handles conflicts intelligently and verifies tests pass before completing.
+
+**Usage:** `/safe-merge` from any git repository
 
 Other files managed by this repo:
 

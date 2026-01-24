@@ -54,14 +54,14 @@ Repeat until all files are reviewed.
 
 ### 4. Merge
 
-After the review completes, use the safe-merge agent to merge the style-review branch into main:
+After the review completes, merge the style-review branch into main:
 
 1. Navigate to main repo: `wtcd`
 2. Checkout main: `git checkout main`
-3. Use the Task tool with:
-   - `subagent_type: "general-purpose"`
-   - `model: "haiku"`
-   - Prompt: the safe-merge agent instructions from `~/.claude/agents/safe-merge.md`, plus: `"Merge the style-review branch into main (not the other way around). After merging, go back to the worktree with 'wtcd style-review' and reset to main with 'git reset --hard main'."`
+3. Merge style-review into main: `git merge style-review --no-edit`
+4. Run verification: `pnpm typecheck && pnpm test`
+5. Go back to the worktree: `wtcd style-review`
+6. Reset to main: `git reset --hard main`
 
 ### 5. Cleanup
 

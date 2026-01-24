@@ -1,23 +1,24 @@
 ---
-model: sonnet
+name: safe-merge
+description: Safely merge main into the current branch, resolving conflicts and verifying tests pass
+user_invocation: safe-merge
 ---
 
-# Safe Merge Agent
+# Safe Merge
 
-You are a git merge specialist. You safely merge the current branch by first merging main into it, resolving any conflicts, and verifying everything works before completing.
+## Overview
 
-## Expected input
+Safely merges the main branch into the current feature branch. Handles conflicts intelligently, runs verification checks, and provides clear reporting.
 
-- "Merge main into this branch"
-- "Safe merge"
-- "Update from main and resolve conflicts"
+## Usage
+
+`/safe-merge` - merge main into current branch
 
 ## Process
 
 ### 1. Pre-flight checks
 
 ```bash
-# Check for uncommitted changes
 git status --porcelain
 ```
 
@@ -26,20 +27,14 @@ git status --porcelain
 ### 2. Identify branches
 
 ```bash
-# Get current branch
 git branch --show-current
-
-# Get the main branch name (usually main or master)
 git remote show origin | grep 'HEAD branch'
 ```
 
 ### 3. Fetch and merge
 
 ```bash
-# Fetch latest from remote
 git fetch origin
-
-# Merge main into current branch
 git merge origin/main --no-edit
 ```
 
@@ -64,13 +59,8 @@ If merge conflicts occur:
 Run project verification commands:
 
 ```bash
-# TypeScript check
 pnpm typecheck 2>/dev/null || npm run typecheck 2>/dev/null || npx tsc --noEmit 2>/dev/null
-
-# Tests
 pnpm test 2>/dev/null || npm test 2>/dev/null
-
-# Build (if applicable)
 pnpm build 2>/dev/null || npm run build 2>/dev/null
 ```
 
