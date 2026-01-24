@@ -160,13 +160,8 @@ function main() {
     leftParts.push(`${MAGENTA}/${skill}${RESET}`)
   }
 
-  // RIGHT SIDE: weekly usage, model, context, tokens
+  // RIGHT SIDE: model, context, tokens, weekly usage
   const rightParts = []
-
-  const weeklyUsage = getWeeklyUsage()
-  if (weeklyUsage !== null) {
-    rightParts.push(renderProgressBar(Math.round(weeklyUsage)))
-  }
 
   rightParts.push(`${DIM}${data.model.display_name}${RESET}`)
 
@@ -183,6 +178,11 @@ function main() {
   const totalOut = data.context_window.total_output_tokens
   if (totalIn > 0 || totalOut > 0) {
     rightParts.push(`${DIM}${formatNumber(totalIn)}↓ ${formatNumber(totalOut)}↑${RESET}`)
+  }
+
+  const weeklyUsage = getWeeklyUsage()
+  if (weeklyUsage !== null) {
+    rightParts.push(renderProgressBar(Math.round(weeklyUsage)))
   }
 
   // Output: left (colored) ... right (mixed colors)
