@@ -6,6 +6,8 @@ const { readFileSync } = require('fs')
 // ANSI color codes
 const CYAN = '\x1b[36m'
 const GREEN = '\x1b[32m'
+const YELLOW = '\x1b[33m'
+const RED = '\x1b[31m'
 const MAGENTA = '\x1b[35m'
 const RESET = '\x1b[0m'
 const DIM = '\x1b[2m'
@@ -89,6 +91,50 @@ function visibleLength(str) {
   return stripAnsi(str).length
 }
 
+/**
+ * Get weekly usage percentage from Anthropic's OAuth API.
+ * Returns null if unable to fetch.
+ */
+function getWeeklyUsage() {
+  try {
+    const tokenJson = execSync(
+      'security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null',
+      { encoding: 'utf-8' }
+    ).trim()
+
+    const creds = JSON.parse(tokenJson)
+    const accessToken = creds.claudeAiOauth?.accessToken
+    if (!accessToken) return null
+
+    const response = execSync(
+      `curl -s -H "Authorization: Bearer ${accessToken}" -H "anthropic-beta: oauth-2025-04-20" https://api.anthropic.com/api/oauth/usage`,
+      { encoding: 'utf-8', timeout: 2000 }
+    )
+
+    const usage = JSON.parse(response)
+    return usage.seven_day?.utilization ?? null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Render a progress bar for weekly usage.
+ * Uses color coding: green (<50%), yellow (50-80%), red (>80%)
+ */
+function renderProgressBar(percentage) {
+  const width = 10
+  const filled = Math.round((percentage / 100) * width)
+  const empty = width - filled
+
+  let color = GREEN
+  if (percentage >= 80) color = RED
+  else if (percentage >= 50) color = YELLOW
+
+  const bar = `${color}${'█'.repeat(filled)}${DIM}${'░'.repeat(empty)}${RESET}`
+  return `${bar} ${percentage}%`
+}
+
 function main() {
   // Read JSON input from stdin
   const input = readFileSync(0, 'utf-8')
@@ -114,10 +160,15 @@ function main() {
     leftParts.push(`${MAGENTA}/${skill}${RESET}`)
   }
 
-  // RIGHT SIDE: model, context, tokens (all gray)
+  // RIGHT SIDE: weekly usage, model, context, tokens
   const rightParts = []
 
-  rightParts.push(data.model.display_name)
+  const weeklyUsage = getWeeklyUsage()
+  if (weeklyUsage !== null) {
+    rightParts.push(renderProgressBar(Math.round(weeklyUsage)))
+  }
+
+  rightParts.push(`${DIM}${data.model.display_name}${RESET}`)
 
   if (data.context_window.current_usage) {
     const usage = data.context_window.current_usage
@@ -125,18 +176,18 @@ function main() {
       usage.input_tokens + usage.cache_creation_input_tokens + usage.cache_read_input_tokens
     const contextSize = data.context_window.context_window_size
     const percentage = Math.round((currentTokens / contextSize) * 100)
-    rightParts.push(`${percentage}%`)
+    rightParts.push(`${DIM}${percentage}%${RESET}`)
   }
 
   const totalIn = data.context_window.total_input_tokens
   const totalOut = data.context_window.total_output_tokens
   if (totalIn > 0 || totalOut > 0) {
-    rightParts.push(`${formatNumber(totalIn)}↓ ${formatNumber(totalOut)}↑`)
+    rightParts.push(`${DIM}${formatNumber(totalIn)}↓ ${formatNumber(totalOut)}↑${RESET}`)
   }
 
-  // Output: left (colored) ... right (gray, right-aligned)
+  // Output: left (colored) ... right (mixed colors)
   const left = leftParts.join(' ')
-  const right = `${DIM}${rightParts.join(' · ')}${RESET}`
+  const right = rightParts.join(' · ')
 
   process.stdout.write(`${left} ${right}`)
 }
