@@ -19,6 +19,8 @@ plugins=(
   zsh-syntax-highlighting
 )
 
+DISABLE_AUTO_TITLE="true"
+
 source $ZSH/oh-my-zsh.sh
 
 # aliases
@@ -51,6 +53,7 @@ alias b="pnpm build"
 alias d="pnpm dev"
 alias f="pnpm format"
 alias t="pnpm test"
+alias ta="pnpm test:all"
 alias start="pnpm start"
 alias lint="pnpm lint"
 alias wa="pnpm watch"
@@ -106,7 +109,7 @@ alias cls="clear"
 alias l="ls -lah"
 alias c="code ."
 alias cl="cls && claude --dangerously-skip-permissions"
-alias clbd="cls && claude '/manage-tasks' --dangerously-skip-permissions"
+alias clbd="cls && claude '/manage-tasks' --model sonnet --dangerously-skip-permissions"
 alias x="open ."
 alias h="cd ~"
 alias nm="open ./node_modules"
@@ -207,3 +210,14 @@ _wt_branches() {
   [[ -d "$wt_dir" ]] && compadd -- "$wt_dir"/*(:t)
 }
 compdef _wt_branches wtcd wtrm
+
+
+# mount sprites.dev fs
+sc() {
+  local sprite_name="${1:-$(sprite use)}"
+  local mount_point="/tmp/sprite-${sprite_name}"
+  mkdir -p "$mount_point"
+  sshfs -o reconnect,ServerAliveInterval=15,ServerAliveCountMax=3 \
+    "sprite@${sprite_name}.sprites.dev:" "$mount_point"
+  cd "$mount_point"
+}
