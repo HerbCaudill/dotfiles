@@ -124,12 +124,13 @@ spc() {
     echo "Usage: spc <sprite-name>"
     return 1
   fi
-  if [[ -z "$GITHUB_TOKEN" ]]; then
-    echo "GITHUB_TOKEN not set in ~/.secrets"
+  local token=$(gh auth token)
+  if [[ -z "$token" ]]; then
+    echo "Not authenticated with gh - run 'gh auth login' first"
     return 1
   fi
   sprite create --skip-console $name
-  sprite exec -s $name bash -c "export GITHUB_TOKEN=$GITHUB_TOKEN; curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/sprite-setup.sh | bash"
+  sprite exec -s $name bash -c "export GITHUB_TOKEN=$token; curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/sprite-setup.sh | bash"
   sprite console -s $name
 }
 
