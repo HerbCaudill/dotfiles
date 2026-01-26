@@ -4,13 +4,19 @@ const { execSync } = require('child_process')
 const { readFileSync } = require('fs')
 
 // ANSI color codes
+const BLACK = '\x1b[30m'
 const CYAN = '\x1b[36m'
 const GREEN = '\x1b[32m'
 const YELLOW = '\x1b[33m'
 const RED = '\x1b[31m'
 const MAGENTA = '\x1b[35m'
 const RESET = '\x1b[0m'
+const ORANGE = '\x1b[38;5;208m'
+const DARK_YELLOW = '\x1b[38;5;178m'
+const CORAL = '\x1b[38;2;230;113;78m' // #E6714E
 const DIM = '\x1b[2m'
+const BOLD = '\x1b[1m'
+const NORMAL = '\x1b[22m'
 
 function getGitBranch(cwd) {
   try {
@@ -119,20 +125,29 @@ function getWeeklyUsage() {
 }
 
 /**
- * Render a progress bar for weekly usage.
- * Uses color coding: green (<50%), yellow (50-80%), red (>80%)
+ * Render a progress bar with customizable color.
+ * Uses ▰ for filled and ▱ for empty segments.
+ *
+ * percentage - The percentage to display (0-100)
+ * color - ANSI color code for the filled segments
  */
-function renderProgressBar(percentage) {
+function renderProgressBar(percentage, color) {
   const width = 10
   const filled = Math.round((percentage / 100) * width)
   const empty = width - filled
 
-  let color = GREEN
-  if (percentage >= 80) color = RED
-  else if (percentage >= 50) color = YELLOW
+  const bar = `${color}${'▰'.repeat(filled)}${DIM}${'▱'.repeat(empty)}${RESET}`
+  return `${bar} ${DIM}${percentage}%${RESET}`
+}
 
-  const bar = `${color}${'█'.repeat(filled)}${DIM}${'░'.repeat(empty)}${RESET}`
-  return `${bar} ${percentage}%`
+/**
+ * Get color for usage percentage.
+ * Green (<50%), yellow (50-80%), red (>80%)
+ */
+function getUsageColor(percentage) {
+  if (percentage >= 80) return RED
+  if (percentage >= 50) return YELLOW
+  return GREEN
 }
 
 function main() {
@@ -157,13 +172,14 @@ function main() {
 
   const skill = getActiveSkill(data.transcript_path)
   if (skill) {
-    leftParts.push(`${MAGENTA}/${skill}${RESET}`)
+    leftParts.push(`${BLACK}${BOLD}/${skill}${RESET}`)
   }
 
-  // RIGHT SIDE: model, context, tokens, weekly usage
-  const rightParts = []
+  // RIGHT SIDE of line 1: model
+  leftParts.push(`${NORMAL}${DIM}${data.model.display_name}${RESET}`)
 
-  rightParts.push(`${DIM}${data.model.display_name}${RESET}`)
+  // LINE 2: progress bars and token counts
+  const line2Parts = []
 
   if (data.context_window.current_usage) {
     const usage = data.context_window.current_usage
@@ -171,25 +187,26 @@ function main() {
       usage.input_tokens + usage.cache_creation_input_tokens + usage.cache_read_input_tokens
     const contextSize = data.context_window.context_window_size
     const percentage = Math.round((currentTokens / contextSize) * 100)
-    rightParts.push(`${DIM}${percentage}%${RESET}`)
+    line2Parts.push(`${DIM}context${RESET} ${renderProgressBar(percentage, GREEN)}`)
   }
 
   const totalIn = data.context_window.total_input_tokens
   const totalOut = data.context_window.total_output_tokens
   if (totalIn > 0 || totalOut > 0) {
-    rightParts.push(`${DIM}${formatNumber(totalIn)}↓ ${formatNumber(totalOut)}↑${RESET}`)
+    line2Parts.push(`${DIM}${formatNumber(totalIn)}↓ ${formatNumber(totalOut)}↑${RESET}`)
   }
 
   const weeklyUsage = getWeeklyUsage()
   if (weeklyUsage !== null) {
-    rightParts.push(renderProgressBar(Math.round(weeklyUsage)))
+    const pct = Math.round(weeklyUsage)
+    line2Parts.push(`${DIM}weekly${RESET} ${renderProgressBar(pct, CORAL)}`)
   }
 
-  // Output: left (colored) ... right (mixed colors)
-  const left = leftParts.join(' ')
-  const right = rightParts.join(' · ')
+  // Output: line 1 (dir, branch, skill, model) + line 2 (progress bars, tokens)
+  const line1 = leftParts.join(' ')
+  const line2 = line2Parts.join(' · ')
 
-  process.stdout.write(`${left} ${right}`)
+  process.stdout.write(`${line1}\n${line2}`)
 }
 
 main()

@@ -1,17 +1,13 @@
+#### SECRETS
+[[ -f ~/.secrets ]] && source ~/.secrets # currently just contains porkbun api credentials
 
-# Load secrets (not in source control)
-[[ -f ~/.secrets ]] && source ~/.secrets
+#### ZSH SETUP
 
-# Path to your oh-my-zsh installation.
-export ZSH="$HOME/.oh-my-zsh"
-
-
-
-# See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
-ZSH_THEME="herb"
-
-# update automatically without asking
-zstyle ':omz:update' mode auto
+# oh-my-zsh
+export ZSH="$HOME/.oh-my-zsh" # Path to oh-my-zsh installation.
+ZSH_THEME="herb" # See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
+zstyle ':omz:update' mode auto # update automatically without asking
+source $ZSH/oh-my-zsh.sh
 
 plugins=(
   git
@@ -19,14 +15,22 @@ plugins=(
   zsh-syntax-highlighting
 )
 
-DISABLE_AUTO_TITLE="true"
+DISABLE_AUTO_TITLE="true" # otherwise terminal title contains full path, which vscode doesn't display gracefully
 
-source $ZSH/oh-my-zsh.sh
+set enable-bracketed-paste Off # https://superuser.com/questions/1532688
 
-# aliases
+# Use vscode as editor
+export VISUAL=code
+export EDITOR="$VISUAL"
 
+
+#### ALIASES
+
+# dxos
 alias px="pnpm -w nx"
 alias pxstory="px storybook stories"
+
+# zsh
 
 alias profile="code ~/.zshrc"
 alias reload="exec zsh"
@@ -34,77 +38,55 @@ alias zshconfig="code ~/.zshrc"
 alias ohmyzsh="code ~/.oh-my-zsh"
 alias theme="code ~/.oh-my-zsh/custom/themes/herb.zsh-theme"
 
-# cross-platform open command
-if [[ "$OSTYPE" == "darwin"* ]]; then
-  alias insiders="open -a 'Visual Studio Code - Insiders'"
-else
-  alias open="xdg-open"
-fi
-
-alias nodets="node --loader ts-node/esm --experimental-specifier-resolution=node"
-
-alias updatepnpm="curl -fsSL https://get.pnpm.io/install.sh | sh -"
 alias updateclaude="claude install latest --force"
 
-alias new="npx degit herbcaudill/starter"
+# pnpm 
 
-alias i="pnpm install"
 alias b="pnpm build"
+alias bench="pnpm benchmark"
+alias bs="pnpm build && pnpm start"
 alias d="pnpm dev"
 alias f="pnpm format"
+alias i="pnpm install"
+alias ibt="pnpm install && pnpm build && pnpm test run"
+alias lint="pnpm lint"
+alias pb="pg; d" # purge & reinstall + build
+alias pd="pg; d" # purge & reinstall + dev
+alias pg="rm -rf **/node_modules; rm -rf **/dist; rm -rf .next; i" # purge node_modules/dist/etc. & reinstall
+alias prune="pnpm store prune; pg" # prune pnpm store then purge
+alias ralph="cls && pnpm ralph"
+alias s="pnpm storybook"
+alias start="pnpm start"
 alias t="pnpm test"
 alias ta="pnpm test:all"
-alias start="pnpm start"
-alias lint="pnpm lint"
-alias wa="pnpm watch"
-alias s="pnpm storybook"
-alias ibt="pnpm install && pnpm build && pnpm test run"
-alias bs="pnpm build && pnpm start"
-alias bench="pnpm benchmark"
-alias up="pnpm update -i --latest"
 alias type="pnpm typecheck"
-alias ralph="cls && pnpm ralph"
+alias up="pnpm update -i --latest"
+alias updatepnpm="curl -fsSL https://get.pnpm.io/install.sh | sh -"
+alias wa="pnpm watch"
 
-# purge node_modules/dist/etc. & reinstall
-alias pg="rm -rf **/node_modules; rm -rf **/dist; rm -rf .next; i"
-
-# prune pnpm store then purge
-alias prune="pnpm store prune; pg"
-
-# purge & reinstall + dev
-alias pd="pg; d"
-
-# purge & reinstall + build
-alias pb="pg; d"
-
-alias debug="DEBUG=localfirst*,automerge* DEBUG_COLORS=1"
-
+# shadcn-ui
 alias shad="npx shadcn-ui@latest"
 
-function bump_version() {
+# npm versions
+function bump() {
   npm version $1 $2 --git-tag-version=false
   git add .
   VERSION=$(node -p -e "require('./package.json').version")
   git commit -m "bump for release: $VERSION"
 }
+alias alpha="bump prerelease --preid=alpha"
+alias beta="bump prerelease --preid=beta"
+alias patch="bump patch"
+alias minor="bump minor"
+alias major="bump major"
 
-function clone() {
-  git clone https://github.com/$1.git ~/Code/$1
-  cd ~/Code/$1
-  code .
-}
-
-alias alpha="bump_version prerelease --preid=alpha"
-alias beta="bump_version prerelease --preid=beta"
-alias patch="bump_version patch"
-alias minor="bump_version minor"
-alias major="bump_version major"
-
+# yarn
 alias yi="yarn install"
 alias yb="yarn build"
 alias yd="yarn dev"
 alias yt="yarn test"
 
+# misc bash
 alias cls="clear"
 alias l="ls -lah"
 alias c="code ."
@@ -114,46 +96,46 @@ alias x="open ."
 alias h="cd ~"
 alias nm="open ./node_modules"
 
-# graphite stuff
-alias gtb= "gt bottom"
-alias gtbi="gt info"
-alias gtbr="gt restack --only"
-alias gtco="gt checkout"
-alias gtd= "gt down"
-alias gtdr="gt restack --downstack"
-alias gtll="gt log long"
-alias gtls="gt log short"
-alias gtr= "gt restack"
-alias gtrn="gt rename"
-alias gts= "gt sync"
-alias gtss="gt submit --stack"
-alias gtt= "gt top"
-alias gttr="gt track"
-alias gtu= "gt up"
-alias gtur="gt restack --upstack"
-alias gtut="gt untrack"
-
-alias flaky="node ./scripts/flaky.js"
-
-alias nx="./nx"
-
+# terminal word wrapping
 alias nowrap="tput rmam"
 alias wrap="tput smam"
 
+#### FUNCTIONS
+
+# kill process using port, e.g. `killport 3000`
 function killport {
   lsof -i tcp:$1 | awk 'NR!=1 {print $2}' | xargs kill
 } 
 
-function testlog {
-  pnpm test:log $1 -- -t $2 |& node ./scripts/clean-log.js > ./.logs/log.txt
+# mount sprites.dev fs
+sc() {
+  local sprite_name="${1:-$(sprite use)}"
+  local mount_point="/tmp/sprite-${sprite_name}"
+  mkdir -p "$mount_point"
+  sshfs -o reconnect,ServerAliveInterval=15,ServerAliveCountMax=3 \
+    "sprite@${sprite_name}.sprites.dev:" "$mount_point"
+  cd "$mount_point"
 }
 
-# https://superuser.com/questions/1532688
-set enable-bracketed-paste Off
+#### GIT WORKTREE HELPERS
 
-# Use vscode as editor
-export VISUAL=code
-export EDITOR="$VISUAL"
+# Scripts in ~/.local/bin handle the work; these wrappers handle cd
+# Worktrees stored in sibling directory: my-project → .my-project-worktrees/
+
+wt() { local dir; dir=$(command wt "$@") && cd "$dir"; }
+wtt() { local dir; dir=$(command wtt "$@") && cd "$dir"; }
+wtcd() { local dir; dir=$(command wtcd "$@") && cd "$dir"; }
+wtclone() { local dir; dir=$(command wtclone "$@") && cd "$dir"; }
+
+# Tab completion for wtcd/wtrm
+_wt_branches() {
+  local wt_dir=$(_wt_dir 2>/dev/null)
+  [[ -d "$wt_dir" ]] && compadd -- "$wt_dir"/*(:t)
+}
+compdef _wt_branches wtcd wtrm
+
+
+#### TAB COMPLETION ETC.
 
 # pnpm
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -167,8 +149,11 @@ case ":$PATH:" in
 esac
 # pnpm end
 
-# asdf
+# initialize asdf
 [[ -f "$HOME/.asdf/asdf.sh" ]] && source "$HOME/.asdf/asdf.sh"
+
+# graphite code completion
+
 #compdef gt
 ###-begin-gt-completions-###
 #
@@ -195,29 +180,4 @@ export PATH="$HOME/.local/bin:$PATH"
 export PROTO_HOME="$HOME/.proto";
 export PATH="$PROTO_HOME/shims:$PROTO_HOME/bin:$PATH";
 
-# ---- Git Worktree Helpers ----
-# Scripts in ~/.local/bin handle the work; these wrappers handle cd
-# Worktrees stored in sibling directory: my-project → .my-project-worktrees/
 
-wt() { local dir; dir=$(command wt "$@") && cd "$dir"; }
-wtt() { local dir; dir=$(command wtt "$@") && cd "$dir"; }
-wtcd() { local dir; dir=$(command wtcd "$@") && cd "$dir"; }
-wtclone() { local dir; dir=$(command wtclone "$@") && cd "$dir"; }
-
-# Tab completion for wtcd/wtrm
-_wt_branches() {
-  local wt_dir=$(_wt_dir 2>/dev/null)
-  [[ -d "$wt_dir" ]] && compadd -- "$wt_dir"/*(:t)
-}
-compdef _wt_branches wtcd wtrm
-
-
-# mount sprites.dev fs
-sc() {
-  local sprite_name="${1:-$(sprite use)}"
-  local mount_point="/tmp/sprite-${sprite_name}"
-  mkdir -p "$mount_point"
-  sshfs -o reconnect,ServerAliveInterval=15,ServerAliveCountMax=3 \
-    "sprite@${sprite_name}.sprites.dev:" "$mount_point"
-  cd "$mount_point"
-}
