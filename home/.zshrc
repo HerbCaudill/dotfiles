@@ -193,5 +193,8 @@ export PATH="$HOME/.local/bin:$PATH"
 export PROTO_HOME="$HOME/.proto";
 export PATH="$PROTO_HOME/shims:$PROTO_HOME/bin:$PATH";
 
-# Start in ~/code when in a sprite
-[[ -n "$SPRITE_NAME" ]] && cd ~/code
+# Sprite session setup
+if [[ -n "$SPRITE_NAME" ]]; then
+  printf '%*s\n' "${COLUMNS:-80}" '' | tr ' ' '─'
+  cd ~/code
+fi
