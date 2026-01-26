@@ -117,6 +117,22 @@ sc() {
   cd "$mount_point"
 }
 
+# create sprite with setup
+spc() {
+  local name="$1"
+  if [[ -z "$name" ]]; then
+    echo "Usage: spc <sprite-name>"
+    return 1
+  fi
+  if [[ -z "$GITHUB_TOKEN" ]]; then
+    echo "GITHUB_TOKEN not set in ~/.secrets"
+    return 1
+  fi
+  sprite create "$name" --skip-console
+  sprite exec "GITHUB_TOKEN=$GITHUB_TOKEN curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/sprite-setup.sh | bash"
+  sprite console
+}
+
 #### GIT WORKTREE HELPERS
 
 # Scripts in ~/.local/bin handle the work; these wrappers handle cd
