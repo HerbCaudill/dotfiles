@@ -130,7 +130,7 @@ spc() {
     return 1
   fi
   sprite create --skip-console $name
-  sprite exec -s $name bash -c "export GITHUB_TOKEN=$token SPRITE_NAME=$name; curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/sprite-setup.sh | bash"
+  sprite exec -s $name bash -c "export GITHUB_TOKEN=$token SPRITE_NAME=$name; curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/setup.sh | bash"
   sprite console -s $name
 }
 

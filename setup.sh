@@ -1,7 +1,13 @@
 #!/bin/bash
 #
-# Bootstrap script for setting up a new dev environment.
-# Can be run with: curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/setup.sh | bash
+# Bootstrap script for setting up a dev environment.
+# Works on both local machines and sprites.dev.
+#
+# Usage:
+#   curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/setup.sh | bash
+#
+# For sprites (with GitHub auth):
+#   GITHUB_TOKEN=xxx SPRITE_NAME=mysprite curl -fsSL ... | bash
 #
 
 set -e
@@ -11,6 +17,7 @@ DOTFILES_DIR="$HOME/code/herbcaudill/dotfiles"
 ASDF_VERSION="v0.14.1"
 
 success() { echo -e "\033[1;32m✓\033[0m $1"; }
+warn() { echo -e "\033[1;33m!\033[0m $1"; }
 
 # ---- Clone dotfiles ----
 if [[ ! -d "$DOTFILES_DIR" ]]; then
@@ -63,3 +70,35 @@ if ! command -v pnpm &>/dev/null; then
   npm install -g pnpm >/dev/null 2>&1
 fi
 success "pnpm"
+
+# ---- Sprite-specific setup ----
+if [[ -n "$SPRITE_NAME" ]]; then
+  # GitHub CLI auth
+  if gh auth status &>/dev/null; then
+    success "GitHub CLI"
+  elif [[ -n "$GITHUB_TOKEN" ]]; then
+    local_token="$GITHUB_TOKEN"
+    unset GITHUB_TOKEN
+    echo "$local_token" | gh auth login --with-token >/dev/null 2>&1
+    success "GitHub CLI"
+  else
+    warn "GitHub CLI (run 'gh auth login' manually)"
+  fi
+
+  # Create code directory
+  mkdir -p "$HOME/code"
+
+  # Save sprite name for prompt
+  echo "export SPRITE_NAME=$SPRITE_NAME" >> "$HOME/.secrets"
+
+  # Use nano as default editor
+  if [[ ! -f "$HOME/.secrets" ]] || ! grep -q "EDITOR" "$HOME/.secrets"; then
+    echo 'export EDITOR=nano' >> "$HOME/.secrets"
+    echo 'export VISUAL=nano' >> "$HOME/.secrets"
+  fi
+
+  success "Sprite: $SPRITE_NAME"
+fi
+
+echo ""
+success "Ready!"
