@@ -195,7 +195,7 @@ export PATH="$PROTO_HOME/shims:$PROTO_HOME/bin:$PATH";
 
 # Sprite-specific setup
 if [[ -n "$SPRITE_NAME" ]]; then
-  # Set terminal title to sprite name
-  print -Pn "\e]0;👾 $SPRITE_NAME\a"
+  # Set terminal title (precmd to keep it persistent)
+  precmd() { print -Pn "\e]0;👾 $SPRITE_NAME\a" }
   cd ~/code
 fi
