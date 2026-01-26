@@ -194,4 +194,8 @@ export PROTO_HOME="$HOME/.proto";
 export PATH="$PROTO_HOME/shims:$PROTO_HOME/bin:$PATH";
 
 # Sprite-specific setup
-[[ -n "$SPRITE_NAME" ]] && cd ~/code
+if [[ -n "$SPRITE_NAME" ]]; then
+  # Set terminal title to sprite name
+  print -Pn "\e]0;👾 $SPRITE_NAME\a"
+  cd ~/code
+fi
