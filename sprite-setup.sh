@@ -44,4 +44,7 @@ if [[ ! -f "$HOME/.secrets" ]] || ! grep -q "EDITOR" "$HOME/.secrets"; then
 fi
 
 echo ""
-success "Sprite setup complete! Run 'exec zsh' to reload your shell."
+success "Sprite setup complete!"
+
+# Reload shell with new config
+exec zsh
