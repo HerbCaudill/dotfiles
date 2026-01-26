@@ -38,6 +38,13 @@ fi
 
 # ---- Sprite-specific adjustments ----
 
+# Save sprite name for prompt
+if [[ -n "$SPRITE_NAME" ]]; then
+  info "Setting sprite name..."
+  echo "export SPRITE_NAME=$SPRITE_NAME" >> "$HOME/.secrets"
+  success "Sprite name set to $SPRITE_NAME"
+fi
+
 # Use nano as default editor (vscode not available on remote sprite)
 if [[ ! -f "$HOME/.secrets" ]] || ! grep -q "EDITOR" "$HOME/.secrets"; then
   info "Setting nano as default editor..."
