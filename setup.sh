@@ -82,8 +82,11 @@ if [[ -n "$SPRITE_NAME" ]]; then
   elif [[ -n "$GITHUB_TOKEN" ]]; then
     local_token="$GITHUB_TOKEN"
     unset GITHUB_TOKEN
-    echo "$local_token" | gh auth login --with-token >/dev/null 2>&1
-    success "GitHub CLI"
+    if echo "$local_token" | gh auth login --with-token 2>&1; then
+      success "GitHub CLI"
+    else
+      warn "GitHub CLI auth failed"
+    fi
   else
     warn "GitHub CLI (run 'gh auth login' manually)"
   fi
