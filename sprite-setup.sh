@@ -45,6 +45,3 @@ fi
 
 echo ""
 success "Sprite setup complete!"
-
-# Reload shell with new config
-exec zsh
