@@ -130,13 +130,27 @@ function getWeeklyUsage() {
  *
  * percentage - The percentage to display (0-100)
  * color - ANSI color code for the filled segments
+ * timeMarkerPosition - Optional position (0-100) to show a combining caron marker
  */
-function renderProgressBar(percentage, color) {
+function renderProgressBar(percentage, color, timeMarkerPosition = null) {
   const width = 10
   const filled = Math.round((percentage / 100) * width)
-  const empty = width - filled
+  const timePos = timeMarkerPosition !== null ? Math.round((timeMarkerPosition / 100) * width) : null
 
-  const bar = `${color}${'▰'.repeat(filled)}${DIM}${'▱'.repeat(empty)}${RESET}`
+  let bar = ''
+  for (let i = 0; i < width; i++) {
+    const isFilled = i < filled
+    const char = isFilled ? '▰' : '▱'
+    const colorCode = isFilled ? color : DIM
+
+    if (timePos !== null && i === timePos && timePos < width) {
+      // Add combining caron (U+030C) to mark time position
+      bar += `${colorCode}${char}\u030C${RESET}`
+    } else {
+      bar += `${colorCode}${char}${RESET}`
+    }
+  }
+
   return `${bar} ${DIM}${percentage}%${RESET}`
 }
 
@@ -148,6 +162,33 @@ function getUsageColor(percentage) {
   if (percentage >= 80) return RED
   if (percentage >= 50) return YELLOW
   return GREEN
+}
+
+/**
+ * Calculate percentage through the weekly usage period.
+ * Week starts Wednesday at 7pm local time.
+ */
+function getWeekProgress() {
+  const now = new Date()
+  const day = now.getDay() // 0=Sun, 3=Wed
+  const hour = now.getHours()
+  const minutes = now.getMinutes()
+
+  // Calculate hours since Wednesday 7pm
+  let hoursSinceStart
+  if (day === 3 && hour >= 19) {
+    // Wednesday after 7pm
+    hoursSinceStart = (hour - 19) + minutes / 60
+  } else if (day > 3) {
+    // Thu-Sat: days past Wed + hours into today + offset from 7pm
+    hoursSinceStart = ((day - 3) * 24) + (hour + 5) + minutes / 60
+  } else {
+    // Sun-Wed before 7pm: wrap around from last Wed
+    hoursSinceStart = ((day + 4) * 24) + (hour + 5) + minutes / 60
+  }
+
+  // Week is 168 hours
+  return Math.min(100, Math.round((hoursSinceStart / 168) * 100))
 }
 
 function main() {
@@ -199,7 +240,8 @@ function main() {
   const weeklyUsage = getWeeklyUsage()
   if (weeklyUsage !== null) {
     const pct = Math.round(weeklyUsage)
-    line2Parts.push(`${DIM}weekly${RESET} ${renderProgressBar(pct, CORAL)}`)
+    const weekProgress = getWeekProgress()
+    line2Parts.push(`${DIM}weekly${RESET} ${renderProgressBar(pct, CORAL, weekProgress)}`)
   }
 
   // Output: line 1 (dir, branch, skill, model) + line 2 (progress bars, tokens)
