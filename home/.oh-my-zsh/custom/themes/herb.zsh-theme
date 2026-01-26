@@ -1,7 +1,7 @@
 # Show sprite name if in a sprite environment
 sprite_prompt_info() {
   if [[ -n "$SPRITE_NAME" ]]; then
-    echo "%{$fg[green]%}[$SPRITE_NAME]%{$reset_color%} "
+    echo "👾 %{$fg[magenta]%}$SPRITE_NAME%{$reset_color%} "
   fi
 }
 
