@@ -97,7 +97,7 @@ if [[ -n "$SPRITE_NAME" ]]; then
     echo 'export VISUAL=nano' >> "$HOME/.secrets"
   fi
 
-  success "Sprite: $SPRITE_NAME"
+  success "👾 $SPRITE_NAME"
 fi
 
 echo ""
