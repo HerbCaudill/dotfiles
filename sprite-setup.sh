@@ -25,7 +25,10 @@ if gh auth status &>/dev/null; then
 else
   if [[ -n "$GITHUB_TOKEN" ]]; then
     info "Authenticating GitHub CLI with token..."
-    echo "$GITHUB_TOKEN" | gh auth login --with-token
+    # Save token and unset env var (gh complains if GITHUB_TOKEN is set during auth)
+    local_token="$GITHUB_TOKEN"
+    unset GITHUB_TOKEN
+    echo "$local_token" | gh auth login --with-token
     success "GitHub CLI authenticated"
   else
     warn "GITHUB_TOKEN not set - run 'gh auth login' manually or re-run with:"
