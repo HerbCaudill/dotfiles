@@ -38,6 +38,9 @@ fi
 
 # ---- Sprite-specific adjustments ----
 
+# Create code directory
+mkdir -p "$HOME/code"
+
 # Save sprite name for prompt
 if [[ -n "$SPRITE_NAME" ]]; then
   info "Setting sprite name..."
