@@ -130,7 +130,7 @@ spc() {
   fi
   sprite create --skip-console $name
   sprite exec -s $name bash -c "export GITHUB_TOKEN=$GITHUB_TOKEN; curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/sprite-setup.sh | bash"
-  sprite console $name
+  sprite console -s $name
 }
 
 #### GIT WORKTREE HELPERS
