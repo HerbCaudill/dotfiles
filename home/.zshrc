@@ -128,9 +128,10 @@ spc() {
     echo "GITHUB_TOKEN not set in ~/.secrets"
     return 1
   fi
-  sprite create "$name" --skip-console
+  sprite create -skip-console "$name"
+  sleep 2
   sprite exec "GITHUB_TOKEN=$GITHUB_TOKEN curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/sprite-setup.sh | bash"
-  sprite console
+  sprite console -s "$name"
 }
 
 #### GIT WORKTREE HELPERS
