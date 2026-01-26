@@ -193,9 +193,10 @@ export PATH="$HOME/.local/bin:$PATH"
 export PROTO_HOME="$HOME/.proto";
 export PATH="$PROTO_HOME/shims:$PROTO_HOME/bin:$PATH";
 
-# Sprite-specific setup
+# Terminal title
 if [[ -n "$SPRITE_NAME" ]]; then
-  # Set terminal title (precmd to keep it persistent)
   precmd() { print -Pn "\e]0;👾 $SPRITE_NAME\a" }
   cd ~/code
+else
+  precmd() { print -Pn "\e]0;%~\a" }
 fi
