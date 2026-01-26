@@ -77,18 +77,11 @@ success "pnpm"
 # ---- Sprite-specific setup ----
 if [[ -n "$SPRITE_NAME" ]]; then
   # GitHub CLI auth
-  if gh auth status &>/dev/null; then
+  if [[ -n "$GITHUB_TOKEN" ]]; then
+    echo "export GH_TOKEN=$GITHUB_TOKEN" >> "$HOME/.secrets"
     success "GitHub CLI"
-  elif [[ -n "$GITHUB_TOKEN" ]]; then
-    local_token="$GITHUB_TOKEN"
-    unset GITHUB_TOKEN
-    if echo "$local_token" | gh auth login --with-token 2>&1; then
-      success "GitHub CLI"
-    else
-      warn "GitHub CLI auth failed"
-    fi
   else
-    warn "GitHub CLI (run 'gh auth login' manually)"
+    warn "GitHub CLI (set GH_TOKEN manually)"
   fi
 
   # Create code directory
