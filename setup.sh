@@ -70,7 +70,7 @@ success "asdf"
 
 # ---- Install pnpm ----
 if ! command -v pnpm &>/dev/null; then
-  curl -fsSL https://get.pnpm.io/install.sh | sh -
+  curl -fsSL https://get.pnpm.io/install.sh | SHELL=/bin/bash bash
 fi
 success "pnpm"
 
