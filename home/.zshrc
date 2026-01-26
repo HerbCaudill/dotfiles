@@ -129,8 +129,8 @@ spc() {
     return 1
   fi
   sprite create --skip-console $name
-  sprite exec -s $name bash -c "GITHUB_TOKEN=$GITHUB_TOKEN curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/sprite-setup.sh | bash"
-  sprite console -s $name
+  sprite exec -s $name bash -c "export GITHUB_TOKEN=$GITHUB_TOKEN; curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/sprite-setup.sh | bash"
+  sprite console $name
 }
 
 #### GIT WORKTREE HELPERS
