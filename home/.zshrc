@@ -119,11 +119,7 @@ sc() {
 
 # create sprite with setup
 spc() {
-  local name="$1"
-  if [[ -z "$name" ]]; then
-    echo "Usage: spc <sprite-name>"
-    return 1
-  fi
+  local name="${1:-$(LC_ALL=C tr -dc 'a-z' </dev/urandom | head -c 5)}"
   local token=$(gh auth token)
   if [[ -z "$token" ]]; then
     echo "Not authenticated with gh - run 'gh auth login' first"
