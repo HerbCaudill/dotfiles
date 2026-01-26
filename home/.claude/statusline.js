@@ -236,7 +236,7 @@ function main() {
   if (weeklyUsage !== null) {
     const pct = Math.round(weeklyUsage.utilization)
     const weekProgress = getWeekProgress(weeklyUsage.resetsAt)
-    line2Parts.push(`${DIM}weekly${RESET} ${renderProgressBar(pct, CORAL, weekProgress)}`)
+    line2Parts.push(`${DIM}weekly${RESET} ${renderProgressBar(pct, CORAL, weekProgress)} ${DIM}(${weekProgress}% elapsed)${RESET}`)
   }
 
   // Output: line 1 (dir, branch, skill, model) + line 2 (progress bars, tokens)
