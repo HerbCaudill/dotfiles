@@ -100,8 +100,11 @@ if [[ -n "$SPRITE_NAME" ]]; then
     echo 'export VISUAL=nano' >> "$HOME/.secrets"
   fi
 
-  success "👾 $SPRITE_NAME"
 fi
 
 echo ""
-success "Ready!"
+if [[ -n "$SPRITE_NAME" ]]; then
+  echo "👾 $SPRITE_NAME is ready!"
+else
+  success "Ready!"
+fi
