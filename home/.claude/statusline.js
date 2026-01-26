@@ -98,8 +98,8 @@ function visibleLength(str) {
 }
 
 /**
- * Get weekly usage percentage from Anthropic's OAuth API.
- * Returns null if unable to fetch.
+ * Get weekly usage data from Anthropic's OAuth API.
+ * Returns { utilization, resetsAt } or null if unable to fetch.
  */
 function getWeeklyUsage() {
   try {
@@ -118,10 +118,31 @@ function getWeeklyUsage() {
     )
 
     const usage = JSON.parse(response)
-    return usage.seven_day?.utilization ?? null
+    if (!usage.seven_day) return null
+
+    return {
+      utilization: usage.seven_day.utilization,
+      resetsAt: usage.seven_day.resets_at,
+    }
   } catch {
     return null
   }
+}
+
+/**
+ * Calculate percentage through the weekly usage period.
+ * Uses the resets_at timestamp from the API to determine the 7-day window.
+ */
+function getWeekProgress(resetsAt) {
+  const now = Date.now()
+  const resetTime = new Date(resetsAt).getTime()
+  const weekMs = 7 * 24 * 60 * 60 * 1000
+  const startTime = resetTime - weekMs
+
+  const elapsed = now - startTime
+  const progress = (elapsed / weekMs) * 100
+
+  return Math.max(0, Math.min(100, Math.round(progress)))
 }
 
 /**
@@ -164,32 +185,6 @@ function getUsageColor(percentage) {
   return GREEN
 }
 
-/**
- * Calculate percentage through the weekly usage period.
- * Week starts Wednesday at 7pm local time.
- */
-function getWeekProgress() {
-  const now = new Date()
-  const day = now.getDay() // 0=Sun, 3=Wed
-  const hour = now.getHours()
-  const minutes = now.getMinutes()
-
-  // Calculate hours since Wednesday 7pm
-  let hoursSinceStart
-  if (day === 3 && hour >= 19) {
-    // Wednesday after 7pm
-    hoursSinceStart = (hour - 19) + minutes / 60
-  } else if (day > 3) {
-    // Thu-Sat: days past Wed + hours into today + offset from 7pm
-    hoursSinceStart = ((day - 3) * 24) + (hour + 5) + minutes / 60
-  } else {
-    // Sun-Wed before 7pm: wrap around from last Wed
-    hoursSinceStart = ((day + 4) * 24) + (hour + 5) + minutes / 60
-  }
-
-  // Week is 168 hours
-  return Math.min(100, Math.round((hoursSinceStart / 168) * 100))
-}
 
 function main() {
   // Read JSON input from stdin
@@ -239,8 +234,8 @@ function main() {
 
   const weeklyUsage = getWeeklyUsage()
   if (weeklyUsage !== null) {
-    const pct = Math.round(weeklyUsage)
-    const weekProgress = getWeekProgress()
+    const pct = Math.round(weeklyUsage.utilization)
+    const weekProgress = getWeekProgress(weeklyUsage.resetsAt)
     line2Parts.push(`${DIM}weekly${RESET} ${renderProgressBar(pct, CORAL, weekProgress)}`)
   }
 
