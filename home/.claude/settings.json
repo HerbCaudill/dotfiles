@@ -91,15 +91,13 @@
     "beads@beads-marketplace": true,
     "code-review@claude-plugins-official": false,
     "code-simplifier@claude-plugins-official": false,
-    "context7@claude-plugins-official": false,
-    "example-skills@anthropic-agent-skills": false,
+    "context7@claude-plugins-official": true,
     "frontend-design@claude-plugins-official": false,
     "git-worktrees@skills-marketplace": false,
-    "playwright@claude-plugins-official": false,
-    "ralph-loop@claude-plugins-official": false,
-    "typescript-lsp@claude-plugins-official": false,
-    "vercel@claude-plugins-official": false,
-    "slack@claude-plugins-official": true
+    "playwright@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "vercel@claude-plugins-official": true,
+    "serena@claude-plugins-official": true
   },
   "autoUpdatesChannel": "latest"
 }
