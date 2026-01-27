@@ -13,7 +13,7 @@
  */
 
 import { execSync, spawnSync } from "node:child_process"
-import { existsSync, mkdirSync, appendFileSync, readFileSync } from "node:fs"
+import { existsSync, mkdirSync, appendFileSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 
 // Env variables
@@ -21,7 +21,7 @@ import { dirname, join } from "node:path"
 const HOME = process.env.HOME!
 const SPRITE_NAME = process.env.SPRITE_NAME
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN
-const CLAUDE_CODE_OAUTH_TOKEN = process.env.CLAUDE_CODE_OAUTH_TOKEN
+const CLAUDE_CREDS_B64 = process.env.CLAUDE_CREDS_B64
 const REPO_USER = process.env.REPO_USER
 const REPO_NAME = process.env.REPO_NAME
 
@@ -108,11 +108,14 @@ const steps: Record<string, () => void> = {
   },
 
   claude: () => {
-    if (CLAUDE_CODE_OAUTH_TOKEN)
-      appendFileSync(secretsFile, `export CLAUDE_CODE_OAUTH_TOKEN=${CLAUDE_CODE_OAUTH_TOKEN}\n`)
-    run(`claude install latest --force`, {
-      env: { ...process.env, PATH, CLAUDE_CODE_OAUTH_TOKEN },
-    })
+    // Decode and write credentials file so Claude Code skips OAuth flow
+    if (CLAUDE_CREDS_B64) {
+      const credsJson = Buffer.from(CLAUDE_CREDS_B64, "base64").toString("utf-8")
+      const claudeDir = join(HOME, ".claude")
+      mkdirSync(claudeDir, { recursive: true })
+      writeFileSync(join(claudeDir, ".credentials.json"), credsJson)
+    }
+    run(`claude install latest --force`, { env: { ...process.env, PATH } })
   },
 
   gh: () => {
