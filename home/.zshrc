@@ -128,6 +128,12 @@ spc() {
     return 1
   fi
 
+  # Get Claude OAuth token from keychain
+  local claude_token=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null | jq -r '.claudeAiOauth.accessToken')
+  if [[ -z "$claude_token" || "$claude_token" == "null" ]]; then
+    echo "Warning: Claude OAuth token not found - run 'claude' to authenticate"
+  fi
+
   local name="$1"
   local repo_user=""
   local repo_name=""
@@ -159,6 +165,7 @@ spc() {
 
   sprite exec -s $name bash -c "\
     export GITHUB_TOKEN=$token \
+           CLAUDE_CODE_OAUTH_TOKEN=$claude_token \
            SPRITE_NAME=$name \
            REPO_USER=$repo_user \
            REPO_NAME=$repo_name; \
