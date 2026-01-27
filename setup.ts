@@ -111,29 +111,110 @@ const appendIfMissing = (file: string, line: string) => {
 
 // ---- Define steps ----
 
-const dotfilesStep = addStep("dotfiles")
-const symlinksStep = addStep("symlinks")
-const ohmyzshStep = addStep("oh-my-zsh")
-const autosuggestionsStep = addStep("zsh-autosuggestions")
-const syntaxHighlightingStep = addStep("zsh-syntax-highlighting")
-const themeStep = addStep("zsh theme")
-const asdfStep = addStep("asdf")
-const pnpmStep = addStep("pnpm")
-const beadsStep = addStep("beads")
-const claudeStep = addStep("claude")
+const ZSH_CUSTOM = process.env.ZSH_CUSTOM || join(HOME, ".oh-my-zsh/custom")
+
+const coreSteps: Record<string, () => void> = {
+  dotfiles: () => {
+    if (!existsSync(DOTFILES_DIR)) {
+      mkdirSync(dirname(DOTFILES_DIR), { recursive: true })
+      run(`git clone -q "${DOTFILES_REPO}" "${DOTFILES_DIR}"`)
+    }
+  },
+
+  symlinks: () => {
+    run(`node "${DOTFILES_DIR}/install.mjs"`)
+  },
+
+  "oh-my-zsh": () => {
+    const ohmyzshPath = join(HOME, ".oh-my-zsh/oh-my-zsh.sh")
+    if (!existsSync(ohmyzshPath)) {
+      run(`rm -rf "${HOME}/.oh-my-zsh"`)
+      run(
+        `RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"`,
+      )
+    }
+  },
+
+  "zsh-autosuggestions": () => {
+    const autosuggestions = join(ZSH_CUSTOM, "plugins/zsh-autosuggestions")
+    if (!existsSync(autosuggestions)) {
+      run(`git clone -q https://github.com/zsh-users/zsh-autosuggestions "${autosuggestions}"`)
+    }
+  },
+
+  "zsh-syntax-highlighting": () => {
+    const syntaxHighlighting = join(ZSH_CUSTOM, "plugins/zsh-syntax-highlighting")
+    if (!existsSync(syntaxHighlighting)) {
+      run(`git clone -q https://github.com/zsh-users/zsh-syntax-highlighting "${syntaxHighlighting}"`)
+    }
+  },
+
+  "zsh theme": () => {
+    const themeSrc = join(DOTFILES_DIR, "home/.oh-my-zsh/custom/themes/herb.zsh-theme")
+    const themeDst = join(ZSH_CUSTOM, "themes/herb.zsh-theme")
+    if (existsSync(themeSrc)) {
+      mkdirSync(dirname(themeDst), { recursive: true })
+      run(`ln -sf "${themeSrc}" "${themeDst}"`)
+    }
+  },
+
+  asdf: () => {
+    const asdfDir = join(HOME, ".asdf")
+    if (!existsSync(asdfDir)) {
+      run(`git clone -q https://github.com/asdf-vm/asdf.git "${asdfDir}"`)
+    }
+  },
+
+  pnpm: () => {
+    if (!commandExists("pnpm")) {
+      run(`curl -fsSL https://get.pnpm.io/install.sh | SHELL=/bin/bash bash`)
+    }
+  },
+
+  beads: () => {
+    if (!commandExists("bd")) {
+      run(
+        `curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash`,
+      )
+    }
+  },
+
+  claude: () => {
+    run(`claude install latest --force`)
+  },
+}
 
 // Sprite-specific steps (added conditionally)
-let githubCliStep: number | undefined
-let cloneRepoStep: number | undefined
-let pnpmInstallStep: number | undefined
-let beadsInitStep: number | undefined
+const spriteSteps: Record<string, () => void> = {}
 
 if (SPRITE_NAME) {
-  githubCliStep = addStep("gh")
+  const secretsFile = join(HOME, ".secrets")
+  const localenvFile = join(HOME, ".localenv")
+  const codeDir = join(HOME, "code")
+  const repoDir = REPO_NAME ? join(codeDir, REPO_NAME) : ""
+  const PNPM_HOME = join(HOME, ".local/share/pnpm")
+  const PATH = `${PNPM_HOME}:${HOME}/.local/bin:${process.env.PATH}`
+
+  spriteSteps["gh"] = () => {
+    if (GITHUB_TOKEN) {
+      appendFileSync(secretsFile, `export GH_TOKEN=${GITHUB_TOKEN}\n`)
+    } else {
+      throw new Error("GITHUB_TOKEN not set")
+    }
+  }
+
   if (REPO_USER && REPO_NAME) {
-    cloneRepoStep = addStep(`clone ${REPO_USER}/${REPO_NAME}`)
-    pnpmInstallStep = addStep("pnpm install")
-    beadsInitStep = addStep("beads init")
+    spriteSteps[`clone ${REPO_USER}/${REPO_NAME}`] = () => {
+      run(`gh repo clone "${REPO_USER}/${REPO_NAME}"`, { cwd: codeDir })
+    }
+
+    spriteSteps["pnpm install"] = () => {
+      run("pnpm install", { cwd: repoDir, env: { ...process.env, PATH } })
+    }
+
+    spriteSteps["beads init"] = () => {
+      run("bd init", { cwd: repoDir, env: { ...process.env, PATH } })
+    }
   }
 }
 
@@ -143,143 +224,34 @@ console.log("─".repeat(process.stdout.columns || 80))
 console.log("👾 Setting up dev environment...")
 console.log()
 
+// Register all steps
+const allSteps = { ...coreSteps, ...spriteSteps }
+const stepIndices: Record<string, number> = {}
+for (const name of Object.keys(allSteps)) {
+  stepIndices[name] = addStep(name)
+}
+
 // Initial render
 render()
 
-// ---- Clone dotfiles ----
-runStep(dotfilesStep, () => {
-  if (!existsSync(DOTFILES_DIR)) {
-    mkdirSync(dirname(DOTFILES_DIR), { recursive: true })
-    run(`git clone -q "${DOTFILES_REPO}" "${DOTFILES_DIR}"`)
-  }
-})
+// Run all steps
+for (const [name, fn] of Object.entries(allSteps)) {
+  runStep(stepIndices[name], fn)
+}
 
-// ---- Run install script (symlinks) ----
-runStep(symlinksStep, () => {
-  run(`node "${DOTFILES_DIR}/install.mjs"`)
-})
-
-// ---- Install oh-my-zsh ----
-runStep(ohmyzshStep, () => {
-  const ohmyzshPath = join(HOME, ".oh-my-zsh/oh-my-zsh.sh")
-  if (!existsSync(ohmyzshPath)) {
-    run(`rm -rf "${HOME}/.oh-my-zsh"`)
-    run(
-      `RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"`,
-    )
-  }
-})
-
-// ---- Install zsh plugins ----
-const ZSH_CUSTOM = process.env.ZSH_CUSTOM || join(HOME, ".oh-my-zsh/custom")
-
-runStep(autosuggestionsStep, () => {
-  const autosuggestions = join(ZSH_CUSTOM, "plugins/zsh-autosuggestions")
-  if (!existsSync(autosuggestions)) {
-    run(`git clone -q https://github.com/zsh-users/zsh-autosuggestions "${autosuggestions}"`)
-  }
-})
-
-runStep(syntaxHighlightingStep, () => {
-  const syntaxHighlighting = join(ZSH_CUSTOM, "plugins/zsh-syntax-highlighting")
-  if (!existsSync(syntaxHighlighting)) {
-    run(`git clone -q https://github.com/zsh-users/zsh-syntax-highlighting "${syntaxHighlighting}"`)
-  }
-})
-
-// ---- Restore custom theme ----
-runStep(themeStep, () => {
-  const themeSrc = join(DOTFILES_DIR, "home/.oh-my-zsh/custom/themes/herb.zsh-theme")
-  const themeDst = join(ZSH_CUSTOM, "themes/herb.zsh-theme")
-  if (existsSync(themeSrc)) {
-    mkdirSync(dirname(themeDst), { recursive: true })
-    run(`ln -sf "${themeSrc}" "${themeDst}"`)
-  }
-})
-
-// ---- Install asdf ----
-runStep(asdfStep, () => {
-  const asdfDir = join(HOME, ".asdf")
-  if (!existsSync(asdfDir)) {
-    run(`git clone -q https://github.com/asdf-vm/asdf.git "${asdfDir}"`)
-  }
-})
-
-// ---- Install pnpm ----
-runStep(pnpmStep, () => {
-  if (!commandExists("pnpm")) {
-    run(`curl -fsSL https://get.pnpm.io/install.sh | SHELL=/bin/bash bash`)
-  }
-})
-
-// ---- Install beads ----
-runStep(beadsStep, () => {
-  if (!commandExists("bd")) {
-    run(
-      `curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash`,
-    )
-  }
-})
-
-// ---- Install/update Claude Code ----
-runStep(claudeStep, () => {
-  run(`claude install latest --force`)
-})
-
-// ---- Sprite-specific setup ----
+// Sprite-specific post-setup
 if (SPRITE_NAME) {
-  const secretsFile = join(HOME, ".secrets")
   const localenvFile = join(HOME, ".localenv")
+  const codeDir = join(HOME, "code")
 
-  // GitHub CLI auth
-  if (githubCliStep !== undefined) {
-    if (GITHUB_TOKEN) {
-      runStep(githubCliStep, () => {
-        appendFileSync(secretsFile, `export GH_TOKEN=${GITHUB_TOKEN}\n`)
-      })
-    } else {
-      updateStep(githubCliStep, "warn")
-    }
-  }
-
-  // Create code directory
-  mkdirSync(join(HOME, "code"), { recursive: true })
-
-  // Save sprite name for prompt
+  mkdirSync(codeDir, { recursive: true })
   appendFileSync(localenvFile, `export SPRITE_NAME=${SPRITE_NAME}\n`)
-
-  // Use nano as default editor
   appendIfMissing(localenvFile, "export EDITOR=nano")
   appendIfMissing(localenvFile, "export VISUAL=nano")
 
-  // Clone repo if REPO_USER and REPO_NAME are set
   if (REPO_USER && REPO_NAME) {
-    const codeDir = join(HOME, "code")
     const repoDir = join(codeDir, REPO_NAME)
-
-    if (cloneRepoStep !== undefined) {
-      runStep(cloneRepoStep, () => {
-        run(`gh repo clone "${REPO_USER}/${REPO_NAME}"`, { cwd: codeDir })
-      })
-    }
-
     appendFileSync(localenvFile, `export SPRITE_REPO_DIR=${repoDir}\n`)
-
-    // pnpm and bd aren't in PATH yet
-    const PNPM_HOME = join(HOME, ".local/share/pnpm")
-    const PATH = `${PNPM_HOME}:${HOME}/.local/bin:${process.env.PATH}`
-
-    if (pnpmInstallStep !== undefined) {
-      runStep(pnpmInstallStep, () => {
-        run("pnpm install", { cwd: repoDir })
-      })
-    }
-
-    if (beadsInitStep !== undefined) {
-      runStep(beadsInitStep, () => {
-        run("bd init", { cwd: repoDir, env: { ...process.env, PATH } })
-      })
-    }
   }
 }
 
