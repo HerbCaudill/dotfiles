@@ -162,7 +162,7 @@ spc() {
            SPRITE_NAME=$name \
            REPO_USER=$repo_user \
            REPO_NAME=$repo_name; \
-    curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/setup.sh | bash"
+    npx tsx https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/setup.ts"
   
   sprite console -s $name
 }
