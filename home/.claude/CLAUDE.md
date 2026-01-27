@@ -62,7 +62,22 @@ export async function checkForSavedIterationState(
 }
 ```
 
-Don't put big headings in comments with ASCII borders:
+Keep this to a single line if possible.
+
+```ts
+/** Get the current terminal size with sensible defaults. */
+export function getTerminalSize(
+  /** The stdout object from Ink's useStdout hook */
+  stdout: any,
+) {
+  return {
+    columns: stdout?.columns ?? 80,
+    rows: stdout?.rows ?? 24,
+  }
+}
+```
+
+NEVER put big headings in comments with ASCII borders:
 
 ```ts
 // ❌ don't do this
