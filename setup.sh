@@ -81,6 +81,10 @@ if ! command -v bd &>/dev/null; then
 fi
 success "beads"
 
+# ---- Install/update Claude Code ----
+claude install latest --force >/dev/null 2>&1 || true
+success "claude"
+
 # ---- Sprite-specific setup ----
 if [[ -n "$SPRITE_NAME" ]]; then
   # GitHub CLI auth (secret)
