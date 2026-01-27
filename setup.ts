@@ -17,7 +17,6 @@ import { dirname, join } from "node:path"
 const HOME = process.env.HOME!
 const DOTFILES_REPO = "https://github.com/HerbCaudill/dotfiles.git"
 const DOTFILES_DIR = join(HOME, "code/herbcaudill/dotfiles")
-const ASDF_VERSION = "v0.14.1"
 
 const SPRITE_NAME = process.env.SPRITE_NAME
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN
@@ -42,6 +41,20 @@ const commandExists = (cmd: string) => {
     return true
   } catch {
     return false
+  }
+}
+
+/** Get the latest asdf release tag from GitHub. */
+const getLatestAsdfVersion = () => {
+  try {
+    const json = execSync(
+      "curl -fsSL https://api.github.com/repos/asdf-vm/asdf/releases/latest",
+      { encoding: "utf-8" }
+    )
+    const data = JSON.parse(json)
+    return data.tag_name || "v0.14.1"
+  } catch {
+    return "v0.14.1"
   }
 }
 
@@ -107,7 +120,8 @@ success("zsh theme")
 // ---- Install asdf ----
 const asdfDir = join(HOME, ".asdf")
 if (!existsSync(asdfDir)) {
-  run(`git clone -q https://github.com/asdf-vm/asdf.git "${asdfDir}" --branch "${ASDF_VERSION}"`)
+  const asdfVersion = getLatestAsdfVersion()
+  run(`git clone -q https://github.com/asdf-vm/asdf.git "${asdfDir}" --branch "${asdfVersion}"`)
 }
 success("asdf")
 
