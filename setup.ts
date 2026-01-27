@@ -4,10 +4,11 @@
  * Works on both local machines and sprites.dev.
  *
  * Usage:
- *   npx tsx https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/setup.ts
+ *   curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/setup.ts | npx tsx -
  *
  * For sprites (with GitHub auth):
- *   GITHUB_TOKEN=xxx SPRITE_NAME=mysprite npx tsx ...
+ *   curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/setup.ts | \
+ *     GITHUB_TOKEN=xxx SPRITE_NAME=mysprite npx tsx -
  */
 
 import { execSync } from "node:child_process"
