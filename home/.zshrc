@@ -163,6 +163,18 @@ spc() {
   sprite console -s $name
 }
 
+# destroy all sprites
+sppurge() {
+  local sprites=$(sprite list)
+  if [[ -z "$sprites" ]]; then
+    echo "No sprites to destroy"
+    return
+  fi
+  echo "$sprites" | while read -r name; do
+    sprite destroy -s "$name" --force
+  done
+}
+
 #### GIT WORKTREE HELPERS
 
 # Scripts in ~/.local/bin handle the work; these wrappers handle cd
