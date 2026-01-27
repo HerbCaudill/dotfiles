@@ -152,9 +152,9 @@ spc() {
   fi
 
   sprite create --skip-console $name
-  sprite use $name
 
   if [[ -n "$repo_setup" ]]; then
+    sprite use $name
     sprite exec -s $name bash -c "export GITHUB_TOKEN=$token SPRITE_NAME=$name; curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/setup.sh | bash && $repo_setup"
   else
     sprite exec -s $name bash -c "export GITHUB_TOKEN=$token SPRITE_NAME=$name; curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/setup.sh | bash"
