@@ -109,6 +109,9 @@ if [[ -n "$SPRITE_NAME" ]]; then
     gh repo clone "$REPO_USER/$REPO_NAME" >/dev/null 2>&1
     success "Cloned $REPO_USER/$REPO_NAME"
     cd "$REPO_NAME"
+    # pnpm and bd aren't in PATH yet
+    export PNPM_HOME="$HOME/.local/share/pnpm"
+    export PATH="$PNPM_HOME:$HOME/.local/bin:$PATH"
     pnpm install >/dev/null 2>&1 || true
     success "pnpm install"
     bd init >/dev/null 2>&1 || true
