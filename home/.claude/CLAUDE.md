@@ -36,6 +36,15 @@ I generally use:
 - Use named exports. Don't use default exports unless we're in a framework (like Next.js) that requires them
 - Name test files `foo.test.ts`
 
+### Functional style
+
+- Prefer pure functions over functions with side effects
+- Prefer immutable data; avoid mutating objects and arrays
+- Use `map`/`filter`/`reduce` for simple transforms; use loops when clearer or faster
+- Prefer function composition over class hierarchies
+- Keep side effects (I/O, state changes) at the edges of the system
+- Avoid `let` when `const` works; avoid `var` entirely
+
 ### Comments
 
 Every function, class, property, parameter, method, etc. should be preceded by a block comment starting with `/**`. Function parameters should be documented independently, not using jsdoc syntax.
