@@ -68,14 +68,19 @@ const updateStep = (index: number, status: Status) => {
   render()
 }
 
+/** Errors collected during execution, displayed at the end. */
+const errors: { step: string; message: string }[] = []
+
 /** Run a step with automatic status updates. */
 const runStep = (index: number, fn: () => void) => {
   updateStep(index, "running")
   try {
     fn()
     updateStep(index, "done")
-  } catch {
+  } catch (e) {
     updateStep(index, "warn")
+    const message = e instanceof Error ? e.message : String(e)
+    errors.push({ step: steps[index].name, message })
   }
 }
 
@@ -284,4 +289,13 @@ if (SPRITE_NAME) {
   console.log(`👾 ${SPRITE_NAME} is ready!`)
 } else {
   console.log("\x1b[1;32m✓\x1b[0m Ready!")
+}
+
+// ---- Show errors ----
+if (errors.length > 0) {
+  console.log()
+  console.log("\x1b[1;33mErrors:\x1b[0m")
+  for (const { step, message } of errors) {
+    console.log(`  ${step}: ${message}`)
+  }
 }
