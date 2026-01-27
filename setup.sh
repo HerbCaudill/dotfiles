@@ -82,7 +82,7 @@ fi
 success "beads"
 
 # ---- Install/update Claude Code ----
-claude install latest --force >/dev/null 2>&1 || true
+npm install -g @anthropic-ai/claude-code >/dev/null 2>&1 || true
 success "claude"
 
 # ---- Sprite-specific setup ----
