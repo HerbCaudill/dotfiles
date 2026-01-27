@@ -45,11 +45,11 @@ const render = () => {
 
   for (const step of steps) {
     const icon =
-      step.status === "done" ? "\x1b[1;32m✓\x1b[0m" :
-      step.status === "warn" ? "\x1b[1;33m!\x1b[0m" :
-      step.status === "skip" ? "\x1b[90m-\x1b[0m" :
-      step.status === "running" ? "\x1b[1;34m…\x1b[0m" :
-      "\x1b[90m○\x1b[0m"
+      step.status === "done" ? "\x1b[1;32m✓\x1b[0m"
+      : step.status === "warn" ? "\x1b[1;33m!\x1b[0m"
+      : step.status === "skip" ? "\x1b[90m-\x1b[0m"
+      : step.status === "running" ? "\x1b[1;34m…\x1b[0m"
+      : "\x1b[90m○\x1b[0m"
     const text = step.status === "skip" ? `\x1b[90m${step.name}\x1b[0m` : step.name
     process.stdout.write(`\x1b[2K${icon} ${text}\n`)
   }
@@ -106,8 +106,8 @@ const appendIfMissing = (file: string, line: string) => {
 
 // ---- Define steps ----
 
-const dotfilesStep = addStep("Dotfiles")
-const symlinksStep = addStep("Symlinks")
+const dotfilesStep = addStep("dotfiles")
+const symlinksStep = addStep("symlinks")
 const ohmyzshStep = addStep("oh-my-zsh")
 const autosuggestionsStep = addStep("zsh-autosuggestions")
 const syntaxHighlightingStep = addStep("zsh-syntax-highlighting")
@@ -124,9 +124,9 @@ let pnpmInstallStep: number | undefined
 let beadsInitStep: number | undefined
 
 if (SPRITE_NAME) {
-  githubCliStep = addStep("GitHub CLI")
+  githubCliStep = addStep("gh")
   if (REPO_USER && REPO_NAME) {
-    cloneRepoStep = addStep(`Clone ${REPO_USER}/${REPO_NAME}`)
+    cloneRepoStep = addStep(`clone ${REPO_USER}/${REPO_NAME}`)
     pnpmInstallStep = addStep("pnpm install")
     beadsInitStep = addStep("beads init")
   }
@@ -160,7 +160,7 @@ runStep(ohmyzshStep, () => {
   if (!existsSync(ohmyzshPath)) {
     run(`rm -rf "${HOME}/.oh-my-zsh"`)
     run(
-      `RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"`
+      `RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"`,
     )
   }
 })
@@ -210,7 +210,9 @@ runStep(pnpmStep, () => {
 // ---- Install beads ----
 runStep(beadsStep, () => {
   if (!commandExists("bd")) {
-    run(`curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash`)
+    run(
+      `curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash`,
+    )
   }
 })
 
