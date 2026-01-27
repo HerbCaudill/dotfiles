@@ -102,6 +102,18 @@ if [[ -n "$SPRITE_NAME" ]]; then
     echo 'export VISUAL=nano' >> "$HOME/.secrets"
   fi
 
+  # Clone repo if REPO_USER and REPO_NAME are set
+  if [[ -n "$REPO_USER" && -n "$REPO_NAME" ]]; then
+    cd ~/code
+    gh repo clone "$REPO_USER/$REPO_NAME" >/dev/null 2>&1
+    success "Cloned $REPO_USER/$REPO_NAME"
+    cd "$REPO_NAME"
+    pnpm install >/dev/null 2>&1 || true
+    success "pnpm install"
+    bd init >/dev/null 2>&1 || true
+    success "beads init"
+  fi
+
 fi
 
 echo ""

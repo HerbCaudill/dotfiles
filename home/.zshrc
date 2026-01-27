@@ -107,8 +107,10 @@ function killport {
   lsof -i tcp:$1 | awk 'NR!=1 {print $2}' | xargs kill
 } 
 
+#### SPRITE HELPERS
+
 # mount sprites.dev fs
-sc() {
+spfs() {
   local sprite_name="${1:-$(sprite use)}"
   local mount_point="/tmp/sprite-${sprite_name}"
   mkdir -p "$mount_point"
@@ -126,7 +128,8 @@ spc() {
   fi
 
   local name="$1"
-  local repo_setup=""
+  local repo_user=""
+  local repo_name=""
 
   # If no name given and we're at a git repo root without .sprite file, use repo name
   if [[ -z "$name" && -d ".git" && ! -f ".sprite" ]]; then
@@ -134,10 +137,9 @@ spc() {
     if [[ -n "$remote_url" ]]; then
       # Extract username/reponame from git remote URL
       local repo_path=$(echo "$remote_url" | sed -E 's#.*(github\.com[:/])##' | sed 's/\.git$//')
-      local repo_name=$(basename "$repo_path")
-      local username=$(dirname "$repo_path")
+      repo_name=$(basename "$repo_path")
+      repo_user=$(dirname "$repo_path")
       name="dev-$repo_name"
-      repo_setup="cd ~/code && gh repo clone $username/$repo_name && cd $repo_name && pnpm install && bd init"
     fi
   fi
 
@@ -152,13 +154,9 @@ spc() {
   fi
 
   sprite create --skip-console $name
+  [[ -n "$repo_user" ]] && sprite use $name
 
-  if [[ -n "$repo_setup" ]]; then
-    sprite use $name
-    sprite exec -s $name bash -c "export GITHUB_TOKEN=$token SPRITE_NAME=$name; curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/setup.sh | bash && $repo_setup"
-  else
-    sprite exec -s $name bash -c "export GITHUB_TOKEN=$token SPRITE_NAME=$name; curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/setup.sh | bash"
-  fi
+  sprite exec -s $name bash -c "export GITHUB_TOKEN=$token SPRITE_NAME=$name REPO_USER=$repo_user REPO_NAME=$repo_name; curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/setup.sh | bash"
 
   sprite console -s $name
 }
