@@ -1,5 +1,6 @@
-#### SECRETS
-[[ -f ~/.secrets ]] && source ~/.secrets # currently just contains porkbun api credentials
+#### ENVIRONMENT
+[[ -f ~/.secrets ]] && source ~/.secrets   # tokens, api keys
+[[ -f ~/.localenv ]] && source ~/.localenv # machine-specific config (SPRITE_NAME, EDITOR, etc.)
 
 #### ZSH SETUP
 

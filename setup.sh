@@ -82,7 +82,7 @@ success "beads"
 
 # ---- Sprite-specific setup ----
 if [[ -n "$SPRITE_NAME" ]]; then
-  # GitHub CLI auth
+  # GitHub CLI auth (secret)
   if [[ -n "$GITHUB_TOKEN" ]]; then
     echo "export GH_TOKEN=$GITHUB_TOKEN" >> "$HOME/.secrets"
     success "GitHub CLI"
@@ -93,13 +93,13 @@ if [[ -n "$SPRITE_NAME" ]]; then
   # Create code directory
   mkdir -p "$HOME/code"
 
-  # Save sprite name for prompt
-  echo "export SPRITE_NAME=$SPRITE_NAME" >> "$HOME/.secrets"
+  # Save sprite name for prompt (not a secret)
+  echo "export SPRITE_NAME=$SPRITE_NAME" >> "$HOME/.localenv"
 
-  # Use nano as default editor
-  if [[ ! -f "$HOME/.secrets" ]] || ! grep -q "EDITOR" "$HOME/.secrets"; then
-    echo 'export EDITOR=nano' >> "$HOME/.secrets"
-    echo 'export VISUAL=nano' >> "$HOME/.secrets"
+  # Use nano as default editor (not a secret)
+  if [[ ! -f "$HOME/.localenv" ]] || ! grep -q "EDITOR" "$HOME/.localenv"; then
+    echo 'export EDITOR=nano' >> "$HOME/.localenv"
+    echo 'export VISUAL=nano' >> "$HOME/.localenv"
   fi
 
   # Clone repo if REPO_USER and REPO_NAME are set
