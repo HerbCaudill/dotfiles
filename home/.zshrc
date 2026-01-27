@@ -163,7 +163,7 @@ spc() {
            REPO_USER=$repo_user \
            REPO_NAME=$repo_name; \
     curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/setup.sh | bash"
-
+  
   sprite console -s $name
 }
 
@@ -245,7 +245,11 @@ export PATH="$PROTO_HOME/shims:$PROTO_HOME/bin:$PATH";
 # Terminal title
 if [[ -n "$SPRITE_NAME" ]]; then
   precmd() { print -Pn "\e]0;👾 $SPRITE_NAME\a" }
-  cd ~/code
+  if [[ -n "$SPRITE_REPO_DIR" && -d "$SPRITE_REPO_DIR" ]]; then
+    cd "$SPRITE_REPO_DIR"
+  else
+    cd ~/code
+  fi
 else
   precmd() { print -Pn "\e]0;%~\a" }
 fi

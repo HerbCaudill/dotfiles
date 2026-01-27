@@ -20,6 +20,7 @@ success() { echo -e "\033[1;32m✓\033[0m $1"; }
 warn() { echo -e "\033[1;33m!\033[0m $1"; }
 
 echo ""
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' '─'
 echo "👾 Setting up dev environment..."
 echo ""
 
@@ -113,6 +114,7 @@ if [[ -n "$SPRITE_NAME" ]]; then
     gh repo clone "$REPO_USER/$REPO_NAME" >/dev/null 2>&1
     success "Cloned $REPO_USER/$REPO_NAME"
     cd "$REPO_NAME"
+    echo "export SPRITE_REPO_DIR=$HOME/code/$REPO_NAME" >> "$HOME/.localenv"
     # pnpm and bd aren't in PATH yet
     export PNPM_HOME="$HOME/.local/share/pnpm"
     export PATH="$PNPM_HOME:$HOME/.local/bin:$PATH"
