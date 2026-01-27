@@ -67,13 +67,13 @@ const steps: Record<string, () => void> = {
     }
   },
 
-  "zsh-autosuggestions": () => {
+  "zsh autosuggestions": () => {
     const autosuggestions = join(ZSH_CUSTOM, "plugins/zsh-autosuggestions")
     if (!existsSync(autosuggestions))
       run(`git clone -q https://github.com/zsh-users/zsh-autosuggestions "${autosuggestions}"`)
   },
 
-  "zsh-syntax-highlighting": () => {
+  "zsh syntax highlighting": () => {
     const syntaxHighlighting = join(ZSH_CUSTOM, "plugins/zsh-syntax-highlighting")
     if (!existsSync(syntaxHighlighting))
       run(
