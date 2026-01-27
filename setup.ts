@@ -47,6 +47,8 @@ const errors: { step: string; message: string }[] = []
 
 const steps: Record<string, () => void> = {
   "clone dotfiles": () => {
+    // Skip if we're setting up the dotfiles repo itself
+    if (REPO_NAME === "dotfiles") return
     if (!existsSync(DOTFILES_DIR)) {
       mkdirSync(dirname(DOTFILES_DIR), { recursive: true })
       run(`git clone -q "${DOTFILES_REPO}" "${DOTFILES_DIR}"`)
