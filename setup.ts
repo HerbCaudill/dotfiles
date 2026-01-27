@@ -12,7 +12,7 @@
  *     GITHUB_TOKEN=xxx SPRITE_NAME=mysprite npm_config_update_notifier=false npx -y tsx -
  */
 
-import { execSync } from "node:child_process"
+import { execSync, spawnSync } from "node:child_process"
 import { existsSync, mkdirSync, appendFileSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 
@@ -188,11 +188,17 @@ const main = () => {
   console.log()
   if (SPRITE_NAME) {
     console.log(`👾 ${SPRITE_NAME} is ready!`)
+    console.log()
+    // Exec into zsh so .secrets is sourced
+    const result = spawnSync("/bin/zsh", ["-l"], {
+      stdio: "inherit",
+      cwd: repoDir || codeDir,
+    })
+    process.exit(result.status ?? 0)
   } else {
     console.log("\x1b[1;32m✓\x1b[0m Ready!")
+    process.exit(0)
   }
-
-  process.exit(0)
 }
 
 // CHECKLIST UI
