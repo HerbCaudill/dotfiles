@@ -160,8 +160,8 @@ spc() {
     return
   fi
 
-  sprite create --skip-console $name
-  [[ -n "$repo_user" ]] && sprite use $name
+  sprite create --skip-console $name | head -1
+  [[ -n "$repo_user" ]] && sprite use $name | head -1
 
   sprite exec -s $name bash -c "\
     export GITHUB_TOKEN=$token \
