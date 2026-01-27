@@ -46,7 +46,7 @@ const errors: { step: string; message: string }[] = []
 // STEPS
 
 const steps: Record<string, () => void> = {
-  dotfiles: () => {
+  "clone dotfiles": () => {
     if (!existsSync(DOTFILES_DIR)) {
       mkdirSync(dirname(DOTFILES_DIR), { recursive: true })
       run(`git clone -q "${DOTFILES_REPO}" "${DOTFILES_DIR}"`)
@@ -183,7 +183,10 @@ const main = () => {
     for (const { step, message } of errors) {
       console.log(`  ${step}: ${message}`)
     }
+    process.exit(1)
   }
+
+  process.exit(0)
 }
 
 // CHECKLIST UI
@@ -254,10 +257,5 @@ const appendIfMissing = (file: string, line: string) => {
 // TYPES
 
 type Status = "pending" | "running" | "done" | "warn" | "skip"
-
-interface Step {
-  name: string
-  status: Status
-}
 
 main()
