@@ -19,7 +19,7 @@ ASDF_VERSION="v0.14.1"
 success() { echo -e "\033[1;32m✓\033[0m $1"; }
 warn() { echo -e "\033[1;33m!\033[0m $1"; }
 
-echo "Setting up dev environment..."
+echo "👾 Setting up dev environment..."
 echo ""
 
 # ---- Clone dotfiles ----
