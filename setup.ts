@@ -168,14 +168,6 @@ const main = () => {
     }
   }
 
-  // ---- Done ----
-  console.log()
-  if (SPRITE_NAME) {
-    console.log(`👾 ${SPRITE_NAME} is ready!`)
-  } else {
-    console.log("\x1b[1;32m✓\x1b[0m Ready!")
-  }
-
   // ---- Show errors ----
   if (errors.length > 0) {
     console.log()
@@ -184,6 +176,14 @@ const main = () => {
       console.log(`  ${step}: ${message}`)
     }
     process.exit(1)
+  }
+
+  // ---- Done ----
+  console.log()
+  if (SPRITE_NAME) {
+    console.log(`👾 ${SPRITE_NAME} is ready!`)
+  } else {
+    console.log("\x1b[1;32m✓\x1b[0m Ready!")
   }
 
   process.exit(0)
@@ -231,9 +231,17 @@ const runStep = (name: string, fn: () => void) => {
 
 // UTILITIES
 
-/** Execute a shell command silently. */
+/** Execute a shell command silently, capturing output for error reporting. */
 const run = (cmd: string, options: { cwd?: string; env?: NodeJS.ProcessEnv } = {}) => {
-  execSync(cmd, { stdio: "pipe", ...options })
+  try {
+    execSync(cmd, { stdio: "pipe", ...options })
+  } catch (e: unknown) {
+    const err = e as { stderr?: Buffer; stdout?: Buffer; message?: string }
+    const stderr = err.stderr?.toString().trim()
+    const stdout = err.stdout?.toString().trim()
+    const output = [stderr, stdout].filter(Boolean).join("\n")
+    throw new Error(output || err.message || "Command failed")
+  }
 }
 
 /** Check if a command exists. */
