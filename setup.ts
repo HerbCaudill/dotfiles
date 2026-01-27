@@ -1,4 +1,5 @@
 #!/usr/bin/env npx tsx
+
 /**
  * Bootstrap script for setting up a dev environment.
  * Works on both local machines and sprites.dev.
@@ -15,77 +16,218 @@ import { execSync } from "node:child_process"
 import { existsSync, mkdirSync, appendFileSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 
-const HOME = process.env.HOME!
-const DOTFILES_REPO = "https://github.com/HerbCaudill/dotfiles.git"
-const DOTFILES_DIR = join(HOME, "code/herbcaudill/dotfiles")
+// Env variables
 
+const HOME = process.env.HOME!
 const SPRITE_NAME = process.env.SPRITE_NAME
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN
 const CLAUDE_CODE_OAUTH_TOKEN = process.env.CLAUDE_CODE_OAUTH_TOKEN
 const REPO_USER = process.env.REPO_USER
 const REPO_NAME = process.env.REPO_NAME
 
-// ---- Checklist UI ----
+// Paths
 
-type Status = "pending" | "running" | "done" | "warn" | "skip"
+const DOTFILES_REPO = "https://github.com/HerbCaudill/dotfiles.git"
+const DOTFILES_DIR = join(HOME, "code/herbcaudill/dotfiles")
+const secretsFile = join(HOME, ".secrets")
+const localenvFile = join(HOME, ".localenv")
+const PNPM_HOME = join(HOME, ".local/share/pnpm")
+const codeDir = join(HOME, "code")
+const PATH = `${PNPM_HOME}:${HOME}/.local/bin:${process.env.PATH}`
 
-interface Step {
-  name: string
-  status: Status
+const ZSH_CUSTOM = process.env.ZSH_CUSTOM || join(HOME, ".oh-my-zsh/custom")
+const isRepo = SPRITE_NAME && REPO_USER && REPO_NAME
+
+const stepStatus = new Map<string, Status>()
+let headerLines = 0
+const errors: { step: string; message: string }[] = []
+
+// STEPS
+
+const steps: Record<string, () => void> = {
+  dotfiles: () => {
+    if (!existsSync(DOTFILES_DIR)) {
+      mkdirSync(dirname(DOTFILES_DIR), { recursive: true })
+      run(`git clone -q "${DOTFILES_REPO}" "${DOTFILES_DIR}"`)
+    }
+  },
+
+  symlinks: () => {
+    run(`node "${DOTFILES_DIR}/install.mjs"`)
+  },
+
+  "oh-my-zsh": () => {
+    const ohmyzshPath = join(HOME, ".oh-my-zsh/oh-my-zsh.sh")
+    if (!existsSync(ohmyzshPath)) {
+      run(`rm -rf "${HOME}/.oh-my-zsh"`)
+      run(
+        `RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"`,
+      )
+    }
+  },
+
+  "zsh-autosuggestions": () => {
+    const autosuggestions = join(ZSH_CUSTOM, "plugins/zsh-autosuggestions")
+    if (!existsSync(autosuggestions))
+      run(`git clone -q https://github.com/zsh-users/zsh-autosuggestions "${autosuggestions}"`)
+  },
+
+  "zsh-syntax-highlighting": () => {
+    const syntaxHighlighting = join(ZSH_CUSTOM, "plugins/zsh-syntax-highlighting")
+    if (!existsSync(syntaxHighlighting))
+      run(
+        `git clone -q https://github.com/zsh-users/zsh-syntax-highlighting "${syntaxHighlighting}"`,
+      )
+  },
+
+  "zsh theme": () => {
+    const themeSrc = join(DOTFILES_DIR, "home/.oh-my-zsh/custom/themes/herb.zsh-theme")
+    const themeDst = join(ZSH_CUSTOM, "themes/herb.zsh-theme")
+    if (existsSync(themeSrc)) {
+      mkdirSync(dirname(themeDst), { recursive: true })
+      run(`ln -sf "${themeSrc}" "${themeDst}"`)
+    }
+  },
+
+  asdf: () => {
+    const asdfDir = join(HOME, ".asdf")
+    if (!existsSync(asdfDir)) run(`git clone -q https://github.com/asdf-vm/asdf.git "${asdfDir}"`)
+  },
+
+  pnpm: () => {
+    if (!commandExists("pnpm"))
+      run(`curl -fsSL https://get.pnpm.io/install.sh | SHELL=/bin/bash bash`)
+  },
+
+  beads: () => {
+    if (!commandExists("bd"))
+      run(
+        `curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash`,
+      )
+  },
+
+  claude: () => {
+    if (CLAUDE_CODE_OAUTH_TOKEN)
+      appendFileSync(secretsFile, `export CLAUDE_CODE_OAUTH_TOKEN=${CLAUDE_CODE_OAUTH_TOKEN}\n`)
+    run(`claude install latest --force`)
+  },
+
+  gh: () => {
+    if (GITHUB_TOKEN) appendFileSync(secretsFile, `export GH_TOKEN=${GITHUB_TOKEN}\n`)
+  },
+
+  ...(isRepo ?
+    {
+      [`clone ${REPO_NAME}`]: () => {
+        run(`gh repo clone "${REPO_USER}/${REPO_NAME}"`, { cwd: codeDir })
+      },
+
+      "pnpm install": () => {
+        const repoDir = join(codeDir, REPO_NAME)
+        run("pnpm install", { cwd: repoDir, env: { ...process.env, PATH } })
+      },
+
+      "beads init": () => {
+        const repoDir = join(codeDir, REPO_NAME)
+        run("bd init", { cwd: repoDir, env: { ...process.env, PATH } })
+      },
+    }
+  : {}),
 }
 
-const steps: Step[] = []
-let headerLines = 0
+// MAIN
+
+const main = () => {
+  console.log()
+  console.log("─".repeat(process.stdout.columns || 80))
+  console.log("👾 Setting up dev environment...")
+  console.log()
+
+  // Initialize step statuses and render
+  for (const name of Object.keys(steps)) {
+    stepStatus.set(name, "pending")
+  }
+  render()
+
+  // Run all steps
+  for (const [name, fn] of Object.entries(steps)) {
+    runStep(name, fn)
+  }
+
+  // Sprite-specific post-setup
+  if (SPRITE_NAME) {
+    const codeDir = join(HOME, "code")
+
+    mkdirSync(codeDir, { recursive: true })
+    appendFileSync(localenvFile, `export SPRITE_NAME=${SPRITE_NAME}\n`)
+    appendIfMissing(localenvFile, "export EDITOR=nano")
+    appendIfMissing(localenvFile, "export VISUAL=nano")
+
+    if (REPO_USER && REPO_NAME) {
+      const repoDir = join(codeDir, REPO_NAME)
+      appendFileSync(localenvFile, `export SPRITE_REPO_DIR=${repoDir}\n`)
+    }
+  }
+
+  // ---- Done ----
+  console.log()
+  if (SPRITE_NAME) {
+    console.log(`👾 ${SPRITE_NAME} is ready!`)
+  } else {
+    console.log("\x1b[1;32m✓\x1b[0m Ready!")
+  }
+
+  // ---- Show errors ----
+  if (errors.length > 0) {
+    console.log()
+    console.log("\x1b[1;33mErrors:\x1b[0m")
+    for (const { step, message } of errors) {
+      console.log(`  ${step}: ${message}`)
+    }
+  }
+}
+
+// CHECKLIST UI
 
 /** Render the full checklist. */
 const render = () => {
   // Move cursor up to overwrite previous render
   if (headerLines > 0) {
-    process.stdout.write(`\x1b[${steps.length}A`)
+    process.stdout.write(`\x1b[${stepStatus.size}A`)
   }
 
-  for (const step of steps) {
+  for (const [name, status] of stepStatus) {
     const icon =
-      step.status === "done" ? "\x1b[1;32m✓\x1b[0m"
-      : step.status === "warn" ? "\x1b[1;33m!\x1b[0m"
-      : step.status === "skip" ? "\x1b[90m-\x1b[0m"
-      : step.status === "running" ? "\x1b[1;34m…\x1b[0m"
-      : "\x1b[90m○\x1b[0m"
-    const text = step.status === "skip" ? `\x1b[90m${step.name}\x1b[0m` : step.name
-    process.stdout.write(`\x1b[2K${icon} ${text}\n`)
+      status === "done" ? "✓"
+      : status === "warn" ? "✗"
+      : status === "skip" ? "−"
+      : status === "running" ? "⟳"
+      : "○"
+    process.stdout.write(`\x1b[2K${icon} ${name}\n`)
   }
-  headerLines = steps.length
-}
-
-/** Add a step to the checklist. */
-const addStep = (name: string): number => {
-  steps.push({ name, status: "pending" })
-  return steps.length - 1
+  headerLines = stepStatus.size
 }
 
 /** Update a step's status and re-render. */
-const updateStep = (index: number, status: Status) => {
-  steps[index].status = status
+const updateStep = (name: string, status: Status) => {
+  stepStatus.set(name, status)
   render()
 }
 
-/** Errors collected during execution, displayed at the end. */
-const errors: { step: string; message: string }[] = []
-
 /** Run a step with automatic status updates. */
-const runStep = (index: number, fn: () => void) => {
-  updateStep(index, "running")
+const runStep = (name: string, fn: () => void) => {
+  updateStep(name, "running")
   try {
     fn()
-    updateStep(index, "done")
+    updateStep(name, "done")
   } catch (e) {
-    updateStep(index, "warn")
+    updateStep(name, "warn")
     const message = e instanceof Error ? e.message : String(e)
-    errors.push({ step: steps[index].name, message })
+    errors.push({ step: name, message })
   }
 }
 
-// ---- Utilities ----
+// UTILITIES
 
 /** Execute a shell command silently. */
 const run = (cmd: string, options: { cwd?: string; env?: NodeJS.ProcessEnv } = {}) => {
@@ -110,172 +252,13 @@ const appendIfMissing = (file: string, line: string) => {
   }
 }
 
-// ---- Define steps ----
+// TYPES
 
-const ZSH_CUSTOM = process.env.ZSH_CUSTOM || join(HOME, ".oh-my-zsh/custom")
+type Status = "pending" | "running" | "done" | "warn" | "skip"
 
-const coreSteps: Record<string, () => void> = {
-  dotfiles: () => {
-    if (!existsSync(DOTFILES_DIR)) {
-      mkdirSync(dirname(DOTFILES_DIR), { recursive: true })
-      run(`git clone -q "${DOTFILES_REPO}" "${DOTFILES_DIR}"`)
-    }
-  },
-
-  symlinks: () => {
-    run(`node "${DOTFILES_DIR}/install.mjs"`)
-  },
-
-  "oh-my-zsh": () => {
-    const ohmyzshPath = join(HOME, ".oh-my-zsh/oh-my-zsh.sh")
-    if (!existsSync(ohmyzshPath)) {
-      run(`rm -rf "${HOME}/.oh-my-zsh"`)
-      run(
-        `RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"`,
-      )
-    }
-  },
-
-  "zsh-autosuggestions": () => {
-    const autosuggestions = join(ZSH_CUSTOM, "plugins/zsh-autosuggestions")
-    if (!existsSync(autosuggestions)) {
-      run(`git clone -q https://github.com/zsh-users/zsh-autosuggestions "${autosuggestions}"`)
-    }
-  },
-
-  "zsh-syntax-highlighting": () => {
-    const syntaxHighlighting = join(ZSH_CUSTOM, "plugins/zsh-syntax-highlighting")
-    if (!existsSync(syntaxHighlighting)) {
-      run(`git clone -q https://github.com/zsh-users/zsh-syntax-highlighting "${syntaxHighlighting}"`)
-    }
-  },
-
-  "zsh theme": () => {
-    const themeSrc = join(DOTFILES_DIR, "home/.oh-my-zsh/custom/themes/herb.zsh-theme")
-    const themeDst = join(ZSH_CUSTOM, "themes/herb.zsh-theme")
-    if (existsSync(themeSrc)) {
-      mkdirSync(dirname(themeDst), { recursive: true })
-      run(`ln -sf "${themeSrc}" "${themeDst}"`)
-    }
-  },
-
-  asdf: () => {
-    const asdfDir = join(HOME, ".asdf")
-    if (!existsSync(asdfDir)) {
-      run(`git clone -q https://github.com/asdf-vm/asdf.git "${asdfDir}"`)
-    }
-  },
-
-  pnpm: () => {
-    if (!commandExists("pnpm")) {
-      run(`curl -fsSL https://get.pnpm.io/install.sh | SHELL=/bin/bash bash`)
-    }
-  },
-
-  beads: () => {
-    if (!commandExists("bd")) {
-      run(
-        `curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash`,
-      )
-    }
-  },
-
-  claude: () => {
-    run(`claude install latest --force`)
-  },
+interface Step {
+  name: string
+  status: Status
 }
 
-// Sprite-specific steps (added conditionally)
-const spriteSteps: Record<string, () => void> = {}
-
-if (SPRITE_NAME) {
-  const secretsFile = join(HOME, ".secrets")
-  const localenvFile = join(HOME, ".localenv")
-  const codeDir = join(HOME, "code")
-  const repoDir = REPO_NAME ? join(codeDir, REPO_NAME) : ""
-  const PNPM_HOME = join(HOME, ".local/share/pnpm")
-  const PATH = `${PNPM_HOME}:${HOME}/.local/bin:${process.env.PATH}`
-
-  spriteSteps["gh"] = () => {
-    if (GITHUB_TOKEN) {
-      appendFileSync(secretsFile, `export GH_TOKEN=${GITHUB_TOKEN}\n`)
-    } else {
-      throw new Error("GITHUB_TOKEN not set")
-    }
-  }
-
-  spriteSteps["claude"] = () => {
-    if (CLAUDE_CODE_OAUTH_TOKEN) {
-      appendFileSync(secretsFile, `export CLAUDE_CODE_OAUTH_TOKEN=${CLAUDE_CODE_OAUTH_TOKEN}\n`)
-    }
-    // Claude auth is optional - don't throw if missing
-  }
-
-  if (REPO_USER && REPO_NAME) {
-    spriteSteps[`clone ${REPO_USER}/${REPO_NAME}`] = () => {
-      run(`gh repo clone "${REPO_USER}/${REPO_NAME}"`, { cwd: codeDir })
-    }
-
-    spriteSteps["pnpm install"] = () => {
-      run("pnpm install", { cwd: repoDir, env: { ...process.env, PATH } })
-    }
-
-    spriteSteps["beads init"] = () => {
-      run("bd init", { cwd: repoDir, env: { ...process.env, PATH } })
-    }
-  }
-}
-
-// ---- Header ----
-console.log()
-console.log("─".repeat(process.stdout.columns || 80))
-console.log("👾 Setting up dev environment...")
-console.log()
-
-// Register all steps
-const allSteps = { ...coreSteps, ...spriteSteps }
-const stepIndices: Record<string, number> = {}
-for (const name of Object.keys(allSteps)) {
-  stepIndices[name] = addStep(name)
-}
-
-// Initial render
-render()
-
-// Run all steps
-for (const [name, fn] of Object.entries(allSteps)) {
-  runStep(stepIndices[name], fn)
-}
-
-// Sprite-specific post-setup
-if (SPRITE_NAME) {
-  const localenvFile = join(HOME, ".localenv")
-  const codeDir = join(HOME, "code")
-
-  mkdirSync(codeDir, { recursive: true })
-  appendFileSync(localenvFile, `export SPRITE_NAME=${SPRITE_NAME}\n`)
-  appendIfMissing(localenvFile, "export EDITOR=nano")
-  appendIfMissing(localenvFile, "export VISUAL=nano")
-
-  if (REPO_USER && REPO_NAME) {
-    const repoDir = join(codeDir, REPO_NAME)
-    appendFileSync(localenvFile, `export SPRITE_REPO_DIR=${repoDir}\n`)
-  }
-}
-
-// ---- Done ----
-console.log()
-if (SPRITE_NAME) {
-  console.log(`👾 ${SPRITE_NAME} is ready!`)
-} else {
-  console.log("\x1b[1;32m✓\x1b[0m Ready!")
-}
-
-// ---- Show errors ----
-if (errors.length > 0) {
-  console.log()
-  console.log("\x1b[1;33mErrors:\x1b[0m")
-  for (const { step, message } of errors) {
-    console.log(`  ${step}: ${message}`)
-  }
-}
+main()
