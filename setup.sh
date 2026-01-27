@@ -74,6 +74,12 @@ if ! command -v pnpm &>/dev/null; then
 fi
 success "pnpm"
 
+# ---- Install beads ----
+if ! command -v bd &>/dev/null; then
+  npm install -g @beads/bd >/dev/null 2>&1 || true
+fi
+success "beads"
+
 # ---- Sprite-specific setup ----
 if [[ -n "$SPRITE_NAME" ]]; then
   # GitHub CLI auth
