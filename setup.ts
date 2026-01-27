@@ -21,6 +21,7 @@ const DOTFILES_DIR = join(HOME, "code/herbcaudill/dotfiles")
 
 const SPRITE_NAME = process.env.SPRITE_NAME
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN
+const CLAUDE_CODE_OAUTH_TOKEN = process.env.CLAUDE_CODE_OAUTH_TOKEN
 const REPO_USER = process.env.REPO_USER
 const REPO_NAME = process.env.REPO_NAME
 
@@ -201,6 +202,13 @@ if (SPRITE_NAME) {
     } else {
       throw new Error("GITHUB_TOKEN not set")
     }
+  }
+
+  spriteSteps["claude"] = () => {
+    if (CLAUDE_CODE_OAUTH_TOKEN) {
+      appendFileSync(secretsFile, `export CLAUDE_CODE_OAUTH_TOKEN=${CLAUDE_CODE_OAUTH_TOKEN}\n`)
+    }
+    // Claude auth is optional - don't throw if missing
   }
 
   if (REPO_USER && REPO_NAME) {
