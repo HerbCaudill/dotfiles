@@ -110,7 +110,9 @@ const steps: Record<string, () => void> = {
   claude: () => {
     if (CLAUDE_CODE_OAUTH_TOKEN)
       appendFileSync(secretsFile, `export CLAUDE_CODE_OAUTH_TOKEN=${CLAUDE_CODE_OAUTH_TOKEN}\n`)
-    run(`claude install latest --force`)
+    run(`claude install latest --force`, {
+      env: { ...process.env, PATH, CLAUDE_CODE_OAUTH_TOKEN },
+    })
   },
 
   gh: () => {
