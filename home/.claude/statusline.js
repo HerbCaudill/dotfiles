@@ -113,8 +113,8 @@ function getWeeklyUsage() {
     if (!accessToken) return null
 
     const response = execSync(
-      `curl -s -H "Authorization: Bearer ${accessToken}" -H "anthropic-beta: oauth-2025-04-20" https://api.anthropic.com/api/oauth/usage`,
-      { encoding: 'utf-8', timeout: 2000 }
+      `curl -s --max-time 8 -H "Authorization: Bearer ${accessToken}" -H "anthropic-beta: oauth-2025-04-20" https://api.anthropic.com/api/oauth/usage`,
+      { encoding: 'utf-8', timeout: 10000 }
     )
 
     const usage = JSON.parse(response)
