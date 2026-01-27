@@ -26,6 +26,14 @@ I generally use:
 - The first thing I see in a component file, after the imports, should be the component itself.
 - All interfaces and type definitions should be at the end of the file.
 
+### Functional style
+
+- Prefer pure functions over functions with side effects
+- Prefer immutable data; avoid mutating objects and arrays
+- Use `map`/`filter`/`reduce` for simple transforms; use loops when clearer or faster
+- Prefer function composition over class hierarchies
+- Keep side effects (I/O, state changes) at the edges of the system
+
 ### General
 
 - Each function should be in its own file.
@@ -35,15 +43,6 @@ I generally use:
 - When combining lists of Tailwind class names, use `cx` rather than string interpolation.
 - Use named exports. Don't use default exports unless we're in a framework (like Next.js) that requires them
 - Name test files `foo.test.ts`
-
-### Functional style
-
-- Prefer pure functions over functions with side effects
-- Prefer immutable data; avoid mutating objects and arrays
-- Use `map`/`filter`/`reduce` for simple transforms; use loops when clearer or faster
-- Prefer function composition over class hierarchies
-- Keep side effects (I/O, state changes) at the edges of the system
-- Avoid `let` when `const` works; avoid `var` entirely
 
 ### Comments
 
