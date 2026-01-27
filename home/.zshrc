@@ -119,14 +119,39 @@ sc() {
 
 # create sprite with setup
 spc() {
-  local name="${1:-$(LC_ALL=C tr -dc 'a-z' </dev/urandom | head -c 5)}"
   local token=$(gh auth token)
   if [[ -z "$token" ]]; then
     echo "Not authenticated with gh - run 'gh auth login' first"
     return 1
   fi
+
+  local name="$1"
+  local repo_setup=""
+
+  # If no name given and we're at a git repo root without .sprite file, use repo name
+  if [[ -z "$name" && -d ".git" && ! -f ".sprite" ]]; then
+    local remote_url=$(git remote get-url origin 2>/dev/null)
+    if [[ -n "$remote_url" ]]; then
+      # Extract username/reponame from git remote URL
+      local repo_path=$(echo "$remote_url" | sed -E 's#.*(github\.com[:/])##' | sed 's/\.git$//')
+      local repo_name=$(basename "$repo_path")
+      local username=$(dirname "$repo_path")
+      name="dev-$repo_name"
+      repo_setup="cd ~/code && gh repo clone $username/$repo_name && cd $repo_name && pnpm install && bd init"
+    fi
+  fi
+
+  # Fall back to random name if still not set
+  name="${name:-$(LC_ALL=C tr -dc 'a-z' </dev/urandom | head -c 5)}"
+
   sprite create --skip-console $name
-  sprite exec -s $name bash -c "export GITHUB_TOKEN=$token SPRITE_NAME=$name; curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/setup.sh | bash"
+
+  if [[ -n "$repo_setup" ]]; then
+    sprite exec -s $name bash -c "export GITHUB_TOKEN=$token SPRITE_NAME=$name; curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/setup.sh | bash && $repo_setup"
+  else
+    sprite exec -s $name bash -c "export GITHUB_TOKEN=$token SPRITE_NAME=$name; curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/setup.sh | bash"
+  fi
+
   sprite console -s $name
 }
 
