@@ -4,11 +4,11 @@
  * Works on both local machines and sprites.dev.
  *
  * Usage:
- *   curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/setup.ts | npx -y tsx -
+ *   curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/setup.ts | npm_config_update_notifier=false npx -y tsx -
  *
  * For sprites (with GitHub auth):
  *   curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/setup.ts | \
- *     GITHUB_TOKEN=xxx SPRITE_NAME=mysprite npx -y tsx -
+ *     GITHUB_TOKEN=xxx SPRITE_NAME=mysprite npm_config_update_notifier=false npx -y tsx -
  */
 
 import { execSync } from "node:child_process"
