@@ -37,6 +37,7 @@ const PATH = `${PNPM_HOME}:${HOME}/.local/bin:${process.env.PATH}`
 
 const ZSH_CUSTOM = process.env.ZSH_CUSTOM || join(HOME, ".oh-my-zsh/custom")
 const isRepo = SPRITE_NAME && REPO_USER && REPO_NAME
+const repoDir = REPO_NAME ? join(codeDir, REPO_NAME) : ""
 
 const stepStatus = new Map<string, Status>()
 let headerLines = 0
@@ -123,12 +124,10 @@ const steps: Record<string, () => void> = {
       },
 
       "pnpm install": () => {
-        const repoDir = join(codeDir, REPO_NAME)
         run("pnpm install", { cwd: repoDir, env: { ...process.env, PATH } })
       },
 
       "beads init": () => {
-        const repoDir = join(codeDir, REPO_NAME)
         run("bd init", { cwd: repoDir, env: { ...process.env, PATH } })
       },
     }
