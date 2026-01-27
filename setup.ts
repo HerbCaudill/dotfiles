@@ -23,14 +23,65 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN
 const REPO_USER = process.env.REPO_USER
 const REPO_NAME = process.env.REPO_NAME
 
-/** Print success message with green checkmark. */
-const success = (msg: string) => console.log(`\x1b[1;32m✓\x1b[0m ${msg}`)
+// ---- Checklist UI ----
 
-/** Print warning message with yellow exclamation. */
-const warn = (msg: string) => console.log(`\x1b[1;33m!\x1b[0m ${msg}`)
+type Status = "pending" | "running" | "done" | "warn" | "skip"
+
+interface Step {
+  name: string
+  status: Status
+}
+
+const steps: Step[] = []
+let headerLines = 0
+
+/** Render the full checklist. */
+const render = () => {
+  // Move cursor up to overwrite previous render
+  if (headerLines > 0) {
+    process.stdout.write(`\x1b[${steps.length}A`)
+  }
+
+  for (const step of steps) {
+    const icon =
+      step.status === "done" ? "\x1b[1;32m✓\x1b[0m" :
+      step.status === "warn" ? "\x1b[1;33m!\x1b[0m" :
+      step.status === "skip" ? "\x1b[90m-\x1b[0m" :
+      step.status === "running" ? "\x1b[1;34m…\x1b[0m" :
+      "\x1b[90m○\x1b[0m"
+    const text = step.status === "skip" ? `\x1b[90m${step.name}\x1b[0m` : step.name
+    process.stdout.write(`\x1b[2K${icon} ${text}\n`)
+  }
+  headerLines = steps.length
+}
+
+/** Add a step to the checklist. */
+const addStep = (name: string): number => {
+  steps.push({ name, status: "pending" })
+  return steps.length - 1
+}
+
+/** Update a step's status and re-render. */
+const updateStep = (index: number, status: Status) => {
+  steps[index].status = status
+  render()
+}
+
+/** Run a step with automatic status updates. */
+const runStep = (index: number, fn: () => void) => {
+  updateStep(index, "running")
+  try {
+    fn()
+    updateStep(index, "done")
+  } catch {
+    updateStep(index, "warn")
+  }
+}
+
+// ---- Utilities ----
 
 /** Execute a shell command silently. */
-const run = (cmd: string, options: { cwd?: string } = {}) => {
+const run = (cmd: string, options: { cwd?: string; env?: NodeJS.ProcessEnv } = {}) => {
   execSync(cmd, { stdio: "pipe", ...options })
 }
 
@@ -52,91 +103,120 @@ const appendIfMissing = (file: string, line: string) => {
   }
 }
 
+// ---- Define steps ----
+
+const dotfilesStep = addStep("Dotfiles")
+const symlinksStep = addStep("Symlinks")
+const ohmyzshStep = addStep("oh-my-zsh")
+const autosuggestionsStep = addStep("zsh-autosuggestions")
+const syntaxHighlightingStep = addStep("zsh-syntax-highlighting")
+const themeStep = addStep("zsh theme")
+const asdfStep = addStep("asdf")
+const pnpmStep = addStep("pnpm")
+const beadsStep = addStep("beads")
+const claudeStep = addStep("claude")
+
+// Sprite-specific steps (added conditionally)
+let githubCliStep: number | undefined
+let cloneRepoStep: number | undefined
+let pnpmInstallStep: number | undefined
+let beadsInitStep: number | undefined
+
+if (SPRITE_NAME) {
+  githubCliStep = addStep("GitHub CLI")
+  if (REPO_USER && REPO_NAME) {
+    cloneRepoStep = addStep(`Clone ${REPO_USER}/${REPO_NAME}`)
+    pnpmInstallStep = addStep("pnpm install")
+    beadsInitStep = addStep("beads init")
+  }
+}
+
 // ---- Header ----
 console.log()
 console.log("─".repeat(process.stdout.columns || 80))
 console.log("👾 Setting up dev environment...")
 console.log()
 
+// Initial render
+render()
+
 // ---- Clone dotfiles ----
-if (!existsSync(DOTFILES_DIR)) {
-  mkdirSync(dirname(DOTFILES_DIR), { recursive: true })
-  run(`git clone -q "${DOTFILES_REPO}" "${DOTFILES_DIR}"`)
-}
-success("Dotfiles")
+runStep(dotfilesStep, () => {
+  if (!existsSync(DOTFILES_DIR)) {
+    mkdirSync(dirname(DOTFILES_DIR), { recursive: true })
+    run(`git clone -q "${DOTFILES_REPO}" "${DOTFILES_DIR}"`)
+  }
+})
 
 // ---- Run install script (symlinks) ----
-run(`node "${DOTFILES_DIR}/install.mjs"`)
-success("Symlinks")
+runStep(symlinksStep, () => {
+  run(`node "${DOTFILES_DIR}/install.mjs"`)
+})
 
 // ---- Install oh-my-zsh ----
-const ohmyzshPath = join(HOME, ".oh-my-zsh/oh-my-zsh.sh")
-if (!existsSync(ohmyzshPath)) {
-  run(`rm -rf "${HOME}/.oh-my-zsh"`)
-  run(
-    `RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"`
-  )
-}
-success("oh-my-zsh")
+runStep(ohmyzshStep, () => {
+  const ohmyzshPath = join(HOME, ".oh-my-zsh/oh-my-zsh.sh")
+  if (!existsSync(ohmyzshPath)) {
+    run(`rm -rf "${HOME}/.oh-my-zsh"`)
+    run(
+      `RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"`
+    )
+  }
+})
 
 // ---- Install zsh plugins ----
 const ZSH_CUSTOM = process.env.ZSH_CUSTOM || join(HOME, ".oh-my-zsh/custom")
 
-const autosuggestions = join(ZSH_CUSTOM, "plugins/zsh-autosuggestions")
-if (!existsSync(autosuggestions)) {
-  run(`git clone -q https://github.com/zsh-users/zsh-autosuggestions "${autosuggestions}"`)
-}
-success("zsh-autosuggestions")
+runStep(autosuggestionsStep, () => {
+  const autosuggestions = join(ZSH_CUSTOM, "plugins/zsh-autosuggestions")
+  if (!existsSync(autosuggestions)) {
+    run(`git clone -q https://github.com/zsh-users/zsh-autosuggestions "${autosuggestions}"`)
+  }
+})
 
-const syntaxHighlighting = join(ZSH_CUSTOM, "plugins/zsh-syntax-highlighting")
-if (!existsSync(syntaxHighlighting)) {
-  run(`git clone -q https://github.com/zsh-users/zsh-syntax-highlighting "${syntaxHighlighting}"`)
-}
-success("zsh-syntax-highlighting")
+runStep(syntaxHighlightingStep, () => {
+  const syntaxHighlighting = join(ZSH_CUSTOM, "plugins/zsh-syntax-highlighting")
+  if (!existsSync(syntaxHighlighting)) {
+    run(`git clone -q https://github.com/zsh-users/zsh-syntax-highlighting "${syntaxHighlighting}"`)
+  }
+})
 
 // ---- Restore custom theme ----
-const themeSrc = join(DOTFILES_DIR, "home/.oh-my-zsh/custom/themes/herb.zsh-theme")
-const themeDst = join(ZSH_CUSTOM, "themes/herb.zsh-theme")
-if (existsSync(themeSrc)) {
-  mkdirSync(dirname(themeDst), { recursive: true })
-  run(`ln -sf "${themeSrc}" "${themeDst}"`)
-}
-success("zsh theme")
+runStep(themeStep, () => {
+  const themeSrc = join(DOTFILES_DIR, "home/.oh-my-zsh/custom/themes/herb.zsh-theme")
+  const themeDst = join(ZSH_CUSTOM, "themes/herb.zsh-theme")
+  if (existsSync(themeSrc)) {
+    mkdirSync(dirname(themeDst), { recursive: true })
+    run(`ln -sf "${themeSrc}" "${themeDst}"`)
+  }
+})
 
 // ---- Install asdf ----
-const asdfDir = join(HOME, ".asdf")
-if (!existsSync(asdfDir)) {
-  run(`git clone -q https://github.com/asdf-vm/asdf.git "${asdfDir}"`)
-}
-success("asdf")
+runStep(asdfStep, () => {
+  const asdfDir = join(HOME, ".asdf")
+  if (!existsSync(asdfDir)) {
+    run(`git clone -q https://github.com/asdf-vm/asdf.git "${asdfDir}"`)
+  }
+})
 
 // ---- Install pnpm ----
-if (!commandExists("pnpm")) {
-  try {
+runStep(pnpmStep, () => {
+  if (!commandExists("pnpm")) {
     run(`curl -fsSL https://get.pnpm.io/install.sh | SHELL=/bin/bash bash`)
-  } catch {
-    // Ignore errors
   }
-}
-success("pnpm")
+})
 
 // ---- Install beads ----
-if (!commandExists("bd")) {
-  try {
+runStep(beadsStep, () => {
+  if (!commandExists("bd")) {
     run(`curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash`)
-  } catch {
-    // Ignore errors
   }
-}
-success("beads")
+})
 
 // ---- Install/update Claude Code ----
-try {
+runStep(claudeStep, () => {
   run(`claude install latest --force`)
-} catch {
-  // Ignore errors
-}
-success("claude")
+})
 
 // ---- Sprite-specific setup ----
 if (SPRITE_NAME) {
@@ -144,11 +224,14 @@ if (SPRITE_NAME) {
   const localenvFile = join(HOME, ".localenv")
 
   // GitHub CLI auth
-  if (GITHUB_TOKEN) {
-    appendFileSync(secretsFile, `export GH_TOKEN=${GITHUB_TOKEN}\n`)
-    success("GitHub CLI")
-  } else {
-    warn("GitHub CLI (set GH_TOKEN manually)")
+  if (githubCliStep !== undefined) {
+    if (GITHUB_TOKEN) {
+      runStep(githubCliStep, () => {
+        appendFileSync(secretsFile, `export GH_TOKEN=${GITHUB_TOKEN}\n`)
+      })
+    } else {
+      updateStep(githubCliStep, "warn")
+    }
   }
 
   // Create code directory
@@ -166,8 +249,11 @@ if (SPRITE_NAME) {
     const codeDir = join(HOME, "code")
     const repoDir = join(codeDir, REPO_NAME)
 
-    run(`gh repo clone "${REPO_USER}/${REPO_NAME}"`, { cwd: codeDir })
-    success(`Cloned ${REPO_USER}/${REPO_NAME}`)
+    if (cloneRepoStep !== undefined) {
+      runStep(cloneRepoStep, () => {
+        run(`gh repo clone "${REPO_USER}/${REPO_NAME}"`, { cwd: codeDir })
+      })
+    }
 
     appendFileSync(localenvFile, `export SPRITE_REPO_DIR=${repoDir}\n`)
 
@@ -175,18 +261,16 @@ if (SPRITE_NAME) {
     const PNPM_HOME = join(HOME, ".local/share/pnpm")
     const PATH = `${PNPM_HOME}:${HOME}/.local/bin:${process.env.PATH}`
 
-    try {
-      run("pnpm install", { cwd: repoDir })
-      success("pnpm install")
-    } catch {
-      // Ignore errors
+    if (pnpmInstallStep !== undefined) {
+      runStep(pnpmInstallStep, () => {
+        run("pnpm install", { cwd: repoDir })
+      })
     }
 
-    try {
-      execSync("bd init", { cwd: repoDir, stdio: "pipe", env: { ...process.env, PATH } })
-      success("beads init")
-    } catch {
-      // Ignore errors
+    if (beadsInitStep !== undefined) {
+      runStep(beadsInitStep, () => {
+        run("bd init", { cwd: repoDir, env: { ...process.env, PATH } })
+      })
     }
   }
 }
@@ -196,5 +280,5 @@ console.log()
 if (SPRITE_NAME) {
   console.log(`👾 ${SPRITE_NAME} is ready!`)
 } else {
-  success("Ready!")
+  console.log("\x1b[1;32m✓\x1b[0m Ready!")
 }
