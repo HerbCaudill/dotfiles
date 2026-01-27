@@ -144,6 +144,13 @@ spc() {
   # Fall back to random name if still not set
   name="${name:-$(LC_ALL=C tr -dc 'a-z' </dev/urandom | head -c 5)}"
 
+  # Check if sprite already exists
+  if sprite list | grep -q "^${name}$"; then
+    echo "Sprite '$name' already exists, connecting..."
+    sprite console -s $name
+    return
+  fi
+
   sprite create --skip-console $name
 
   if [[ -n "$repo_setup" ]]; then
