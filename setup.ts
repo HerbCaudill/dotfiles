@@ -170,6 +170,10 @@ const main = () => {
     }
   }
 
+  // Load secrets into current process so subsequent commands have them
+  loadEnvFile(secretsFile)
+  loadEnvFile(localenvFile)
+
   // ---- Show errors ----
   if (errors.length > 0) {
     console.log()
@@ -261,6 +265,19 @@ const appendIfMissing = (file: string, line: string) => {
   const content = existsSync(file) ? readFileSync(file, "utf-8") : ""
   if (!content.includes(line)) {
     appendFileSync(file, line + "\n")
+  }
+}
+
+/** Load env vars from a shell file (like .secrets) into process.env. */
+const loadEnvFile = (file: string) => {
+  if (!existsSync(file)) return
+  const content = readFileSync(file, "utf-8")
+  for (const line of content.split("\n")) {
+    const match = line.match(/^export\s+([A-Z_][A-Z0-9_]*)=(.*)$/)
+    if (match) {
+      const [, key, value] = match
+      process.env[key] = value.replace(/^["']|["']$/g, "")
+    }
   }
 }
 
