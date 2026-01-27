@@ -201,9 +201,9 @@ const render = () => {
   for (const [name, status] of stepStatus) {
     const icon =
       status === "done" ? "✓"
-      : status === "warn" ? "✗"
+      : status === "warn" ? "!"
       : status === "skip" ? "−"
-      : status === "running" ? "⟳"
+      : status === "running" ? "⋯"
       : "○"
     process.stdout.write(`\x1b[2K${icon} ${name}\n`)
   }
@@ -234,7 +234,7 @@ const runStep = (name: string, fn: () => void) => {
 /** Execute a shell command silently, capturing output for error reporting. */
 const run = (cmd: string, options: { cwd?: string; env?: NodeJS.ProcessEnv } = {}) => {
   try {
-    execSync(cmd, { stdio: "pipe", ...options })
+    execSync(cmd, { stdio: "pipe", shell: "/bin/bash", ...options })
   } catch (e: unknown) {
     const err = e as { stderr?: Buffer; stdout?: Buffer; message?: string }
     const stderr = err.stderr?.toString().trim()
@@ -247,7 +247,7 @@ const run = (cmd: string, options: { cwd?: string; env?: NodeJS.ProcessEnv } = {
 /** Check if a command exists. */
 const commandExists = (cmd: string) => {
   try {
-    execSync(`command -v ${cmd}`, { stdio: "pipe" })
+    execSync(`command -v ${cmd}`, { stdio: "pipe", shell: "/bin/bash" })
     return true
   } catch {
     return false
