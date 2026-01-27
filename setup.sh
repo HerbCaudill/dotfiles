@@ -76,7 +76,7 @@ success "pnpm"
 
 # ---- Install beads ----
 if ! command -v bd &>/dev/null; then
-  npm install -g @beads/bd >/dev/null 2>&1 || true
+  curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash >/dev/null 2>&1 || true
 fi
 success "beads"
 
