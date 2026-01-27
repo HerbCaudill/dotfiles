@@ -44,20 +44,6 @@ const commandExists = (cmd: string) => {
   }
 }
 
-/** Get the latest asdf release tag from GitHub. */
-const getLatestAsdfVersion = () => {
-  try {
-    const json = execSync(
-      "curl -fsSL https://api.github.com/repos/asdf-vm/asdf/releases/latest",
-      { encoding: "utf-8" }
-    )
-    const data = JSON.parse(json)
-    return data.tag_name || "v0.14.1"
-  } catch {
-    return "v0.14.1"
-  }
-}
-
 /** Append a line to a file if it doesn't already exist. */
 const appendIfMissing = (file: string, line: string) => {
   const content = existsSync(file) ? readFileSync(file, "utf-8") : ""
@@ -120,8 +106,7 @@ success("zsh theme")
 // ---- Install asdf ----
 const asdfDir = join(HOME, ".asdf")
 if (!existsSync(asdfDir)) {
-  const asdfVersion = getLatestAsdfVersion()
-  run(`git clone -q https://github.com/asdf-vm/asdf.git "${asdfDir}" --branch "${asdfVersion}"`)
+  run(`git clone -q https://github.com/asdf-vm/asdf.git "${asdfDir}"`)
 }
 success("asdf")
 
