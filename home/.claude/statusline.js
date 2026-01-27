@@ -185,6 +185,20 @@ function getUsageColor(percentage) {
   return GREEN
 }
 
+/**
+ * Get color for usage based on ratio to elapsed time.
+ * Green: usage < 90% of elapsed (ahead of schedule)
+ * Yellow: usage between 90% and 110% of elapsed (on track)
+ * Red: usage > 110% of elapsed (behind schedule)
+ */
+function getUsageRatioColor(usagePct, elapsedPct) {
+  if (elapsedPct === 0) return GREEN
+  const ratio = usagePct / elapsedPct
+  if (ratio < 0.9) return GREEN
+  if (ratio <= 1.1) return DARK_YELLOW
+  return RED
+}
+
 
 function main() {
   // Read JSON input from stdin
@@ -236,7 +250,8 @@ function main() {
   if (weeklyUsage !== null) {
     const pct = Math.round(weeklyUsage.utilization)
     const weekProgress = getWeekProgress(weeklyUsage.resetsAt)
-    line2Parts.push(`${DIM}weekly${RESET} ${renderProgressBar(pct, CORAL, weekProgress)} ${DIM}(${weekProgress}% elapsed)${RESET}`)
+    const usageColor = getUsageRatioColor(pct, weekProgress)
+    line2Parts.push(`${DIM}weekly${RESET} ${renderProgressBar(pct, usageColor, weekProgress)} ${DIM}(${weekProgress}% elapsed)${RESET}`)
   }
 
   // Output: line 1 (dir, branch, skill, model) + line 2 (progress bars, tokens)

@@ -157,7 +157,12 @@ spc() {
   sprite create --skip-console $name
   [[ -n "$repo_user" ]] && sprite use $name
 
-  sprite exec -s $name bash -c "export GITHUB_TOKEN=$token SPRITE_NAME=$name REPO_USER=$repo_user REPO_NAME=$repo_name; curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/setup.sh | bash"
+  sprite exec -s $name bash -c "\
+    export GITHUB_TOKEN=$token \
+           SPRITE_NAME=$name \
+           REPO_USER=$repo_user \
+           REPO_NAME=$repo_name; \
+    curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/setup.sh | bash"
 
   sprite console -s $name
 }
