@@ -116,6 +116,11 @@ After completing a request:
 - Commit the changes immediately without being asked. If a request requires a series of significant changes, make intermediate commits as well. Commit messages should succinctly summarize changes. Where applicable, prefix with the name of the primary class/function/component being edited, followed by a colon. Example: `EditTemplatePage: refactor data source handling`
 - Update the project's documentation and CLAUDE.md file with new information or changes.
 
+## Codex
+
+- Global Codex instructions and skills are sourced from `home/.claude/CLAUDE.md` and `home/.claude/skills`.
+- `install.mjs` replaces any existing `~/.codex/AGENTS.md` and `~/.codex/skills` with symlinks to those sources.
+
 ## Worktrees
 
 The following shell commands are available:
@@ -136,6 +141,20 @@ Worktrees for a repo will be placed in a sibling directory to the repo named `.{
 ~/Code/herbcaudill/ralph # repository
 ~/Code/herbcaudill/.ralph-worktrees
 ```
+
+## Using git and the filesystem
+
+- When working within a repository, always use relative paths.
+- Delete unused or obsolete files when your changes make them irrelevant (refactors, feature removals, etc.), and revert files only when the change is yours or explicitly requested. If a git operation leaves you unsure about other agents' in-flight work, stop and coordinate instead of deleting.
+- **Before attempting to delete a file to resolve a local typecheck/lint/test failure, stop and ask the user.** Other agents are often editing adjacent files; deleting their work to silence an error is never acceptable without explicit approval.
+- NEVER edit `.env` or any environment variable files — only the user may change them.
+- Coordinate with the user or with other agents before removing their in-progress edits — don't revert or delete work you didn't author unless everyone agrees.
+- Moving, renaming, nd restoring files is allowed.
+- ABSOLUTELY NEVER run destructive git operations (e.g., `git reset --hard`, `rm`, `git checkout`/`git restore` to an older commit) unless the user gives an explicit, written instruction in this conversation. Treat these commands as catastrophic; if you are even slightly unsure, stop and ask before touching them.
+- Never use `git restore` (or similar commands) to revert files you didn't author — coordinate with other agents instead so their in-progress work stays intact.
+- Always double-check git status before any commit
+- Keep commits atomic: commit only the files you touched and list each path explicitly.
+- Never amend commits unless you have explicit written approval in the task thread.
 
 ## Dotfiles
 

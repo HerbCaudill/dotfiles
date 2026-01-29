@@ -8,7 +8,7 @@ Personal configuration files.
 ./install.js
 ```
 
-Symlinks files from `home/` to `~/`. Paths listed in `symlink-dirs.conf` are linked as directories; all others are linked as individual files.
+Symlinks files from `home/` to `~/`. Paths listed in `symlink-dirs.conf` are linked as directories; all others are linked as individual files. Codex symlinks replace any existing `~/.codex/AGENTS.md` or `~/.codex/skills`.
 
 ## Contents
 

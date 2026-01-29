@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, unlinkSync } from "node:fs"
-import { dirname, join, relative } from "node:path"
+import { dirname, isAbsolute, join, relative } from "node:path"
 
 const DOTFILES_DIR = dirname(new URL(import.meta.url).pathname)
 const HOME_DIR = join(DOTFILES_DIR, "home")
@@ -15,7 +15,11 @@ const EXTRA_SYMLINKS = [
   { src: ".claude/skills", target: ".codex/skills" },
 ]
 
-const removeExisting = target => {
+/** Remove any existing file, directory, or symlink at the target path. */
+const removeExisting = (
+  /** The absolute path to remove before linking. */
+  target,
+) => {
   try {
     const stat = lstatSync(target)
     console.log(`Removing existing: ${target}`)
@@ -55,7 +59,11 @@ for (const dirPath of dirPaths) {
 }
 
 // Get all files recursively
-const getAllFiles = dir => {
+/** Recursively enumerate all files under a directory. */
+const getAllFiles = (
+  /** The directory to walk. */
+  dir,
+) => {
   const entries = readdirSync(dir, { withFileTypes: true })
   return entries.flatMap(entry => {
     const fullPath = join(dir, entry.name)
@@ -83,8 +91,8 @@ for (const file of getAllFiles(HOME_DIR)) {
 }
 
 for (const { src, target } of EXTRA_SYMLINKS) {
-  const absSrc = join(HOME, src)
-  const absTarget = join(HOME, target)
+  const absSrc = isAbsolute(src) ? src : join(HOME_DIR, src)
+  const absTarget = isAbsolute(target) ? target : join(HOME, target)
 
   if (!existsSync(absSrc)) continue
 
