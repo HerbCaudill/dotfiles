@@ -49,6 +49,7 @@ The script handles everything:
 - Installs Playwright Chromium browser
 - Formats everything with Prettier
 - Initializes git and pushes to GitHub
+- Initializes beads issue tracker
 - Runs tests to verify everything works
 - Opens the project in VS Code
 

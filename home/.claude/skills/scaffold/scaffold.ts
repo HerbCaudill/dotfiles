@@ -198,6 +198,9 @@ function main() {
   run('git commit -m "Initial commit"', projectPath)
   run(`gh repo create ${projectName} --public --source=. --push`, projectPath)
 
+  // Initialize beads issue tracker
+  run("bd init", projectPath)
+
   // Run tests to verify
   console.log("\n--- Running tests ---")
   run("pnpm test:all", projectPath)
