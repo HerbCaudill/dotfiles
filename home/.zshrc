@@ -39,6 +39,7 @@ alias zshconfig="code ~/.zshrc"
 alias ohmyzsh="code ~/.oh-my-zsh"
 alias theme="code ~/.oh-my-zsh/custom/themes/herb.zsh-theme"
 
+alias updatebd="curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash"
 alias updateclaude="claude install latest --force"
 
 # pnpm 
