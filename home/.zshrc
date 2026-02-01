@@ -41,7 +41,7 @@ alias theme="code ~/.oh-my-zsh/custom/themes/herb.zsh-theme"
 
 alias updatebd="curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash"
 alias updateclaude="claude install latest --force"
-alias upgradecodex="npm install -g @openai/codex"
+alias updatecodex="pnpm install -g @openai/codex"
 
 # pnpm 
 
