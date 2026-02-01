@@ -89,11 +89,7 @@
   },
   "enabledPlugins": {
     "beads@beads-marketplace": true,
-    "code-review@claude-plugins-official": false,
-    "code-simplifier@claude-plugins-official": false,
     "context7@claude-plugins-official": true,
-    "frontend-design@claude-plugins-official": false,
-    "git-worktrees@skills-marketplace": false,
     "playwright@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
     "vercel@claude-plugins-official": true,
