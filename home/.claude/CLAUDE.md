@@ -210,6 +210,14 @@ Safely merges main into the current branch. Handles conflicts intelligently and 
 
 **Usage:** `/safe-merge` from any git repository
 
+## Serena (MCP)
+
+Serena is an MCP server providing LSP-powered semantic code tools: `find_symbol`, `find_referencing_symbols`, `get_symbols_overview`, `replace_symbol_body`, `rename_symbol`, etc. It also has a persistent memory system for project context.
+
+- Serena tools are available at the top level of a conversation but **not automatically available to subagents** (Explore, Bash, etc.). Only `general-purpose` subagents have access, and even then should be explicitly told to use them.
+- For code navigation and refactoring, prefer Serena's semantic tools over text-based grep/find when precision matters (e.g. tracing references, understanding symbol relationships, renaming across a codebase).
+- Activate a project with `activate_project` before use. Run `check_onboarding_performed` and `onboarding` on first use to populate memory files.
+
 Other files managed by this repo:
 
 - `home/.zshrc` - Zsh configuration
