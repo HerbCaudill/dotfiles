@@ -1,4 +1,5 @@
 In planning documents and other interactions, be as concise as possible.
+If you have questions for me, ask them one at a time.
 
 ## Technology choices
 
