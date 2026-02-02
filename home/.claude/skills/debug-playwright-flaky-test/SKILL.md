@@ -1,5 +1,5 @@
 ---
-name: playwright-flaky-test-debugger
+name: debug-playwright-flaky-test
 description: Debug intermittently failing Playwright tests. Use when a test passes sometimes but fails other times, or when asked to fix flaky tests, investigate test failures, or debug intermittent test issues.
 ---
 

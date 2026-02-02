@@ -1,6 +1,6 @@
 ---
 name: effect-ts
-description: Reference for the Effect TS library — typed functional effects, error handling, dependency injection, concurrency, and resource management.
+description: Use when working with the Effect TS library — typed functional effects, error handling, dependency injection, concurrency, and resource management.
 ---
 
 # Effect TS Reference
@@ -32,16 +32,16 @@ Effect.try(() => JSON.parse(input))
 Effect.promise(() => fetch(url))
 Effect.tryPromise({
   try: () => fetch(url),
-  catch: (e) => new FetchError(e)
+  catch: e => new FetchError(e),
 })
 
 // Async with cancellation
-Effect.async<string, Error>((resume) => {
+Effect.async<string, Error>(resume => {
   const controller = new AbortController()
   fetch(url, { signal: controller.signal })
-    .then((res) => res.text())
-    .then((text) => resume(Effect.succeed(text)))
-    .catch((err) => resume(Effect.fail(new Error(String(err)))))
+    .then(res => res.text())
+    .then(text => resume(Effect.succeed(text)))
+    .catch(err => resume(Effect.fail(new Error(String(err)))))
   return Effect.sync(() => controller.abort())
 })
 ```
@@ -96,21 +96,17 @@ class Unauthorized extends Data.TaggedError("Unauthorized")<{
 }> {}
 
 // Catch by tag
-program.pipe(
-  Effect.catchTag("NotFound", (e) => Effect.succeed(`Not found: ${e.id}`))
-)
+program.pipe(Effect.catchTag("NotFound", e => Effect.succeed(`Not found: ${e.id}`)))
 
 // Catch all expected errors
-program.pipe(
-  Effect.catchAll((e) => Effect.succeed("fallback"))
-)
+program.pipe(Effect.catchAll(e => Effect.succeed("fallback")))
 
 // Catch specific errors with a predicate
 program.pipe(
   Effect.catchIf(
     (e): e is NotFound => e._tag === "NotFound",
-    (e) => Effect.succeed("recovered")
-  )
+    e => Effect.succeed("recovered"),
+  ),
 )
 ```
 
@@ -118,7 +114,7 @@ program.pipe(
 
 ```typescript
 // Map error type
-Effect.mapError(effect, (e) => new OtherError(e.message))
+Effect.mapError(effect, e => new OtherError(e.message))
 
 // Provide a fallback effect
 Effect.orElse(effect, () => fallbackEffect)
@@ -128,8 +124,8 @@ Effect.retry(effect, Schedule.recurs(3))
 
 // Handle both success and failure
 Effect.match(effect, {
-  onSuccess: (a) => `ok: ${a}`,
-  onFailure: (e) => `err: ${e}`
+  onSuccess: a => `ok: ${a}`,
+  onFailure: e => `err: ${e}`,
 })
 ```
 
@@ -161,7 +157,7 @@ const program = Effect.gen(function* () {
 
 ```typescript
 const DatabaseLive = Database.of({
-  query: (sql) => Effect.sync(() => [])
+  query: sql => Effect.sync(() => []),
 })
 
 // Provide to program
@@ -175,7 +171,7 @@ Layers are recipes for building services, with automatic dependency resolution.
 ```typescript
 // Simple layer (no dependencies)
 const DatabaseLive = Layer.succeed(Database, {
-  query: (sql) => Effect.sync(() => [])
+  query: sql => Effect.sync(() => []),
 })
 
 // Layer that needs an effect
@@ -184,9 +180,9 @@ const DatabaseLive = Layer.effect(
   Effect.gen(function* () {
     const config = yield* Config
     return {
-      query: (sql) => Effect.promise(() => pgQuery(config.url, sql))
+      query: sql => Effect.promise(() => pgQuery(config.url, sql)),
     }
-  })
+  }),
 )
 
 // Layer with resource management (acquire/release)
@@ -195,10 +191,10 @@ const DatabaseLive = Layer.scoped(
   Effect.gen(function* () {
     const pool = yield* Effect.acquireRelease(
       Effect.sync(() => createPool()),
-      (pool) => Effect.sync(() => pool.close())
+      pool => Effect.sync(() => pool.close()),
     )
-    return { query: (sql) => Effect.promise(() => pool.query(sql)) }
-  })
+    return { query: sql => Effect.promise(() => pool.query(sql)) }
+  }),
 )
 
 // Compose layers
@@ -208,9 +204,7 @@ const AppLive = Layer.mergeAll(DatabaseLive, LoggerLive)
 const ServiceLive = Layer.provide(ServiceLayer, DependencyLayer)
 
 // Run with layers
-Effect.runPromise(
-  program.pipe(Effect.provide(AppLive))
-)
+Effect.runPromise(program.pipe(Effect.provide(AppLive)))
 ```
 
 ## Concurrency
@@ -236,22 +230,20 @@ const program = Effect.gen(function* () {
 
 ```typescript
 // Run effects concurrently, collect all results
-const results = yield* Effect.all([effectA, effectB, effectC], {
-  concurrency: "unbounded"
-})
+const results =
+  yield *
+  Effect.all([effectA, effectB, effectC], {
+    concurrency: "unbounded",
+  })
 
 // Concurrent with limit
-const results = yield* Effect.all(effects, { concurrency: 5 })
+const results = yield * Effect.all(effects, { concurrency: 5 })
 
 // ForEach with concurrency
-const results = yield* Effect.forEach(
-  items,
-  (item) => processItem(item),
-  { concurrency: 10 }
-)
+const results = yield * Effect.forEach(items, item => processItem(item), { concurrency: 10 })
 
 // Race: first to succeed wins
-const fastest = yield* Effect.race(effectA, effectB)
+const fastest = yield * Effect.race(effectA, effectB)
 ```
 
 ## Resource Management
@@ -259,8 +251,8 @@ const fastest = yield* Effect.race(effectA, effectB)
 ```typescript
 // Acquire/release pattern
 const managed = Effect.acquireRelease(
-  Effect.sync(() => openConnection()),    // acquire
-  (conn) => Effect.sync(() => conn.close()) // release (guaranteed)
+  Effect.sync(() => openConnection()), // acquire
+  conn => Effect.sync(() => conn.close()), // release (guaranteed)
 )
 
 // Use within a scope
@@ -268,13 +260,13 @@ const program = Effect.scoped(
   Effect.gen(function* () {
     const conn = yield* managed
     return yield* conn.query("SELECT 1")
-  })
+  }),
 )
 
 // Finalizers (always run, even on interruption)
 const withCleanup = Effect.ensuring(
   myEffect,
-  Effect.sync(() => cleanup())
+  Effect.sync(() => cleanup()),
 )
 
 // Add a finalizer to the current scope
@@ -294,16 +286,16 @@ const program = Effect.gen(function* () {
   yield* Ref.set(counter, 42)
 
   // Atomic update
-  yield* Ref.update(counter, (n) => n + 1)
+  yield* Ref.update(counter, n => n + 1)
 
   // Update and return old value
-  const old = yield* Ref.getAndUpdate(counter, (n) => n + 1)
+  const old = yield* Ref.getAndUpdate(counter, n => n + 1)
 
   // Update and return new value
-  const next = yield* Ref.updateAndGet(counter, (n) => n + 1)
+  const next = yield* Ref.updateAndGet(counter, n => n + 1)
 
   // Modify (update + derive a value)
-  const derived = yield* Ref.modify(counter, (n) => [n * 2, n + 1])
+  const derived = yield* Ref.modify(counter, n => [n * 2, n + 1])
 })
 ```
 
@@ -318,23 +310,23 @@ Stream.make(1, 2, 3)
 Stream.fromIterable([1, 2, 3])
 Stream.range(0, 10)
 Stream.repeat(Effect.sync(() => Math.random()))
-Stream.unfold(0, (n) => Option.some([n, n + 1]))
+Stream.unfold(0, n => Option.some([n, n + 1]))
 
 // Transform
 stream.pipe(
-  Stream.map((n) => n * 2),
-  Stream.filter((n) => n > 5),
+  Stream.map(n => n * 2),
+  Stream.filter(n => n > 5),
   Stream.take(10),
-  Stream.mapEffect((n) => fetchData(n)),
-  Stream.flatMap((n) => Stream.make(n, n + 1)),
-  Stream.tap((n) => Effect.log(`Processing ${n}`))
+  Stream.mapEffect(n => fetchData(n)),
+  Stream.flatMap(n => Stream.make(n, n + 1)),
+  Stream.tap(n => Effect.log(`Processing ${n}`)),
 )
 
 // Consume
-Stream.runCollect(stream)     // Effect<Chunk<A>>
+Stream.runCollect(stream) // Effect<Chunk<A>>
 Stream.runForEach(stream, fn) // Effect<void>
 Stream.runFold(stream, init, f)
-Stream.runDrain(stream)       // Ignore output
+Stream.runDrain(stream) // Ignore output
 ```
 
 ## Scheduling
@@ -349,10 +341,9 @@ Effect.retry(effect, Schedule.recurs(3))
 Effect.retry(effect, Schedule.exponential("100 millis"))
 
 // Combine schedules
-Effect.retry(effect,
-  Schedule.recurs(5).pipe(
-    Schedule.intersect(Schedule.exponential("100 millis"))
-  )
+Effect.retry(
+  effect,
+  Schedule.recurs(5).pipe(Schedule.intersect(Schedule.exponential("100 millis"))),
 )
 
 // Repeat on success
@@ -364,15 +355,15 @@ Effect.repeat(effect, Schedule.spaced("1 second"))
 ```typescript
 // Pipe style (preferred for composition)
 Effect.succeed(1).pipe(
-  Effect.map((n) => n + 1),
-  Effect.flatMap((n) => Effect.succeed(n * 2))
+  Effect.map(n => n + 1),
+  Effect.flatMap(n => Effect.succeed(n * 2)),
 )
 
 // Standalone function style
 pipe(
   Effect.succeed(1),
-  Effect.map((n) => n + 1),
-  Effect.flatMap((n) => Effect.succeed(n * 2))
+  Effect.map(n => n + 1),
+  Effect.flatMap(n => Effect.succeed(n * 2)),
 )
 ```
 
@@ -383,14 +374,22 @@ pipe(
 ```typescript
 // Define services
 class Config extends Context.Tag("Config")<Config, { readonly apiUrl: string }>() {}
-class Http extends Context.Tag("Http")<Http, { readonly get: (url: string) => Effect.Effect<string> }>() {}
+class Http extends Context.Tag("Http")<
+  Http,
+  { readonly get: (url: string) => Effect.Effect<string> }
+>() {}
 
 // Build layers
 const ConfigLive = Layer.succeed(Config, { apiUrl: "https://api.example.com" })
-const HttpLive = Layer.effect(Http, Effect.gen(function* () {
-  const config = yield* Config
-  return { get: (path) => Effect.tryPromise(() => fetch(`${config.apiUrl}${path}`).then(r => r.text())) }
-}))
+const HttpLive = Layer.effect(
+  Http,
+  Effect.gen(function* () {
+    const config = yield* Config
+    return {
+      get: path => Effect.tryPromise(() => fetch(`${config.apiUrl}${path}`).then(r => r.text())),
+    }
+  }),
+)
 const AppLive = HttpLive.pipe(Layer.provide(ConfigLive))
 
 // Write program
@@ -418,12 +417,12 @@ const getUser = (id: string) =>
   Effect.gen(function* () {
     const res = yield* Effect.tryPromise({
       try: () => fetch(`/users/${id}`),
-      catch: () => new NetworkError()
+      catch: () => new NetworkError(),
     })
     if (!res.ok) return yield* Effect.fail(new NotFoundError({ id }))
     return yield* Effect.tryPromise({
       try: () => res.json() as Promise<User>,
-      catch: () => new ParseError()
+      catch: () => new ParseError(),
     })
   })
 ```

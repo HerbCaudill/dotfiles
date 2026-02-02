@@ -1,6 +1,6 @@
 ---
 name: plan-b
-description: Create a plan document and granular tasks for a feature or change. Outputs a plan doc to the repo and files issues (beads).
+description: Use this skill when the user says "let's make a plan" or otherwise indicates a desire to plan before building. Create a plan document and granular tasks for a feature or change. Outputs a plan doc to the repo and files issues (beads).
 user_invocation: plan-b {feature-description}
 ---
 

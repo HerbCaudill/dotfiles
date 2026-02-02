@@ -1,5 +1,5 @@
 ---
-name: safe-merge
+name: merge
 description: Safely merge main into the current branch, resolving conflicts and verifying tests pass
 user_invocation: safe-merge
 ---
@@ -65,6 +65,7 @@ pnpm build 2>/dev/null || npm run build 2>/dev/null
 ```
 
 If verification fails:
+
 - Analyze the errors
 - Fix any issues introduced by the merge
 - Commit fixes with message: "fix: resolve merge issues"
@@ -72,6 +73,7 @@ If verification fails:
 ### 6. Report
 
 Provide a summary of:
+
 - What was merged (branch names, commit range)
 - Conflicts resolved (if any)
 - Verification status

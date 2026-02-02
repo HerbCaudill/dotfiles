@@ -1,6 +1,6 @@
 ---
 name: effect-schema
-description: Reference for Effect Schema — type-safe data validation, parsing, transformation, and encoding/decoding in TypeScript.
+description: Use when working with Effect Schema — type-safe data validation, parsing, transformation, and encoding/decoding in TypeScript.
 ---
 
 # Effect Schema Reference
@@ -46,7 +46,7 @@ Schema.Never
 ```typescript
 const Person = Schema.Struct({
   name: Schema.String,
-  age: Schema.Number
+  age: Schema.Number,
 })
 ```
 
@@ -77,14 +77,14 @@ Union members are evaluated in definition order. Discriminated unions (tagged by
 ```typescript
 const Product = Schema.Struct({
   name: Schema.String,
-  quantity: Schema.optional(Schema.Number)
+  quantity: Schema.optional(Schema.Number),
 })
 // Type: { readonly name: string; readonly quantity?: number | undefined }
 
 // Optional with a default
 const WithDefault = Schema.Struct({
   name: Schema.String,
-  role: Schema.optional(Schema.String).pipe(Schema.withDefault(() => "user"))
+  role: Schema.optional(Schema.String).pipe(Schema.withDefault(() => "user")),
 })
 ```
 
@@ -102,12 +102,12 @@ Schema.Tuple(Schema.String).pipe(Schema.rest(Schema.Number))
 ### Arrays and Records
 
 ```typescript
-Schema.Array(Schema.String)        // readonly string[]
+Schema.Array(Schema.String) // readonly string[]
 Schema.NonEmptyArray(Schema.Number) // readonly [number, ...number[]]
 
 Schema.Record({
   key: Schema.String,
-  value: Schema.Number
+  value: Schema.Number,
 })
 // { readonly [x: string]: number }
 ```
@@ -139,8 +139,8 @@ await Schema.encode(schema)(value)
 
 ```typescript
 Schema.decodeUnknownEither(schema, {
-  errors: "all",           // collect all errors (default: "first")
-  onExcessProperty: "error" // reject extra properties (default: "ignore")
+  errors: "all", // collect all errors (default: "first")
+  onExcessProperty: "error", // reject extra properties (default: "ignore")
 })(input)
 ```
 
@@ -150,12 +150,12 @@ Schema.decodeUnknownEither(schema, {
 
 ```typescript
 const StringToNumber = Schema.transform(
-  Schema.String,  // from
-  Schema.Number,  // to
+  Schema.String, // from
+  Schema.Number, // to
   {
-    decode: (s) => parseFloat(s),
-    encode: (n) => String(n)
-  }
+    decode: s => parseFloat(s),
+    encode: n => String(n),
+  },
 )
 ```
 
@@ -164,19 +164,15 @@ const StringToNumber = Schema.transform(
 ```typescript
 import { ParseResult } from "effect"
 
-const SafeStringToNumber = Schema.transformOrFail(
-  Schema.String,
-  Schema.Number,
-  {
-    decode: (s) => {
-      const n = parseFloat(s)
-      return isNaN(n)
-        ? ParseResult.fail(new ParseResult.Type(Schema.Number.ast, s))
-        : ParseResult.succeed(n)
-    },
-    encode: (n) => ParseResult.succeed(String(n))
-  }
-)
+const SafeStringToNumber = Schema.transformOrFail(Schema.String, Schema.Number, {
+  decode: s => {
+    const n = parseFloat(s)
+    return isNaN(n) ?
+        ParseResult.fail(new ParseResult.Type(Schema.Number.ast, s))
+      : ParseResult.succeed(n)
+  },
+  encode: n => ParseResult.succeed(String(n)),
+})
 ```
 
 ### Built-in Transforms
@@ -195,35 +191,30 @@ const SafeStringToNumber = Schema.transformOrFail(
 
 ```typescript
 const LongString = Schema.String.pipe(
-  Schema.filter((s) =>
-    s.length >= 10 || "must be at least 10 characters"
-  )
+  Schema.filter(s => s.length >= 10 || "must be at least 10 characters"),
 )
 ```
 
 Return values from filter predicates:
 
-| Return | Behavior |
-|--------|----------|
-| `true` / `undefined` | Passes |
-| `false` | Fails (generic message) |
-| `string` | Fails with that message |
-| `ParseResult.ParseIssue` | Detailed error |
-| `FilterIssue` | Error with path info |
-| `Array<FilterIssue>` | Multiple errors |
+| Return                   | Behavior                |
+| ------------------------ | ----------------------- |
+| `true` / `undefined`     | Passes                  |
+| `false`                  | Fails (generic message) |
+| `string`                 | Fails with that message |
+| `ParseResult.ParseIssue` | Detailed error          |
+| `FilterIssue`            | Error with path info    |
+| `Array<FilterIssue>`     | Multiple errors         |
 
 ### Filter with Annotations
 
 ```typescript
 const LongString = Schema.String.pipe(
-  Schema.filter(
-    (s) => s.length >= 10 || "must be at least 10 characters",
-    {
-      identifier: "LongString",
-      jsonSchema: { minLength: 10 },
-      description: "A string at least 10 characters long"
-    }
-  )
+  Schema.filter(s => s.length >= 10 || "must be at least 10 characters", {
+    identifier: "LongString",
+    jsonSchema: { minLength: 10 },
+    description: "A string at least 10 characters long",
+  }),
 )
 ```
 
@@ -232,13 +223,13 @@ const LongString = Schema.String.pipe(
 ```typescript
 const PasswordForm = Schema.Struct({
   password: Schema.String,
-  confirm: Schema.String
+  confirm: Schema.String,
 }).pipe(
-  Schema.filter((input) => {
+  Schema.filter(input => {
     if (input.password !== input.confirm) {
       return { path: ["confirm"], message: "Passwords do not match" }
     }
-  })
+  }),
 )
 ```
 
@@ -261,7 +252,7 @@ const PasswordForm = Schema.Struct({
 ```typescript
 class Person extends Schema.Class<Person>("Person")({
   id: Schema.Number,
-  name: Schema.NonEmptyString
+  name: Schema.NonEmptyString,
 }) {
   get upperName() {
     return this.name.toUpperCase()
@@ -282,7 +273,7 @@ Classes automatically implement `Equal` and `Hash` traits for value-based equali
 ```typescript
 class Employee extends Schema.Class<Employee>("Employee")({
   ...Person.fields,
-  department: Schema.String
+  department: Schema.String,
 }) {}
 ```
 
@@ -299,10 +290,7 @@ const id = UserId.make("abc123")
 // Using with existing branded types
 type Email = string & Brand.Brand<"Email">
 const Email = Brand.nominal<Email>()
-const EmailSchema = Schema.String.pipe(
-  Schema.pattern(/^[^@]+@[^@]+$/),
-  Schema.fromBrand(Email)
-)
+const EmailSchema = Schema.String.pipe(Schema.pattern(/^[^@]+@[^@]+$/), Schema.fromBrand(Email))
 ```
 
 ## Property Signatures
@@ -311,9 +299,7 @@ const EmailSchema = Schema.String.pipe(
 
 ```typescript
 const User = Schema.Struct({
-  name: Schema.propertySignature(Schema.String).pipe(
-    Schema.fromKey("user_name")
-  )
+  name: Schema.propertySignature(Schema.String).pipe(Schema.fromKey("user_name")),
 })
 // Decodes { user_name: "Alice" } → { name: "Alice" }
 // Encodes { name: "Alice" } → { user_name: "Alice" }
@@ -331,13 +317,11 @@ const Renamed = Original.pipe(Schema.rename({ oldKey: "newKey" }))
 // Spread fields
 const Extended = Schema.Struct({
   ...Base.fields,
-  extra: Schema.String
+  extra: Schema.String,
 })
 
 // extend function
-const Extended = Base.pipe(
-  Schema.extend(Schema.Struct({ extra: Schema.String }))
-)
+const Extended = Base.pipe(Schema.extend(Schema.Struct({ extra: Schema.String })))
 ```
 
 ## Recursive Schemas
@@ -351,8 +335,8 @@ interface Category {
 const Category: Schema.Schema<Category> = Schema.suspend(() =>
   Schema.Struct({
     name: Schema.String,
-    children: Schema.Array(Category)
-  })
+    children: Schema.Array(Category),
+  }),
 )
 ```
 
@@ -385,9 +369,7 @@ ParseResult.ArrayFormatter.formatErrorSync(error)
 ### Custom Error Messages
 
 ```typescript
-const Name = Schema.String.pipe(
-  Schema.nonEmptyString({ message: () => "Name is required" })
-)
+const Name = Schema.String.pipe(Schema.nonEmptyString({ message: () => "Name is required" }))
 ```
 
 ## Annotations
@@ -399,8 +381,8 @@ const User = Schema.Struct({
     title: "Email address",
     description: "A valid email address",
     examples: ["user@example.com"],
-    message: () => "Please enter a valid email"
-  })
+    message: () => "Please enter a valid email",
+  }),
 })
 ```
 
@@ -418,7 +400,7 @@ Schema.Array(Schema.String).annotations({ concurrency: "unbounded" })
 
 ```typescript
 Schema.String.annotations({
-  decodingFallback: () => Effect.succeed("default")
+  decodingFallback: () => Effect.succeed("default"),
 })
 ```
 
@@ -439,16 +421,16 @@ Schema.Either({ left: Schema.String, right: Schema.Number })
 // Decodes { _tag: "Left", left: string } | { _tag: "Right", right: number }
 
 // ReadonlySet and ReadonlyMap
-Schema.ReadonlySet(Schema.Number)   // Array ↔ ReadonlySet
+Schema.ReadonlySet(Schema.Number) // Array ↔ ReadonlySet
 Schema.ReadonlyMap({
   key: Schema.String,
-  value: Schema.Number
+  value: Schema.Number,
 })
 
 // Duration
-Schema.Duration                     // Encodes as millis
-Schema.DurationFromMillis           // number → Duration
-Schema.DurationFromNanos            // bigint → Duration
+Schema.Duration // Encodes as millis
+Schema.DurationFromMillis // number → Duration
+Schema.DurationFromNanos // bigint → Duration
 
 // Data (value equality)
 Schema.Data(Schema.Struct({ name: Schema.String }))
@@ -475,7 +457,7 @@ fc.sample(arb, 5) // 5 random Person values
 
 // Custom arbitrary via annotation
 const Name = Schema.NonEmptyString.annotations({
-  arbitrary: () => (fc) => fc.constantFrom("Alice", "Bob", "Charlie")
+  arbitrary: () => fc => fc.constantFrom("Alice", "Bob", "Charlie"),
 })
 ```
 
@@ -489,7 +471,7 @@ Use `Schema.pattern(regex)` over custom filters for string patterns — it lever
 const ApiResponse = Schema.Struct({
   data: Schema.Array(User),
   total: Schema.Number,
-  page: Schema.Number
+  page: Schema.Number,
 })
 
 const parse = Schema.decodeUnknownSync(ApiResponse)
@@ -504,11 +486,9 @@ const response = parse(await fetch("/api/users").then(r => r.json()))
 const FormData = Schema.Struct({
   email: Schema.String.pipe(
     Schema.nonEmptyString({ message: () => "Email is required" }),
-    Schema.pattern(/^[^@]+@[^@]+$/, { message: () => "Invalid email" })
+    Schema.pattern(/^[^@]+@[^@]+$/, { message: () => "Invalid email" }),
   ),
-  password: Schema.String.pipe(
-    Schema.minLength(8, { message: () => "At least 8 characters" })
-  )
+  password: Schema.String.pipe(Schema.minLength(8, { message: () => "At least 8 characters" })),
 })
 ```
 
@@ -531,10 +511,10 @@ const encoded = Schema.encodeSync(DateFromString)(decoded)
 ### Declaring Custom Types
 
 ```typescript
-const FileFromSelf = Schema.declare(
-  (input: unknown): input is File => input instanceof File,
-  { identifier: "FileFromSelf", description: "A browser File object" }
-)
+const FileFromSelf = Schema.declare((input: unknown): input is File => input instanceof File, {
+  identifier: "FileFromSelf",
+  description: "A browser File object",
+})
 ```
 
 ## Key Principles
