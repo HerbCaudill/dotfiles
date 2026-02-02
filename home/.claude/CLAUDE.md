@@ -44,6 +44,18 @@ I generally use:
 - When combining lists of Tailwind class names, use `cx` rather than string interpolation.
 - Use named exports. Don't use default exports unless we're in a framework (like Next.js) that requires them
 - Name test files `foo.test.ts`
+- Put tests and stories in `tests/` and `stories/` subdirectories alongside the source files they refer to:
+  ```
+  components/
+  - tests/
+    - Foo.test.ts
+    - Bar.test.ts
+  - stories/
+    - Foo.stories.ts
+    - Bar.stories.ts
+  - Foo.tsx
+  - Bar.tsx
+  ```
 
 ### Comments
 
