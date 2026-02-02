@@ -14,6 +14,7 @@ plugins=(
   git
   zsh-autosuggestions
   zsh-syntax-highlighting
+  zsh-shift-select
 )
 
 DISABLE_AUTO_TITLE="true" # otherwise terminal title contains full path, which vscode doesn't display gracefully
@@ -32,19 +33,23 @@ alias px="pnpm -w nx"
 alias pxstory="px storybook stories"
 
 # zsh
-
 alias profile="code ~/.zshrc"
 alias reload="exec zsh"
 alias zshconfig="code ~/.zshrc"
 alias ohmyzsh="code ~/.oh-my-zsh"
 alias theme="code ~/.oh-my-zsh/custom/themes/herb.zsh-theme"
 
+# updates
 alias updatebd="curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash"
 alias updateclaude="claude install latest --force"
 alias updatecodex="pnpm install -g @openai/codex"
 
-# pnpm 
+# bd
+alias bdl="bd list --pretty"
+alias bdr="bd list --pretty --ready"
+alias bdrw="bd list --pretty --ready --watch"
 
+# pnpm 
 alias b="pnpm build"
 alias bench="pnpm benchmark"
 alias bs="pnpm build && pnpm start"
