@@ -120,6 +120,8 @@ NEVER put big headings in comments with ASCII borders:
 
 ## Workflow
 
+When creating new functionality or fixing bugs, write tests first. Use the `Test-Driven Development (TDD)` skill. When fixing a bug, before doing anything else, start by writing a test that reproduces the bug. Then fix the bug and prove it with a passing test.
+
 After completing a request:
 
 - Make sure everything compiles and runs.
