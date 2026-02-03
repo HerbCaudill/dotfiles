@@ -5,7 +5,7 @@ Personal configuration files.
 ## Install
 
 ```bash
-./install.js
+./install.mjs
 ```
 
 Symlinks files from `home/` to `~/`. Paths listed in `symlink-dirs.conf` are linked as directories; all others are linked as individual files. Codex symlinks replace any existing `~/.codex/AGENTS.md` or `~/.codex/skills`.
