@@ -43,6 +43,7 @@ alias theme="code ~/.oh-my-zsh/custom/themes/herb.zsh-theme"
 alias updatebd="curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash"
 alias updateclaude="claude install latest --force"
 alias updatecodex="pnpm install -g @openai/codex"
+alias updatemcp="npm update -g @upstash/context7-mcp @playwright/mcp && uv tool upgrade serena-agent"
 
 # bd
 alias bdl="bd list --pretty"
@@ -251,6 +252,13 @@ compdef _gt_yargs_completions gt
 ###-end-gt-completions-###
 
 export PATH="$HOME/.local/bin:$PATH"
+
+## Time Claude CLI startup (ms to first prompt)
+timeclaude() {
+  local start=$EPOCHREALTIME
+  expect -c 'spawn claude; expect -re {❯}; exit' > /dev/null 2>&1
+  printf '%.0f\n' $(( (EPOCHREALTIME - start) * 1000 ))
+}
 
 # proto
 export PROTO_HOME="$HOME/.proto";
