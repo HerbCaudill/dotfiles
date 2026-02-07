@@ -224,6 +224,12 @@ Safely merges main into the current branch. Handles conflicts intelligently and 
 
 **Usage:** `/safe-merge` from any git repository
 
+### /worktree
+
+Isolates all session work in a git worktree. Creates a feature branch, works in the worktree, then merges back to main and cleans up when done.
+
+**Usage:** `/worktree` at the start of a session
+
 ## Serena (MCP)
 
 Serena is an MCP server providing LSP-powered semantic code tools: `find_symbol`, `find_referencing_symbols`, `get_symbols_overview`, `replace_symbol_body`, `rename_symbol`, etc. It also has a persistent memory system for project context.
