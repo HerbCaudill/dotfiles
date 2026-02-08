@@ -27,7 +27,7 @@ Filter the JSON output to exclude issues that already have the `investigated` la
 Launch all investigations simultaneously using parallel Task tool calls.
 
 - `subagent_type: "general-purpose"`
-- `model: "sonnet"`
+- `model: "opus"`
 - Max 8 parallel subagents; if more issues exist, batch them
 
 **Subagent prompt template**
@@ -44,9 +44,7 @@ Launch all investigations simultaneously using parallel Task tool calls.
 > ### Process
 >
 > 1. **Evaluate** whether the issue description provides enough context for an engineer to start working immediately. An issue has enough detail if it clearly identifies what to change and where. Issues that are vague, lack file references, or describe symptoms without root causes need investigation.
->
 > 2. **If the issue is already well-specified:** Skip to step 4.
->
 > 3. **If the issue needs investigation:**
 >    - Search the codebase to identify the relevant files and code paths
 >    - Diagnose the root cause if it's a bug
@@ -60,7 +58,6 @@ Launch all investigations simultaneously using parallel Task tool calls.
 >      - **Files involved:** list of relevant file paths
 >      - **Root cause / Analysis:** what you found
 >      - **Suggested approach:** specific changes to make
->
 > 4. **Add the investigated label:**
 >    ```bash
 >    bd label add {id} investigated
