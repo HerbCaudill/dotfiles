@@ -23,7 +23,7 @@ wt style-review
 wtcd style-review
 ```
 
-If `style-review` branch already exists, remove it first with `wtrm style-review -b`.
+If `style-review` branch already exists, remove it first with `wtrm style-review`.
 
 ### 2. Find TypeScript files
 
@@ -66,7 +66,7 @@ After the review completes, merge the style-review branch into main:
 ### 5. Cleanup
 
 ```bash
-wtrm style-review -b
+wtrm style-review
 ```
 
 ## Output format

@@ -65,7 +65,7 @@ pnpm typecheck 2>/dev/null || npm run typecheck 2>/dev/null || npx tsc --noEmit 
 pnpm test 2>/dev/null || npm test 2>/dev/null
 
 # Clean up the worktree and branch
-wtrm <branch-name> -b
+wtrm <branch-name>
 ```
 
 If the merge has conflicts, resolve them using the same approach as the `/safe-merge` skill.

@@ -146,7 +146,7 @@ The following shell commands are available:
 | `wtt <branch>`            | Create worktree tracking existing branch   |
 | `wtcd [branch]`           | Navigate to worktree (no args = main repo) |
 | `wtls`                    | List worktrees with status                 |
-| `wtrm <branch> [-f] [-b]` | Remove worktree (`-b` also deletes branch) |
+| `wtrm <branch> [-f] [-k]` | Remove worktree and branch (`-k` keeps branch) |
 | `wtclean`                 | Remove worktrees for merged branches       |
 | `wtclone <url> [name]`    | Clone repo optimized for worktrees         |
 
