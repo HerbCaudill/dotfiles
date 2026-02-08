@@ -104,7 +104,7 @@ NEVER put big headings in comments with ASCII borders:
 // └────────────────────────────────┘
 
 // ✅ easy does it
-// ---- CodexAdapter ----
+// CodexAdapter
 ```
 
 ## Testing
