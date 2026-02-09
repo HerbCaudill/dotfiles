@@ -4,3 +4,18 @@
 # Large binaries and external symlinks in ~/.local/bin
 home/.local/bin/bd
 home/.local/bin/claude
+home/.claude/skills/.system/.codex-system-skills.marker
+home/.claude/skills/.system/skill-creator/SKILL.md
+home/.claude/skills/.system/skill-creator/agents/openai.yaml
+home/.claude/skills/.system/skill-creator/assets/skill-creator-small.svg
+home/.claude/skills/.system/skill-creator/assets/skill-creator.png
+home/.claude/skills/.system/skill-creator/references/openai_yaml.md
+home/.claude/skills/.system/skill-creator/scripts/generate_openai_yaml.py
+home/.claude/skills/.system/skill-creator/scripts/init_skill.py
+home/.claude/skills/.system/skill-creator/scripts/package_skill.py
+home/.claude/skills/.system/skill-installer/SKILL.md
+home/.claude/skills/.system/skill-installer/agents/openai.yaml
+home/.claude/skills/.system/skill-installer/assets/skill-installer-small.svg
+home/.claude/skills/.system/skill-installer/assets/skill-installer.png
+home/.claude/skills/.system/skill-installer/scripts/list-curated-skills.py
+home/.claude/skills/.system/skill-installer/scripts/list-skills.py
