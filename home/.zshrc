@@ -50,6 +50,22 @@ alias bdl="bd list --pretty"
 alias bdr="bd list --pretty --ready"
 alias bdrw="bd list --pretty --ready --watch"
 
+# Kill all bd daemons and restart them
+bdrestart() {
+  local workspaces=($(bd daemon list --json 2>/dev/null | python3 -c "import sys,json; [print(d['WorkspacePath']) for d in json.load(sys.stdin)]" 2>/dev/null))
+  if [[ ${#workspaces[@]} -eq 0 ]]; then
+    echo "No bd daemons running"
+    return 0
+  fi
+  echo "Stopping ${#workspaces[@]} daemon(s)..."
+  bd daemon killall --force 2>/dev/null
+  sleep 1
+  for ws in "${workspaces[@]}"; do
+    echo "Starting daemon in $ws"
+    (cd "$ws" && bd daemon start)
+  done
+}
+
 # pnpm 
 alias b="pnpm build"
 alias bench="pnpm benchmark"
