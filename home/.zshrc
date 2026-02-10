@@ -64,6 +64,8 @@ bdrestart() {
     echo "Starting daemon in $ws"
     (cd "$ws" && bd daemon start)
   done
+  sleep 1
+  bd daemon status --all
 }
 
 # pnpm 
