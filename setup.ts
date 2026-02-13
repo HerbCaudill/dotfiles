@@ -110,13 +110,14 @@ const steps: Record<string, () => void> = {
   },
 
   claude: () => {
-    // Install first, then write credentials (install may reset auth state)
     run(`claude install latest --force`, { env: { ...process.env, PATH } })
     if (CLAUDE_CREDS_B64) {
       const credsJson = Buffer.from(CLAUDE_CREDS_B64, "base64").toString("utf-8")
+      const creds = JSON.parse(credsJson)
+      const refreshedCreds = refreshClaudeToken(creds)
       const claudeDir = join(HOME, ".claude")
       mkdirSync(claudeDir, { recursive: true })
-      writeFileSync(join(claudeDir, ".credentials.json"), credsJson)
+      writeFileSync(join(claudeDir, ".credentials.json"), JSON.stringify(refreshedCreds))
     }
   },
 
@@ -276,6 +277,36 @@ const appendIfMissing = (file: string, line: string) => {
   const content = existsSync(file) ? readFileSync(file, "utf-8") : ""
   if (!content.includes(line)) {
     appendFileSync(file, line + "\n")
+  }
+}
+
+/** Refresh the Claude OAuth access token using the refresh token. */
+const refreshClaudeToken = (creds: Record<string, any>): Record<string, any> => {
+  const oauth = creds.claudeAiOauth
+  if (!oauth?.refreshToken) return creds
+
+  const TOKEN_URL = "https://console.anthropic.com/v1/oauth/token"
+  const CLIENT_ID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
+
+  const result = execSync(
+    `curl -s -X POST "${TOKEN_URL}" -H "Content-Type: application/json" --max-time 30 -d '${JSON.stringify({
+      grant_type: "refresh_token",
+      refresh_token: oauth.refreshToken,
+      client_id: CLIENT_ID,
+    })}'`,
+    { stdio: "pipe", shell: "/bin/bash" },
+  )
+
+  const response = JSON.parse(result.toString())
+  if (!response.access_token) throw new Error(`Token refresh failed: ${JSON.stringify(response)}`)
+
+  return {
+    claudeAiOauth: {
+      ...oauth,
+      accessToken: response.access_token,
+      refreshToken: response.refresh_token || oauth.refreshToken,
+      expiresAt: Date.now() + (response.expires_in || 3600) * 1000,
+    },
   }
 }
 
