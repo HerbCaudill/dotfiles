@@ -48,6 +48,7 @@ alias updatemcp="npm update -g @upstash/context7-mcp @playwright/mcp && uv tool 
 # bd
 alias bdl="bd list --pretty"
 alias bdr="bd list --pretty --ready"
+alias bdlw="bd list --pretty --watch"
 alias bdrw="bd list --pretty --ready --watch"
 
 # Kill all bd daemons and restart them
