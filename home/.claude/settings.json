@@ -1,35 +1,35 @@
 {
-  "autoUpdatesChannel": "latest",
-  "enabledPlugins": {
-    "vercel@claude-plugins-official": false
-  },
   "hooks": {
     "PreCompact": [
       {
+        "matcher": "",
         "hooks": [
           {
-            "command": "bd prime",
-            "type": "command"
+            "type": "command",
+            "command": "bd prime"
           }
-        ],
-        "matcher": ""
+        ]
       }
     ],
     "SessionStart": [
       {
+        "matcher": "",
         "hooks": [
           {
-            "command": "bd prime",
-            "type": "command"
+            "type": "command",
+            "command": "bd prime"
           }
-        ],
-        "matcher": ""
+        ]
       }
     ]
   },
-  "model": "opus",
   "statusLine": {
     "type": "command",
     "command": "node ~/.claude/statusline.js"
-  }
+  },
+  "enabledPlugins": {
+    "vercel@claude-plugins-official": false
+  },
+  "autoUpdatesChannel": "latest",
+  "skipDangerousModePermissionPrompt": true
 }
