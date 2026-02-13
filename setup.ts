@@ -110,14 +110,14 @@ const steps: Record<string, () => void> = {
   },
 
   claude: () => {
-    // Decode and write credentials file so Claude Code skips OAuth flow
+    // Install first, then write credentials (install may reset auth state)
+    run(`claude install latest --force`, { env: { ...process.env, PATH } })
     if (CLAUDE_CREDS_B64) {
       const credsJson = Buffer.from(CLAUDE_CREDS_B64, "base64").toString("utf-8")
       const claudeDir = join(HOME, ".claude")
       mkdirSync(claudeDir, { recursive: true })
       writeFileSync(join(claudeDir, ".credentials.json"), credsJson)
     }
-    run(`claude install latest --force`, { env: { ...process.env, PATH } })
   },
 
   gh: () => {
