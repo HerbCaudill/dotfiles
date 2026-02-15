@@ -125,7 +125,10 @@ const steps: Record<string, () => void> = {
   },
 
   gh: () => {
-    if (GITHUB_TOKEN) appendFileSync(secretsFile, `export GH_TOKEN=${GITHUB_TOKEN}\n`)
+    if (GITHUB_TOKEN) {
+      appendFileSync(secretsFile, `export GH_TOKEN=${GITHUB_TOKEN}\n`)
+      run(`gh auth setup-git`, { env: { ...process.env, PATH, GH_TOKEN: GITHUB_TOKEN } })
+    }
   },
 
   ...(isRepo ?
