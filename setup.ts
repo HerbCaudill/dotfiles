@@ -59,6 +59,12 @@ const steps: Record<string, () => void> = {
     run(`node "${DOTFILES_DIR}/install.mjs"`)
   },
 
+  homebrew: () => {
+    if (!commandExists("brew")) {
+      run(`NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`)
+    }
+  },
+
   "oh-my-zsh": () => {
     const ohmyzshPath = join(HOME, ".oh-my-zsh/oh-my-zsh.sh")
     if (!existsSync(ohmyzshPath)) {
