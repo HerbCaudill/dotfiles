@@ -136,6 +136,9 @@ function killport {
 
 #### SPRITE HELPERS
 
+alias sp="sprite console -s"
+alias spl="sprite ls"
+
 # mount sprites.dev fs
 spfs() {
   local sprite_name="${1:-$(sprite use)}"
@@ -154,10 +157,10 @@ spc() {
     return 1
   fi
 
-  # Get Claude credentials from keychain, base64 encode for safe transport
-  local claude_creds_b64=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null | base64)
-  if [[ -z "$claude_creds_b64" ]]; then
-    echo "Warning: Claude credentials not found - run 'claude' to authenticate"
+  # Get Claude OAuth token from ~/.secrets
+  local claude_token=$(grep SPRITE_CLAUDE_CODE_OAUTH_TOKEN ~/.secrets 2>/dev/null | sed 's/^export //' | cut -d= -f2)
+  if [[ -z "$claude_token" ]]; then
+    echo "Warning: Claude OAuth token not found in ~/.secrets"
   fi
 
   local name="$1"
@@ -191,7 +194,7 @@ spc() {
 
   sprite exec -s $name bash -c "\
     export GITHUB_TOKEN=$token \
-           CLAUDE_CREDS_B64=$claude_creds_b64 \
+           CLAUDE_OAUTH_TOKEN=$claude_token \
            SPRITE_NAME=$name \
            REPO_USER=$repo_user \
            REPO_NAME=$repo_name; \

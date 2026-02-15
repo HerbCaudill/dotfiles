@@ -21,7 +21,7 @@ import { dirname, join } from "node:path"
 const HOME = process.env.HOME!
 const SPRITE_NAME = process.env.SPRITE_NAME
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN
-const CLAUDE_CREDS_B64 = process.env.CLAUDE_CREDS_B64
+const CLAUDE_OAUTH_TOKEN = process.env.CLAUDE_OAUTH_TOKEN
 const REPO_USER = process.env.REPO_USER
 const REPO_NAME = process.env.REPO_NAME
 
@@ -111,13 +111,18 @@ const steps: Record<string, () => void> = {
 
   claude: () => {
     run(`claude install latest --force`, { env: { ...process.env, PATH } })
-    if (CLAUDE_CREDS_B64) {
-      const credsJson = Buffer.from(CLAUDE_CREDS_B64, "base64").toString("utf-8")
-      const creds = JSON.parse(credsJson)
-      const refreshedCreds = refreshClaudeToken(creds)
+    if (CLAUDE_OAUTH_TOKEN) {
       const claudeDir = join(HOME, ".claude")
       mkdirSync(claudeDir, { recursive: true })
-      writeFileSync(join(claudeDir, ".credentials.json"), JSON.stringify(refreshedCreds))
+      writeFileSync(
+        join(claudeDir, ".credentials.json"),
+        JSON.stringify({
+          claudeAiOauth: {
+            accessToken: CLAUDE_OAUTH_TOKEN,
+            expiresAt: Date.now() + 3600 * 1000,
+          },
+        }),
+      )
     }
   },
 
@@ -277,36 +282,6 @@ const appendIfMissing = (file: string, line: string) => {
   const content = existsSync(file) ? readFileSync(file, "utf-8") : ""
   if (!content.includes(line)) {
     appendFileSync(file, line + "\n")
-  }
-}
-
-/** Refresh the Claude OAuth access token using the refresh token. */
-const refreshClaudeToken = (creds: Record<string, any>): Record<string, any> => {
-  const oauth = creds.claudeAiOauth
-  if (!oauth?.refreshToken) return creds
-
-  const TOKEN_URL = "https://console.anthropic.com/v1/oauth/token"
-  const CLIENT_ID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
-
-  const result = execSync(
-    `curl -s -X POST "${TOKEN_URL}" -H "Content-Type: application/json" --max-time 30 -d '${JSON.stringify({
-      grant_type: "refresh_token",
-      refresh_token: oauth.refreshToken,
-      client_id: CLIENT_ID,
-    })}'`,
-    { stdio: "pipe", shell: "/bin/bash" },
-  )
-
-  const response = JSON.parse(result.toString())
-  if (!response.access_token) throw new Error(`Token refresh failed: ${JSON.stringify(response)}`)
-
-  return {
-    claudeAiOauth: {
-      ...oauth,
-      accessToken: response.access_token,
-      refreshToken: response.refresh_token || oauth.refreshToken,
-      expiresAt: Date.now() + (response.expires_in || 3600) * 1000,
-    },
   }
 }
 
