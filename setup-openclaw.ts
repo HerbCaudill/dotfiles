@@ -142,9 +142,9 @@ const steps: Record<string, () => void> = {
   },
 
   "register sprite service": () => {
-    const clawdbotPath = run(`which clawdbot`, { env: { ...process.env, PATH } }).trim()
+    const openclawPath = run(`which openclaw`, { env: { ...process.env, PATH } }).trim()
     run(
-      `sprite-env services create openclaw-gateway --cmd "${clawdbotPath}" --args "gateway" --http-port 18789`,
+      `sprite-env services create openclaw-gateway --cmd "${openclawPath}" --args "gateway" --http-port 18789`,
     )
   },
 
