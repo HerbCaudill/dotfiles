@@ -188,7 +188,6 @@ spc() {
   
   sprite exec -s $name bash -c "\
     export GITHUB_TOKEN='$token' \
-           CLAUDE_CODE_OAUTH_TOKEN='$SPRITE_CLAUDE_CODE_OAUTH_TOKEN' \
            SPRITE_NAME='$name' \
            REPO_USER='$repo_user' \
            REPO_NAME='$repo_name'; \
