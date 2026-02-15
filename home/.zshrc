@@ -2,6 +2,10 @@
 [[ -f ~/.secrets ]] && source ~/.secrets   # tokens, api keys
 [[ -f ~/.localenv ]] && source ~/.localenv # machine-specific config (SPRITE_NAME, EDITOR, etc.)
 
+# homebrew
+[[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
+[[ -x /home/linuxbrew/.linuxbrew/bin/brew ]] && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+
 #### ZSH SETUP
 
 # oh-my-zsh

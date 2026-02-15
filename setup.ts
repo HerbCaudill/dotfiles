@@ -32,8 +32,9 @@ const DOTFILES_DIR = join(HOME, "code/herbcaudill/dotfiles")
 const secretsFile = join(HOME, ".secrets")
 const localenvFile = join(HOME, ".localenv")
 const PNPM_HOME = join(HOME, ".local/share/pnpm")
+const BREW_PREFIX = process.platform === "darwin" ? "/opt/homebrew" : "/home/linuxbrew/.linuxbrew"
 const codeDir = join(HOME, "code")
-const PATH = `${PNPM_HOME}:${HOME}/.local/bin:${process.env.PATH}`
+let PATH = `${PNPM_HOME}:${HOME}/.local/bin:${process.env.PATH}`
 
 const ZSH_CUSTOM = process.env.ZSH_CUSTOM || join(HOME, ".oh-my-zsh/custom")
 const isRepo = SPRITE_NAME && REPO_USER && REPO_NAME
@@ -62,6 +63,7 @@ const steps: Record<string, () => void> = {
   homebrew: () => {
     if (!commandExists("brew")) {
       run(`NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`)
+      PATH = `${BREW_PREFIX}/bin:${BREW_PREFIX}/sbin:${PATH}`
     }
   },
 
