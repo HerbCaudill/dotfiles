@@ -187,11 +187,11 @@ spc() {
   [[ -n "$repo_user" ]] && sprite use $name | head -1
   
   sprite exec -s $name bash -c "\
-    export GITHUB_TOKEN=$token \
-           CLAUDE_CODE_OAUTH_TOKEN=$SPRITE_CLAUDE_CODE_OAUTH_TOKEN \
-           SPRITE_NAME=$name \
-           REPO_USER=$repo_user \
-           REPO_NAME=$repo_name; \
+    export GITHUB_TOKEN='$token' \
+           CLAUDE_CODE_OAUTH_TOKEN='$SPRITE_CLAUDE_CODE_OAUTH_TOKEN' \
+           SPRITE_NAME='$name' \
+           REPO_USER='$repo_user' \
+           REPO_NAME='$repo_name'; \
     curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/setup.ts | npm_config_update_notifier=false npx -y tsx -"
   
   sprite console -s $name
