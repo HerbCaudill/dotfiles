@@ -13,7 +13,7 @@
  */
 
 import { execSync, spawnSync } from "node:child_process"
-import { existsSync, mkdirSync, appendFileSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, appendFileSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 
 // Env variables
@@ -21,7 +21,7 @@ import { dirname, join } from "node:path"
 const HOME = process.env.HOME!
 const SPRITE_NAME = process.env.SPRITE_NAME
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN
-const CLAUDE_OAUTH_TOKEN = process.env.CLAUDE_OAUTH_TOKEN
+const CLAUDE_CODE_OAUTH_TOKEN = process.env.CLAUDE_CODE_OAUTH_TOKEN
 const REPO_USER = process.env.REPO_USER
 const REPO_NAME = process.env.REPO_NAME
 
@@ -111,18 +111,8 @@ const steps: Record<string, () => void> = {
 
   claude: () => {
     run(`claude install latest --force`, { env: { ...process.env, PATH } })
-    if (CLAUDE_OAUTH_TOKEN) {
-      const claudeDir = join(HOME, ".claude")
-      mkdirSync(claudeDir, { recursive: true })
-      writeFileSync(
-        join(claudeDir, ".credentials.json"),
-        JSON.stringify({
-          claudeAiOauth: {
-            accessToken: CLAUDE_OAUTH_TOKEN,
-            expiresAt: Date.now() + 3600 * 1000,
-          },
-        }),
-      )
+    if (CLAUDE_CODE_OAUTH_TOKEN) {
+      appendIfMissing(secretsFile, `export CLAUDE_CODE_OAUTH_TOKEN=${CLAUDE_CODE_OAUTH_TOKEN}`)
     }
   },
 
