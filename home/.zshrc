@@ -207,9 +207,9 @@ spoc() {
   local name=$SP_NAME
   local oc_path='export PATH="$HOME/.local/bin:/.sprite/languages/node/nvm/versions/node/v22.20.0/bin:$PATH"'
 
-  # Run setup-openclaw.ts (handles install, config, gateway start, token output)
-  local setup_output
-  setup_output=$(sprite exec -s $name bash -c "\
+  # Run setup-openclaw.ts (UI goes to stderr, token to stdout)
+  local gateway_token
+  gateway_token=$(sprite exec -s $name bash -c "\
     export ANTHROPIC_API_KEY='$ANTHROPIC_API_KEY' \
            TELEGRAM_BOT_TOKEN='$TELEGRAM_BOT_TOKEN' \
            OPENAI_API_KEY='$OPENAI_API_KEY' \
@@ -217,11 +217,6 @@ spoc() {
            GEMINI_API_KEY='$GEMINI_API_KEY' \
            BRAVE_SEARCH_API_KEY='$BRAVE_SEARCH_API_KEY'; \
     curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/scripts/setup-openclaw.ts | npm_config_update_notifier=false npx -y tsx -")
-
-  # Last line of output is the gateway token
-  local gateway_token=$(echo "$setup_output" | tail -1)
-  # Show the rest of the output (everything except the token line)
-  echo "$setup_output" | sed '$d'
 
   if [[ -z "$gateway_token" ]]; then
     echo "Error: could not read gateway token from setup script"
@@ -237,7 +232,6 @@ spoc() {
   echo "Opening dashboard..."
   open "$dashboard_url"
 
-  # Poll for pending device pairing (up to 15s)
   echo "Waiting for device pairing..."
   local pending_id=""
   for i in {1..5}; do

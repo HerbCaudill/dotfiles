@@ -174,10 +174,10 @@ const steps: Record<string, () => void> = {
 // MAIN
 
 const main = () => {
-  console.log()
-  console.log("─".repeat(process.stdout.columns || 80))
-  console.log("🦞 Setting up OpenClaw...")
-  console.log()
+  log()
+  log("─".repeat(process.stderr.columns || 80))
+  log("🦞 Setting up OpenClaw...")
+  log()
 
   for (const name of Object.keys(steps)) {
     stepStatus.set(name, "pending")
@@ -189,36 +189,38 @@ const main = () => {
   }
 
   if (errors.length > 0) {
-    console.log()
-    console.log("\x1b[1;33mErrors:\x1b[0m")
+    log()
+    log("\x1b[1;33mErrors:\x1b[0m")
     for (const { step, message } of errors) {
-      console.log(`  ${step}: ${message}`)
+      log(`  ${step}: ${message}`)
     }
     process.exit(1)
   }
 
-  // Output gateway token on last line of stdout for the calling shell to capture
   const token = readGatewayToken()
   if (!token) {
-    console.error("Error: could not read gateway token from config")
+    log("Error: could not read gateway token from config")
     process.exit(1)
   }
 
-  console.log()
-  console.log("\x1b[1;32m✓\x1b[0m OpenClaw is ready!")
-  console.log()
+  log()
+  log("\x1b[1;32m✓\x1b[0m OpenClaw is ready!")
+  log()
 
-  // Last line is the token (no decoration) so callers can `tail -1`
-  console.log(token)
+  // Stdout gets only the token — shell captures it with $()
+  process.stdout.write(token + "\n")
   process.exit(0)
 }
 
 // CHECKLIST UI
 
-/** Render the full checklist. */
+/** Write a line to stderr (all UI output goes here; stdout is reserved for the token). */
+const log = (msg = "") => process.stderr.write(msg + "\n")
+
+/** Render the full checklist to stderr. */
 const render = () => {
   if (headerLines > 0) {
-    process.stdout.write(`\x1b[${stepStatus.size}A`)
+    process.stderr.write(`\x1b[${stepStatus.size}A`)
   }
   for (const [name, status] of stepStatus) {
     const icon =
@@ -227,7 +229,7 @@ const render = () => {
       : status === "skip" ? "−"
       : status === "running" ? "⋯"
       : "○"
-    process.stdout.write(`\x1b[2K${icon} ${name}\n`)
+    process.stderr.write(`\x1b[2K${icon} ${name}\n`)
   }
   headerLines = stepStatus.size
 }
