@@ -26,40 +26,9 @@ import { join } from "node:path"
 
 const HOME = process.env.HOME!
 
-/** Read secrets from ~/.secrets, parsing `export KEY="value"` lines. */
-const readSecrets = (): Record<string, string> => {
-  const secretsPath = join(HOME, ".secrets")
-  if (!existsSync(secretsPath)) return {}
-
-  const content = readFileSync(secretsPath, "utf-8")
-  const secrets: Record<string, string> = {}
-
-  for (const line of content.split("\n")) {
-    const match = line.match(/^export\s+(\w+)="(.+?)"/)
-    if (match) secrets[match[1]] = match[2]
-  }
-
-  // Resolve variable references (e.g. GH_TOKEN=$GITHUB_TOKEN)
-  for (const [key, value] of Object.entries(secrets)) {
-    if (value.startsWith("$")) {
-      const ref = value.slice(1)
-      if (secrets[ref]) secrets[key] = secrets[ref]
-    }
-  }
-
-  return secrets
-}
-
-// Env variables
-
-const secrets = readSecrets()
-
-/** Get a variable from env or ~/.secrets. */
-const getVar = (name: string): string | undefined => process.env[name] ?? secrets[name]
-
-/** Require a variable from env or ~/.secrets, exiting if missing. */
-const requireVar = (name: string): string => {
-  const value = getVar(name)
+/** Require a variable from env  exiting if missing. */
+const getVar = (name: string): string => {
+  const value = process.env[name]
   if (!value) {
     console.error(`Error: ${name} not found in environment or ~/.secrets`)
     process.exit(1)
@@ -67,22 +36,14 @@ const requireVar = (name: string): string => {
   return value
 }
 
-const ANTHROPIC_API_KEY = requireVar("ANTHROPIC_API_KEY")
-const TELEGRAM_BOT_TOKEN = requireVar("TELEGRAM_BOT_TOKEN")
-const OPENAI_API_KEY = getVar("OPENAI_API_KEY")
-const GOOGLE_PLACES_API_KEY = getVar("GOOGLE_PLACES_API_KEY")
-const GEMINI_API_KEY = getVar("GEMINI_API_KEY")
-const BRAVE_SEARCH_API_KEY = getVar("BRAVE_SEARCH_API_KEY")
-
 // Paths
 
 const OPENCLAW_DIR = join(HOME, ".openclaw")
 const CONFIG_FILE = join(OPENCLAW_DIR, "openclaw.json")
 const ZSHRC = join(HOME, ".zshrc")
 const NVM_VERSIONS = "/.sprite/languages/node/nvm/versions/node"
-const NODE_BIN_PATH = existsSync(NVM_VERSIONS)
-  ? join(NVM_VERSIONS, readdirSync(NVM_VERSIONS)[0], "bin")
-  : ""
+const NODE_BIN_PATH =
+  existsSync(NVM_VERSIONS) ? join(NVM_VERSIONS, readdirSync(NVM_VERSIONS)[0], "bin") : ""
 
 let PATH = `${NODE_BIN_PATH}:${HOME}/.local/bin:${process.env.PATH}`
 
@@ -97,19 +58,15 @@ const gatewayToken = randomBytes(32).toString("hex")
 
 /** Build the OpenClaw config object from environment variables. */
 const buildConfig = () => {
-
-  const env: Record<string, string> = {
-    ...secrets,
-    ANTHROPIC_API_KEY,
-    TELEGRAM_BOT_TOKEN,
-    ...(OPENAI_API_KEY ? { OPENAI_API_KEY } : {}),
-    ...(GOOGLE_PLACES_API_KEY ? { GOOGLE_API_KEY: GOOGLE_PLACES_API_KEY } : {}),
-    ...(GEMINI_API_KEY ? { GEMINI_API_KEY } : {}),
-    ...(BRAVE_SEARCH_API_KEY ? { BRAVE_API_KEY: BRAVE_SEARCH_API_KEY } : {}),
-  }
-
   return {
-    env,
+    env: {
+      ANTHROPIC_API_KEY: process.env["ANTHROPIC_API_KEY"],
+      TELEGRAM_BOT_TOKEN: process.env["TELEGRAM_BOT_TOKEN"],
+      OPENAI_API_KEY: process.env["OPENAI_API_KEY"],
+      GOOGLE_PLACES_API_KEY: process.env["GOOGLE_PLACES_API_KEY"],
+      GEMINI_API_KEY: process.env["GEMINI_API_KEY"],
+      BRAVE_SEARCH_API_KEY: process.env["BRAVE_SEARCH_API_KEY"],
+    },
     auth: {
       profiles: {
         "anthropic:default": { provider: "anthropic", mode: "api_key" },
@@ -126,7 +83,7 @@ const buildConfig = () => {
     channels: {
       telegram: {
         enabled: true,
-        botToken: TELEGRAM_BOT_TOKEN,
+        botToken: process.env["TELEGRAM_BOT_TOKEN"],
         dmPolicy: "pairing",
         historyLimit: 50,
       },
@@ -135,8 +92,8 @@ const buildConfig = () => {
       profile: "coding",
       web: {
         search: {
-          enabled: !!BRAVE_SEARCH_API_KEY,
-          ...(BRAVE_SEARCH_API_KEY ? { apiKey: BRAVE_SEARCH_API_KEY } : {}),
+          enabled: true,
+          apiKey: process.env["BRAVE_SEARCH_API_KEY"],
           maxResults: 5,
         },
       },
@@ -203,9 +160,6 @@ const steps: Record<string, () => void> = {
   "start gateway": () => {
     const status = getGatewayStatus()
     if (status === "running") return
-    try {
-      run(`sprite-env services stop openclaw-gateway`, { env: { ...process.env, PATH } })
-    } catch {}
     run(`sprite-env services start openclaw-gateway`, { env: { ...process.env, PATH } })
     // Give it a moment to bind the port
     execSync("sleep 2")
@@ -250,8 +204,6 @@ const main = () => {
   console.error("\x1b[1;32m✓\x1b[0m OpenClaw is ready!")
   console.error()
 
-  // Output token to stdout for machine consumption
-  process.stdout.write(gatewayToken)
   process.exit(0)
 }
 
