@@ -20,14 +20,27 @@ const OC_PATH =
 const secrets = readSecrets()
 const envBlock = buildEnvBlock(secrets)
 
-// Run setup-openclaw.ts remotely; it outputs the gateway token to stdout
-const gatewayToken = execSync(
+// Run setup-openclaw.ts remotely
+execSync(
   `sprite exec -s ${name} bash -c "export ${envBlock}; curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/scripts/setup-openclaw.ts | npm_config_update_notifier=false npx -y tsx -"`,
-  { stdio: ["inherit", "pipe", "inherit"], encoding: "utf-8" },
-).trim()
+  { stdio: "inherit" },
+)
+
+// Read the gateway token from the sprite's openclaw config
+let gatewayToken
+try {
+  const configJson = run(
+    `sprite exec -s ${name} bash -c "${OC_PATH}; cat \\$HOME/.openclaw/openclaw.json"`,
+  )
+  const config = JSON.parse(configJson)
+  gatewayToken = config.gateway?.auth?.token
+} catch (e) {
+  console.error("Failed to read gateway token from openclaw config:", e.message)
+  process.exit(1)
+}
 
 if (!gatewayToken) {
-  console.error("Error: setup-openclaw did not output a gateway token")
+  console.error("Error: no gateway.auth.token found in openclaw.json")
   process.exit(1)
 }
 
@@ -50,18 +63,16 @@ execSync(`open "${dashboardUrl}"`)
 console.log("Waiting for device pairing...")
 sleepSync(5)
 
-let pendingId = ""
-for (let i = 0; i < 8; i++) {
-  pendingId = getPendingRequestId(name)
-  if (pendingId) break
-  sleepSync(3)
-}
-
-if (pendingId) {
-  console.log("Approving device...")
-  run(`sprite exec -s ${name} bash -c "${OC_PATH}; openclaw devices approve '${pendingId}'"`)
-} else {
-  console.log("No pending device found (you may need to refresh the dashboard)")
+for (let i = 0; i < 12; i++) {
+  const devices = listDevices(name)
+  if (devices.pending && devices.pending.length > 0) {
+    const pendingId = devices.pending[0].requestId
+    console.log("Approving device...")
+    run(`sprite exec -s ${name} bash -c "${OC_PATH}; openclaw devices approve '${pendingId}'"`)
+    break
+  }
+  if (i < 11) sleepSync(3)
+  else console.log("No pending device found (you may need to refresh the dashboard)")
 }
 
 console.log()
@@ -98,7 +109,6 @@ function readSecrets() {
 /** Build a shell-safe env export block from secrets relevant to OpenClaw. */
 function buildEnvBlock(secrets) {
   const keys = [
-    
     "ANTHROPIC_API_KEY",
     "TELEGRAM_BOT_TOKEN",
     "OPENAI_API_KEY",
@@ -112,16 +122,14 @@ function buildEnvBlock(secrets) {
     .join(" ")
 }
 
-/** Poll the sprite for a pending device request ID. */
-function getPendingRequestId(spriteName) {
+/** Poll the sprite for devices, returning the full parsed JSON. */
+function listDevices(spriteName) {
   try {
     const output = run(
       `sprite exec -s ${spriteName} bash -c "${OC_PATH}; openclaw devices list --json"`,
     )
-    const data = JSON.parse(output)
-    const pending = data.pending ?? []
-    return pending.length > 0 ? pending[0].requestId : ""
+    return JSON.parse(output)
   } catch {
-    return ""
+    return {}
   }
 }
