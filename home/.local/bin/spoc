@@ -20,19 +20,14 @@ const OC_PATH =
 const secrets = readSecrets()
 const envBlock = buildEnvBlock(secrets)
 
-// Run setup-openclaw.ts remotely
-execSync(
+// Run setup-openclaw.ts remotely; it outputs the gateway token to stdout
+const gatewayToken = execSync(
   `sprite exec -s ${name} bash -c "export ${envBlock}; curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/scripts/setup-openclaw.ts | npm_config_update_notifier=false npx -y tsx -"`,
-  { stdio: "inherit" },
-)
-
-// Read gateway token from config file on the sprite
-const gatewayToken = run(
-  `sprite exec -s ${name} bash -c "node -p 'JSON.parse(require(\\"fs\\").readFileSync(process.env.HOME+\\"/\\.openclaw/openclaw.json\\",\\"utf8\\")).gateway.auth.token'"`,
+  { stdio: ["inherit", "pipe", "inherit"], encoding: "utf-8" },
 ).trim()
 
 if (!gatewayToken) {
-  console.error("Error: could not read gateway token")
+  console.error("Error: setup-openclaw did not output a gateway token")
   process.exit(1)
 }
 

@@ -14,7 +14,14 @@
 
 import { execSync } from "node:child_process"
 import { randomBytes } from "node:crypto"
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  writeFileSync,
+} from "node:fs"
 import { join } from "node:path"
 
 const HOME = process.env.HOME!
@@ -72,7 +79,10 @@ const BRAVE_SEARCH_API_KEY = getVar("BRAVE_SEARCH_API_KEY")
 const OPENCLAW_DIR = join(HOME, ".openclaw")
 const CONFIG_FILE = join(OPENCLAW_DIR, "openclaw.json")
 const ZSHRC = join(HOME, ".zshrc")
-const NODE_BIN_PATH = "/.sprite/languages/node/nvm/versions/node/v22.20.0/bin"
+const NVM_VERSIONS = "/.sprite/languages/node/nvm/versions/node"
+const NODE_BIN_PATH = existsSync(NVM_VERSIONS)
+  ? join(NVM_VERSIONS, readdirSync(NVM_VERSIONS)[0], "bin")
+  : ""
 
 let PATH = `${NODE_BIN_PATH}:${HOME}/.local/bin:${process.env.PATH}`
 
@@ -82,9 +92,11 @@ const errors: { step: string; message: string }[] = []
 
 // CONFIG
 
+/** Gateway token, output to stdout at the end for the caller to capture. */
+const gatewayToken = randomBytes(32).toString("hex")
+
 /** Build the OpenClaw config object from environment variables. */
 const buildConfig = () => {
-  const gatewayToken = randomBytes(32).toString("hex")
 
   const env: Record<string, string> = {
     ...secrets,
@@ -211,10 +223,10 @@ const steps: Record<string, () => void> = {
 // MAIN
 
 const main = () => {
-  console.log()
-  console.log("─".repeat(process.stdout.columns || 80))
-  console.log("🦞 Setting up OpenClaw...")
-  console.log()
+  console.error()
+  console.error("─".repeat(process.stderr.columns || 80))
+  console.error("🦞 Setting up OpenClaw...")
+  console.error()
 
   for (const name of Object.keys(steps)) {
     stepStatus.set(name, "pending")
@@ -226,17 +238,20 @@ const main = () => {
   }
 
   if (errors.length > 0) {
-    console.log()
-    console.log("\x1b[1;33mErrors:\x1b[0m")
+    console.error()
+    console.error("\x1b[1;33mErrors:\x1b[0m")
     for (const { step, message } of errors) {
-      console.log(`  ${step}: ${message}`)
+      console.error(`  ${step}: ${message}`)
     }
     process.exit(1)
   }
 
-  console.log()
-  console.log("\x1b[1;32m✓\x1b[0m OpenClaw is ready!")
-  console.log()
+  console.error()
+  console.error("\x1b[1;32m✓\x1b[0m OpenClaw is ready!")
+  console.error()
+
+  // Output token to stdout for machine consumption
+  process.stdout.write(gatewayToken)
   process.exit(0)
 }
 
@@ -245,7 +260,7 @@ const main = () => {
 /** Render the full checklist. */
 const render = () => {
   if (headerLines > 0) {
-    process.stdout.write(`\x1b[${stepStatus.size}A`)
+    process.stderr.write(`\x1b[${stepStatus.size}A`)
   }
   for (const [name, status] of stepStatus) {
     const icon =
@@ -254,7 +269,7 @@ const render = () => {
       : status === "skip" ? "−"
       : status === "running" ? "⋯"
       : "○"
-    process.stdout.write(`\x1b[2K${icon} ${name}\n`)
+    process.stderr.write(`\x1b[2K${icon} ${name}\n`)
   }
   headerLines = stepStatus.size
 }

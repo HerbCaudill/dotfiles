@@ -151,10 +151,10 @@ const steps: Record<string, () => void> = {
 // MAIN
 
 const main = () => {
-  console.log()
-  console.log("─".repeat(process.stdout.columns || 80))
-  console.log("👾 Setting up dev environment...")
-  console.log()
+  console.error()
+  console.error("─".repeat(process.stderr.columns || 80))
+  console.error("👾 Setting up dev environment...")
+  console.error()
 
   // Initialize step statuses and render
   for (const name of Object.keys(steps)) {
@@ -188,19 +188,19 @@ const main = () => {
 
   // ---- Show errors ----
   if (errors.length > 0) {
-    console.log()
-    console.log("\x1b[1;33mErrors:\x1b[0m")
+    console.error()
+    console.error("\x1b[1;33mErrors:\x1b[0m")
     for (const { step, message } of errors) {
-      console.log(`  ${step}: ${message}`)
+      console.error(`  ${step}: ${message}`)
     }
     process.exit(1)
   }
 
   // ---- Done ----
-  console.log()
+  console.error()
   if (SPRITE_NAME) {
-    console.log(`👾 ${SPRITE_NAME} is ready!`)
-    console.log()
+    console.error(`👾 ${SPRITE_NAME} is ready!`)
+    console.error()
     // Exec into zsh so .secrets is sourced
     const result = spawnSync("/bin/zsh", ["-l"], {
       stdio: "inherit",
@@ -208,7 +208,7 @@ const main = () => {
     })
     process.exit(result.status ?? 0)
   } else {
-    console.log("\x1b[1;32m✓\x1b[0m Ready!")
+    console.error("\x1b[1;32m✓\x1b[0m Ready!")
     process.exit(0)
   }
 }
@@ -219,7 +219,7 @@ const main = () => {
 const render = () => {
   // Move cursor up to overwrite previous render
   if (headerLines > 0) {
-    process.stdout.write(`\x1b[${stepStatus.size}A`)
+    process.stderr.write(`\x1b[${stepStatus.size}A`)
   }
 
   for (const [name, status] of stepStatus) {
@@ -229,7 +229,7 @@ const render = () => {
       : status === "skip" ? "−"
       : status === "running" ? "⋯"
       : "○"
-    process.stdout.write(`\x1b[2K${icon} ${name}\n`)
+    process.stderr.write(`\x1b[2K${icon} ${name}\n`)
   }
   headerLines = stepStatus.size
 }
