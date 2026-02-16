@@ -153,86 +153,62 @@ spfs() {
   cd "$mount_point"
 }
 
-# create sprite with setup
-spc() {
-  local token=$(gh auth token)
-  if [[ -z "$token" ]]; then
+# create sprite + run setup-sprite.ts; sets $SP_NAME for callers
+_sp_setup() {
+  SP_GH_TOKEN=$(gh auth token)
+  if [[ -z "$SP_GH_TOKEN" ]]; then
     echo "Not authenticated with gh - run 'gh auth login' first"
     return 1
   fi
 
-  local name="$1"
+  SP_NAME="$1"
   local repo_user=""
   local repo_name=""
 
   # If no name given and we're at a git repo root without .sprite file, use repo name
-  if [[ -z "$name" && -d ".git" && ! -f ".sprite" ]]; then
+  if [[ -z "$SP_NAME" && -d ".git" && ! -f ".sprite" ]]; then
     local remote_url=$(git remote get-url origin 2>/dev/null)
     if [[ -n "$remote_url" ]]; then
-      # Extract username/reponame from git remote URL
       local repo_path=$(echo "$remote_url" | sed -E 's#.*(github\.com[:/])##' | sed 's/\.git$//')
       repo_name=$(basename "$repo_path")
       repo_user=$(dirname "$repo_path")
-      name="dev-$repo_name"
+      SP_NAME="dev-$repo_name"
     fi
   fi
 
-  # Fall back to random name if still not set
-  name="${name:-$(LC_ALL=C tr -dc 'a-z' </dev/urandom | head -c 5)}"
+  SP_NAME="${SP_NAME:-$(LC_ALL=C tr -dc 'a-z' </dev/urandom | head -c 5)}"
 
   # Check if sprite already exists
-  if sprite list | grep -q "^${name}$"; then
-    echo "Sprite '$name' already exists, connecting..."
-    sprite console -s $name
-    return
+  if sprite list | grep -q "^${SP_NAME}$"; then
+    echo "Sprite '$SP_NAME' already exists"
+    return 0
   fi
 
-  sprite create --skip-console $name | head -1
-  [[ -n "$repo_user" ]] && sprite use $name | head -1
-  
-  sprite exec -s $name bash -c "\
-    export GITHUB_TOKEN='$token' \
-           SPRITE_NAME='$name' \
+  sprite create --skip-console $SP_NAME | head -1
+  [[ -n "$repo_user" ]] && sprite use $SP_NAME | head -1
+
+  sprite exec -s $SP_NAME bash -c "\
+    export GITHUB_TOKEN='$SP_GH_TOKEN' \
+           SPRITE_NAME='$SP_NAME' \
            REPO_USER='$repo_user' \
            REPO_NAME='$repo_name'; \
     curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/scripts/setup-sprite.ts | npm_config_update_notifier=false npx -y tsx -"
-  
-  sprite console -s $name
+}
+
+# create sprite with setup + open console
+spc() {
+  _sp_setup "$1" || return 1
+  sprite console -s $SP_NAME
 }
 
 # create sprite with OpenClaw setup + open dashboard
 spoc() {
-  local gh_token=$(gh auth token)
-  if [[ -z "$gh_token" ]]; then
-    echo "Not authenticated with gh - run 'gh auth login' first"
-    return 1
-  fi
-
-  local name="${1:-$(LC_ALL=C tr -dc 'a-z' </dev/urandom | head -c 5)}"
+  _sp_setup "$1" || return 1
+  local name=$SP_NAME
   local oc_path='export PATH="$HOME/.local/bin:/.sprite/languages/node/nvm/versions/node/v22.20.0/bin:$PATH"'
-  local needs_setup=true
 
-  # Create sprite if it doesn't exist
-  if sprite list | grep -q "^${name}$"; then
-    echo "Sprite '$name' already exists"
-    # Skip setup if OpenClaw is already configured
-    if sprite exec -s $name bash -c "test -f ~/.openclaw/openclaw.json" 2>/dev/null; then
-      needs_setup=false
-    fi
-  else
-    echo "Creating sprite '$name'..."
-    sprite create --skip-console $name | head -1
-  fi
-
-  if $needs_setup; then
-    # Run setup-sprite.ts
-    echo "Setting up dev environment..."
-    sprite exec -s $name bash -c "\
-      export GITHUB_TOKEN='$gh_token' \
-             SPRITE_NAME='$name'; \
-      curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/scripts/setup-sprite.ts | npm_config_update_notifier=false npx -y tsx -"
-
-    # Run setup-openclaw.ts with secrets
+  # Run setup-openclaw.ts if not already configured
+  if ! sprite exec -s $name bash -c "test -f ~/.openclaw/openclaw.json" 2>/dev/null; then
     echo "Setting up OpenClaw..."
     sprite exec -s $name bash -c "\
       export ANTHROPIC_API_KEY='$ANTHROPIC_API_KEY' \
@@ -242,10 +218,10 @@ spoc() {
              GEMINI_API_KEY='$GEMINI_API_KEY' \
              BRAVE_SEARCH_API_KEY='$BRAVE_SEARCH_API_KEY'; \
       curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/scripts/setup-openclaw.ts | npm_config_update_notifier=false npx -y tsx -"
-
-    # Make sprite URL public
-    sprite url update -s $name --auth public
   fi
+
+  # Make sprite URL public
+  sprite url update -s $name --auth public
 
   # Ensure gateway service is running
   local gw_status=$(sprite exec -s $name bash -c "sprite-env services list" 2>/dev/null \
