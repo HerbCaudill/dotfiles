@@ -13,7 +13,8 @@ import { spSetup } from "./_sp_setup.ts"
 
 const name = spSetup(process.argv[2])
 
-const OC_PATH = 'export PATH="$HOME/.local/bin:/.sprite/languages/node/nvm/versions/node/v22.20.0/bin:$PATH"'
+const OC_PATH =
+  "export PATH=$HOME/.local/bin:/.sprite/languages/node/nvm/versions/node/v22.20.0/bin:$PATH"
 
 // Read secrets from ~/.secrets
 const secrets = readSecrets()
