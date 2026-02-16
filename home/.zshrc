@@ -209,39 +209,61 @@ spoc() {
   fi
 
   local name="${1:-$(LC_ALL=C tr -dc 'a-z' </dev/urandom | head -c 5)}"
+  local oc_path='export PATH="$HOME/.local/bin:/.sprite/languages/node/nvm/versions/node/v22.20.0/bin:$PATH"'
+  local needs_setup=true
 
-  # Check if sprite already exists
+  # Create sprite if it doesn't exist
   if sprite list | grep -q "^${name}$"; then
     echo "Sprite '$name' already exists"
+    # Skip setup if OpenClaw is already configured
+    if sprite exec -s $name bash -c "test -f ~/.openclaw/openclaw.json" 2>/dev/null; then
+      needs_setup=false
+    fi
   else
     echo "Creating sprite '$name'..."
     sprite create --skip-console $name | head -1
   fi
 
-  # Run setup-sprite.ts
-  echo "Setting up dev environment..."
-  sprite exec -s $name bash -c "\
-    export GITHUB_TOKEN='$gh_token' \
-           SPRITE_NAME='$name'; \
-    curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/scripts/setup-sprite.ts | npm_config_update_notifier=false npx -y tsx -"
+  if $needs_setup; then
+    # Run setup-sprite.ts
+    echo "Setting up dev environment..."
+    sprite exec -s $name bash -c "\
+      export GITHUB_TOKEN='$gh_token' \
+             SPRITE_NAME='$name'; \
+      curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/scripts/setup-sprite.ts | npm_config_update_notifier=false npx -y tsx -"
 
-  # Run setup-openclaw.ts with secrets
-  echo "Setting up OpenClaw..."
-  sprite exec -s $name bash -c "\
-    export ANTHROPIC_API_KEY='$ANTHROPIC_API_KEY' \
-           TELEGRAM_BOT_TOKEN='$TELEGRAM_BOT_TOKEN' \
-           OPENAI_API_KEY='$OPENAI_API_KEY' \
-           GOOGLE_PLACES_API_KEY='$GOOGLE_PLACES_API_KEY' \
-           GEMINI_API_KEY='$GEMINI_API_KEY' \
-           BRAVE_SEARCH_API_KEY='$BRAVE_SEARCH_API_KEY'; \
-    curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/scripts/setup-openclaw.ts | npm_config_update_notifier=false npx -y tsx -"
+    # Run setup-openclaw.ts with secrets
+    echo "Setting up OpenClaw..."
+    sprite exec -s $name bash -c "\
+      export ANTHROPIC_API_KEY='$ANTHROPIC_API_KEY' \
+             TELEGRAM_BOT_TOKEN='$TELEGRAM_BOT_TOKEN' \
+             OPENAI_API_KEY='$OPENAI_API_KEY' \
+             GOOGLE_PLACES_API_KEY='$GOOGLE_PLACES_API_KEY' \
+             GEMINI_API_KEY='$GEMINI_API_KEY' \
+             BRAVE_SEARCH_API_KEY='$BRAVE_SEARCH_API_KEY'; \
+      curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/scripts/setup-openclaw.ts | npm_config_update_notifier=false npx -y tsx -"
 
-  # Make sprite URL public
-  sprite url update -s $name --auth public
+    # Make sprite URL public
+    sprite url update -s $name --auth public
+  fi
+
+  # Ensure gateway service is running
+  local gw_status=$(sprite exec -s $name bash -c "sprite-env services list" 2>/dev/null \
+    | python3 -c "import sys,json; svcs=json.load(sys.stdin); print(next((s['state']['status'] for s in svcs if s['name']=='openclaw-gateway'),'missing'))" 2>/dev/null)
+  if [[ "$gw_status" != "running" ]]; then
+    echo "Starting gateway..."
+    sprite exec -s $name bash -c "sprite-env services stop openclaw-gateway 2>/dev/null; sleep 1; sprite-env services start openclaw-gateway 2>/dev/null"
+    sleep 2
+  fi
 
   # Read the gateway token from the sprite's openclaw.json
   local gateway_token=$(sprite exec -s $name bash -c "cat ~/.openclaw/openclaw.json" \
     | python3 -c "import sys,json; print(json.load(sys.stdin)['gateway']['auth']['token'])")
+
+  if [[ -z "$gateway_token" ]]; then
+    echo "Error: could not read gateway token from sprite"
+    return 1
+  fi
 
   # Build dashboard URL
   local sprite_url=$(sprite url -s $name 2>&1 | grep '^URL:' | awk '{print $2}')
@@ -251,17 +273,23 @@ spoc() {
   echo "Opening dashboard..."
   open "$dashboard_url"
 
-  # Wait for the browser to connect, then auto-approve any pending device
+  # Poll for pending device pairing (up to 15s)
   echo "Waiting for device pairing..."
-  sleep 5
-  local pending_id=$(sprite exec -s $name bash -c \
-    'export PATH="$HOME/.local/bin:/.sprite/languages/node/nvm/versions/node/v22.20.0/bin:$PATH"; openclaw devices list --json' \
-    | python3 -c "import sys,json; p=json.load(sys.stdin).get('pending',[]); print(p[0]['deviceId'] if p else '')" 2>/dev/null)
+  local pending_id=""
+  for i in {1..5}; do
+    sleep 3
+    pending_id=$(sprite exec -s $name bash -c \
+      "$oc_path; openclaw devices list --json" 2>/dev/null \
+      | python3 -c "import sys,json; p=json.load(sys.stdin).get('pending',[]); print(p[0]['deviceId'] if p else '')" 2>/dev/null)
+    [[ -n "$pending_id" ]] && break
+  done
 
   if [[ -n "$pending_id" ]]; then
-    echo "Approving device $pending_id..."
+    echo "Approving device..."
     sprite exec -s $name bash -c \
-      "export PATH=\"\$HOME/.local/bin:/.sprite/languages/node/nvm/versions/node/v22.20.0/bin:\$PATH\"; openclaw devices approve '$pending_id'"
+      "$oc_path; openclaw devices approve '$pending_id'"
+  else
+    echo "No pending device found (you may need to refresh the dashboard)"
   fi
 
   echo ""
