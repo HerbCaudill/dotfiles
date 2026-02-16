@@ -8,7 +8,7 @@
  *   ANTHROPIC_API_KEY=sk-... TELEGRAM_BOT_TOKEN=8551... npx tsx setup-openclaw.ts
  *
  * Or curl from raw GitHub:
- *   curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/setup-openclaw.ts | \
+ *   curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/scripts/setup-openclaw.ts | \
  *     ANTHROPIC_API_KEY=... TELEGRAM_BOT_TOKEN=... npx -y tsx -
  */
 

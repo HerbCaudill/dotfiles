@@ -5,10 +5,10 @@
  * Works on both local machines and sprites.dev.
  *
  * Usage:
- *   curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/setup.ts | npm_config_update_notifier=false npx -y tsx -
+ *   curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/scripts/setup-sprite.ts | npm_config_update_notifier=false npx -y tsx -
  *
  * For sprites (with GitHub auth):
- *   curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/setup.ts | \
+ *   curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/scripts/setup-sprite.ts | \
  *     GITHUB_TOKEN=xxx SPRITE_NAME=mysprite npm_config_update_notifier=false npx -y tsx -
  */
 
@@ -57,7 +57,7 @@ const steps: Record<string, () => void> = {
   },
 
   symlinks: () => {
-    run(`node "${DOTFILES_DIR}/install.mjs"`)
+    run(`node "${DOTFILES_DIR}/scripts/symlink.mjs"`)
   },
 
   homebrew: () => {

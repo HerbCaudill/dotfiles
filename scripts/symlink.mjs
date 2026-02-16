@@ -3,7 +3,7 @@
 import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, unlinkSync } from "node:fs"
 import { dirname, isAbsolute, join, relative } from "node:path"
 
-const DOTFILES_DIR = dirname(new URL(import.meta.url).pathname)
+const DOTFILES_DIR = dirname(dirname(new URL(import.meta.url).pathname))
 const HOME_DIR = join(DOTFILES_DIR, "home")
 const CONFIG_FILE = join(DOTFILES_DIR, "symlink-dirs.conf")
 const HOME = process.env.HOME

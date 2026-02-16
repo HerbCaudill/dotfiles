@@ -134,7 +134,7 @@ After completing a request:
 ## Codex
 
 - Global Codex instructions and skills are sourced from `home/.claude/CLAUDE.md` and `home/.claude/skills`.
-- `install.mjs` replaces any existing `~/.codex/AGENTS.md` and `~/.codex/skills` with symlinks to those sources.
+- `scripts/symlink.mjs` replaces any existing `~/.codex/AGENTS.md` and `~/.codex/skills` with symlinks to those sources.
 
 ## Worktrees
 
@@ -247,6 +247,6 @@ Other files managed by this repo:
 - `home/.prettierrc` - Prettier formatting defaults
 - `home/.oh-my-zsh/custom/themes/herb.zsh-theme` - Custom Zsh theme
 - `home/.local/bin/` - Worktree helper scripts (symlinked to `~/.local/bin`)
-- Raycast scripts in the `raycast/` directory
+- Scripts in the `scripts/` directory (symlink installer, sprite setup, Raycast scripts)
 
 **Important:** When modifying any of these files, make changes in the dotfiles repo, then commit and push.
