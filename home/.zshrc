@@ -209,7 +209,6 @@ spoc() {
 
   # Run setup-openclaw.ts if not already configured
   if ! sprite exec -s $name bash -c "test -f ~/.openclaw/openclaw.json" 2>/dev/null; then
-    echo "Setting up OpenClaw..."
     sprite exec -s $name bash -c "\
       export ANTHROPIC_API_KEY='$ANTHROPIC_API_KEY' \
              TELEGRAM_BOT_TOKEN='$TELEGRAM_BOT_TOKEN' \
