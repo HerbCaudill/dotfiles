@@ -134,7 +134,7 @@ const steps: Record<string, () => void> = {
   },
 
   "initialize workspace": () => {
-    run(`openclaw setup --non-interactive`, { env: { ...process.env, PATH } })
+    run(`openclaw onboard --non-interactive --accept-risk`, { env: { ...process.env, PATH } })
   },
 
   "install skill dependencies": () => {
