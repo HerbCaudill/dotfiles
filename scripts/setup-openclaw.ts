@@ -151,6 +151,21 @@ const steps: Record<string, () => void> = {
     )
   },
 
+  "start gateway": () => {
+    const status = getGatewayStatus()
+    if (status === "running") return
+    try {
+      run(`sprite-env services stop openclaw-gateway`, { env: { ...process.env, PATH } })
+    } catch {}
+    run(`sprite-env services start openclaw-gateway`, { env: { ...process.env, PATH } })
+    // Give it a moment to bind the port
+    execSync("sleep 2")
+    const newStatus = getGatewayStatus()
+    if (newStatus !== "running") {
+      throw new Error(`Gateway status: ${newStatus}`)
+    }
+  },
+
   "fix path": () => {
     appendIfMissing(ZSHRC, `export PATH="$PATH:${NODE_BIN_PATH}"`)
   },
@@ -182,11 +197,19 @@ const main = () => {
     process.exit(1)
   }
 
+  // Output gateway token on last line of stdout for the calling shell to capture
+  const token = readGatewayToken()
+  if (!token) {
+    console.error("Error: could not read gateway token from config")
+    process.exit(1)
+  }
+
   console.log()
   console.log("\x1b[1;32m✓\x1b[0m OpenClaw is ready!")
   console.log()
-  console.log("  Verify with: openclaw status")
-  console.log("  Gateway:     openclaw gateway status")
+
+  // Last line is the token (no decoration) so callers can `tail -1`
+  console.log(token)
   process.exit(0)
 }
 
@@ -241,6 +264,24 @@ const run = (cmd: string, options: { cwd?: string; env?: NodeJS.ProcessEnv } = {
     const output = [stderr, stdout].filter(Boolean).join("\n")
     throw new Error(output || err.message || "Command failed")
   }
+}
+
+/** Get the gateway service status from sprite-env. */
+const getGatewayStatus = (): string => {
+  try {
+    const output = run(`sprite-env services list`, { env: { ...process.env, PATH } })
+    const services = JSON.parse(output) as { name: string; state: { status: string } }[]
+    const gw = services.find(s => s.name === "openclaw-gateway")
+    return gw?.state?.status ?? "missing"
+  } catch {
+    return "unknown"
+  }
+}
+
+/** Read the gateway token from the openclaw config file. */
+const readGatewayToken = (): string => {
+  const config = JSON.parse(readFileSync(CONFIG_FILE, "utf-8"))
+  return config.gateway?.auth?.token ?? ""
 }
 
 /** Check if a command exists on PATH. */

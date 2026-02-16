@@ -207,44 +207,33 @@ spoc() {
   local name=$SP_NAME
   local oc_path='export PATH="$HOME/.local/bin:/.sprite/languages/node/nvm/versions/node/v22.20.0/bin:$PATH"'
 
-  # Run setup-openclaw.ts if not already configured
-  if ! sprite exec -s $name bash -c "test -f ~/.openclaw/openclaw.json" 2>/dev/null; then
-    sprite exec -s $name bash -c "\
-      export ANTHROPIC_API_KEY='$ANTHROPIC_API_KEY' \
-             TELEGRAM_BOT_TOKEN='$TELEGRAM_BOT_TOKEN' \
-             OPENAI_API_KEY='$OPENAI_API_KEY' \
-             GOOGLE_PLACES_API_KEY='$GOOGLE_PLACES_API_KEY' \
-             GEMINI_API_KEY='$GEMINI_API_KEY' \
-             BRAVE_SEARCH_API_KEY='$BRAVE_SEARCH_API_KEY'; \
-      curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/scripts/setup-openclaw.ts | npm_config_update_notifier=false npx -y tsx -"
+  # Run setup-openclaw.ts (handles install, config, gateway start, token output)
+  local setup_output
+  setup_output=$(sprite exec -s $name bash -c "\
+    export ANTHROPIC_API_KEY='$ANTHROPIC_API_KEY' \
+           TELEGRAM_BOT_TOKEN='$TELEGRAM_BOT_TOKEN' \
+           OPENAI_API_KEY='$OPENAI_API_KEY' \
+           GOOGLE_PLACES_API_KEY='$GOOGLE_PLACES_API_KEY' \
+           GEMINI_API_KEY='$GEMINI_API_KEY' \
+           BRAVE_SEARCH_API_KEY='$BRAVE_SEARCH_API_KEY'; \
+    curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/scripts/setup-openclaw.ts | npm_config_update_notifier=false npx -y tsx -")
+
+  # Last line of output is the gateway token
+  local gateway_token=$(echo "$setup_output" | tail -1)
+  # Show the rest of the output (everything except the token line)
+  echo "$setup_output" | sed '$d'
+
+  if [[ -z "$gateway_token" ]]; then
+    echo "Error: could not read gateway token from setup script"
+    return 1
   fi
 
   # Make sprite URL public
   sprite url update -s $name --auth public
 
-  # Ensure gateway service is running
-  local gw_status=$(sprite exec -s $name bash -c "sprite-env services list" 2>/dev/null \
-    | python3 -c "import sys,json; svcs=json.load(sys.stdin); print(next((s['state']['status'] for s in svcs if s['name']=='openclaw-gateway'),'missing'))" 2>/dev/null)
-  if [[ "$gw_status" != "running" ]]; then
-    echo "Starting gateway..."
-    sprite exec -s $name bash -c "sprite-env services stop openclaw-gateway 2>/dev/null; sleep 1; sprite-env services start openclaw-gateway 2>/dev/null"
-    sleep 2
-  fi
-
-  # Read the gateway token from the sprite's openclaw.json
-  local gateway_token=$(sprite exec -s $name bash -c "cat ~/.openclaw/openclaw.json" \
-    | python3 -c "import sys,json; print(json.load(sys.stdin)['gateway']['auth']['token'])")
-
-  if [[ -z "$gateway_token" ]]; then
-    echo "Error: could not read gateway token from sprite"
-    return 1
-  fi
-
-  # Build dashboard URL
+  # Build dashboard URL and open it
   local sprite_url=$(sprite url -s $name 2>&1 | grep '^URL:' | awk '{print $2}')
   local dashboard_url="${sprite_url}/#token=${gateway_token}"
-
-  # Open dashboard in browser
   echo "Opening dashboard..."
   open "$dashboard_url"
 
