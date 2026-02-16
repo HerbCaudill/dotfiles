@@ -100,6 +100,7 @@ const buildConfig = () => {
     },
     hooks: {
       enabled: true,
+      token: randomBytes(32).toString("hex"),
     },
     skills: {
       install: {
@@ -134,7 +135,9 @@ const steps: Record<string, () => void> = {
   },
 
   "initialize workspace": () => {
-    run(`openclaw onboard --non-interactive --accept-risk`, { env: { ...process.env, PATH } })
+    run(`openclaw onboard --non-interactive --accept-risk --skip-health --skip-daemon`, {
+      env: { ...process.env, PATH },
+    })
   },
 
   "install skill dependencies": () => {
