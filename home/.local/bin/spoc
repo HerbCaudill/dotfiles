@@ -56,7 +56,7 @@ sleepSync(5)
 
 let pendingId = ""
 for (let i = 0; i < 8; i++) {
-  pendingId = getPendingDeviceId(name)
+  pendingId = getPendingRequestId(name)
   if (pendingId) break
   sleepSync(3)
 }
@@ -115,15 +115,15 @@ function buildEnvBlock(secrets: Record<string, string>): string {
     .join(" ")
 }
 
-/** Poll the sprite for a pending device ID. */
-function getPendingDeviceId(spriteName: string): string {
+/** Poll the sprite for a pending device request ID. */
+function getPendingRequestId(spriteName: string): string {
   try {
     const output = run(
       `sprite exec -s ${spriteName} bash -c "${OC_PATH}; openclaw devices list --json"`,
     )
     const data = JSON.parse(output)
     const pending = data.pending ?? []
-    return pending.length > 0 ? pending[0].deviceId : ""
+    return pending.length > 0 ? pending[0].requestId : ""
   } catch {
     return ""
   }
