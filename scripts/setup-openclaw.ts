@@ -161,7 +161,7 @@ const steps: Record<string, () => void> = {
 const main = () => {
   console.log()
   console.log("─".repeat(process.stdout.columns || 80))
-  console.log("🐾 Setting up OpenClaw...")
+  console.log("🦞 Setting up OpenClaw...")
   console.log()
 
   for (const name of Object.keys(steps)) {
