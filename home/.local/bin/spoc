@@ -1,4 +1,4 @@
-#!/usr/bin/env npx tsx
+#!/usr/bin/env node
 
 /**
  * Create a sprite with OpenClaw setup: runs setup-sprite.ts and
@@ -9,7 +9,7 @@
 import { execSync } from "node:child_process"
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
-import { spSetup } from "./_sp_setup.ts"
+import { spSetup } from "./_sp_setup.mjs"
 
 const name = spSetup(process.argv[2])
 
@@ -70,22 +70,22 @@ console.log(`Dashboard: ${dashboardUrl}`)
 // Utilities
 
 /** Execute a shell command, returning stdout. */
-function run(cmd: string): string {
+function run(cmd) {
   return execSync(cmd, { stdio: "pipe", encoding: "utf-8" })
 }
 
 /** Sleep for the given number of seconds. */
-function sleepSync(seconds: number): void {
+function sleepSync(seconds) {
   execSync(`sleep ${seconds}`, { stdio: "pipe" })
 }
 
 /** Read secrets from ~/.secrets, parsing `export KEY="value"` lines. */
-function readSecrets(): Record<string, string> {
-  const secretsPath = join(process.env.HOME!, ".secrets")
+function readSecrets() {
+  const secretsPath = join(process.env.HOME, ".secrets")
   if (!existsSync(secretsPath)) return {}
 
   const content = readFileSync(secretsPath, "utf-8")
-  const result: Record<string, string> = {}
+  const result = {}
 
   for (const line of content.split("\n")) {
     const match = line.match(/^export\s+(\w+)=["']?(.+?)["']?\s*$/)
@@ -96,7 +96,7 @@ function readSecrets(): Record<string, string> {
 }
 
 /** Build a shell-safe env export block from secrets relevant to OpenClaw. */
-function buildEnvBlock(secrets: Record<string, string>): string {
+function buildEnvBlock(secrets) {
   const keys = [
     "ANTHROPIC_API_KEY",
     "TELEGRAM_BOT_TOKEN",
@@ -112,7 +112,7 @@ function buildEnvBlock(secrets: Record<string, string>): string {
 }
 
 /** Poll the sprite for a pending device request ID. */
-function getPendingRequestId(spriteName: string): string {
+function getPendingRequestId(spriteName) {
   try {
     const output = run(
       `sprite exec -s ${spriteName} bash -c "${OC_PATH}; openclaw devices list --json"`,

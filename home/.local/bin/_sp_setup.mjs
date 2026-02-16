@@ -8,8 +8,8 @@ import { execSync } from "node:child_process"
 /** Create and set up a sprite, returning the resolved sprite name. */
 export const spSetup = (
   /** Optional sprite name; auto-detected from git remote if omitted. */
-  name?: string,
-): string => {
+  name,
+) => {
   const ghToken = run("gh auth token").trim()
   if (!ghToken) {
     console.error("Not authenticated with gh - run 'gh auth login' first")
@@ -69,12 +69,12 @@ export const spSetup = (
 }
 
 /** Execute a shell command, returning stdout as a string. */
-const run = (cmd: string): string => {
+const run = (cmd) => {
   return execSync(cmd, { stdio: "pipe", encoding: "utf-8" })
 }
 
 /** Execute a shell command, returning stdout or empty string on failure. */
-const tryRun = (cmd: string): string => {
+const tryRun = (cmd) => {
   try {
     return run(cmd).trim()
   } catch {
@@ -83,7 +83,7 @@ const tryRun = (cmd: string): string => {
 }
 
 /** Check if the current directory is a git repo root. */
-const isGitRoot = (): boolean => {
+const isGitRoot = () => {
   try {
     execSync("test -d .git", { stdio: "pipe" })
     return true
@@ -93,7 +93,7 @@ const isGitRoot = (): boolean => {
 }
 
 /** Check if a file exists in the current directory. */
-const fileExists = (path: string): boolean => {
+const fileExists = (path) => {
   try {
     execSync(`test -f ${path}`, { stdio: "pipe" })
     return true
@@ -103,7 +103,7 @@ const fileExists = (path: string): boolean => {
 }
 
 /** Generate a random lowercase alphabetic string. */
-const randomAlpha = (length: number): string => {
+const randomAlpha = (length) => {
   const chars = "abcdefghijklmnopqrstuvwxyz"
   return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join("")
 }
