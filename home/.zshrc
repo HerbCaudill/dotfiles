@@ -140,7 +140,7 @@ function killport {
 
 #### SPRITE HELPERS
 
-alias sp="sprite console -s"
+sp() { if [ -n "$1" ]; then sprite console -s "$@"; else sprite console; fi }
 alias spl="sprite ls"
 
 # mount sprites.dev fs
