@@ -174,10 +174,10 @@ const steps: Record<string, () => void> = {
 // MAIN
 
 const main = () => {
-  log()
-  log("─".repeat(process.stderr.columns || 80))
-  log("🦞 Setting up OpenClaw...")
-  log()
+  console.log()
+  console.log("─".repeat(process.stdout.columns || 80))
+  console.log("🦞 Setting up OpenClaw...")
+  console.log()
 
   for (const name of Object.keys(steps)) {
     stepStatus.set(name, "pending")
@@ -189,38 +189,26 @@ const main = () => {
   }
 
   if (errors.length > 0) {
-    log()
-    log("\x1b[1;33mErrors:\x1b[0m")
+    console.log()
+    console.log("\x1b[1;33mErrors:\x1b[0m")
     for (const { step, message } of errors) {
-      log(`  ${step}: ${message}`)
+      console.log(`  ${step}: ${message}`)
     }
     process.exit(1)
   }
 
-  const token = readGatewayToken()
-  if (!token) {
-    log("Error: could not read gateway token from config")
-    process.exit(1)
-  }
-
-  log()
-  log("\x1b[1;32m✓\x1b[0m OpenClaw is ready!")
-  log()
-
-  // Stdout gets only the token — shell captures it with $()
-  process.stdout.write(token + "\n")
+  console.log()
+  console.log("\x1b[1;32m✓\x1b[0m OpenClaw is ready!")
+  console.log()
   process.exit(0)
 }
 
 // CHECKLIST UI
 
-/** Write a line to stderr (all UI output goes here; stdout is reserved for the token). */
-const log = (msg = "") => process.stderr.write(msg + "\n")
-
-/** Render the full checklist to stderr. */
+/** Render the full checklist. */
 const render = () => {
   if (headerLines > 0) {
-    process.stderr.write(`\x1b[${stepStatus.size}A`)
+    process.stdout.write(`\x1b[${stepStatus.size}A`)
   }
   for (const [name, status] of stepStatus) {
     const icon =
@@ -229,7 +217,7 @@ const render = () => {
       : status === "skip" ? "−"
       : status === "running" ? "⋯"
       : "○"
-    process.stderr.write(`\x1b[2K${icon} ${name}\n`)
+    process.stdout.write(`\x1b[2K${icon} ${name}\n`)
   }
   headerLines = stepStatus.size
 }
@@ -278,12 +266,6 @@ const getGatewayStatus = (): string => {
   } catch {
     return "unknown"
   }
-}
-
-/** Read the gateway token from the openclaw config file. */
-const readGatewayToken = (): string => {
-  const config = JSON.parse(readFileSync(CONFIG_FILE, "utf-8"))
-  return config.gateway?.auth?.token ?? ""
 }
 
 /** Check if a command exists on PATH. */

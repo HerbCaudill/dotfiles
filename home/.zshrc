@@ -207,19 +207,23 @@ spoc() {
   local name=$SP_NAME
   local oc_path='export PATH="$HOME/.local/bin:/.sprite/languages/node/nvm/versions/node/v22.20.0/bin:$PATH"'
 
-  # Run setup-openclaw.ts (UI goes to stderr, token to stdout)
-  local gateway_token
-  gateway_token=$(sprite exec -s $name bash -c "\
+  # Run setup-openclaw.ts (handles install, config, gateway start)
+  sprite exec -s $name bash -c "\
     export ANTHROPIC_API_KEY='$ANTHROPIC_API_KEY' \
            TELEGRAM_BOT_TOKEN='$TELEGRAM_BOT_TOKEN' \
            OPENAI_API_KEY='$OPENAI_API_KEY' \
            GOOGLE_PLACES_API_KEY='$GOOGLE_PLACES_API_KEY' \
            GEMINI_API_KEY='$GEMINI_API_KEY' \
            BRAVE_SEARCH_API_KEY='$BRAVE_SEARCH_API_KEY'; \
-    curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/scripts/setup-openclaw.ts | npm_config_update_notifier=false npx -y tsx -")
+    curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/scripts/setup-openclaw.ts | npm_config_update_notifier=false npx -y tsx -" || return 1
+
+  # Read gateway token from config file
+  local gateway_token
+  gateway_token=$(sprite exec -s $name bash -c \
+    "node -p 'JSON.parse(require(\"fs\").readFileSync(process.env.HOME+\"/.openclaw/openclaw.json\",\"utf8\")).gateway.auth.token'")
 
   if [[ -z "$gateway_token" ]]; then
-    echo "Error: could not read gateway token from setup script"
+    echo "Error: could not read gateway token"
     return 1
   fi
 
