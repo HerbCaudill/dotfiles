@@ -124,7 +124,13 @@ const buildConfig = () => {
 const steps: Record<string, () => void> = {
   "install openclaw cli": () => {
     if (!commandExists("openclaw")) {
-      run(`curl -fsSL https://openclaw.ai/install.sh | bash`)
+      // Installer may exit non-zero due to /dev/tty in non-interactive sprite exec
+      try {
+        run(`curl -fsSL https://openclaw.ai/install.sh | bash`)
+      } catch {}
+      if (!commandExists("openclaw")) {
+        throw new Error("openclaw not found after install")
+      }
     }
   },
 
