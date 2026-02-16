@@ -1,0 +1,130 @@
+#!/usr/bin/env npx tsx
+
+/**
+ * Create a sprite with OpenClaw setup: runs setup-sprite.ts and
+ * setup-openclaw.ts remotely, reads the gateway token, makes the URL public,
+ * opens the dashboard, and auto-approves the first pending device.
+ */
+
+import { execSync } from "node:child_process"
+import { existsSync, readFileSync } from "node:fs"
+import { join } from "node:path"
+import { spSetup } from "./_sp_setup.ts"
+
+const name = spSetup(process.argv[2])
+
+const OC_PATH = 'export PATH="$HOME/.local/bin:/.sprite/languages/node/nvm/versions/node/v22.20.0/bin:$PATH"'
+
+// Read secrets from ~/.secrets
+const secrets = readSecrets()
+const envBlock = buildEnvBlock(secrets)
+
+// Run setup-openclaw.ts remotely
+execSync(
+  `sprite exec -s ${name} bash -c "export ${envBlock}; curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/scripts/setup-openclaw.ts | npm_config_update_notifier=false npx -y tsx -"`,
+  { stdio: "inherit" },
+)
+
+// Read gateway token from config file on the sprite
+const gatewayToken = run(
+  `sprite exec -s ${name} bash -c "node -p 'JSON.parse(require(\\"fs\\").readFileSync(process.env.HOME+\\"/\\.openclaw/openclaw.json\\",\\"utf8\\")).gateway.auth.token'"`,
+).trim()
+
+if (!gatewayToken) {
+  console.error("Error: could not read gateway token")
+  process.exit(1)
+}
+
+// Make sprite URL public
+run(`sprite url update -s ${name} --auth public`)
+
+// Build dashboard URL and open it
+const urlOutput = run(`sprite url -s ${name}`)
+const spriteUrl = urlOutput
+  .split("\n")
+  .find(l => l.startsWith("URL:"))
+  ?.replace(/^URL:\s*/, "")
+  .trim()
+const dashboardUrl = `${spriteUrl}/#token=${gatewayToken}`
+
+console.log("Opening dashboard...")
+execSync(`open "${dashboardUrl}"`)
+
+// Wait for browser to load and connect, then poll for pending device
+console.log("Waiting for device pairing...")
+sleepSync(5)
+
+let pendingId = ""
+for (let i = 0; i < 8; i++) {
+  pendingId = getPendingDeviceId(name)
+  if (pendingId) break
+  sleepSync(3)
+}
+
+if (pendingId) {
+  console.log("Approving device...")
+  run(`sprite exec -s ${name} bash -c "${OC_PATH}; openclaw devices approve '${pendingId}'"`)
+} else {
+  console.log("No pending device found (you may need to refresh the dashboard)")
+}
+
+console.log()
+console.log(`Dashboard: ${dashboardUrl}`)
+
+// Utilities
+
+/** Execute a shell command, returning stdout. */
+function run(cmd: string): string {
+  return execSync(cmd, { stdio: "pipe", encoding: "utf-8" })
+}
+
+/** Sleep for the given number of seconds. */
+function sleepSync(seconds: number): void {
+  execSync(`sleep ${seconds}`, { stdio: "pipe" })
+}
+
+/** Read secrets from ~/.secrets, parsing `export KEY="value"` lines. */
+function readSecrets(): Record<string, string> {
+  const secretsPath = join(process.env.HOME!, ".secrets")
+  if (!existsSync(secretsPath)) return {}
+
+  const content = readFileSync(secretsPath, "utf-8")
+  const result: Record<string, string> = {}
+
+  for (const line of content.split("\n")) {
+    const match = line.match(/^export\s+(\w+)=["']?(.+?)["']?\s*$/)
+    if (match) result[match[1]] = match[2]
+  }
+
+  return result
+}
+
+/** Build a shell-safe env export block from secrets relevant to OpenClaw. */
+function buildEnvBlock(secrets: Record<string, string>): string {
+  const keys = [
+    "ANTHROPIC_API_KEY",
+    "TELEGRAM_BOT_TOKEN",
+    "OPENAI_API_KEY",
+    "GOOGLE_PLACES_API_KEY",
+    "GEMINI_API_KEY",
+    "BRAVE_SEARCH_API_KEY",
+  ]
+  return keys
+    .filter(k => secrets[k])
+    .map(k => `${k}='${secrets[k]}'`)
+    .join(" ")
+}
+
+/** Poll the sprite for a pending device ID. */
+function getPendingDeviceId(spriteName: string): string {
+  try {
+    const output = run(
+      `sprite exec -s ${spriteName} bash -c "${OC_PATH}; openclaw devices list --json"`,
+    )
+    const data = JSON.parse(output)
+    const pending = data.pending ?? []
+    return pending.length > 0 ? pending[0].deviceId : ""
+  } catch {
+    return ""
+  }
+}

@@ -145,119 +145,21 @@ alias spl="sprite ls"
 
 # mount sprites.dev fs
 spfs() {
-  local sprite_name="${1:-$(sprite use)}"
-  local mount_point="/tmp/sprite-${sprite_name}"
+  local sprite_name="$1"
+  local mount_point="/tmp/sprite-mount"
   mkdir -p "$mount_point"
+  if lsof -t -i :2000 > /dev/null 2>&1; then
+    read -r "yn?A Sprite is already mounted, unmount it? (y/n) "
+    [ "$yn" = "y" ] || return 1
+    diskutil umount "$mount_point" 2>/dev/null
+    lsof -t -i :2000 | xargs kill 2>/dev/null
+    sleep 1
+  fi
+  sprite proxy -s "$sprite_name" 2000:22 &
+  sleep 1  # wait for the proxy to start
   sshfs -o reconnect,ServerAliveInterval=15,ServerAliveCountMax=3 \
-    "sprite@${sprite_name}.sprites.dev:" "$mount_point"
-  cd "$mount_point"
-}
-
-# create sprite + run setup-sprite.ts; sets $SP_NAME for callers
-_sp_setup() {
-  SP_GH_TOKEN=$(gh auth token)
-  if [[ -z "$SP_GH_TOKEN" ]]; then
-    echo "Not authenticated with gh - run 'gh auth login' first"
-    return 1
-  fi
-
-  SP_NAME="$1"
-  local repo_user=""
-  local repo_name=""
-
-  # If no name given and we're at a git repo root without .sprite file, use repo name
-  if [[ -z "$SP_NAME" && -d ".git" && ! -f ".sprite" ]]; then
-    local remote_url=$(git remote get-url origin 2>/dev/null)
-    if [[ -n "$remote_url" ]]; then
-      local repo_path=$(echo "$remote_url" | sed -E 's#.*(github\.com[:/])##' | sed 's/\.git$//')
-      repo_name=$(basename "$repo_path")
-      repo_user=$(dirname "$repo_path")
-      SP_NAME="dev-$repo_name"
-    fi
-  fi
-
-  SP_NAME="${SP_NAME:-$(LC_ALL=C tr -dc 'a-z' </dev/urandom | head -c 5)}"
-
-  # Check if sprite already exists
-  if sprite list | grep -q "^${SP_NAME}$"; then
-    echo "Sprite '$SP_NAME' already exists"
-    return 0
-  fi
-
-  sprite create --skip-console $SP_NAME | head -1
-  [[ -n "$repo_user" ]] && sprite use $SP_NAME | head -1
-
-  sprite exec -s $SP_NAME bash -c "\
-    export GITHUB_TOKEN='$SP_GH_TOKEN' \
-           SPRITE_NAME='$SP_NAME' \
-           REPO_USER='$repo_user' \
-           REPO_NAME='$repo_name'; \
-    curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/scripts/setup-sprite.ts | npm_config_update_notifier=false npx -y tsx -"
-}
-
-# create sprite with setup + open console
-spc() {
-  _sp_setup "$1" || return 1
-  sprite console -s $SP_NAME
-}
-
-# create sprite with OpenClaw setup + open dashboard
-spoc() {
-  _sp_setup "$1" || return 1
-  local name=$SP_NAME
-  local oc_path='export PATH="$HOME/.local/bin:/.sprite/languages/node/nvm/versions/node/v22.20.0/bin:$PATH"'
-
-  # Run setup-openclaw.ts (handles install, config, gateway start)
-  sprite exec -s $name bash -c "\
-    export ANTHROPIC_API_KEY='$ANTHROPIC_API_KEY' \
-           TELEGRAM_BOT_TOKEN='$TELEGRAM_BOT_TOKEN' \
-           OPENAI_API_KEY='$OPENAI_API_KEY' \
-           GOOGLE_PLACES_API_KEY='$GOOGLE_PLACES_API_KEY' \
-           GEMINI_API_KEY='$GEMINI_API_KEY' \
-           BRAVE_SEARCH_API_KEY='$BRAVE_SEARCH_API_KEY'; \
-    curl -fsSL https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/scripts/setup-openclaw.ts | npm_config_update_notifier=false npx -y tsx -" || return 1
-
-  # Read gateway token from config file
-  local gateway_token
-  gateway_token=$(sprite exec -s $name bash -c \
-    "node -p 'JSON.parse(require(\"fs\").readFileSync(process.env.HOME+\"/.openclaw/openclaw.json\",\"utf8\")).gateway.auth.token'")
-
-  if [[ -z "$gateway_token" ]]; then
-    echo "Error: could not read gateway token"
-    return 1
-  fi
-
-  # Make sprite URL public
-  sprite url update -s $name --auth public
-
-  # Build dashboard URL and open it
-  local sprite_url=$(sprite url -s $name 2>&1 | grep '^URL:' | awk '{print $2}')
-  local dashboard_url="${sprite_url}/#token=${gateway_token}"
-  echo "Opening dashboard..."
-  open "$dashboard_url"
-
-  # Wait for browser to load and connect, then poll for pending device
-  echo "Waiting for device pairing..."
-  sleep 5
-  local pending_id=""
-  for i in {1..8}; do
-    pending_id=$(sprite exec -s $name bash -c \
-      "$oc_path; openclaw devices list --json" 2>/dev/null \
-      | python3 -c "import sys,json; p=json.load(sys.stdin).get('pending',[]); print(p[0]['deviceId'] if p else '')" 2>/dev/null)
-    [[ -n "$pending_id" ]] && break
-    sleep 3
-  done
-
-  if [[ -n "$pending_id" ]]; then
-    echo "Approving device..."
-    sprite exec -s $name bash -c \
-      "$oc_path; openclaw devices approve '$pending_id'"
-  else
-    echo "No pending device found (you may need to refresh the dashboard)"
-  fi
-
-  echo ""
-  echo "Dashboard: $dashboard_url"
+    "sprite@localhost:" -p 2000 "$mount_point"
+  cd "$mount_point" || return 1
 }
 
 # destroy all sprites

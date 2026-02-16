@@ -1,0 +1,9 @@
+#!/usr/bin/env npx tsx
+
+/** Create a sprite with setup, then open a console session. */
+
+import { execSync } from "node:child_process"
+import { spSetup } from "./_sp_setup.ts"
+
+const name = spSetup(process.argv[2])
+execSync(`sprite console -s ${name}`, { stdio: "inherit" })
