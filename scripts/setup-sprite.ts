@@ -201,12 +201,15 @@ const main = () => {
   if (SPRITE_NAME) {
     console.error(`👾 ${SPRITE_NAME} is ready!`)
     console.error()
-    // Exec into zsh so .secrets is sourced
-    const result = spawnSync("/bin/zsh", ["-l"], {
-      stdio: "inherit",
-      cwd: repoDir || codeDir,
-    })
-    process.exit(result.status ?? 0)
+    // Exec into zsh so .secrets is sourced (only if interactive)
+    if (process.stdin.isTTY) {
+      const result = spawnSync("/bin/zsh", ["-l"], {
+        stdio: "inherit",
+        cwd: repoDir || codeDir,
+      })
+      process.exit(result.status ?? 0)
+    }
+    process.exit(0)
   } else {
     console.error("\x1b[1;32m✓\x1b[0m Ready!")
     process.exit(0)
