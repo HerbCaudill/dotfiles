@@ -17,25 +17,55 @@ import { randomBytes } from "node:crypto"
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
-/** Require an environment variable, exiting with an error if missing. */
-const requireEnv = (name: string): string => {
-  const value = process.env[name]
+const HOME = process.env.HOME!
+
+/** Read secrets from ~/.secrets, parsing `export KEY="value"` lines. */
+const readSecrets = (): Record<string, string> => {
+  const secretsPath = join(HOME, ".secrets")
+  if (!existsSync(secretsPath)) return {}
+
+  const content = readFileSync(secretsPath, "utf-8")
+  const secrets: Record<string, string> = {}
+
+  for (const line of content.split("\n")) {
+    const match = line.match(/^export\s+(\w+)="(.+?)"/)
+    if (match) secrets[match[1]] = match[2]
+  }
+
+  // Resolve variable references (e.g. GH_TOKEN=$GITHUB_TOKEN)
+  for (const [key, value] of Object.entries(secrets)) {
+    if (value.startsWith("$")) {
+      const ref = value.slice(1)
+      if (secrets[ref]) secrets[key] = secrets[ref]
+    }
+  }
+
+  return secrets
+}
+
+// Env variables
+
+const secrets = readSecrets()
+
+/** Get a variable from env or ~/.secrets. */
+const getVar = (name: string): string | undefined => process.env[name] ?? secrets[name]
+
+/** Require a variable from env or ~/.secrets, exiting if missing. */
+const requireVar = (name: string): string => {
+  const value = getVar(name)
   if (!value) {
-    console.error(`Error: ${name} environment variable is required`)
+    console.error(`Error: ${name} not found in environment or ~/.secrets`)
     process.exit(1)
   }
   return value
 }
 
-// Env variables
-
-const HOME = process.env.HOME!
-const ANTHROPIC_API_KEY = requireEnv("ANTHROPIC_API_KEY")
-const TELEGRAM_BOT_TOKEN = requireEnv("TELEGRAM_BOT_TOKEN")
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY
-const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY
-const BRAVE_SEARCH_API_KEY = process.env.BRAVE_SEARCH_API_KEY
+const ANTHROPIC_API_KEY = requireVar("ANTHROPIC_API_KEY")
+const TELEGRAM_BOT_TOKEN = requireVar("TELEGRAM_BOT_TOKEN")
+const OPENAI_API_KEY = getVar("OPENAI_API_KEY")
+const GOOGLE_PLACES_API_KEY = getVar("GOOGLE_PLACES_API_KEY")
+const GEMINI_API_KEY = getVar("GEMINI_API_KEY")
+const BRAVE_SEARCH_API_KEY = getVar("BRAVE_SEARCH_API_KEY")
 
 // Paths
 
@@ -57,13 +87,14 @@ const buildConfig = () => {
   const gatewayToken = randomBytes(32).toString("hex")
 
   const env: Record<string, string> = {
+    ...secrets,
     ANTHROPIC_API_KEY,
     TELEGRAM_BOT_TOKEN,
+    ...(OPENAI_API_KEY ? { OPENAI_API_KEY } : {}),
+    ...(GOOGLE_PLACES_API_KEY ? { GOOGLE_API_KEY: GOOGLE_PLACES_API_KEY } : {}),
+    ...(GEMINI_API_KEY ? { GEMINI_API_KEY } : {}),
+    ...(BRAVE_SEARCH_API_KEY ? { BRAVE_API_KEY: BRAVE_SEARCH_API_KEY } : {}),
   }
-  if (OPENAI_API_KEY) env.OPENAI_API_KEY = OPENAI_API_KEY
-  if (GOOGLE_PLACES_API_KEY) env.GOOGLE_API_KEY = GOOGLE_PLACES_API_KEY
-  if (GEMINI_API_KEY) env.GEMINI_API_KEY = GEMINI_API_KEY
-  if (BRAVE_SEARCH_API_KEY) env.BRAVE_API_KEY = BRAVE_SEARCH_API_KEY
 
   return {
     env,
