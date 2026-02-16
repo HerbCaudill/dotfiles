@@ -236,14 +236,16 @@ spoc() {
   echo "Opening dashboard..."
   open "$dashboard_url"
 
+  # Wait for browser to load and connect, then poll for pending device
   echo "Waiting for device pairing..."
+  sleep 5
   local pending_id=""
-  for i in {1..5}; do
-    sleep 3
+  for i in {1..8}; do
     pending_id=$(sprite exec -s $name bash -c \
       "$oc_path; openclaw devices list --json" 2>/dev/null \
       | python3 -c "import sys,json; p=json.load(sys.stdin).get('pending',[]); print(p[0]['deviceId'] if p else '')" 2>/dev/null)
     [[ -n "$pending_id" ]] && break
+    sleep 3
   done
 
   if [[ -n "$pending_id" ]]; then
