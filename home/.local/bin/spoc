@@ -14,7 +14,7 @@ import { spSetup } from "./_sp_setup.mjs"
 const name = spSetup(process.argv[2])
 
 const OC_PATH =
-  "export PATH=$HOME/.local/bin:$(echo /.sprite/languages/node/nvm/versions/node/*/bin):$PATH"
+  "export PATH=\\$HOME/.local/bin:\\$(echo /.sprite/languages/node/nvm/versions/node/*/bin):\\$PATH"
 
 // Read secrets from ~/.secrets
 const secrets = readSecrets()
@@ -98,6 +98,7 @@ function readSecrets() {
 /** Build a shell-safe env export block from secrets relevant to OpenClaw. */
 function buildEnvBlock(secrets) {
   const keys = [
+    
     "ANTHROPIC_API_KEY",
     "TELEGRAM_BOT_TOKEN",
     "OPENAI_API_KEY",
