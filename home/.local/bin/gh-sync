@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+
+##
+## Sync ~/Code/HerbCaudill with all repos on github.com/HerbCaudill.
+## Clones missing repos; for existing clean repos, pulls and pushes the default branch.
+##
+
+set -uo pipefail
+
+OWNER="HerbCaudill"
+BASE_DIR="$HOME/Code/HerbCaudill"
+LOG_PREFIX="[gh-sync]"
+
+log() { echo "$LOG_PREFIX $*"; }
+
+# Get all non-fork repo names from GitHub
+repos=$(gh repo list "$OWNER" --source --limit 1000 --json name --jq '.[].name')
+
+for repo in $repos; do
+  dir="$BASE_DIR/$repo"
+
+  if [[ ! -d "$dir" ]]; then
+    log "Cloning $repo..."
+    gh repo clone "$OWNER/$repo" "$dir" 2>&1 | sed "s/^/$LOG_PREFIX   /" || log "  Clone failed for $repo"
+    continue
+  fi
+
+  # Skip if not a git repo
+  if [[ ! -d "$dir/.git" ]]; then
+    continue
+  fi
+
+  # Skip if working tree is dirty
+  if ! git -C "$dir" diff --quiet 2>/dev/null || ! git -C "$dir" diff --cached --quiet 2>/dev/null; then
+    log "Skipping $repo (dirty working tree)"
+    continue
+  fi
+
+  # Get the default branch
+  default_branch=$(git -C "$dir" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||' || echo "")
+  if [[ -z "$default_branch" ]]; then
+    default_branch="main"
+  fi
+
+  # Only sync if we're on the default branch
+  current_branch=$(git -C "$dir" branch --show-current 2>/dev/null || echo "")
+  if [[ "$current_branch" != "$default_branch" ]]; then
+    log "Skipping $repo (on branch '$current_branch', not '$default_branch')"
+    continue
+  fi
+
+  # Fetch, pull, push
+  log "Syncing $repo..."
+  git -C "$dir" fetch --quiet 2>/dev/null || true
+  git -C "$dir" pull --quiet 2>/dev/null || log "  Pull failed for $repo"
+  git -C "$dir" push --quiet 2>/dev/null || true
+done
+
+log "Done."

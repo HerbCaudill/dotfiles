@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, unlinkSync } from "node:fs"
+import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync, unlinkSync } from "node:fs"
 import { dirname, isAbsolute, join, relative } from "node:path"
 
 const DOTFILES_DIR = dirname(dirname(new URL(import.meta.url).pathname))
@@ -71,6 +71,35 @@ const getAllFiles = (
   })
 }
 
+/**
+ * Ensure no ancestor directory of target is a symlink back into the repo.
+ * This can happen if a directory was previously symlinked as a whole; we
+ * replace it with a real directory so individual file symlinks work correctly.
+ */
+const ensureRealParentDirs = (
+  /** Absolute path of the target file in $HOME. */
+  target,
+) => {
+  const parts = relative(HOME, target).split("/")
+  let current = HOME
+  for (const part of parts.slice(0, -1)) {
+    current = join(current, part)
+    try {
+      const stat = lstatSync(current)
+      if (stat.isSymbolicLink()) {
+        const resolved = realpathSync(current)
+        if (resolved.startsWith(HOME_DIR)) {
+          console.log(`Replacing directory symlink with real directory: ${relative(HOME, current)}`)
+          unlinkSync(current)
+          mkdirSync(current, { recursive: true })
+        }
+      }
+    } catch {
+      // Doesn't exist yet, that's fine
+    }
+  }
+}
+
 // Symlink individual files
 for (const file of getAllFiles(HOME_DIR)) {
   const relPath = relative(HOME_DIR, file)
@@ -82,6 +111,7 @@ for (const file of getAllFiles(HOME_DIR)) {
 
   const target = join(HOME, relPath)
 
+  ensureRealParentDirs(target)
   mkdirSync(dirname(target), { recursive: true })
 
   removeExisting(target)
