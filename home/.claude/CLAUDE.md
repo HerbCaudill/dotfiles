@@ -164,7 +164,7 @@ Worktrees for a repo will be placed in a sibling directory to the repo named `.{
 - **Before attempting to delete a file to resolve a local typecheck/lint/test failure, stop and ask the user.** Other agents are often editing adjacent files; deleting their work to silence an error is never acceptable without explicit approval.
 - NEVER edit `.env` or any environment variable files — only the user may change them.
 - Coordinate with the user or with other agents before removing their in-progress edits — don't revert or delete work you didn't author unless everyone agrees.
-- Moving, renaming, nd restoring files is allowed.
+- Moving, renaming, and restoring files is allowed.
 - ABSOLUTELY NEVER run destructive git operations (e.g., `git reset --hard`, `rm`, `git checkout`/`git restore` to an older commit) unless the user gives an explicit, written instruction in this conversation. Treat these commands as catastrophic; if you are even slightly unsure, stop and ask before touching them.
 - Never use `git restore` (or similar commands) to revert files you didn't author — coordinate with other agents instead so their in-progress work stays intact.
 - Always double-check git status before any commit
@@ -182,6 +182,17 @@ The `home/.claude/` directory contains Claude Code settings that are symlinked t
 - `statusline.js` - Custom status line configuration
 - Skills in the `skills/` directory
 - Agents in the `agents/` directory
+
+Other files managed by this repo:
+
+- `home/.zshrc` - Zsh configuration
+- `home/.gitconfig` - Git settings
+- `home/.gitignore` - Global gitignore
+- `home/.asdfrc` - asdf version manager config
+- `home/.prettierrc` - Prettier formatting defaults
+- `home/.oh-my-zsh/custom/themes/herb.zsh-theme` - Custom Zsh theme
+- `home/.local/bin/` - Worktree helpers, sprite/OpenClaw scripts, beads, serena, and other CLI tools (symlinked to `~/.local/bin`)
+- `scripts/` - Symlink installer, sprite setup scripts, Raycast script commands
 
 ## Agents
 
@@ -212,23 +223,27 @@ Reviews TypeScript/React files against the code style rules in this document. Fi
 
 ## Skills
 
-### /review-repo
-
-Runs repo-wide code style review. Creates a worktree, reviews every TypeScript file with the review-style agent in parallel, then merges into main.
-
-**Usage:** `/review-repo` from any git repository
-
-### /safe-merge
-
-Safely merges main into the current branch. Handles conflicts intelligently and verifies tests pass before completing.
-
-**Usage:** `/safe-merge` from any git repository
-
-### /worktree
-
-Isolates all session work in a git worktree. Creates a feature branch, works in the worktree, then merges back to main and cleans up when done.
-
-**Usage:** `/worktree` at the start of a session
+| Skill | Description |
+| --- | --- |
+| `/brainstorm` | Explore intent, requirements, and design before creative work |
+| `/debug-playwright-flaky-test` | Debug intermittently failing Playwright tests |
+| `/deploy` | Deploy to Vercel with custom domain and Porkbun DNS |
+| `/effect-schema` | Work with Effect Schema for type-safe validation/parsing |
+| `/effect-ts` | Work with the Effect TS library |
+| `/investigate-issues` | Research open issues in parallel before starting work |
+| `/manage-tasks` | Create and manage beads issues with smart defaults |
+| `/merge` | Safely merge main into the current branch |
+| `/orchestrate` | Clear the task backlog, batching independent tasks |
+| `/plan-b` | Create a plan document and file granular beads issues |
+| `/receive-code-review` | Process code review feedback with technical rigor |
+| `/request-code-review` | Verify work meets requirements before merging |
+| `/review-repo` | Repo-wide code style review using worktrees |
+| `/scaffold` | Scaffold React + TypeScript + Vite + Tailwind v4 + shadcn/ui app |
+| `/sprites` | Run commands in isolated Linux environments via sprites.dev |
+| `/test-driven-development` | Write tests before implementation code |
+| `/use-worktrees` | Isolate session work in a git worktree |
+| `/verification-before-completion` | Verify work actually passes before claiming completion |
+| `/write-skills` | Create, edit, or validate skills |
 
 ## Serena (MCP)
 
@@ -238,15 +253,4 @@ Serena is an MCP server providing LSP-powered semantic code tools: `find_symbol`
 - For code navigation and refactoring, prefer Serena's semantic tools over text-based grep/find when precision matters (e.g. tracing references, understanding symbol relationships, renaming across a codebase).
 - Activate a project with `activate_project` before use. Run `check_onboarding_performed` and `onboarding` on first use to populate memory files.
 
-Other files managed by this repo:
-
-- `home/.zshrc` - Zsh configuration
-- `home/.gitconfig` - Git settings
-- `home/.gitignore` - Global gitignore
-- `home/.asdfrc` - asdf version manager config
-- `home/.prettierrc` - Prettier formatting defaults
-- `home/.oh-my-zsh/custom/themes/herb.zsh-theme` - Custom Zsh theme
-- `home/.local/bin/` - Worktree helper scripts (symlinked to `~/.local/bin`)
-- Scripts in the `scripts/` directory (symlink installer, sprite setup, Raycast scripts)
-
-**Important:** When modifying any of these files, make changes in the dotfiles repo, then commit and push.
+**Important:** When modifying any managed files, make changes in the dotfiles repo, then commit and push.
