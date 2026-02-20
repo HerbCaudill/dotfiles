@@ -71,35 +71,37 @@ Run in **5 batches** of parallel Bash calls (more than ~5 parallel calls causes 
 
 ## Phase 2: Synthesize the briefing
 
-Organize the briefing into four sections with these h3 headers, in this order:
+Output a single JSON object with this structure:
 
-```markdown
-### World
-
-### US
-
-### Spain
-
-### Barcelona & Catalunya
+```json
+{
+  "sections": [
+    {
+      "title": "World",
+      "stories": [
+        {
+          "headline": "Story headline",
+          "body": "Details and context, one paragraph, no markdown.",
+          "sources": [
+            { "name": "BBC News", "url": "https://..." },
+            { "name": "Al Jazeera", "url": "https://..." }
+          ]
+        }
+      ]
+    }
+  ]
+}
 ```
 
-Use this format for each story, with inline markdown links to the sources covering it:
-
-```markdown
-#### Headline
-
-Details and context. [Source1](url), [Source2](url)
-```
-
-The source URLs should link to the specific article.
+Section titles in order: `World`, `US`, `Spain`, `Barcelona & Catalunya`.
 
 Rules:
 
 - **3-5 stories per section**
 - Stories should appear in **2+ sources** (exception: Barcelona/Costa Brava stories can appear in fewer regional sources)
 - **Exclude sports entirely**
-- Each story is **one paragraph** with inline markdown links to the source sites
+- Each story `body` is **one paragraph of plain text** — no markdown, no links
+- Source URLs should link to the specific article, not the site homepage
 - Within each section, order by number of sources covering the story (most-covered first)
-- **No numbering** — do not prefix stories with numbers
 - **No emojis** anywhere in the output
-- **No h1 or h2 headings** — start with h3 (`###`) for section headers; the app renders the title and date.
+- Output **only** the JSON object — no surrounding text or code fences
