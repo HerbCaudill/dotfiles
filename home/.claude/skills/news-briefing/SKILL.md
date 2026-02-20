@@ -83,6 +83,16 @@ Organize the briefing into four sections with these h3 headers, in this order:
 ### Barcelona & Catalunya
 ```
 
+Use this format for each story, with inline markdown links to the sources covering it:
+
+```markdown
+#### Headline
+
+Details and context. [Source1](url), [Source2](url)
+```
+
+The source URLs should link to the specific article.
+
 Rules:
 
 - **3-5 stories per section**
@@ -93,10 +103,3 @@ Rules:
 - **No numbering** — do not prefix stories with numbers
 - **No emojis** anywhere in the output
 - **No h1 or h2 headings** — start with h3 (`###`) for section headers; the app renders the title and date.
-- Use the format:
-
-```markdown
-#### Headline
-
-Details and context. [Source1](url), [Source2](url)
-```
