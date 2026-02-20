@@ -71,12 +71,17 @@ Run in **5 batches** of parallel Bash calls (more than ~5 parallel calls causes 
 
 ## Phase 2: Synthesize the briefing
 
-Organize the briefing into four sections with these h2 headers, in this order:
+Organize the briefing into four sections with these h3 headers, in this order:
 
-1. `## World`
-2. `## US`
-3. `## Spain`
-4. `## Barcelona & Catalunya`
+```markdown
+### World
+
+### US
+
+### Spain
+
+### Barcelona & Catalunya
+```
 
 Rules:
 
@@ -85,7 +90,13 @@ Rules:
 - **Exclude sports entirely**
 - Each story is **one paragraph** with inline markdown links to the source sites
 - Within each section, order by number of sources covering the story (most-covered first)
-- Use the format: `**Headline summary.** Details and context. ([Source1](url), [Source2](url))`
 - **No numbering** — do not prefix stories with numbers
 - **No emojis** anywhere in the output
-- **No h1 headings** — start with h2 (`##`) for section headers; the app renders the title and date
+- **No h1 or h2 headings** — start with h3 (`###`) for section headers; the app renders the title and date.
+- Use the format:
+
+```markdown
+#### Headline
+
+Details and context. [Source1](url), [Source2](url)
+```
