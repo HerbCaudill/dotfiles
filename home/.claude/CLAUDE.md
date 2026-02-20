@@ -233,6 +233,7 @@ Reviews TypeScript/React files against the code style rules in this document. Fi
 | `/investigate-issues` | Research open issues in parallel before starting work |
 | `/manage-tasks` | Create and manage beads issues with smart defaults |
 | `/merge` | Safely merge main into the current branch |
+| `/news-briefing` | Daily news briefing for Spain, Barcelona & Costa Brava |
 | `/orchestrate` | Clear the task backlog, batching independent tasks |
 | `/plan-b` | Create a plan document and file granular beads issues |
 | `/receive-code-review` | Process code review feedback with technical rigor |
