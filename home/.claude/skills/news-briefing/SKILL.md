@@ -7,25 +7,19 @@ description: "Generate a daily news briefing covering world news, US news, Spain
 
 ## Overview
 
-Fetch headlines from international, US, Spanish, and Catalan news sites, cross-reference stories, and produce a concise daily briefing organized into four sections.
+Fetch headlines and article URLs from news sites, read the top articles for each story, cross-reference, and produce a concise daily briefing organized into four sections.
 
-## Phase 1: Fetch headlines via curl
+## Phase 1: Fetch headlines and article URLs
 
-Use this script pattern for ALL sites. It handles encoding issues and extracts headline text from h2/h3 tags:
+For each site, use curl piped to the extraction script:
 
 ```bash
 curl -s -L --max-time 15 \
   -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36" \
-  "URL" | python3 -c "
-import sys, re
-html = sys.stdin.buffer.read().decode('utf-8', errors='replace')
-for tag in ['h2', 'h3']:
-    for m in re.findall(r'<'+tag+r'[^>]*>(.*?)</'+tag+r'>', html, re.DOTALL)[:15]:
-        t = re.sub(r'<[^>]+>', ' ', m).strip()
-        t = re.sub(r'\s+', ' ', t)
-        if len(t) > 15: print(t)
-"
+  "SITE_URL" | python3 ~/.claude/skills/news-briefing/extract_headlines.py "SITE_URL"
 ```
+
+Replace `SITE_URL` with the actual URL. Output is `article_url | headline_text` per line.
 
 **Important:** Do NOT use WebFetch — most news sites block it. Use curl via Bash.
 
@@ -69,9 +63,29 @@ Run in **5 batches** of parallel Bash calls (more than ~5 parallel calls causes 
 - https://www.thenewbarcelonapost.cat/
 - https://www.diaridebarcelona.cat/
 
-## Phase 2: Synthesize the briefing
+## Phase 2: Identify top stories
 
-Output a single JSON object with this structure:
+Review all headlines from Phase 1. For each section (World, US, Spain, Barcelona & Catalunya):
+
+1. Group headlines covering the same story across sources
+2. Select 3-5 stories, prioritizing those appearing in 2+ sources
+3. For each selected story, pick 1-2 article URLs to fetch (prefer sources that returned URLs; for English sections prefer English-language sources)
+
+## Phase 3: Fetch article content
+
+For each selected article URL (~15-20 total), fetch and extract the article text:
+
+```bash
+curl -s -L --max-time 15 \
+  -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36" \
+  "ARTICLE_URL" | python3 ~/.claude/skills/news-briefing/extract_article.py
+```
+
+Run in batches of 5 parallel calls.
+
+## Phase 4: Synthesize the briefing
+
+Using the article content from Phase 3, output a single JSON object:
 
 ```json
 {
@@ -81,10 +95,10 @@ Output a single JSON object with this structure:
       "stories": [
         {
           "headline": "Story headline",
-          "body": "Details and context, one paragraph, no markdown.",
+          "body": "Details and context based on article content, one paragraph, no markdown.",
           "sources": [
-            { "name": "BBC News", "url": "https://..." },
-            { "name": "Al Jazeera", "url": "https://..." }
+            { "name": "BBC News", "url": "https://www.bbc.com/news/articles/abc123" },
+            { "name": "Al Jazeera", "url": "https://www.aljazeera.com/news/2026/..." }
           ]
         }
       ]
@@ -101,7 +115,8 @@ Rules:
 - Stories should appear in **2+ sources** (exception: Barcelona/Costa Brava stories can appear in fewer regional sources)
 - **Exclude sports entirely**
 - Each story `body` is **one paragraph of plain text** — no markdown, no links
-- Source URLs should link to the specific article, not the site homepage
+- Story body should be based on the **actual article content** fetched in Phase 3, not generated from headline text alone
+- Source URLs must be the **actual article URLs** extracted in Phase 1, not site homepages
 - Within each section, order by number of sources covering the story (most-covered first)
 - **No emojis** anywhere in the output
 - Output **only** the JSON object — no surrounding text or code fences
