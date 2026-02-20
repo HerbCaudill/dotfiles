@@ -1,13 +1,13 @@
 ---
 name: news-briefing
-description: "Generate a daily news briefing for Spain, Barcelona, and the Costa Brava from local news sources."
+description: "Generate a daily news briefing covering world news, US news, Spain, and Barcelona & Catalunya."
 ---
 
-# Daily News Briefing — Spain, Barcelona & Costa Brava
+# Daily News Briefing
 
 ## Overview
 
-Fetch headlines from Spanish and Catalan news sites, cross-reference stories, and produce a concise daily briefing of 5-10 major stories.
+Fetch headlines from international, US, Spanish, and Catalan news sites, cross-reference stories, and produce a concise daily briefing organized into four sections.
 
 ## Phase 1: Fetch headlines via curl
 
@@ -27,11 +27,26 @@ for tag in ['h2', 'h3']:
 "
 ```
 
-**Important:** Do NOT use WebFetch — most Spanish news sites block it. Use curl via Bash.
+**Important:** Do NOT use WebFetch — most news sites block it. Use curl via Bash.
 
-Run in **3 batches** of parallel Bash calls (more than ~5 parallel calls causes sibling errors):
+Run in **5 batches** of parallel Bash calls (more than ~5 parallel calls causes sibling errors):
 
-### Batch 1 — National Spain
+### Batch 1 — World news (non-US sources)
+
+- https://www.bbc.com/news
+- https://www.theguardian.com/world
+- https://www.reuters.com/world/
+- https://www.aljazeera.com/
+- https://www.france24.com/en/
+
+### Batch 2 — US news
+
+- https://www.nytimes.com/section/us
+- https://www.washingtonpost.com/national/
+- https://apnews.com/us-news
+- https://www.politico.com/
+
+### Batch 3 — Spain
 
 - https://elpais.com/espana/
 - https://www.elmundo.es/espana.html
@@ -39,7 +54,7 @@ Run in **3 batches** of parallel Bash calls (more than ~5 parallel calls causes 
 - https://www.lavanguardia.com/
 - https://www.elperiodico.com/es/
 
-### Batch 2 — Barcelona
+### Batch 4 — Barcelona
 
 - https://www.3cat.cat/3catinfo/
 - https://beteve.cat/
@@ -47,7 +62,7 @@ Run in **3 batches** of parallel Bash calls (more than ~5 parallel calls causes 
 - https://www.totbarcelona.cat/
 - https://www.elperiodico.com/es/barcelona/
 
-### Batch 3 — Costa Brava & extras
+### Batch 5 — Costa Brava & extras
 
 - https://www.diaridegirona.cat/baix-emporda/
 - https://www.emporda.info/tags/palafrugell/
@@ -56,12 +71,21 @@ Run in **3 batches** of parallel Bash calls (more than ~5 parallel calls causes 
 
 ## Phase 2: Synthesize the briefing
 
-From the collected headlines, produce a briefing with these rules:
+Organize the briefing into four sections with these h2 headers, in this order:
 
-- **5-10 stories** that appear in **2+ sources** (exception: Costa Brava stories can appear in fewer regional sources)
-- Focus on **Spain, Barcelona, and Costa Brava**
+1. `## World`
+2. `## US`
+3. `## Spain`
+4. `## Barcelona & Catalunya`
+
+Rules:
+
+- **3-5 stories per section**
+- Stories should appear in **2+ sources** (exception: Barcelona/Costa Brava stories can appear in fewer regional sources)
 - **Exclude sports entirely**
 - Each story is **one paragraph** with inline markdown links to the source sites
-- Order by number of sources covering the story (most-covered first)
-- Use the format: `**N. Headline summary.** Details and context. ([Source1](url), [Source2](url))`
-- Title the briefing with today's date
+- Within each section, order by number of sources covering the story (most-covered first)
+- Use the format: `**Headline summary.** Details and context. ([Source1](url), [Source2](url))`
+- **No numbering** — do not prefix stories with numbers
+- **No emojis** anywhere in the output
+- **No h1 headings** — start with h2 (`##`) for section headers; the app renders the title and date
