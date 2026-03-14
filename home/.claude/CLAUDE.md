@@ -37,11 +37,12 @@ I generally use:
 
 ### General
 
+- Unless instructed otherwise, don't worry about backwards compatibility; use a hard cutover approach.
 - Each function should be in its own file.
 - Don't put multiple helper functions in a single file; put each function in its own file.
 - Shared types should be in a `types.ts` file
 - Shared constants should be in a `constants.ts` file.
-- When combining lists of Tailwind class names, use `cx` rather than string interpolation.
+- When combining lists of Tailwind class names, use `cx` (or `cn`) rather than string interpolation.
 - Use named exports. Don't use default exports unless we're in a framework (like Next.js) that requires them
 - Name test files `foo.test.ts`
 - Put tests and stories in `tests/` and `stories/` subdirectories alongside the source files they refer to:
@@ -140,15 +141,15 @@ After completing a request:
 
 The following shell commands are available:
 
-| Command                   | Description                                |
-| ------------------------- | ------------------------------------------ |
-| `wt <branch> [base]`      | Create worktree with new branch            |
-| `wtt <branch>`            | Create worktree tracking existing branch   |
-| `wtcd [branch]`           | Navigate to worktree (no args = main repo) |
-| `wtls`                    | List worktrees with status                 |
+| Command                   | Description                                    |
+| ------------------------- | ---------------------------------------------- |
+| `wt <branch> [base]`      | Create worktree with new branch                |
+| `wtt <branch>`            | Create worktree tracking existing branch       |
+| `wtcd [branch]`           | Navigate to worktree (no args = main repo)     |
+| `wtls`                    | List worktrees with status                     |
 | `wtrm <branch> [-f] [-k]` | Remove worktree and branch (`-k` keeps branch) |
-| `wtclean`                 | Remove worktrees for merged branches       |
-| `wtclone <url> [name]`    | Clone repo optimized for worktrees         |
+| `wtclean`                 | Remove worktrees for merged branches           |
+| `wtclone <url> [name]`    | Clone repo optimized for worktrees             |
 
 Worktrees for a repo will be placed in a sibling directory to the repo named `.{repo name}-worktrees`.
 
@@ -223,28 +224,28 @@ Reviews TypeScript/React files against the code style rules in this document. Fi
 
 ## Skills
 
-| Skill | Description |
-| --- | --- |
-| `/brainstorm` | Explore intent, requirements, and design before creative work |
-| `/debug-playwright-flaky-test` | Debug intermittently failing Playwright tests |
-| `/deploy` | Deploy to Vercel with custom domain and Porkbun DNS |
-| `/effect-schema` | Work with Effect Schema for type-safe validation/parsing |
-| `/effect-ts` | Work with the Effect TS library |
-| `/investigate-issues` | Research open issues in parallel before starting work |
-| `/manage-tasks` | Create and manage beads issues with smart defaults |
-| `/merge` | Safely merge main into the current branch |
-| `/news-briefing` | Daily news briefing for Spain, Barcelona & Costa Brava |
-| `/orchestrate` | Clear the task backlog, batching independent tasks |
-| `/plan-b` | Create a plan document and file granular beads issues |
-| `/receive-code-review` | Process code review feedback with technical rigor |
-| `/request-code-review` | Verify work meets requirements before merging |
-| `/review-repo` | Repo-wide code style review using worktrees |
-| `/scaffold` | Scaffold React + TypeScript + Vite + Tailwind v4 + shadcn/ui app |
-| `/sprites` | Run commands in isolated Linux environments via sprites.dev |
-| `/test-driven-development` | Write tests before implementation code |
-| `/use-worktrees` | Isolate session work in a git worktree |
-| `/verification-before-completion` | Verify work actually passes before claiming completion |
-| `/write-skills` | Create, edit, or validate skills |
+| Skill                             | Description                                                      |
+| --------------------------------- | ---------------------------------------------------------------- |
+| `/brainstorm`                     | Explore intent, requirements, and design before creative work    |
+| `/debug-playwright-flaky-test`    | Debug intermittently failing Playwright tests                    |
+| `/deploy`                         | Deploy to Vercel with custom domain and Porkbun DNS              |
+| `/effect-schema`                  | Work with Effect Schema for type-safe validation/parsing         |
+| `/effect-ts`                      | Work with the Effect TS library                                  |
+| `/investigate-issues`             | Research open issues in parallel before starting work            |
+| `/manage-tasks`                   | Create and manage beads issues with smart defaults               |
+| `/merge`                          | Safely merge main into the current branch                        |
+| `/news-briefing`                  | Daily news briefing for Spain, Barcelona & Costa Brava           |
+| `/orchestrate`                    | Clear the task backlog, batching independent tasks               |
+| `/plan-b`                         | Create a plan document and file granular beads issues            |
+| `/receive-code-review`            | Process code review feedback with technical rigor                |
+| `/request-code-review`            | Verify work meets requirements before merging                    |
+| `/review-repo`                    | Repo-wide code style review using worktrees                      |
+| `/scaffold`                       | Scaffold React + TypeScript + Vite + Tailwind v4 + shadcn/ui app |
+| `/sprites`                        | Run commands in isolated Linux environments via sprites.dev      |
+| `/test-driven-development`        | Write tests before implementation code                           |
+| `/use-worktrees`                  | Isolate session work in a git worktree                           |
+| `/verification-before-completion` | Verify work actually passes before claiming completion           |
+| `/write-skills`                   | Create, edit, or validate skills                                 |
 
 ## Serena (MCP)
 
