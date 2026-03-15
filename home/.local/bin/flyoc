@@ -13,6 +13,7 @@
  *   flyoc              # full setup (idempotent, skips unchanged steps)
  *   flyoc --redeploy   # skip app/volume creation, just redeploy
  *   flyoc --new-token  # generate a fresh gateway token
+ *   flyoc --destroy    # destroy existing app first, then full setup from scratch
  */
 
 import { execSync } from "node:child_process"
@@ -35,6 +36,7 @@ const BOOTSTRAP_REPO = "https://github.com/HerbCaudill/marvin-bootstrap.git"
 
 const redeployOnly = process.argv.includes("--redeploy")
 const freshToken = process.argv.includes("--new-token")
+const destroyFirst = process.argv.includes("--destroy")
 
 // Utilities
 
@@ -90,6 +92,13 @@ const steps = {
     if (!whoami || whoami.includes("not logged in")) {
       throw new Error("Not logged in to Fly.io. Run: fly auth login")
     }
+  },
+
+  "destroy existing app": () => {
+    if (!destroyFirst) return
+    try {
+      run(`${FLY} apps destroy ${APP_NAME} --yes`)
+    } catch {}
   },
 
   "create app": () => {
