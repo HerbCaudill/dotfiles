@@ -243,6 +243,27 @@ primary_region = "${REGION}"
       execSync(`open "${dashboardUrl}"`, { stdio: "pipe" })
     }
   },
+
+  "approve device": () => {
+    if (!process.stdout.isTTY) return
+    console.error("  Waiting for device pairing...")
+    sleepSync(5)
+
+    for (let i = 0; i < 12; i++) {
+      try {
+        const output = flySSH("openclaw devices list --json")
+        const devices = JSON.parse(output)
+        if (devices.pending && devices.pending.length > 0) {
+          const pendingId = devices.pending[0].requestId
+          console.error("  Approving device...")
+          flySSH(`openclaw devices approve '${pendingId}'`)
+          return
+        }
+      } catch {}
+      if (i < 11) sleepSync(3)
+    }
+    console.error("  No pending device found (refresh the dashboard to retry)")
+  },
 }
 
 // Checklist UI
