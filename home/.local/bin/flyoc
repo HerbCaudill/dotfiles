@@ -68,8 +68,8 @@ function run(cmd, options = {}) {
 }
 
 /** Run a command on the Fly machine via SSH. */
-function flySSH(cmd) {
-  return run(`${FLY} ssh console --app ${APP_NAME} -C '${cmd.replace(/'/g, "'\\''")}'`)
+function flySSH(cmd, options = {}) {
+  return run(`${FLY} ssh console --app ${APP_NAME} -C '${cmd.replace(/'/g, "'\\''")}'`, options)
 }
 
 /** Sleep for the given number of seconds. */
@@ -224,6 +224,7 @@ primary_region = "${REGION}"
 
     flySSH(
       `bash -c "cd /data && (test -d marvin-bootstrap/.git && cd marvin-bootstrap && git pull -q || git clone -q '${repoUrl}') && cd marvin-bootstrap && ${envBlock} && npx -y tsx src/bootstrap.ts"`,
+      { timeout: 600_000 },
     )
   },
 
