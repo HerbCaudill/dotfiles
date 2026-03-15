@@ -1,0 +1,329 @@
+#!/usr/bin/env node
+
+/**
+ * Deploy and configure OpenClaw on Fly.io: creates app + volume if needed,
+ * sets secrets, deploys the container, writes the config, opens the dashboard,
+ * and auto-approves the first pending device.
+ *
+ * Usage:
+ *   flyoc              # full setup (idempotent)
+ *   flyoc --redeploy   # just redeploy + restart
+ */
+
+import { execSync } from "node:child_process"
+import { randomBytes } from "node:crypto"
+import { existsSync, readFileSync } from "node:fs"
+import { join } from "node:path"
+
+const HOME = process.env.HOME
+const APP_NAME = "herbcaudill-marvin"
+const REGION = "cdg"
+const VOLUME_NAME = "openclaw_data"
+const VOLUME_SIZE_GB = 1
+const IMAGE = "ghcr.io/openclaw/openclaw:latest"
+const FLY = join(HOME, ".fly", "bin", "fly")
+const SETUP_SCRIPT_URL =
+  "https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/scripts/setup.ts"
+
+const redeployOnly = process.argv.includes("--redeploy")
+const freshToken = process.argv.includes("--new-token")
+
+/** Read secrets from ~/.secrets, parsing `export KEY="value"` lines. Strips `xx_` prefix. */
+function readSecrets() {
+  const secretsPath = join(HOME, ".secrets")
+  if (!existsSync(secretsPath)) return {}
+  const content = readFileSync(secretsPath, "utf-8")
+  const result = {}
+  for (const line of content.split("\n")) {
+    const match = line.match(/^export\s+(\w+)=["']?(.+?)["']?\s*$/)
+    if (match) {
+      const key = match[1].replace(/^xx_/, "")
+      result[key] = match[2]
+    }
+  }
+  return result
+}
+
+/** Execute a shell command, returning stdout. */
+function run(cmd, options = {}) {
+  const { timeout = 120_000, ...rest } = options
+  try {
+    return execSync(cmd, { stdio: "pipe", encoding: "utf-8", timeout, ...rest })
+  } catch (e) {
+    const stderr = e.stderr?.toString().trim()
+    const stdout = e.stdout?.toString().trim()
+    const output = [stderr, stdout].filter(Boolean).join("\n")
+    throw new Error(output || e.message || "Command failed")
+  }
+}
+
+/** Run a command on the Fly machine via SSH. */
+function flySSH(cmd) {
+  return run(`${FLY} ssh console --app ${APP_NAME} -C '${cmd.replace(/'/g, "'\\''")}'`)
+}
+
+/** Sleep for the given number of seconds. */
+function sleepSync(seconds) {
+  execSync(`sleep ${seconds}`, { stdio: "pipe" })
+}
+
+// Build config
+
+const secrets = readSecrets()
+
+/** Try to read the existing gateway token from the running machine. */
+function readExistingToken() {
+  try {
+    const configJson = flySSH("cat /data/openclaw.json")
+    const config = JSON.parse(configJson)
+    return config.gateway?.auth?.token
+  } catch {
+    return null
+  }
+}
+
+let gatewayToken = null
+
+function buildConfig() {
+  return {
+    auth: {
+      profiles: {
+        "anthropic:default": { provider: "anthropic", mode: "api_key" },
+      },
+    },
+    agents: {
+      defaults: {
+        model: {
+          primary: "anthropic/claude-opus-4-6",
+          fallbacks: ["anthropic/claude-sonnet-4-5"],
+        },
+        compaction: { mode: "safeguard" },
+        heartbeat: { every: "30m" },
+        maxConcurrent: 4,
+      },
+      list: [{ id: "main", default: true }],
+    },
+    tools: {
+      profile: "coding",
+      web: {
+        search: {
+          enabled: !!secrets["BRAVE_SEARCH_API_KEY"],
+          maxResults: 5,
+        },
+      },
+    },
+    commands: {
+      native: "auto",
+      nativeSkills: "auto",
+      restart: true,
+      ownerDisplay: "raw",
+    },
+    gateway: {
+      port: 3000,
+      mode: "local",
+      bind: "lan",
+      auth: { mode: "token", token: gatewayToken },
+      controlUi: {
+        allowedOrigins: [`https://${APP_NAME}.fly.dev`],
+        dangerouslyAllowHostHeaderOriginFallback: true,
+      },
+    },
+  }
+}
+
+// Steps
+
+const steps = {
+  "check flyctl": () => {
+    if (!existsSync(FLY)) {
+      throw new Error("flyctl not found. Install: curl -L https://fly.io/install.sh | sh")
+    }
+    const whoami = run(`${FLY} auth whoami`).trim()
+    if (!whoami || whoami.includes("not logged in")) {
+      throw new Error("Not logged in to Fly.io. Run: fly auth login")
+    }
+  },
+
+  "create app": () => {
+    if (redeployOnly) return
+    try {
+      const apps = JSON.parse(run(`${FLY} apps list --json`))
+      if (apps.some(a => a.Name === APP_NAME)) return
+    } catch {}
+    run(`${FLY} apps create ${APP_NAME}`)
+  },
+
+  "create volume": () => {
+    if (redeployOnly) return
+    try {
+      const volumes = JSON.parse(run(`${FLY} volumes list --app ${APP_NAME} --json`))
+      if (volumes.some(v => v.Name === VOLUME_NAME)) return
+    } catch {}
+    run(
+      `${FLY} volumes create ${VOLUME_NAME} --size ${VOLUME_SIZE_GB} --region ${REGION} --app ${APP_NAME} -y`,
+    )
+  },
+
+  "set secrets": () => {
+    const flySecrets = { ANTHROPIC_API_KEY: secrets["ANTHROPIC_API_KEY"] }
+    if (!flySecrets.ANTHROPIC_API_KEY) {
+      throw new Error("ANTHROPIC_API_KEY not found in ~/.secrets")
+    }
+
+    for (const key of [
+      "OPENAI_API_KEY",
+      "BRAVE_SEARCH_API_KEY",
+      "GEMINI_API_KEY",
+      "GOOGLE_PLACES_API_KEY",
+    ]) {
+      if (secrets[key]) flySecrets[key] = secrets[key]
+    }
+
+    const args = Object.entries(flySecrets)
+      .map(([k, v]) => `${k}="${v}"`)
+      .join(" ")
+    run(`${FLY} secrets set ${args} --app ${APP_NAME}`)
+  },
+
+  deploy: () => {
+    run(`${FLY} deploy --app ${APP_NAME} --image ${IMAGE} --region ${REGION} --ha=false`, {
+      timeout: 300_000,
+    })
+  },
+
+  "wait for machine": () => {
+    for (let i = 0; i < 30; i++) {
+      try {
+        const status = run(`${FLY} status --app ${APP_NAME}`)
+        if (status.includes("running")) return
+      } catch {}
+      sleepSync(2)
+    }
+    throw new Error("Machine did not reach running state within 60s")
+  },
+
+  "setup dev environment": () => {
+    const envVars = []
+    if (secrets["GITHUB_TOKEN"] || secrets["GH_TOKEN"]) {
+      envVars.push(`GITHUB_TOKEN='${secrets["GITHUB_TOKEN"] || secrets["GH_TOKEN"]}'`)
+    }
+    const envBlock = envVars.length > 0 ? `export ${envVars.join(" ")}; ` : ""
+    flySSH(
+      `bash -c "${envBlock}curl -fsSL ${SETUP_SCRIPT_URL} | npm_config_update_notifier=false npx -y tsx -"`,
+    )
+  },
+
+  "write config": () => {
+    if (!freshToken) {
+      gatewayToken = readExistingToken()
+    }
+    if (!gatewayToken) {
+      gatewayToken = randomBytes(32).toString("hex")
+    }
+    const config = buildConfig()
+    const json = JSON.stringify(config, null, 2)
+    flySSH(`mkdir -p /data && cat > /data/openclaw.json << 'OCEOF'\n${json}\nOCEOF`)
+  },
+
+  "update openclaw": () => {
+    try {
+      flySSH("openclaw update --yes")
+    } catch {}
+  },
+
+  "restart machine": () => {
+    const machines = JSON.parse(run(`${FLY} machines list --app ${APP_NAME} --json`))
+    if (machines.length > 0) {
+      run(`${FLY} machine restart ${machines[0].id} --app ${APP_NAME}`)
+    }
+  },
+
+  "open dashboard": () => {
+    const dashboardUrl = `https://${APP_NAME}.fly.dev/#token=${gatewayToken}`
+    console.error(`  Dashboard: ${dashboardUrl}`)
+    execSync(`open "${dashboardUrl}"`, { stdio: "pipe" })
+  },
+
+  "approve device": () => {
+    console.error("  Waiting for device pairing...")
+    sleepSync(5)
+
+    for (let i = 0; i < 12; i++) {
+      try {
+        const output = flySSH("openclaw devices list --json")
+        const devices = JSON.parse(output)
+        if (devices.pending && devices.pending.length > 0) {
+          const pendingId = devices.pending[0].requestId
+          console.error("  Approving device...")
+          flySSH(`openclaw devices approve '${pendingId}'`)
+          return
+        }
+      } catch {}
+      if (i < 11) sleepSync(3)
+    }
+    console.error("  No pending device found (refresh the dashboard to retry)")
+  },
+}
+
+// Checklist UI
+
+const stepStatus = new Map()
+let headerLines = 0
+const errors = []
+
+function render() {
+  if (headerLines > 0) {
+    process.stderr.write(`\x1b[${stepStatus.size}A`)
+  }
+  for (const [name, status] of stepStatus) {
+    const icon =
+      status === "done" ? "✓"
+      : status === "warn" ? "!"
+      : status === "skip" ? "−"
+      : status === "running" ? "⋯"
+      : "○"
+    process.stderr.write(`\x1b[2K${icon} ${name}\n`)
+  }
+  headerLines = stepStatus.size
+}
+
+function updateStep(name, status) {
+  stepStatus.set(name, status)
+  render()
+}
+
+function runStep(name, fn) {
+  updateStep(name, "running")
+  try {
+    fn()
+    updateStep(name, "done")
+  } catch (e) {
+    updateStep(name, "warn")
+    console.error()
+    console.error(`\x1b[1;31mFailed at "${name}":\x1b[0m`)
+    console.error(e.message)
+    process.exit(1)
+  }
+}
+
+// Main
+
+console.error()
+console.error("─".repeat(process.stderr.columns || 80))
+console.error(`Setting up OpenClaw on Fly.io (${APP_NAME})...`)
+console.error()
+
+for (const name of Object.keys(steps)) {
+  stepStatus.set(name, "pending")
+}
+render()
+
+for (const [name, fn] of Object.entries(steps)) {
+  runStep(name, fn)
+}
+
+console.error()
+console.error("\x1b[1;32m✓\x1b[0m OpenClaw is ready!")
+console.error()
+
+process.exit(0)

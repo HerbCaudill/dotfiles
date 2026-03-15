@@ -231,7 +231,7 @@ _gt_yargs_completions()
 compdef _gt_yargs_completions gt
 ###-end-gt-completions-###
 
-export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/.fly/bin:$HOME/.local/bin:$PATH"
 
 ## Time Claude CLI startup (ms to first prompt)
 timeclaude() {
