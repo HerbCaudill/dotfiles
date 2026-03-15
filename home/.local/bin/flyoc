@@ -30,8 +30,6 @@ const IMAGE = "ghcr.io/openclaw/openclaw:latest"
 const FLY = join(HOME, ".fly", "bin", "fly")
 const GATEWAY_URL = `https://${APP_NAME}.fly.dev`
 
-const DEV_SETUP_URL =
-  "https://raw.githubusercontent.com/HerbCaudill/dotfiles/main/scripts/setup.ts"
 const BOOTSTRAP_REPO = "https://github.com/HerbCaudill/marvin-bootstrap.git"
 
 const redeployOnly = process.argv.includes("--redeploy")
@@ -205,17 +203,6 @@ primary_region = "${REGION}"
       sleepSync(2)
     }
     throw new Error("Machine did not reach running state within 60s")
-  },
-
-  "setup dev environment": () => {
-    const envVars = []
-    if (secrets["GITHUB_TOKEN"] || secrets["GH_TOKEN"]) {
-      envVars.push(`GITHUB_TOKEN='${secrets["GITHUB_TOKEN"] || secrets["GH_TOKEN"]}'`)
-    }
-    const envBlock = envVars.length > 0 ? `export ${envVars.join(" ")}; ` : ""
-    flySSH(
-      `bash -c "${envBlock}curl -fsSL ${DEV_SETUP_URL} | npm_config_update_notifier=false npx -y tsx -"`,
-    )
   },
 
   "setup openclaw": () => {
