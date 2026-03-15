@@ -28,7 +28,8 @@
     "command": "node ~/.claude/statusline.js"
   },
   "enabledPlugins": {
-    "vercel@claude-plugins-official": false
+    "vercel@claude-plugins-official": false,
+    "beads@beads-marketplace": true
   },
   "autoUpdatesChannel": "latest",
   "skipDangerousModePermissionPrompt": true
