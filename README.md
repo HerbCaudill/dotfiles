@@ -8,7 +8,7 @@ Personal configuration files.
 ./scripts/symlink.mjs
 ```
 
-Symlinks files from `home/` to `~/`. Paths listed in `symlink-dirs.conf` are linked as directories (`.claude/skills`, `.claude/agents`); all others are linked as individual files. Also creates Codex symlinks (`~/.codex/AGENTS.md` → `CLAUDE.md`, `~/.codex/skills` → `.claude/skills`).
+Symlinks files from `home/` to `~/`. Paths listed in `.symlinks` are linked as directories (`.claude/skills`, `.claude/agents`); all others are linked as individual files. Also creates Codex symlinks (`~/.codex/AGENTS.md` → `CLAUDE.md`, `~/.codex/skills` → `.claude/skills`).
 
 ## Contents
 

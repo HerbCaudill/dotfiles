@@ -14,7 +14,7 @@ There are no build, lint, or test commands — this is a config-only repo.
 ## How Symlinks Work
 
 - `scripts/symlink.mjs` symlinks individual files from `home/` to `~/`
-- Paths in `symlink-dirs.conf` are linked as whole directories instead (currently `.claude/skills` and `.claude/agents`)
+- Paths in `.symlinks` are linked as whole directories instead (currently `.claude/skills` and `.claude/agents`)
 - Extra symlinks: `~/.codex/AGENTS.md` → `.claude/CLAUDE.md`, `~/.codex/skills` → `.claude/skills`
 
 ## Structure
@@ -26,7 +26,7 @@ There are no build, lint, or test commands — this is a config-only repo.
   - `.oh-my-zsh/custom/themes/herb.zsh-theme` — custom Zsh theme
   - `Library/LaunchAgents/` — macOS launch agents (e.g., `gh-sync`)
 - `scripts/` — `symlink.mjs` (installer), sprite setup scripts, Raycast commands
-- `symlink-dirs.conf` — lists paths to symlink as directories rather than individual files
+- `.symlinks` — lists paths to symlink as directories rather than individual files
 
 ## CLI Scripts (`home/.local/bin/`)
 
@@ -34,37 +34,39 @@ All symlinked to `~/.local/bin/`.
 
 ### Worktree helpers (Bash)
 
-| Command | Description |
-|---------|-------------|
-| `wt <branch> [base]` | Create worktree with new branch |
-| `wtt <branch>` | Create worktree tracking existing branch |
-| `wtcd [branch]` | Output worktree path (no args = main repo) |
-| `wtls` | List worktrees with branch names and dirty markers |
-| `wtrm <branch> [-f] [-k]` | Remove worktree and optionally its branch |
-| `wtclean` | Interactively remove worktrees for merged branches |
-| `wtclone <url> [name]` | Clone repo optimized for worktrees (bare + git file setup) |
-| `_wt_dir` | Helper: outputs worktree directory path for current repo |
+| Command                   | Description                                                |
+| ------------------------- | ---------------------------------------------------------- |
+| `wt <branch> [base]`      | Create worktree with new branch                            |
+| `wtt <branch>`            | Create worktree tracking existing branch                   |
+| `wtcd [branch]`           | Output worktree path (no args = main repo)                 |
+| `wtls`                    | List worktrees with branch names and dirty markers         |
+| `wtrm <branch> [-f] [-k]` | Remove worktree and optionally its branch                  |
+| `wtclean`                 | Interactively remove worktrees for merged branches         |
+| `wtclone <url> [name]`    | Clone repo optimized for worktrees (bare + git file setup) |
+| `_wt_dir`                 | Helper: outputs worktree directory path for current repo   |
 
 ### Sprite / OpenClaw (Node.js)
 
-| Command | Description |
-|---------|-------------|
-| `sprite` | Compiled Go binary for creating/managing isolated Linux environments |
-| `spc` | Create a sprite with setup, then open a console session |
-| `spoc` | Create a sprite with OpenClaw setup, open dashboard with device auto-approval |
-| `flyoc` | Provision OpenClaw on Fly.io (app/volume creation, secrets, deploy, setup) |
+OpenClaw docs: https://docs.openclaw.ai/
+
+| Command         | Description                                                                   |
+| --------------- | ----------------------------------------------------------------------------- |
+| `sprite`        | Compiled Go binary for creating/managing isolated Linux environments          |
+| `spc`           | Create a sprite with setup, then open a console session                       |
+| `spoc`          | Create a sprite with OpenClaw setup, open dashboard with device auto-approval |
+| `flyoc`         | Provision OpenClaw on Fly.io (app/volume creation, secrets, deploy, setup)    |
 | `_sp_setup.mjs` | Shared sprite setup helper: checks gh auth, creates sprite, runs remote setup |
 
 ### Other tools
 
-| Command | Description | Language |
-|---------|-------------|----------|
-| `beads` | Symlink to `bd` (issue tracking) | Symlink |
-| `claude` | Symlink to Claude Code | Symlink |
-| `gh-sync` | Sync `~/Code/HerbCaudill` with all repos on github.com/HerbCaudill | Bash |
-| `serena` | Invoke Serena CLI | Python |
-| `serena-mcp-server` | Start the Serena MCP server | Python |
-| `index-project` | Invoke Serena's project indexing | Python |
+| Command             | Description                                                        | Language |
+| ------------------- | ------------------------------------------------------------------ | -------- |
+| `beads`             | Symlink to `bd` (issue tracking)                                   | Symlink  |
+| `claude`            | Symlink to Claude Code                                             | Symlink  |
+| `gh-sync`           | Sync `~/Code/HerbCaudill` with all repos on github.com/HerbCaudill | Bash     |
+| `serena`            | Invoke Serena CLI                                                  | Python   |
+| `serena-mcp-server` | Start the Serena MCP server                                        | Python   |
+| `index-project`     | Invoke Serena's project indexing                                   | Python   |
 
 ## Important: Global vs Project CLAUDE.md
 

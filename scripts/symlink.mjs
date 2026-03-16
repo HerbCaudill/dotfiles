@@ -5,7 +5,7 @@ import { dirname, isAbsolute, join, relative } from "node:path"
 
 const DOTFILES_DIR = dirname(dirname(new URL(import.meta.url).pathname))
 const HOME_DIR = join(DOTFILES_DIR, "home")
-const CONFIG_FILE = join(DOTFILES_DIR, "symlink-dirs.conf")
+const CONFIG_FILE = join(DOTFILES_DIR, ".symlinks")
 const HOME = process.env.HOME
 
 console.log(`Installing dotfiles from ${DOTFILES_DIR}`)
