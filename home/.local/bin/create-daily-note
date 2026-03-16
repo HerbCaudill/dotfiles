@@ -1,0 +1,9 @@
+#!/bin/bash
+# Create tomorrow's Obsidian daily note stub if it doesn't already exist.
+DAILY_DIR="/Users/herbcaudill/Code/HerbCaudill/notes/daily"
+TOMORROW=$(date -v+1d +%Y-%m-%d)
+FILE="$DAILY_DIR/$TOMORROW.md"
+
+if [ ! -f "$FILE" ]; then
+  touch "$FILE"
+fi
