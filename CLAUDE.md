@@ -49,12 +49,11 @@ All symlinked to `~/.local/bin/`.
 
 OpenClaw docs: https://docs.openclaw.ai/
 
-| Command         | Description                                                                   |
-| --------------- | ----------------------------------------------------------------------------- |
-| `sprite`        | Compiled Go binary for creating/managing isolated Linux environments          |
-| `spc`           | Create a sprite with setup, then open a console session                       |
-| `spoc`          | Create a sprite with OpenClaw setup, open dashboard with device auto-approval |
-| `flyoc`         | Provision OpenClaw on Fly.io (app/volume creation, secrets, deploy, setup)    |
+| Command         | Description                                                                |
+| --------------- | -------------------------------------------------------------------------- |
+| `sprite`        | Compiled Go binary for creating/managing isolated Linux environments       |
+| `spc`           | Create a sprite with setup, then open a console session                    |
+| `flyoc`         | Provision OpenClaw on Fly.io (app/volume creation, secrets, deploy, setup) |
 | `_sp_setup.mjs` | Shared sprite setup helper: checks gh auth, creates sprite, runs remote setup |
 
 ### Other tools

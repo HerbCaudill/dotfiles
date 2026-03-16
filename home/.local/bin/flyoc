@@ -130,6 +130,8 @@ const steps = {
       "BRAVE_SEARCH_API_KEY",
       "GEMINI_API_KEY",
       "GOOGLE_PLACES_API_KEY",
+      "SLACK_APP_TOKEN",
+      "SLACK_BOT_TOKEN",
     ]) {
       if (secrets[key]) flySecrets[key] = secrets[key]
     }
@@ -217,7 +219,7 @@ primary_region = "${REGION}"
       `GATEWAY_URL='${GATEWAY_URL}'`,
     ]
     if (freshToken) envVars.push("GATEWAY_TOKEN=''")
-    for (const key of ["OPENAI_API_KEY", "BRAVE_SEARCH_API_KEY", "GEMINI_API_KEY", "GH_TOKEN"]) {
+    for (const key of ["OPENAI_API_KEY", "BRAVE_SEARCH_API_KEY", "GEMINI_API_KEY", "GH_TOKEN", "SLACK_APP_TOKEN", "SLACK_BOT_TOKEN"]) {
       if (secrets[key]) envVars.push(`${key}='${secrets[key]}'`)
     }
     const envBlock = `export ${envVars.join(" ")}`
