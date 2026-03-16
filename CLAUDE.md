@@ -85,7 +85,7 @@ fly ssh console --app herbcaudill-marvin --command "ls /data"
 
 - **Alias:** `marvin` (defined in `.zshrc`) opens an SSH console
 - **Provisioning:** `flyoc` script handles full setup (app, volume, secrets, deploy, bootstrap)
-- **Bootstrap repo:** github.com/HerbCaudill/marvin-bootstrap
+- **Bootstrap repo:** `../marvin-bootstrap` (github.com/HerbCaudill/marvin-bootstrap)
 - **Data volume:** persistent at `/data` (1GB)
 - **Dashboard:** `https://herbcaudill-marvin.fly.dev/#token=...`
 - **Secrets:** read from `~/.secrets`
