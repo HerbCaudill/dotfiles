@@ -71,6 +71,25 @@ OpenClaw docs: https://docs.openclaw.ai/
 
 `home/.claude/CLAUDE.md` is the **global** Claude Code instructions file (symlinked to `~/.claude/CLAUDE.md`). The root `CLAUDE.md` in this repo is project-specific instructions for working within this dotfiles repo itself.
 
+## Marvin (OpenClaw on Fly.io)
+
+Marvin is an OpenClaw agent running on Fly.io as `herbcaudill-marvin` (CDG/Paris region).
+
+```bash
+# SSH into Marvin's VM
+fly ssh console --app herbcaudill-marvin
+
+# Run a single command
+fly ssh console --app herbcaudill-marvin --command "ls /data"
+```
+
+- **Alias:** `marvin` (defined in `.zshrc`) opens an SSH console
+- **Provisioning:** `flyoc` script handles full setup (app, volume, secrets, deploy, bootstrap)
+- **Bootstrap repo:** github.com/HerbCaudill/marvin-bootstrap
+- **Data volume:** persistent at `/data` (1GB)
+- **Dashboard:** `https://herbcaudill-marvin.fly.dev/#token=...`
+- **Secrets:** read from `~/.secrets`
+
 ## Issue Tracking
 
 This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
