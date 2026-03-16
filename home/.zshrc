@@ -142,6 +142,7 @@ function killport {
 
 sp() { if [ -n "$1" ]; then sprite console -s "$@"; else sprite console; fi }
 alias spl="sprite ls"
+alias marvin="fly ssh console --app herbcaudill-marvin"
 
 # mount sprites.dev fs
 spfs() {
