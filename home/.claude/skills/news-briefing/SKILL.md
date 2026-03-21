@@ -63,13 +63,20 @@ Run in **5 batches** of parallel Bash calls (more than ~5 parallel calls causes 
 - https://www.thenewbarcelonapost.cat/
 - https://www.diaridebarcelona.cat/
 
+## Phase 1.5: Deduplicate against previous briefing
+
+Before selecting stories, read yesterday's briefing JSON from the output directory (the most recent `.json` file). Extract all story headlines.
+
+When selecting stories in Phase 2, **drop any story that already appeared in the previous briefing** unless there is a genuinely significant new development (e.g. a missing person was found, a vote passed, charges were filed, a new phase began). Continuing coverage of the same situation with no material change does not count — replace it with a fresh story. When in doubt, pick a different story.
+
 ## Phase 2: Identify top stories
 
 Review all headlines from Phase 1. For each section (World, US, Spain, Barcelona & Catalunya):
 
 1. Group headlines covering the same story across sources
-2. Select 3-5 stories, prioritizing those appearing in 2+ sources
-3. For each selected story, pick 1-2 article URLs to fetch (prefer sources that returned URLs; for English sections prefer English-language sources)
+2. Filter out stories that appeared in the previous briefing (see Phase 1.5)
+3. Select 3-5 stories, prioritizing those appearing in 2+ sources
+4. For each selected story, pick 1-2 article URLs to fetch (prefer sources that returned URLs; for English sections prefer English-language sources)
 
 ## Phase 3: Fetch article content
 
