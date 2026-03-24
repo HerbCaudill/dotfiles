@@ -78,6 +78,17 @@ Review all headlines from Phase 1. For each section (World, US, Spain, Barcelona
 3. Select 3-5 stories, prioritizing those appearing in 2+ sources
 4. For each selected story, pick 1-2 article URLs to fetch (prefer sources that returned URLs; for English sections prefer English-language sources)
 
+### Section scope — assign stories by topic, not by source
+
+A story's section is determined by **what the story is about**, not which source published it. US news sites cover international stories; Spanish papers cover world events. Assign each story to the correct section based on its subject matter:
+
+- **World**: International events outside the US and Spain (geopolitics, conflicts, international agreements, etc.)
+- **US**: Stories about events, politics, and policy **within the United States** — domestic politics, federal/state policy, US court rulings, US economy, etc.
+- **Spain**: National Spanish news — politics, economy, society, events happening across Spain
+- **Barcelona & Catalunya**: Local/regional stories specific to Barcelona, Catalunya, Costa Brava, and surrounding areas
+
+If a US source runs a story about Hong Kong, that's a World story. If El País covers a US election, that's a US story. Route by subject, not source.
+
 ## Phase 3: Fetch article content
 
 For each selected article URL (~15-20 total), fetch and extract the article text:
