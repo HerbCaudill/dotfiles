@@ -256,3 +256,10 @@ if [[ -n "$SPRITE_NAME" ]]; then
 else
   precmd() { print -Pn "\e]0;%~\a" }
 fi
+
+# Google Cloud SDK
+export CLOUDSDK_PYTHON=/opt/homebrew/bin/python3.13
+if [ -f '/Users/herbcaudill/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/herbcaudill/google-cloud-sdk/path.zsh.inc'; fi
+
+# The next line enables shell command completion for gcloud.
+if [ -f '/Users/herbcaudill/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/herbcaudill/google-cloud-sdk/completion.zsh.inc'; fi
