@@ -256,3 +256,25 @@ Serena is an MCP server providing LSP-powered semantic code tools: `find_symbol`
 - Activate a project with `activate_project` before use. Run `check_onboarding_performed` and `onboarding` on first use to populate memory files.
 
 **Important:** When modifying any managed files, make changes in the dotfiles repo, then commit and push.
+
+## Google Workspace CLI (`gws`)
+
+Use the `gws` CLI (via Bash) to interact with Google Drive, Google Tasks, and other Workspace services. No MCP server needed — just call `gws` commands directly.
+
+```bash
+# Drive
+gws drive files list --params '{"q": "name contains \"report\"", "pageSize": 10}'
+gws drive files get --fileId <id>
+gws drive +upload ./file.pdf          # helper shortcut
+
+# Tasks
+gws tasks tasklists list
+gws tasks tasks list --tasklist <id>
+gws tasks tasks insert --tasklist <id> --params '{"title": "Do the thing"}'
+
+# Export Google Docs content (native Docs can't be read as files)
+gws drive files export --fileId <id> --mimeType text/plain
+gws drive files export --fileId <id> --mimeType application/pdf
+```
+
+Google Drive local path: `~/Library/CloudStorage/GoogleDrive-herb@devresults.com/My Drive` (regular files only — Google Docs/Sheets/Slides are cloud-only stubs).
