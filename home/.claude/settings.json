@@ -29,7 +29,8 @@
   },
   "enabledPlugins": {
     "vercel@claude-plugins-official": false,
-    "beads@beads-marketplace": true
+    "beads@beads-marketplace": true,
+    "document-skills@anthropic-agent-skills": true
   },
   "autoUpdatesChannel": "latest",
   "skipDangerousModePermissionPrompt": true

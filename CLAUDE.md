@@ -49,11 +49,11 @@ All symlinked to `~/.local/bin/`.
 
 OpenClaw docs: https://docs.openclaw.ai/
 
-| Command         | Description                                                                |
-| --------------- | -------------------------------------------------------------------------- |
-| `sprite`        | Compiled Go binary for creating/managing isolated Linux environments       |
-| `spc`           | Create a sprite with setup, then open a console session                    |
-| `flyoc`         | Provision OpenClaw on Fly.io (app/volume creation, secrets, deploy, setup) |
+| Command         | Description                                                                   |
+| --------------- | ----------------------------------------------------------------------------- |
+| `sprite`        | Compiled Go binary for creating/managing isolated Linux environments          |
+| `spc`           | Create a sprite with setup, then open a console session                       |
+| `flyoc`         | Provision OpenClaw on Fly.io (app/volume creation, secrets, deploy, setup)    |
 | `_sp_setup.mjs` | Shared sprite setup helper: checks gh auth, creates sprite, runs remote setup |
 
 ### Other tools
@@ -101,3 +101,7 @@ bd update <id> --status in_progress  # Claim work
 bd close <id>         # Complete work
 bd sync               # Sync with git
 ```
+
+## User bio
+
+I'm an American citizen living in Barcelona. My wife, Lynne, is a therapist with a doctorate in anthropology; she specializes in maternal mental health. We have two boys: Calvin is 21; he's in college in the US. Ashe is 18 and is living at home while he plots his next move. We rent an apartment in Barcelona and own a house in Tamariu on the Costa Brava. I own a small software company, DevResults, which makes monitoring & evaluation software for foreign aid projects. It's a small company with 9 employees including me. I still work as a programmer, mostly in TypeScript. I speak English, Spanish, Catalan, and French.
