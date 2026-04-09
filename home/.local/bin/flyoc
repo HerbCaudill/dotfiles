@@ -8,6 +8,7 @@
  * 3. Deploys the OpenClaw container
  * 4. Runs setup.ts (dev environment) on the VM
  * 5. Clones marvin-bootstrap and runs bootstrap.ts (OpenClaw config + state)
+ * 6. Switches model defaults to Codex
  *
  * Usage:
  *   flyoc              # full setup (idempotent, skips unchanged steps)
@@ -29,6 +30,8 @@ const VOLUME_SIZE_GB = 1
 const IMAGE = "ghcr.io/openclaw/openclaw:latest"
 const FLY = join(HOME, ".fly", "bin", "fly")
 const GATEWAY_URL = `https://${APP_NAME}.fly.dev`
+const CODEX_PRIMARY_MODEL = "openai/gpt-5-codex"
+const CODEX_FALLBACK_MODEL = "openai/codex-mini-latest"
 
 const BOOTSTRAP_REPO = "https://github.com/HerbCaudill/marvin-bootstrap.git"
 
@@ -228,6 +231,19 @@ primary_region = "${REGION}"
       `bash -c "cd /data && (test -d marvin-bootstrap/.git && cd marvin-bootstrap && git pull -q || git clone -q '${repoUrl}') && cd marvin-bootstrap && ${envBlock} && npx -y tsx src/bootstrap.ts"`,
       { timeout: 600_000 },
     )
+  },
+
+  "set codex defaults": () => {
+    if (!secrets["OPENAI_API_KEY"]) {
+      throw new Error("OPENAI_API_KEY not found in ~/.secrets")
+    }
+
+    flySSH(`openclaw models set ${CODEX_PRIMARY_MODEL}`, { timeout: 120_000 })
+    flySSH(
+      "bash -lc \"openclaw models fallbacks remove anthropic/claude-sonnet-4-5 || true\"",
+      { timeout: 120_000 },
+    )
+    flySSH(`openclaw models fallbacks add ${CODEX_FALLBACK_MODEL}`, { timeout: 120_000 })
   },
 
   "open dashboard": () => {
