@@ -6,10 +6,14 @@ A dotfiles repo that manages global configuration files via symlinks from `home/
 # Install/update all symlinks
 ./scripts/symlink.mjs
 
+# Run unit tests for repo-managed automation scripts
+pnpm test
+
+# Format the repo
+pnpm format
+
 # After editing any file in home/, re-run symlink.mjs to ensure links are current
 ```
-
-There are no build, lint, or test commands — this is a config-only repo.
 
 ## How Symlinks Work
 
@@ -49,23 +53,25 @@ All symlinked to `~/.local/bin/`.
 
 OpenClaw docs: https://docs.openclaw.ai/
 
-| Command         | Description                                                                   |
-| --------------- | ----------------------------------------------------------------------------- |
-| `sprite`        | Compiled Go binary for creating/managing isolated Linux environments          |
-| `spc`           | Create a sprite with setup, then open a console session                       |
+| Command         | Description                                                                                |
+| --------------- | ------------------------------------------------------------------------------------------ |
+| `sprite`        | Compiled Go binary for creating/managing isolated Linux environments                       |
+| `spc`           | Create a sprite with setup, then open a console session                                    |
 | `flyoc`         | Provision OpenClaw on Fly.io (app/volume creation, secrets, deploy, setup, Codex defaults) |
-| `_sp_setup.mjs` | Shared sprite setup helper: checks gh auth, creates sprite, runs remote setup |
+| `_sp_setup.mjs` | Shared sprite setup helper: checks gh auth, creates sprite, runs remote setup              |
 
 ### Other tools
 
-| Command             | Description                                                        | Language |
-| ------------------- | ------------------------------------------------------------------ | -------- |
-| `beads`             | Symlink to `bd` (issue tracking)                                   | Symlink  |
-| `claude`            | Symlink to Claude Code                                             | Symlink  |
-| `gh-sync`           | Sync `~/Code/HerbCaudill` with all repos on github.com/HerbCaudill | Bash     |
-| `serena`            | Invoke Serena CLI                                                  | Python   |
-| `serena-mcp-server` | Start the Serena MCP server                                        | Python   |
-| `index-project`     | Invoke Serena's project indexing                                   | Python   |
+| Command                          | Description                                                                                                                 | Language |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `agent-transcripts-sync`         | Sync raw local Claude Code and Codex transcript stores into `~/Code/HerbCaudill/agent-transcripts` and commit changes there | Node.js  |
+| `install-agent-transcripts-cron` | Install/update a managed cron entry that runs `agent-transcripts-sync` every 15 minutes                                     | Node.js  |
+| `beads`                          | Symlink to `bd` (issue tracking)                                                                                            | Symlink  |
+| `claude`                         | Symlink to Claude Code                                                                                                      | Symlink  |
+| `gh-sync`                        | Sync `~/Code/HerbCaudill` with all repos on github.com/HerbCaudill                                                          | Bash     |
+| `serena`                         | Invoke Serena CLI                                                                                                           | Python   |
+| `serena-mcp-server`              | Start the Serena MCP server                                                                                                 | Python   |
+| `index-project`                  | Invoke Serena's project indexing                                                                                            | Python   |
 
 ## Important: Global vs Project CLAUDE.md
 
@@ -102,6 +108,15 @@ bd update <id> --status in_progress  # Claim work
 bd close <id>         # Complete work
 bd sync               # Sync with git
 ```
+
+## Agent transcript archive
+
+The dotfiles repo manages two commands for archiving local AI transcripts:
+
+- `agent-transcripts-sync` copies raw Claude Code and Codex transcript artifacts from `~/.claude` and `~/.codex` into `~/Code/HerbCaudill/agent-transcripts`
+- `install-agent-transcripts-cron` installs a managed cron block that runs the sync every 15 minutes and logs to `/tmp/agent-transcripts-sync.log`
+
+Codex does not currently expose a clean flat session transcript file on disk in this environment, so the archive preserves Codex's raw local stores directly: `history.jsonl`, `state_5.sqlite*`, and `logs_1.sqlite*`.
 
 ## User bio
 
