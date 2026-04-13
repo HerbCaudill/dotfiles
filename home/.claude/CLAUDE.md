@@ -231,6 +231,7 @@ Reviews TypeScript/React files against the code style rules in this document. Fi
 | `/deploy`                         | Deploy to Vercel with custom domain and Porkbun DNS              |
 | `/effect-schema`                  | Work with Effect Schema for type-safe validation/parsing         |
 | `/effect-ts`                      | Work with the Effect TS library                                  |
+| `/google-maps`                    | Use the Google Maps CLI for geocoding, routes, and places        |
 | `/investigate-issues`             | Research open issues in parallel before starting work            |
 | `/manage-tasks`                   | Create and manage beads issues with smart defaults               |
 | `/merge`                          | Safely merge main into the current branch                        |
