@@ -1,4 +1,7 @@
+# Global agent memory
+
 In planning documents and other interactions, be as concise as possible.
+
 If you have questions for me, ask them one at a time.
 
 ## Technology choices
@@ -9,6 +12,8 @@ I generally use:
 - React
 - Vite
 - pnpm
+
+When writing scripts, prefer TypeScript over bash.
 
 ## User interface
 
@@ -71,8 +76,8 @@ export async function checkForSavedIterationState(
   /** The iteration instance */
   instanceId?: string,
 ): Promise<IterationState | null> {
-  const targetInstanceId = instanceId ?? useAppStore.getState().activeInstanceId
-  return getIterationState(targetInstanceId)
+  const targetInstanceId = instanceId ?? useAppStore.getState().activeInstanceId;
+  return getIterationState(targetInstanceId);
 }
 ```
 
@@ -87,7 +92,7 @@ export function getTerminalSize(
   return {
     columns: stdout?.columns ?? 80,
     rows: stdout?.rows ?? 24,
-  }
+  };
 }
 ```
 
@@ -194,33 +199,6 @@ Other files managed by this repo:
 - `home/.oh-my-zsh/custom/themes/herb.zsh-theme` - Custom Zsh theme
 - `home/.local/bin/` - Worktree helpers, sprite/OpenClaw scripts, beads, serena, and other CLI tools (symlinked to `~/.local/bin`)
 - `scripts/` - Symlink installer, sprite setup scripts, Raycast script commands
-
-## Agents
-
-Custom agents are available in `~/.claude/agents/`. Each agent specifies its model via YAML frontmatter:
-
-```yaml
----
-model: haiku # or sonnet, opus
----
-```
-
-To invoke an agent manually, use the Task tool with `subagent_type: "general-purpose"` and the model specified in its frontmatter.
-
-### review-style
-
-Reviews TypeScript/React files against the code style rules in this document. Fixes violations directly using the Edit tool.
-
-**Usage:** "Use the review-style agent on `src/components/UserCard.tsx`"
-
-**What it checks:**
-
-- One component/function per file
-- Component first, types at end
-- Named exports only
-- Block comments on functions/classes
-- No ASCII borders in comments
-- `cx()` for Tailwind class combinations
 
 ## Skills
 
