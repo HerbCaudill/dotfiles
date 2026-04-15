@@ -19,7 +19,7 @@ pnpm format
 
 - `scripts/symlink.mjs` symlinks individual files from `home/` to `~/`
 - Paths in `.symlinks` are linked as whole directories instead (currently `.claude/skills` and `.claude/agents`)
-- Extra symlinks: `~/.codex/AGENTS.md` → `.claude/CLAUDE.md`, `~/.codex/skills` → `.claude/skills`
+- Extra symlinks: `~/.codex/AGENTS.md` and `~/.pi/agent/AGENTS.md` → `.claude/CLAUDE.md`; `~/.codex/skills` and `~/.pi/agent/skills` → `.claude/skills`
 
 ## Structure
 
@@ -75,7 +75,7 @@ OpenClaw docs: https://docs.openclaw.ai/
 
 ## Important: Global vs Project CLAUDE.md
 
-`home/.claude/CLAUDE.md` is the **global** Claude Code instructions file (symlinked to `~/.claude/CLAUDE.md`). The root `CLAUDE.md` in this repo is project-specific instructions for working within this dotfiles repo itself.
+`home/.claude/CLAUDE.md` is the shared global agent instructions file. It is symlinked to `~/.claude/CLAUDE.md` for Claude Code, `~/.codex/AGENTS.md` for Codex, and `~/.pi/agent/AGENTS.md` for pi. Likewise, `home/.claude/skills` is shared with Codex and pi. The root `CLAUDE.md` in this repo is project-specific instructions for working within this dotfiles repo itself.
 
 ## Marvin (OpenClaw on Fly.io)
 
@@ -122,8 +122,8 @@ Codex does not currently expose a clean flat session transcript file on disk in 
 
 I'm an American citizen living in Barcelona. My wife, Lynne, is a therapist with a doctorate in anthropology; she specializes in maternal mental health. We have two boys: Calvin is 21; he's in college in the US. Ashe is 18 and is living at home while he plots his next move. We rent an apartment in Barcelona and own a house in Tamariu on the Costa Brava. I own a small software company, DevResults, which makes monitoring & evaluation software for foreign aid projects. It's a small company with 9 employees including me. I still work as a programmer, mostly in TypeScript. I speak English, Spanish, Catalan, and French.
 
-
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:ca08a54f -->
+
 ## Beads Issue Tracker
 
 This project uses **bd (beads)** for issue tracking. Run `bd prime` to see full workflow context and commands.
@@ -164,6 +164,7 @@ bd close <id>         # Complete work
 7. **Hand off** - Provide context for next session
 
 **CRITICAL RULES:**
+
 - Work is NOT complete until `git push` succeeds
 - NEVER stop before pushing - that leaves work stranded locally
 - NEVER say "ready to push when you are" - YOU must push

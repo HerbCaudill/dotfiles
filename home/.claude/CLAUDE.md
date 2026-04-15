@@ -76,8 +76,8 @@ export async function checkForSavedIterationState(
   /** The iteration instance */
   instanceId?: string,
 ): Promise<IterationState | null> {
-  const targetInstanceId = instanceId ?? useAppStore.getState().activeInstanceId;
-  return getIterationState(targetInstanceId);
+  const targetInstanceId = instanceId ?? useAppStore.getState().activeInstanceId
+  return getIterationState(targetInstanceId)
 }
 ```
 
@@ -92,7 +92,7 @@ export function getTerminalSize(
   return {
     columns: stdout?.columns ?? 80,
     rows: stdout?.rows ?? 24,
-  };
+  }
 }
 ```
 
@@ -137,10 +137,10 @@ After completing a request:
 - Commit the changes immediately without being asked. If a request requires a series of significant changes, make intermediate commits as well. Commit messages should succinctly summarize changes. Where applicable, prefix with the name of the primary class/function/component being edited, followed by a colon. Example: `EditTemplatePage: refactor data source handling`
 - Update the project's documentation and CLAUDE.md file with new information or changes.
 
-## Codex
+## Codex and pi
 
-- Global Codex instructions and skills are sourced from `home/.claude/CLAUDE.md` and `home/.claude/skills`.
-- `scripts/symlink.mjs` replaces any existing `~/.codex/AGENTS.md` and `~/.codex/skills` with symlinks to those sources.
+- Global Codex and pi instructions and skills are sourced from `home/.claude/CLAUDE.md` and `home/.claude/skills`.
+- `scripts/symlink.mjs` replaces any existing `~/.codex/AGENTS.md`, `~/.codex/skills`, `~/.pi/agent/AGENTS.md`, and `~/.pi/agent/skills` with symlinks to those shared sources.
 
 ## Worktrees
 
@@ -181,7 +181,7 @@ Worktrees for a repo will be placed in a sibling directory to the repo named `.{
 
 The `~/Code/HerbCaudill/dotfiles` repo manages global configuration files using symlinks.
 
-The `home/.claude/` directory contains Claude Code settings that are symlinked to `~/.claude/`:
+The `home/.claude/` directory contains Claude Code settings that are symlinked to `~/.claude/` and shared with Codex/pi where applicable:
 
 - `CLAUDE.md` - Global instructions (this file)
 - `settings.json` - Claude Code settings

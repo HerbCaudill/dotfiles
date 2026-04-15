@@ -8,13 +8,13 @@ Personal configuration files.
 ./scripts/symlink.mjs
 ```
 
-Symlinks files from `home/` to `~/`. Paths listed in `.symlinks` are linked as directories (`.claude/skills`, `.claude/agents`); all others are linked as individual files. Also creates Codex symlinks (`~/.codex/AGENTS.md` → `CLAUDE.md`, `~/.codex/skills` → `.claude/skills`).
+Symlinks files from `home/` to `~/`. Paths listed in `.symlinks` are linked as directories (`.claude/skills`, `.claude/agents`); all others are linked as individual files. Also creates shared agent symlinks for Codex and pi (`~/.codex/AGENTS.md` and `~/.pi/agent/AGENTS.md` → `.claude/CLAUDE.md`, `~/.codex/skills` and `~/.pi/agent/skills` → `.claude/skills`).
 
 ## Contents
 
 - **Git**: `.gitconfig`, `.gitignore`
 - **Zsh**: `.zshrc`, `.oh-my-zsh/custom/themes/herb.zsh-theme`
-- **Claude**: `.claude/CLAUDE.md`, `.claude/settings.json`, `.claude/skills/`, `.claude/agents/`, `.claude/statusline.js`
+- **Claude / shared agent config**: `.claude/CLAUDE.md`, `.claude/settings.json`, `.claude/skills/`, `.claude/agents/`, `.claude/statusline.js` (also symlinked into Codex and pi)
 - **Tools**: `.prettierrc`, `.asdfrc`
 - **Bin scripts** (`~/.local/bin/`):
   - Worktree helpers: `wt`, `wtt`, `wtcd`, `wtls`, `wtrm`, `wtclean`, `wtclone`
