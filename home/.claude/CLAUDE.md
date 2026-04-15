@@ -13,7 +13,7 @@ I generally use:
 - Vite
 - pnpm
 
-When writing scripts, prefer TypeScript over bash.
+When writing scripts, prefer TypeScript over bash (or powershell).
 
 ## User interface
 
