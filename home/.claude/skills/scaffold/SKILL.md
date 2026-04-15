@@ -82,18 +82,18 @@ The script handles everything:
 
 ## Scripts
 
-| Script           | Description                              |
-| ---------------- | ---------------------------------------- |
-| `dev`            | Start dev server and open browser        |
-| `build`          | Type-check and build for production      |
-| `test`           | Run Vitest in watch mode                 |
-| `test:pw`        | Run Playwright tests                     |
-| `test:pw:ui`     | Run Playwright with UI                   |
-| `test:pw:headed` | Run Playwright in headed mode            |
-| `test:all`       | Typecheck + unit tests + Playwright      |
-| `typecheck`      | Run TypeScript type checking             |
-| `format`         | Format code with Prettier                |
-| `ralph`          | Run Ralph                                |
+| Script           | Description                         |
+| ---------------- | ----------------------------------- |
+| `dev`            | Start dev server and open browser   |
+| `build`          | Type-check and build for production |
+| `test`           | Run Vitest in watch mode            |
+| `test:pw`        | Run Playwright tests                |
+| `test:pw:ui`     | Run Playwright with UI              |
+| `test:pw:headed` | Run Playwright in headed mode       |
+| `test:all`       | Typecheck + unit tests + Playwright |
+| `typecheck`      | Run TypeScript type checking        |
+| `format`         | Format code with Prettier           |
+| `ralph`          | Run Ralph                           |
 
 ## Common Issues
 

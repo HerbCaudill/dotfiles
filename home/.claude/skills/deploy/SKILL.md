@@ -20,6 +20,7 @@ Example: `/deploy myproject` deploys to `myproject.herbcaudill.com`
 ## Prerequisites
 
 1. **Vercel CLI** installed and authenticated:
+
    ```bash
    pnpm add -g vercel
    vercel login
@@ -43,6 +44,7 @@ Run the setup script (from project directory, or specify name):
 ```
 
 The script will:
+
 1. Link the Vercel project to `herbcaudill/<project-name>`
 2. Add `<project-name>.herbcaudill.com` to Vercel
 3. Query Vercel API for project-specific CNAME
@@ -51,16 +53,19 @@ The script will:
 ## After Running Setup Script
 
 1. **Trigger a production deployment:**
+
    ```bash
    vercel --prod --yes
    ```
 
 2. **Add domain to the project** (if not already attached):
+
    ```bash
    vercel domains add <project-name>.herbcaudill.com
    ```
 
 3. **Verify DNS propagation:**
+
    ```bash
    dig <project-name>.herbcaudill.com CNAME +short
    # Should return: <hash>.vercel-dns-xxx.com.
@@ -70,9 +75,9 @@ The script will:
 
 ## Troubleshooting
 
-| Issue | Fix |
-|-------|-----|
-| "Missing PORKBUN_API_KEY" | Run `source ~/.secrets` first |
-| Domain already added | Safe to ignore, script continues |
-| DNS not propagating | Wait 5-10 minutes, check with `dig <project-name>.herbcaudill.com` |
-| Vercel not linked | Run `vercel login` first |
+| Issue                     | Fix                                                                |
+| ------------------------- | ------------------------------------------------------------------ |
+| "Missing PORKBUN_API_KEY" | Run `source ~/.secrets` first                                      |
+| Domain already added      | Safe to ignore, script continues                                   |
+| DNS not propagating       | Wait 5-10 minutes, check with `dig <project-name>.herbcaudill.com` |
+| Vercel not linked         | Run `vercel login` first                                           |

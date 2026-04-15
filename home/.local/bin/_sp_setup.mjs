@@ -24,7 +24,10 @@ export const spSetup = (
   if (!spriteName && isGitRoot() && !fileExists(".sprite")) {
     const remoteUrl = tryRun("git remote get-url origin")
     if (remoteUrl) {
-      const repoPath = remoteUrl.replace(/.*github\.com[:/]/, "").replace(/\.git$/, "").trim()
+      const repoPath = remoteUrl
+        .replace(/.*github\.com[:/]/, "")
+        .replace(/\.git$/, "")
+        .trim()
       repoName = repoPath.split("/").pop() ?? ""
       repoUser = repoPath.split("/").slice(0, -1).join("/")
       spriteName = `dev-${repoName}`
@@ -69,12 +72,12 @@ export const spSetup = (
 }
 
 /** Execute a shell command, returning stdout as a string. */
-const run = (cmd) => {
+const run = cmd => {
   return execSync(cmd, { stdio: "pipe", encoding: "utf-8" })
 }
 
 /** Execute a shell command, returning stdout or empty string on failure. */
-const tryRun = (cmd) => {
+const tryRun = cmd => {
   try {
     return run(cmd).trim()
   } catch {
@@ -93,7 +96,7 @@ const isGitRoot = () => {
 }
 
 /** Check if a file exists in the current directory. */
-const fileExists = (path) => {
+const fileExists = path => {
   try {
     execSync(`test -f ${path}`, { stdio: "pipe" })
     return true
@@ -103,7 +106,7 @@ const fileExists = (path) => {
 }
 
 /** Generate a random lowercase alphabetic string. */
-const randomAlpha = (length) => {
+const randomAlpha = length => {
   const chars = "abcdefghijklmnopqrstuvwxyz"
   return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join("")
 }

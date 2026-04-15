@@ -62,7 +62,9 @@ const steps: Record<string, () => void> = {
 
   homebrew: () => {
     if (!commandExists("brew")) {
-      run(`NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`)
+      run(
+        `NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`,
+      )
       PATH = `${BREW_PREFIX}/bin:${BREW_PREFIX}/sbin:${PATH}`
     }
   },

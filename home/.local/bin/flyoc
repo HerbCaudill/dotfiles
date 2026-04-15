@@ -213,8 +213,9 @@ primary_region = "${REGION}"
   "setup openclaw": () => {
     // Clone marvin-bootstrap (or pull if already cloned) and run bootstrap
     const ghToken = secrets["GITHUB_TOKEN"] || secrets["GH_TOKEN"] || ""
-    const repoUrl = ghToken
-      ? BOOTSTRAP_REPO.replace("//github.com", `//x-access-token:${ghToken}@github.com`)
+    const repoUrl =
+      ghToken ?
+        BOOTSTRAP_REPO.replace("//github.com", `//x-access-token:${ghToken}@github.com`)
       : BOOTSTRAP_REPO
 
     const envVars = [
@@ -222,7 +223,14 @@ primary_region = "${REGION}"
       `GATEWAY_URL='${GATEWAY_URL}'`,
     ]
     if (freshToken) envVars.push("GATEWAY_TOKEN=''")
-    for (const key of ["OPENAI_API_KEY", "BRAVE_SEARCH_API_KEY", "GEMINI_API_KEY", "GH_TOKEN", "SLACK_APP_TOKEN", "SLACK_BOT_TOKEN"]) {
+    for (const key of [
+      "OPENAI_API_KEY",
+      "BRAVE_SEARCH_API_KEY",
+      "GEMINI_API_KEY",
+      "GH_TOKEN",
+      "SLACK_APP_TOKEN",
+      "SLACK_BOT_TOKEN",
+    ]) {
       if (secrets[key]) envVars.push(`${key}='${secrets[key]}'`)
     }
     const envBlock = `export ${envVars.join(" ")}`
@@ -239,10 +247,9 @@ primary_region = "${REGION}"
     }
 
     flySSH(`openclaw models set ${CODEX_PRIMARY_MODEL}`, { timeout: 120_000 })
-    flySSH(
-      "bash -lc \"openclaw models fallbacks remove anthropic/claude-sonnet-4-5 || true\"",
-      { timeout: 120_000 },
-    )
+    flySSH('bash -lc "openclaw models fallbacks remove anthropic/claude-sonnet-4-5 || true"', {
+      timeout: 120_000,
+    })
     flySSH(`openclaw models fallbacks add ${CODEX_FALLBACK_MODEL}`, { timeout: 120_000 })
   },
 

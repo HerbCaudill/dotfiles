@@ -171,9 +171,7 @@ const main = async () => {
 
   // Check if record already exists with correct value
   const records = await getDnsRecords(BASE_DOMAIN)
-  const existingRecord = records.find(
-    r => r.name === fullDomain && r.type === "CNAME",
-  )
+  const existingRecord = records.find(r => r.name === fullDomain && r.type === "CNAME")
 
   if (existingRecord?.content === cname) {
     console.log("CNAME record already correct, no changes needed")
@@ -198,7 +196,7 @@ const main = async () => {
   console.log(`   Check status: vercel domains inspect ${fullDomain}`)
 }
 
-main().catch((e) => {
+main().catch(e => {
   console.error(`\n❌ Error: ${e.message}`)
   process.exit(1)
 })

@@ -1,34 +1,37 @@
 #!/usr/bin/env node
 
-const { execSync } = require('child_process')
-const { readFileSync } = require('fs')
+const { execSync } = require("child_process")
+const { readFileSync } = require("fs")
 
 // ANSI color codes
-const BLACK = '\x1b[30m'
-const CYAN = '\x1b[36m'
-const GREEN = '\x1b[32m'
-const YELLOW = '\x1b[33m'
-const RED = '\x1b[31m'
-const MAGENTA = '\x1b[35m'
-const RESET = '\x1b[0m'
-const ORANGE = '\x1b[38;5;208m'
-const DARK_YELLOW = '\x1b[38;5;178m'
-const CORAL = '\x1b[38;2;230;113;78m' // #E6714E
-const DIM = '\x1b[2m'
-const BOLD = '\x1b[1m'
-const NORMAL = '\x1b[22m'
+const BLACK = "\x1b[30m"
+const CYAN = "\x1b[36m"
+const GREEN = "\x1b[32m"
+const YELLOW = "\x1b[33m"
+const RED = "\x1b[31m"
+const MAGENTA = "\x1b[35m"
+const RESET = "\x1b[0m"
+const ORANGE = "\x1b[38;5;208m"
+const DARK_YELLOW = "\x1b[38;5;178m"
+const CORAL = "\x1b[38;2;230;113;78m" // #E6714E
+const DIM = "\x1b[2m"
+const BOLD = "\x1b[1m"
+const NORMAL = "\x1b[22m"
 
 function getGitBranch(cwd) {
   try {
     execSync(`git -c core.fileMode=false config --global --add safe.directory "${cwd}"`, {
       cwd,
-      stdio: 'ignore',
+      stdio: "ignore",
     })
 
-    const branch = execSync('git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD', {
-      cwd,
-      encoding: 'utf-8',
-    }).trim()
+    const branch = execSync(
+      "git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD",
+      {
+        cwd,
+        encoding: "utf-8",
+      },
+    ).trim()
 
     return branch || null
   } catch {
@@ -38,9 +41,9 @@ function getGitBranch(cwd) {
 
 function isGitDirty(cwd) {
   try {
-    const status = execSync('git -c core.fileMode=false status --porcelain', {
+    const status = execSync("git -c core.fileMode=false status --porcelain", {
       cwd,
-      encoding: 'utf-8',
+      encoding: "utf-8",
     }).trim()
 
     return status.length > 0
@@ -58,13 +61,13 @@ function formatNumber(num) {
 function getActiveSkill(transcriptPath) {
   if (!transcriptPath) return null
   try {
-    const lines = readFileSync(transcriptPath, 'utf-8').split('\n').filter(Boolean)
+    const lines = readFileSync(transcriptPath, "utf-8").split("\n").filter(Boolean)
     let lastSkill = null
     for (const line of lines) {
       try {
         const entry = JSON.parse(line)
         // Check for user-invoked skills via <command-name> tag
-        if (entry.type === 'user' && typeof entry.message?.content === 'string') {
+        if (entry.type === "user" && typeof entry.message?.content === "string") {
           const match = entry.message.content.match(/<command-name>\/([^<]+)<\/command-name>/)
           if (match) {
             lastSkill = match[1]
@@ -74,7 +77,7 @@ function getActiveSkill(transcriptPath) {
         const content = entry.message?.content
         if (Array.isArray(content)) {
           for (const item of content) {
-            if (item.type === 'tool_use' && item.name === 'Skill' && item.input?.skill) {
+            if (item.type === "tool_use" && item.name === "Skill" && item.input?.skill) {
               lastSkill = item.input.skill
             }
           }
@@ -90,7 +93,7 @@ function getActiveSkill(transcriptPath) {
 }
 
 function stripAnsi(str) {
-  return str.replace(/\x1b\[[0-9;]*m/g, '')
+  return str.replace(/\x1b\[[0-9;]*m/g, "")
 }
 
 function visibleLength(str) {
@@ -105,7 +108,7 @@ function getWeeklyUsage() {
   try {
     const tokenJson = execSync(
       'security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null',
-      { encoding: 'utf-8' }
+      { encoding: "utf-8" },
     ).trim()
 
     const creds = JSON.parse(tokenJson)
@@ -114,7 +117,7 @@ function getWeeklyUsage() {
 
     const response = execSync(
       `curl -s --max-time 8 -H "Authorization: Bearer ${accessToken}" -H "anthropic-beta: oauth-2025-04-20" https://api.anthropic.com/api/oauth/usage`,
-      { encoding: 'utf-8', timeout: 10000 }
+      { encoding: "utf-8", timeout: 10000 },
     )
 
     const usage = JSON.parse(response)
@@ -156,12 +159,13 @@ function getWeekProgress(resetsAt) {
 function renderProgressBar(percentage, color, timeMarkerPosition = null) {
   const width = 10
   const filled = Math.round((percentage / 100) * width)
-  const timePos = timeMarkerPosition !== null ? Math.round((timeMarkerPosition / 100) * width) : null
+  const timePos =
+    timeMarkerPosition !== null ? Math.round((timeMarkerPosition / 100) * width) : null
 
-  let bar = ''
+  let bar = ""
   for (let i = 0; i < width; i++) {
     const isFilled = i < filled
-    const char = isFilled ? '▰' : '▱'
+    const char = isFilled ? "▰" : "▱"
     const colorCode = isFilled ? color : DIM
 
     if (timePos !== null && i === timePos && timePos < width) {
@@ -199,18 +203,16 @@ function getUsageRatioColor(usagePct, elapsedPct) {
   return RED
 }
 
-
 function main() {
   // Read JSON input from stdin
-  const input = readFileSync(0, 'utf-8')
+  const input = readFileSync(0, "utf-8")
   const data = JSON.parse(input)
-
 
   // LEFT SIDE: directory and branch
   const leftParts = []
 
   const cwd = data.workspace.current_dir
-  const dir = cwd.split('/').pop() || cwd
+  const dir = cwd.split("/").pop() || cwd
   leftParts.push(`${CYAN}${dir}${RESET}`)
 
   const branch = getGitBranch(cwd)
@@ -251,12 +253,14 @@ function main() {
     const pct = Math.round(weeklyUsage.utilization)
     const weekProgress = getWeekProgress(weeklyUsage.resetsAt)
     const usageColor = getUsageRatioColor(pct, weekProgress)
-    line2Parts.push(`${DIM}weekly${RESET} ${renderProgressBar(pct, usageColor, weekProgress)} ${DIM}(${weekProgress}% elapsed)${RESET}`)
+    line2Parts.push(
+      `${DIM}weekly${RESET} ${renderProgressBar(pct, usageColor, weekProgress)} ${DIM}(${weekProgress}% elapsed)${RESET}`,
+    )
   }
 
   // Output: line 1 (dir, branch, skill, model) + line 2 (progress bars, tokens)
-  const line1 = leftParts.join(' ')
-  const line2 = line2Parts.join(' · ')
+  const line1 = leftParts.join(" ")
+  const line2 = line2Parts.join(" · ")
 
   process.stdout.write(`${line1}\n${line2}`)
 }

@@ -55,18 +55,18 @@ const exportElements = document.querySelectorAll(
     'button[aria-label*="export" i], button[aria-label*="download" i], ' +
     'a[href*="export"], a[href*="download"], a[href*=".csv"], a[href*=".xlsx"], ' +
     "button:not([disabled])",
-);
-const matches = Array.from(exportElements).filter((el) =>
+)
+const matches = Array.from(exportElements).filter(el =>
   el.textContent.match(/export|download|csv|xlsx|bulk/i),
-);
+)
 JSON.stringify(
-  matches.map((el) => ({
+  matches.map(el => ({
     tag: el.tagName,
     text: el.textContent.trim().substring(0, 50),
     href: el.href,
     ariaLabel: el.getAttribute("aria-label"),
   })),
-);
+)
 ```
 
 Also try common export URL patterns directly:
@@ -84,10 +84,10 @@ Also try common export URL patterns directly:
 ```javascript
 const container =
   document.querySelector('[class*="scroll"], [class*="list"], [style*="overflow"]') ||
-  document.scrollingElement;
-const childCount1 = container?.children?.length || document.body.children.length;
+  document.scrollingElement
+const childCount1 = container?.children?.length || document.body.children.length
 const firstChildId =
-  container?.children?.[0]?.dataset?.id || container?.children?.[0]?.textContent?.substring(0, 30);
+  container?.children?.[0]?.dataset?.id || container?.children?.[0]?.textContent?.substring(0, 30)
 // After detecting, scroll down and check again — if childCount stays the same
 // but firstChildId changes, it's virtual scrolling (cards are being REPLACED, not appended)
 JSON.stringify({
@@ -96,7 +96,7 @@ JSON.stringify({
   scrollHeight: document.body.scrollHeight,
   instruction:
     "Scroll down, then run this again. Same count but different first child = VIRTUAL (cannot go back). Count grew = INFINITE APPEND (safe to scrape all). Neither changed = PAGINATED (check for page controls).",
-});
+})
 ```
 
 Why this matters:
@@ -124,29 +124,29 @@ const globals = [
   "__PRELOADED_STATE__",
   "_sharedData",
   "__DATA__",
-];
-const found = globals.filter((g) => window[g]);
+]
+const found = globals.filter(g => window[g])
 JSON.stringify({
   found_globals: found,
   next_data_keys: window.__NEXT_DATA__ ? Object.keys(window.__NEXT_DATA__) : null,
   redux_keys: window.__INITIAL_STATE__ ? Object.keys(window.__INITIAL_STATE__) : null,
   url: location.href,
   title: document.title,
-});
+})
 ```
 
 If you find populated globals, the data is already client-side — no API calls needed. 3. **Local storage / IndexedDB** — run this JS to check for cached data:
 
 ```javascript
-const lsKeys = Object.keys(localStorage);
-const authKeys = lsKeys.filter((k) => k.match(/token|auth|session|jwt|api.key|credential/i));
-const dataKeys = lsKeys.filter((k) => !k.match(/token|auth|session|jwt/i));
+const lsKeys = Object.keys(localStorage)
+const authKeys = lsKeys.filter(k => k.match(/token|auth|session|jwt|api.key|credential/i))
+const dataKeys = lsKeys.filter(k => !k.match(/token|auth|session|jwt/i))
 JSON.stringify({
   total_keys: lsKeys.length,
   auth_keys: authKeys,
   data_keys_sample: dataKeys.slice(0, 20),
   has_indexed_db: !!window.indexedDB,
-});
+})
 ```
 
 4. **Page structure** — run this JS to scan the DOM:
@@ -162,7 +162,7 @@ JSON.stringify({
   react_root: !!document.querySelector("[data-reactroot], #__next, #root"),
   vue_root: !!document.querySelector("[data-v-]"),
   angular_root: !!document.querySelector("[ng-app], [data-ng-app]"),
-});
+})
 ```
 
 **Step 5: Plan for PII filter BEFORE extracting**
@@ -232,20 +232,20 @@ Modern JS frameworks pre-load data into memory. You can read it directly.
 
 ```javascript
 // Next.js apps dump EVERYTHING into __NEXT_DATA__
-const nextData = window.__NEXT_DATA__;
+const nextData = window.__NEXT_DATA__
 if (nextData?.props?.pageProps) {
-  JSON.stringify(Object.keys(nextData.props.pageProps));
+  JSON.stringify(Object.keys(nextData.props.pageProps))
   // Often contains the full dataset right here
 }
 // React apps with Redux
-const state = window.__REDUX_STATE__ || window.__INITIAL_STATE__;
+const state = window.__REDUX_STATE__ || window.__INITIAL_STATE__
 if (state) {
-  JSON.stringify(Object.keys(state));
+  JSON.stringify(Object.keys(state))
 }
 // Vue/Nuxt apps
-const nuxtData = window.__NUXT__;
+const nuxtData = window.__NUXT__
 if (nuxtData?.data) {
-  JSON.stringify(Object.keys(nuxtData.data));
+  JSON.stringify(Object.keys(nuxtData.data))
 }
 ```
 
@@ -255,12 +255,12 @@ if (nuxtData?.data) {
 // Access React's internal component tree to read state directly
 function getReactFiber(el) {
   const key = Object.keys(el).find(
-    (k) => k.startsWith("__reactFiber$") || k.startsWith("__reactInternalInstance$"),
-  );
-  return el[key];
+    k => k.startsWith("__reactFiber$") || k.startsWith("__reactInternalInstance$"),
+  )
+  return el[key]
 }
-const root = document.querySelector("#root, #__next, [data-reactroot]");
-const fiber = getReactFiber(root);
+const root = document.querySelector("#root, #__next, [data-reactroot]")
+const fiber = getReactFiber(root)
 // Walk the fiber tree to find the component with the data you need
 // fiber.memoizedState contains hooks state
 // fiber.memoizedProps contains props
@@ -353,22 +353,22 @@ while (true) {
 // Method 1: Check localStorage/sessionStorage
 const token = Object.keys(localStorage)
   .concat(Object.keys(sessionStorage))
-  .filter((k) => k.match(/token|auth|session|jwt|bearer/i))
-  .map((k) => ({ key: k, value: (localStorage[k] || sessionStorage[k]).substring(0, 50) + "..." }));
+  .filter(k => k.match(/token|auth|session|jwt|bearer/i))
+  .map(k => ({ key: k, value: (localStorage[k] || sessionStorage[k]).substring(0, 50) + "..." }))
 // Method 2: Intercept Authorization headers from live requests
-const originalFetch = window.fetch;
-window.__AUTH_HEADERS__ = [];
+const originalFetch = window.fetch
+window.__AUTH_HEADERS__ = []
 window.fetch = async function (...args) {
-  const headers = args[1]?.headers;
+  const headers = args[1]?.headers
   if (headers) {
     const authHeader =
       headers["Authorization"] ||
       headers["authorization"] ||
-      (headers.get && headers.get("Authorization"));
-    if (authHeader) window.__AUTH_HEADERS__.push(authHeader);
+      (headers.get && headers.get("Authorization"))
+    if (authHeader) window.__AUTH_HEADERS__.push(authHeader)
   }
-  return originalFetch.apply(this, args);
-};
+  return originalFetch.apply(this, args)
+}
 // Click one thing in the app, then: window.__AUTH_HEADERS__[0]
 // Use it: fetch(url, { headers: { 'Authorization': window.__AUTH_HEADERS__[0] } })
 ```
@@ -437,16 +437,16 @@ If there's no clean API, the data is in the DOM.
 // Generic smart scraper — works on most list/table views
 const rows = document.querySelectorAll(
   'tr[data-id], [class*="row"], [class*="item"], [class*="card"], [class*="entry"], [role="row"]',
-);
-const data = Array.from(rows).map((row) => {
-  const cells = row.querySelectorAll('td, [class*="cell"], [class*="col"]');
-  const links = row.querySelectorAll("a[href]");
+)
+const data = Array.from(rows).map(row => {
+  const cells = row.querySelectorAll('td, [class*="cell"], [class*="col"]')
+  const links = row.querySelectorAll("a[href]")
   return {
-    text: Array.from(cells).map((c) => c.textContent.trim()),
+    text: Array.from(cells).map(c => c.textContent.trim()),
     id: row.dataset.id || row.getAttribute("data-key") || links[0]?.href,
     raw: row.textContent.trim().substring(0, 200),
-  };
-});
+  }
+})
 ```
 
 **Infinite scroll handling:**
@@ -454,16 +454,16 @@ const data = Array.from(rows).map((row) => {
 ```javascript
 // Force-load all lazy content
 async function loadAllContent() {
-  let lastHeight = 0;
+  let lastHeight = 0
   while (true) {
-    window.scrollTo(0, document.body.scrollHeight);
-    await new Promise((r) => setTimeout(r, 500));
-    if (document.body.scrollHeight === lastHeight) break;
-    lastHeight = document.body.scrollHeight;
+    window.scrollTo(0, document.body.scrollHeight)
+    await new Promise(r => setTimeout(r, 500))
+    if (document.body.scrollHeight === lastHeight) break
+    lastHeight = document.body.scrollHeight
   }
-  window.scrollTo(0, 0);
+  window.scrollTo(0, 0)
 }
-await loadAllContent();
+await loadAllContent()
 // Now scrape the fully loaded DOM
 ```
 
@@ -471,11 +471,11 @@ await loadAllContent();
 
 ```javascript
 function deepQueryAll(selector, root = document) {
-  const results = [...root.querySelectorAll(selector)];
-  root.querySelectorAll("*").forEach((el) => {
-    if (el.shadowRoot) results.push(...deepQueryAll(selector, el.shadowRoot));
-  });
-  return results;
+  const results = [...root.querySelectorAll(selector)]
+  root.querySelectorAll("*").forEach(el => {
+    if (el.shadowRoot) results.push(...deepQueryAll(selector, el.shadowRoot))
+  })
+  return results
 }
 ```
 
@@ -485,21 +485,21 @@ Many apps cache entire datasets client-side. Free data, no network needed.
 
 ```javascript
 // IndexedDB — access cached application data
-const dbs = await indexedDB.databases();
-const results = {};
+const dbs = await indexedDB.databases()
+const results = {}
 for (const dbInfo of dbs) {
   const db = await new Promise((resolve, reject) => {
-    const req = indexedDB.open(dbInfo.name);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
+    const req = indexedDB.open(dbInfo.name)
+    req.onsuccess = () => resolve(req.result)
+    req.onerror = () => reject(req.error)
+  })
   results[dbInfo.name] = {
     version: db.version,
     stores: Array.from(db.objectStoreNames),
-  };
-  db.close();
+  }
+  db.close()
 }
-JSON.stringify(results);
+JSON.stringify(results)
 ```
 
 ### Level 6: URL Pattern Exploitation
@@ -523,14 +523,14 @@ For action-heavy tasks where you need to DO things, not just read data.
 
 ```javascript
 // Discover available shortcuts
-const shortcuts = document.querySelectorAll("[accesskey], [data-shortcut], [data-hotkey]");
+const shortcuts = document.querySelectorAll("[accesskey], [data-shortcut], [data-hotkey]")
 JSON.stringify(
-  Array.from(shortcuts).map((el) => ({
+  Array.from(shortcuts).map(el => ({
     key: el.accessKey || el.dataset.shortcut || el.dataset.hotkey,
     text: el.textContent.trim(),
     action: el.getAttribute("aria-label") || el.title,
   })),
-);
+)
 ```
 
 ### Level 8: Programmatic Form Filling
@@ -540,22 +540,22 @@ For bulk input/action tasks:
 ```javascript
 // React-compatible form filling
 function setReactValue(input, value) {
-  const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
-  setter.call(input, value);
-  input.dispatchEvent(new Event("input", { bubbles: true }));
-  input.dispatchEvent(new Event("change", { bubbles: true }));
+  const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set
+  setter.call(input, value)
+  input.dispatchEvent(new Event("input", { bubbles: true }))
+  input.dispatchEvent(new Event("change", { bubbles: true }))
 }
 // For select elements
 function setReactSelect(select, value) {
-  const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, "value").set;
-  setter.call(select, value);
-  select.dispatchEvent(new Event("change", { bubbles: true }));
+  const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, "value").set
+  setter.call(select, value)
+  select.dispatchEvent(new Event("change", { bubbles: true }))
 }
 // For contenteditable (rich text editors, etc.)
 function setContentEditable(el, text) {
-  el.focus();
-  el.textContent = text;
-  el.dispatchEvent(new InputEvent("input", { bubbles: true, data: text }));
+  el.focus()
+  el.textContent = text
+  el.dispatchEvent(new InputEvent("input", { bubbles: true, data: text }))
 }
 ```
 
@@ -675,8 +675,8 @@ const safe = data.map((d, i) => ({
   signal: d.signal,
   date: d.date,
   // Email stripped — will recover via overlay
-}));
-JSON.stringify(safe);
+}))
+JSON.stringify(safe)
 ```
 
 ### 3. Console Output + read_console_messages
@@ -716,31 +716,31 @@ window.__EXTRACTED__ = data;
 ## Monkey-Patching for Request Interception
 
 ```javascript
-const originalFetch = window.fetch;
-window.__API_LOG__ = [];
+const originalFetch = window.fetch
+window.__API_LOG__ = []
 window.fetch = async function (...args) {
-  const url = typeof args[0] === "string" ? args[0] : args[0]?.url;
-  const method = args[1]?.method || "GET";
-  const response = await originalFetch.apply(this, args);
-  window.__API_LOG__.push({ url, method, status: response.status, time: Date.now() });
-  return response;
-};
-("Fetch patched. Navigate the app, then read window.__API_LOG__");
+  const url = typeof args[0] === "string" ? args[0] : args[0]?.url
+  const method = args[1]?.method || "GET"
+  const response = await originalFetch.apply(this, args)
+  window.__API_LOG__.push({ url, method, status: response.status, time: Date.now() })
+  return response
+}
+;("Fetch patched. Navigate the app, then read window.__API_LOG__")
 ```
 
 ## WebSocket & Real-Time App Interception
 
 ```javascript
-const originalWS = window.WebSocket;
-const messages = [];
+const originalWS = window.WebSocket
+const messages = []
 window.WebSocket = function (...args) {
-  const ws = new originalWS(...args);
-  ws.addEventListener("message", (e) => {
-    messages.push({ time: Date.now(), data: e.data.substring(0, 500) });
-  });
-  return ws;
-};
-window.__WS_MESSAGES__ = messages;
+  const ws = new originalWS(...args)
+  ws.addEventListener("message", e => {
+    messages.push({ time: Date.now(), data: e.data.substring(0, 500) })
+  })
+  return ws
+}
+window.__WS_MESSAGES__ = messages
 ```
 
 ---

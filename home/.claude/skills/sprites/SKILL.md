@@ -18,6 +18,7 @@ Sprites are persistent, hardware-isolated Linux environments for running arbitra
 ## Prerequisites
 
 1. **Sprite CLI installed:**
+
    ```bash
    curl https://sprites.dev/install.sh | bash
    ```
@@ -137,20 +138,20 @@ sprite destroy
 
 ## Key Features
 
-| Feature | Description |
-|---------|-------------|
-| **Persistence** | ext4 filesystem persists between runs |
-| **Hibernation** | Auto-sleeps after 30s idle, zero cost |
-| **Checkpoints** | Snapshot and restore in ~300ms |
-| **HTTP access** | Each sprite gets a unique URL |
-| **Isolation** | Firecracker microVMs, isolated networks |
-| **Resources** | Up to 8 vCPUs, 8GB RAM, 100GB storage |
+| Feature         | Description                             |
+| --------------- | --------------------------------------- |
+| **Persistence** | ext4 filesystem persists between runs   |
+| **Hibernation** | Auto-sleeps after 30s idle, zero cost   |
+| **Checkpoints** | Snapshot and restore in ~300ms          |
+| **HTTP access** | Each sprite gets a unique URL           |
+| **Isolation**   | Firecracker microVMs, isolated networks |
+| **Resources**   | Up to 8 vCPUs, 8GB RAM, 100GB storage   |
 
 ## Troubleshooting
 
-| Issue | Fix |
-|-------|-----|
-| "sprite not found" | Run `sprite login` first |
-| Slow first command | Sprite waking from hibernation (normal) |
-| Need to persist env vars | Add to `~/.bashrc` in sprite |
-| Port not accessible | Use `sprite proxy` or check `sprite url` |
+| Issue                    | Fix                                      |
+| ------------------------ | ---------------------------------------- |
+| "sprite not found"       | Run `sprite login` first                 |
+| Slow first command       | Sprite waking from hibernation (normal)  |
+| Need to persist env vars | Add to `~/.bashrc` in sprite             |
+| Port not accessible      | Use `sprite proxy` or check `sprite url` |
