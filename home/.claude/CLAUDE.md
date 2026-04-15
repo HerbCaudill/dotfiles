@@ -13,7 +13,7 @@ I generally use:
 - Vite
 - pnpm
 
-When writing scripts, prefer TypeScript over bash (or powershell).
+When writing scripts, prefer TypeScript over bash, Python, PowerShell, etc.
 
 ## User interface
 
@@ -76,8 +76,8 @@ export async function checkForSavedIterationState(
   /** The iteration instance */
   instanceId?: string,
 ): Promise<IterationState | null> {
-  const targetInstanceId = instanceId ?? useAppStore.getState().activeInstanceId
-  return getIterationState(targetInstanceId)
+  const targetInstanceId = instanceId ?? useAppStore.getState().activeInstanceId;
+  return getIterationState(targetInstanceId);
 }
 ```
 
@@ -92,7 +92,7 @@ export function getTerminalSize(
   return {
     columns: stdout?.columns ?? 80,
     rows: stdout?.rows ?? 24,
-  }
+  };
 }
 ```
 
