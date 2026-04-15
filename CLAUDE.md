@@ -20,12 +20,14 @@ pnpm format
 - `scripts/symlink.mjs` symlinks individual files from `home/` to `~/`
 - Paths in `.symlinks` are linked as whole directories instead (currently `.claude/skills` and `.claude/agents`)
 - Extra symlinks: `~/.codex/AGENTS.md` and `~/.pi/agent/AGENTS.md` → `.claude/CLAUDE.md`; `~/.codex/skills` and `~/.pi/agent/skills` → `.claude/skills`
+- Repo-managed pi settings live at `home/.pi/agent/settings.json` and symlink to `~/.pi/agent/settings.json`
 - Because `~/.claude/skills` points at `home/.claude/skills`, global `npx skills add ... -g` installs land in this repo and are automatically shared with Claude Code, Codex, and pi
 
 ## Structure
 
 - `home/` — all managed dotfiles, mirroring `~/` structure
   - `.claude/` — Claude Code config: `CLAUDE.md` (global instructions), `settings.json`, `statusline.js`, `skills/`, `agents/`
+  - `.pi/agent/settings.json` — pi global settings managed by this repo
   - `.local/bin/` — CLI tools: worktree helpers (`wt`, `wtt`, `wtcd`, etc.), sprite tools, `beads`, `serena`, etc.
   - `.zshrc`, `.gitconfig`, `.gitignore`, `.prettierrc`, `.asdfrc` — shell and tool config
   - `.oh-my-zsh/custom/themes/herb.zsh-theme` — custom Zsh theme

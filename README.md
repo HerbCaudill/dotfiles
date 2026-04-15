@@ -8,7 +8,7 @@ Personal configuration files.
 ./scripts/symlink.mjs
 ```
 
-Symlinks files from `home/` to `~/`. Paths listed in `.symlinks` are linked as directories (`.claude/skills`, `.claude/agents`); all others are linked as individual files. Also creates shared agent symlinks for Codex and pi (`~/.codex/AGENTS.md` and `~/.pi/agent/AGENTS.md` → `.claude/CLAUDE.md`, `~/.codex/skills` and `~/.pi/agent/skills` → `.claude/skills`).
+Symlinks files from `home/` to `~/`. Paths listed in `.symlinks` are linked as directories (`.claude/skills`, `.claude/agents`); all others are linked as individual files. This repo now also manages pi's global settings at `home/.pi/agent/settings.json` → `~/.pi/agent/settings.json`. It also creates shared agent symlinks for Codex and pi (`~/.codex/AGENTS.md` and `~/.pi/agent/AGENTS.md` → `.claude/CLAUDE.md`, `~/.codex/skills` and `~/.pi/agent/skills` → `.claude/skills`).
 
 Because `~/.claude/skills` points at `home/.claude/skills`, running `npx skills add ... -g --copy` installs third-party skills into this repo and shares them with Claude Code, Codex, and pi.
 
@@ -27,6 +27,7 @@ Use the same pattern for other skill names from a repository.
 - **Git**: `.gitconfig`, `.gitignore`
 - **Zsh**: `.zshrc`, `.oh-my-zsh/custom/themes/herb.zsh-theme`
 - **Claude / shared agent config**: `.claude/CLAUDE.md`, `.claude/settings.json`, `.claude/skills/`, `.claude/agents/`, `.claude/statusline.js` (also symlinked into Codex and pi)
+- **Pi**: `.pi/agent/settings.json`
 - **Tools**: `.prettierrc`, `.asdfrc`
 - **Bin scripts** (`~/.local/bin/`):
   - Worktree helpers: `wt`, `wtt`, `wtcd`, `wtls`, `wtrm`, `wtclean`, `wtclone`
