@@ -27,6 +27,7 @@ pnpm format
 
 - `home/` — all managed dotfiles, mirroring `~/` structure
   - `.claude/` — Claude Code config: `CLAUDE.md` (global instructions), `settings.json`, `statusline.js`, `skills/`, `agents/`
+    - `skills/news-briefing/` includes Node-runnable TypeScript extractor scripts: `extract_article.ts` and `extract_headlines.ts`
   - `.pi/agent/settings.json` — pi global settings managed by this repo
   - `.local/bin/` — CLI tools: worktree helpers (`wt`, `wtt`, `wtcd`, etc.), sprite tools, `beads`, `serena`, etc.
   - `.zshrc`, `.gitconfig`, `.gitignore`, `.prettierrc`, `.asdfrc` — shell and tool config

@@ -16,7 +16,7 @@ For each site, use curl piped to the extraction script:
 ```bash
 curl -s -L --max-time 15 \
   -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36" \
-  "SITE_URL" | python3 ~/.claude/skills/news-briefing/extract_headlines.py "SITE_URL"
+  "SITE_URL" | node ~/.claude/skills/news-briefing/extract_headlines.ts "SITE_URL"
 ```
 
 Replace `SITE_URL` with the actual URL. Output is `article_url | headline_text` per line.
@@ -96,7 +96,7 @@ For each selected article URL (~15-20 total), fetch and extract the article text
 ```bash
 curl -s -L --max-time 15 \
   -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36" \
-  "ARTICLE_URL" | python3 ~/.claude/skills/news-briefing/extract_article.py
+  "ARTICLE_URL" | node ~/.claude/skills/news-briefing/extract_article.ts
 ```
 
 Run in batches of 5 parallel calls.
