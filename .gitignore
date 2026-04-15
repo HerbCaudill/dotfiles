@@ -8,3 +8,8 @@ home/.local/bin/claude
 
 
 home/.claude/skills/.system
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key

@@ -1,6 +1,7 @@
 {
   "database": "dolt",
-  "jsonl_export": "issues.jsonl",
   "backend": "dolt",
-  "dolt_database": "beads_dotfiles"
+  "dolt_mode": "embedded",
+  "dolt_database": "dotfiles",
+  "project_id": "5038a374-72b5-458f-a662-360ef689a7ce"
 }
