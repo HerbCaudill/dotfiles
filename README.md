@@ -10,6 +10,18 @@ Personal configuration files.
 
 Symlinks files from `home/` to `~/`. Paths listed in `.symlinks` are linked as directories (`.claude/skills`, `.claude/agents`); all others are linked as individual files. Also creates shared agent symlinks for Codex and pi (`~/.codex/AGENTS.md` and `~/.pi/agent/AGENTS.md` → `.claude/CLAUDE.md`, `~/.codex/skills` and `~/.pi/agent/skills` → `.claude/skills`).
 
+Because `~/.claude/skills` points at `home/.claude/skills`, running `npx skills add ... -g --copy` installs third-party skills into this repo and shares them with Claude Code, Codex, and pi.
+
+## Installing agent skills
+
+```bash
+npx skills add https://github.com/googleworkspace/cli \
+  --skill gws-gmail \
+  -g -a claude-code --copy -y
+```
+
+Use the same pattern for other skill names from a repository.
+
 ## Contents
 
 - **Git**: `.gitconfig`, `.gitignore`

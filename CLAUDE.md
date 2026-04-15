@@ -20,6 +20,7 @@ pnpm format
 - `scripts/symlink.mjs` symlinks individual files from `home/` to `~/`
 - Paths in `.symlinks` are linked as whole directories instead (currently `.claude/skills` and `.claude/agents`)
 - Extra symlinks: `~/.codex/AGENTS.md` and `~/.pi/agent/AGENTS.md` → `.claude/CLAUDE.md`; `~/.codex/skills` and `~/.pi/agent/skills` → `.claude/skills`
+- Because `~/.claude/skills` points at `home/.claude/skills`, global `npx skills add ... -g` installs land in this repo and are automatically shared with Claude Code, Codex, and pi
 
 ## Structure
 
@@ -76,6 +77,18 @@ OpenClaw docs: https://docs.openclaw.ai/
 ## Important: Global vs Project CLAUDE.md
 
 `home/.claude/CLAUDE.md` is the shared global agent instructions file. It is symlinked to `~/.claude/CLAUDE.md` for Claude Code, `~/.codex/AGENTS.md` for Codex, and `~/.pi/agent/AGENTS.md` for pi. Likewise, `home/.claude/skills` is shared with Codex and pi. The root `CLAUDE.md` in this repo is project-specific instructions for working within this dotfiles repo itself.
+
+## Installing shared agent skills
+
+Use `npx skills add ... -g --copy` when you want a third-party skill written into the shared global skills directory managed by this repo.
+
+```bash
+npx skills add https://github.com/googleworkspace/cli \
+  --skill gws-gmail \
+  -g -a claude-code --copy -y
+```
+
+Because `~/.claude/skills` is a symlink to `home/.claude/skills`, this updates the repo-managed files directly and the same skill becomes available to Codex and pi through their shared symlinks.
 
 ## Marvin (OpenClaw on Fly.io)
 
