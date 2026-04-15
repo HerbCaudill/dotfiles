@@ -32,11 +32,18 @@ Use the same pattern for other skill names from a repository.
 - **Bin scripts** (`~/.local/bin/`):
   - Worktree helpers: `wt`, `wtt`, `wtcd`, `wtls`, `wtrm`, `wtclean`, `wtclone`
   - Sprite/OpenClaw: `sprite`, `spc`, `spoc`, `spoc-pair`, `_sp_setup.mjs`
-  - Other: `agent-transcripts-sync`, `install-agent-transcripts-cron`, `bd`/`beads`, `claude`, `serena`, `serena-mcp-server`, `index-project`
+  - Other: `agent-transcripts-sync`, `install-agent-transcripts-cron`, `github-pr-task-sync`, `bd`/`beads`, `claude`, `serena`, `serena-mcp-server`, `index-project`
 - **Scripts** (`scripts/`):
   - `symlink.mjs` - symlink installer
   - `setup-sprite.ts`, `setup-openclaw.ts` - sprite provisioning
+  - `github-pr-tasks/` - GitHub notification to Google Tasks sync
   - `raycast/` - Raycast script commands
+
+## GitHub PR task sync
+
+`github-pr-task-sync` polls GitHub notifications every minute via the `com.herbcaudill.github-pr-task-sync` LaunchAgent. When a pull request is assigned to Herb or Herb is requested as a reviewer, it creates a Google Task in the default task list with title `PR: {title}` and the PR link in the notes.
+
+The sync stores state in `~/.local/share/github-pr-task-sync/state.json` so the same notification update is only processed once per poll, but later updates to the same PR can create additional tasks.
 
 ## Agent transcript archive
 

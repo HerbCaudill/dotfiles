@@ -1,0 +1,5 @@
+#!/usr/bin/env -S node --experimental-strip-types
+
+import { runGithubPrTaskSync } from "../../../scripts/github-pr-tasks/runGithubPrTaskSync.ts"
+
+runGithubPrTaskSync()

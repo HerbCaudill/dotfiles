@@ -32,7 +32,7 @@ pnpm format
   - `.local/bin/` — CLI tools: worktree helpers (`wt`, `wtt`, `wtcd`, etc.), sprite tools, `beads`, `serena`, etc.
   - `.zshrc`, `.gitconfig`, `.gitignore`, `.prettierrc`, `.asdfrc` — shell and tool config
   - `.oh-my-zsh/custom/themes/herb.zsh-theme` — custom Zsh theme
-  - `Library/LaunchAgents/` — macOS launch agents (e.g., `gh-sync`)
+  - `Library/LaunchAgents/` — macOS launch agents (e.g., `gh-sync`, `github-pr-task-sync`)
 - `scripts/` — `symlink.mjs` (installer), sprite setup scripts, Raycast commands
 - `.symlinks` — lists paths to symlink as directories rather than individual files
 
@@ -70,6 +70,7 @@ OpenClaw docs: https://docs.openclaw.ai/
 | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | `agent-transcripts-sync`         | Sync raw local Claude Code, Codex, and Pi transcript stores into `~/Code/HerbCaudill/agent-transcripts` and commit changes there | Node.js  |
 | `install-agent-transcripts-cron` | Install/update a managed cron entry that runs `agent-transcripts-sync` every 15 minutes                                          | Node.js  |
+| `github-pr-task-sync`            | Poll GitHub notifications and create Google Tasks for assigned/review-requested PRs                                              | Node.js  |
 | `beads`                          | Symlink to `bd` (issue tracking)                                                                                                 | Symlink  |
 | `claude`                         | Symlink to Claude Code                                                                                                           | Symlink  |
 | `gh-sync`                        | Sync `~/Code/HerbCaudill` with all repos on github.com/HerbCaudill                                                               | Bash     |
@@ -124,6 +125,16 @@ bd update <id> --status in_progress  # Claim work
 bd close <id>         # Complete work
 bd sync               # Sync with git
 ```
+
+## GitHub PR task sync
+
+The dotfiles repo manages GitHub-to-Google-Tasks automation with:
+
+- `github-pr-task-sync`, a Node-based script that polls GitHub notifications and creates Google Tasks for pull requests where Herb is assigned or requested as a reviewer
+- `home/Library/LaunchAgents/com.herbcaudill.github-pr-task-sync.plist`, which runs the sync every 60 seconds and logs to `/tmp/github-pr-task-sync.log`
+- Persistent state in `~/.local/share/github-pr-task-sync/state.json` so repeated polls do not recreate the same task for the same notification update
+
+Tasks are created in the default Google Tasks list with title `PR: {title}` and the PR URL in the notes.
 
 ## Agent transcript archive
 
