@@ -8,12 +8,13 @@ import { collectTranscriptEntries } from "../collectTranscriptEntries.mjs"
 const tempDirs: string[] = []
 
 describe("collectTranscriptEntries", () => {
-  test("collects Claude JSONL files and Codex raw stores into stable archive paths", () => {
+  test("collects Claude, Codex, and Pi transcript artifacts into stable archive paths", () => {
     const homeDir = mkdtempSync(join(tmpdir(), "agent-transcripts-home-"))
     tempDirs.push(homeDir)
 
     mkdirSync(join(homeDir, ".claude/projects/project-a"), { recursive: true })
     mkdirSync(join(homeDir, ".codex"), { recursive: true })
+    mkdirSync(join(homeDir, ".pi/agent/sessions/project-a"), { recursive: true })
 
     writeFileSync(join(homeDir, ".claude/history.jsonl"), "claude-history")
     writeFileSync(join(homeDir, ".claude/projects/project-a/session-1.jsonl"), "claude-session")
@@ -21,6 +22,7 @@ describe("collectTranscriptEntries", () => {
     writeFileSync(join(homeDir, ".codex/state_5.sqlite"), "state")
     writeFileSync(join(homeDir, ".codex/state_5.sqlite-wal"), "state-wal")
     writeFileSync(join(homeDir, ".codex/logs_1.sqlite"), "logs")
+    writeFileSync(join(homeDir, ".pi/agent/sessions/project-a/session-1.jsonl"), "pi-session")
 
     const entries = collectTranscriptEntries(homeDir)
 
@@ -54,6 +56,10 @@ describe("collectTranscriptEntries", () => {
         archiveRelativePath: "sources/codex/state/state_5.sqlite-wal",
         sourceRelativePath: ".codex/state_5.sqlite-wal",
       },
+      {
+        archiveRelativePath: "sources/pi/agent/sessions/project-a/session-1.jsonl",
+        sourceRelativePath: ".pi/agent/sessions/project-a/session-1.jsonl",
+      },
     ])
   })
 
@@ -62,13 +68,16 @@ describe("collectTranscriptEntries", () => {
     tempDirs.push(homeDir)
 
     mkdirSync(join(homeDir, ".claude/projects/project-a"), { recursive: true })
+    mkdirSync(join(homeDir, ".pi/agent/sessions/project-a"), { recursive: true })
 
     writeFileSync(join(homeDir, ".claude/projects/project-a/session-1.jsonl"), "claude-session")
+    writeFileSync(join(homeDir, ".pi/agent/sessions/project-a/session-1.jsonl"), "pi-session")
 
     const entries = collectTranscriptEntries(homeDir)
 
     expect(entries.map(entry => entry.archiveRelativePath)).toEqual([
       "sources/claude/projects/project-a/session-1.jsonl",
+      "sources/pi/agent/sessions/project-a/session-1.jsonl",
     ])
   })
 })

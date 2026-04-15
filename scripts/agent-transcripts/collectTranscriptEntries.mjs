@@ -6,7 +6,7 @@ import { listFilesRecursively } from "./listFilesRecursively.mjs"
 
 /** Build the list of raw transcript artifacts that should be archived. */
 export const collectTranscriptEntries = (
-  /** The home directory that contains `.claude` and `.codex`. */
+  /** The home directory that contains `.claude`, `.codex`, and `.pi`. */
   homeDirectory,
 ) => {
   const fixedEntries = FIXED_TRANSCRIPT_FILES.flatMap(entry => {
@@ -37,7 +37,19 @@ export const collectTranscriptEntries = (
       sourceRelativePath: relative(homeDirectory, absoluteSourcePath),
     }))
 
-  return [...fixedEntries, ...claudeProjectEntries].sort((left, right) =>
+  const piSessionsDirectory = join(homeDirectory, ".pi/agent/sessions")
+  const piSessionEntries = listFilesRecursively(piSessionsDirectory)
+    .filter(filePath => filePath.endsWith(".jsonl"))
+    .map(absoluteSourcePath => ({
+      absoluteSourcePath,
+      archiveRelativePath: join(
+        "sources/pi/agent/sessions",
+        relative(piSessionsDirectory, absoluteSourcePath),
+      ),
+      sourceRelativePath: relative(homeDirectory, absoluteSourcePath),
+    }))
+
+  return [...fixedEntries, ...claudeProjectEntries, ...piSessionEntries].sort((left, right) =>
     left.archiveRelativePath.localeCompare(right.archiveRelativePath),
   )
 }

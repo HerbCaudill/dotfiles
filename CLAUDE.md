@@ -65,16 +65,16 @@ OpenClaw docs: https://docs.openclaw.ai/
 
 ### Other tools
 
-| Command                          | Description                                                                                                                 | Language |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `agent-transcripts-sync`         | Sync raw local Claude Code and Codex transcript stores into `~/Code/HerbCaudill/agent-transcripts` and commit changes there | Node.js  |
-| `install-agent-transcripts-cron` | Install/update a managed cron entry that runs `agent-transcripts-sync` every 15 minutes                                     | Node.js  |
-| `beads`                          | Symlink to `bd` (issue tracking)                                                                                            | Symlink  |
-| `claude`                         | Symlink to Claude Code                                                                                                      | Symlink  |
-| `gh-sync`                        | Sync `~/Code/HerbCaudill` with all repos on github.com/HerbCaudill                                                          | Bash     |
-| `serena`                         | Invoke Serena CLI                                                                                                           | Python   |
-| `serena-mcp-server`              | Start the Serena MCP server                                                                                                 | Python   |
-| `index-project`                  | Invoke Serena's project indexing                                                                                            | Python   |
+| Command                          | Description                                                                                                                      | Language |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `agent-transcripts-sync`         | Sync raw local Claude Code, Codex, and Pi transcript stores into `~/Code/HerbCaudill/agent-transcripts` and commit changes there | Node.js  |
+| `install-agent-transcripts-cron` | Install/update a managed cron entry that runs `agent-transcripts-sync` every 15 minutes                                          | Node.js  |
+| `beads`                          | Symlink to `bd` (issue tracking)                                                                                                 | Symlink  |
+| `claude`                         | Symlink to Claude Code                                                                                                           | Symlink  |
+| `gh-sync`                        | Sync `~/Code/HerbCaudill` with all repos on github.com/HerbCaudill                                                               | Bash     |
+| `serena`                         | Invoke Serena CLI                                                                                                                | Python   |
+| `serena-mcp-server`              | Start the Serena MCP server                                                                                                      | Python   |
+| `index-project`                  | Invoke Serena's project indexing                                                                                                 | Python   |
 
 ## Important: Global vs Project CLAUDE.md
 
@@ -128,10 +128,10 @@ bd sync               # Sync with git
 
 The dotfiles repo manages two commands for archiving local AI transcripts:
 
-- `agent-transcripts-sync` copies raw Claude Code and Codex transcript artifacts from `~/.claude` and `~/.codex` into `~/Code/HerbCaudill/agent-transcripts`
+- `agent-transcripts-sync` copies raw Claude Code, Codex, and Pi transcript artifacts from `~/.claude`, `~/.codex`, and `~/.pi` into `~/Code/HerbCaudill/agent-transcripts`
 - `install-agent-transcripts-cron` installs a managed cron block that runs the sync every 15 minutes and logs to `/tmp/agent-transcripts-sync.log`
 
-Codex does not currently expose a clean flat session transcript file on disk in this environment, so the archive preserves Codex's raw local stores directly: `history.jsonl`, `state_5.sqlite*`, and `logs_1.sqlite*`.
+Codex does not currently expose a clean flat session transcript file on disk in this environment, so the archive preserves Codex's raw local stores directly: `history.jsonl`, `state_5.sqlite*`, and `logs_1.sqlite*`. Pi session transcripts are archived from `~/.pi/agent/sessions/**/*.jsonl`.
 
 ## User bio
 

@@ -40,6 +40,6 @@ Use the same pattern for other skill names from a repository.
 
 ## Agent transcript archive
 
-`agent-transcripts-sync` copies raw local Claude Code and Codex transcript artifacts into `~/Code/HerbCaudill/agent-transcripts` and commits changes there.
+`agent-transcripts-sync` copies raw local Claude Code, Codex, and Pi transcript artifacts into `~/Code/HerbCaudill/agent-transcripts` and commits changes there.
 
 `install-agent-transcripts-cron` installs a managed crontab entry that runs the sync every 15 minutes and writes logs to `/tmp/agent-transcripts-sync.log`.
