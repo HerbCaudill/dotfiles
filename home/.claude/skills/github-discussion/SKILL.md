@@ -36,7 +36,9 @@ URL pattern: `https://github.com/orgs/{org}/discussions/{number}`
 
 Org discussions live in a repo with `hasDiscussionsEnabled: true`. The API has no `organization.discussion` field, so you need to find the host repo first.
 
-**Step 1** — find repos with discussions enabled:
+**DevResults:** Org discussions are hosted in `DevResults/DevResults_Team`. Use `owner: "DevResults", name: "DevResults_Team"` with the repo query above.
+
+**Other orgs** — find repos with discussions enabled, then try each:
 
 ```bash
 gh api graphql -f query='
@@ -48,7 +50,3 @@ gh api graphql -f query='
   }
 }'
 ```
-
-**Step 2** — query each matching repo for the discussion number (usually only 1-3 repos have it enabled; try them until one resolves).
-
-Use the same repo discussion query from above with each candidate.
