@@ -1,10 +1,11 @@
 {
   "lastChangelogVersion": "0.67.2",
-  "defaultProvider": "openai-codex",
+  "defaultProvider": "openai",
   "defaultModel": "gpt-5.4",
   "packages": [
     "npm:pi-web-access",
-    "git:github.com/ferologics/pi-verbosity-control"
+    "git:github.com/ferologics/pi-verbosity-control",
+    "npm:pi-ask-user"
   ],
   "quietStartup": true
 }
