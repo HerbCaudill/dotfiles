@@ -7,5 +7,6 @@
     "git:github.com/ferologics/pi-verbosity-control",
     "npm:pi-ask-user"
   ],
-  "quietStartup": true
+  "quietStartup": true,
+  "hideThinkingBlock": true
 }
