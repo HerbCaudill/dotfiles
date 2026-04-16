@@ -5,7 +5,19 @@
   "packages": [
     "npm:pi-web-access",
     "git:github.com/ferologics/pi-verbosity-control",
-    "npm:pi-ask-user"
+    "npm:pi-ask-user",
+    {
+      "source": "npm:mitsupi",
+      "extensions": [
+        "extensions/answer.ts",
+        "extensions/btw.ts",
+        "extensions/context.ts",
+        "extensions/notify.ts"
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
   ],
   "quietStartup": true,
   "hideThinkingBlock": true
