@@ -16,7 +16,8 @@
       "skills": [],
       "prompts": [],
       "themes": []
-    }
+    },
+    "npm:pi-extmgr"
   ],
   "quietStartup": true,
   "hideThinkingBlock": true
