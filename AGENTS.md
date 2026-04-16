@@ -12,6 +12,17 @@ bd close <id>         # Complete work
 bd dolt push          # Push beads data to remote
 ```
 
+## Lightweight workflow for trivial dotfile edits
+
+For trivial, localized edits in this repo, such as one-line aliases, small config tweaks, typo fixes, or documentation touch-ups:
+
+- use the lightest reasonable workflow
+- planning, brainstorming, and TDD are not required
+- beads is optional unless the user asks for tracking or the change is part of a larger task
+- run only the minimal relevant verification step, if any
+- do not run repo-wide tests, formatting, or setup commands unless they are relevant to the touched file
+- do not update repo docs or instruction files unless the change affects durable guidance
+
 ## Non-Interactive Shell Commands
 
 **ALWAYS use non-interactive flags** with file operations to avoid hanging on confirmation prompts.

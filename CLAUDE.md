@@ -12,8 +12,19 @@ pnpm test
 # Format the repo
 pnpm format
 
-# After editing any file in home/, re-run symlink.mjs to ensure links are current
+# Re-run symlink.mjs when needed for managed files to take effect immediately
 ```
+
+## Lightweight workflow for trivial dotfile edits
+
+For trivial, localized dotfile edits such as adding a shell alias, changing a small config value, or fixing a typo:
+
+- edit the relevant file directly
+- do not use planning or brainstorming workflows
+- do not run repo-wide tests or formatters unless they are relevant to the touched file
+- do not re-run `./scripts/symlink.mjs` unless the change needs to take effect immediately in the live home directory
+- do not update `README.md` or instruction files unless the change affects durable guidance
+- prefer the smallest possible verification step, if any
 
 ## How Symlinks Work
 

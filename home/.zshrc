@@ -47,6 +47,7 @@ alias theme="code ~/.oh-my-zsh/custom/themes/herb.zsh-theme"
 alias updatebd="curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash"
 alias updateclaude="claude install latest --force"
 alias updatecodex="pnpm install -g @openai/codex"
+alias updatepi="pnpm install -g @mariozechner/pi-coding-agent"
 alias updatemcp="npm update -g @upstash/context7-mcp @playwright/mcp && uv tool upgrade serena-agent"
 
 # bd
