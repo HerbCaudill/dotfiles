@@ -132,6 +132,7 @@ When instructions conflict, trivial localized changes should use the lightest re
 A change is trivial if it is obvious and low-risk, affects a small number of files, does not require design exploration, and does not introduce meaningful new logic or architecture.
 
 Examples:
+
 - adding or tweaking a shell alias
 - changing a small config value
 - fixing a typo or comment
@@ -139,8 +140,10 @@ Examples:
 - other straightforward mechanical edits
 
 For trivial changes:
+
 - do not use brainstorming or planning skills
 - do not use TDD unless the user explicitly asks
+- do not create beads tasks unless the user explicitly asks or the work is multi-step enough to benefit from tracking
 - do not update documentation or CLAUDE files unless the change affects durable guidance
 - do not run broad verification; run only the minimal relevant check, if any
 - do not run repo-wide formatters or tests unless the touched file or the user request justifies it
@@ -201,62 +204,14 @@ Worktrees for a repo will be placed in a sibling directory to the repo named `.{
 
 ## Dotfiles
 
-The `~/Code/HerbCaudill/dotfiles` repo manages global configuration files using symlinks.
+The `~/Code/HerbCaudill/dotfiles` repo manages global configuration files using symlinks from `home/` into `~/`.
 
-The `home/.claude/` directory contains Claude Code settings that are symlinked to `~/.claude/` and shared with Codex/pi where applicable:
+Key points:
 
-- `CLAUDE.md` - Global instructions (this file)
-- `settings.json` - Claude Code settings
-- `statusline.js` - Custom status line configuration
-- Skills in the `skills/` directory
-- Agents in the `agents/` directory
-
-Other files managed by this repo:
-
-- `home/.zshrc` - Zsh configuration
-- `home/.gitconfig` - Git settings
-- `home/.gitignore` - Global gitignore
-- `home/.asdfrc` - asdf version manager config
-- `home/.prettierrc` - Prettier formatting defaults
-- `home/.oh-my-zsh/custom/themes/herb.zsh-theme` - Custom Zsh theme
-- `home/.local/bin/` - Worktree helpers, sprite/OpenClaw scripts, beads, serena, and other CLI tools (symlinked to `~/.local/bin`)
-- `scripts/` - Symlink installer, sprite setup scripts, Raycast script commands
-
-## Skills
-
-| Skill                             | Description                                                      |
-| --------------------------------- | ---------------------------------------------------------------- |
-| `/brainstorm`                     | Explore intent, requirements, and design before creative work    |
-| `/debug-playwright-flaky-test`    | Debug intermittently failing Playwright tests                    |
-| `/deploy`                         | Deploy to Vercel with custom domain and Porkbun DNS              |
-| `/effect-schema`                  | Work with Effect Schema for type-safe validation/parsing         |
-| `/effect-ts`                      | Work with the Effect TS library                                  |
-| `/google-maps`                    | Use the Google Maps CLI for geocoding, routes, and places        |
-| `/investigate-issues`             | Research open issues in parallel before starting work            |
-| `/manage-tasks`                   | Create and manage beads issues with smart defaults               |
-| `/merge`                          | Safely merge main into the current branch                        |
-| `/news-briefing`                  | Daily news briefing for Spain, Barcelona & Costa Brava           |
-| `/orchestrate`                    | Clear the task backlog, batching independent tasks               |
-| `/plan-b`                         | Create a plan document and file granular beads issues            |
-| `/receive-code-review`            | Process code review feedback with technical rigor                |
-| `/request-code-review`            | Verify work meets requirements before merging                    |
-| `/review-repo`                    | Repo-wide code style review using worktrees                      |
-| `/scaffold`                       | Scaffold React + TypeScript + Vite + Tailwind v4 + shadcn/ui app |
-| `/sprites`                        | Run commands in isolated Linux environments via sprites.dev      |
-| `/test-driven-development`        | Write tests before implementation code                           |
-| `/use-worktrees`                  | Isolate session work in a git worktree                           |
-| `/verification-before-completion` | Verify work actually passes before claiming completion           |
-| `/write-skills`                   | Create, edit, or validate skills                                 |
-
-## Serena (MCP)
-
-Serena is an MCP server providing LSP-powered semantic code tools: `find_symbol`, `find_referencing_symbols`, `get_symbols_overview`, `replace_symbol_body`, `rename_symbol`, etc. It also has a persistent memory system for project context.
-
-- Serena tools are available at the top level of a conversation but **not automatically available to subagents** (Explore, Bash, etc.). Only `general-purpose` subagents have access, and even then should be explicitly told to use them.
-- For code navigation and refactoring, prefer Serena's semantic tools over text-based grep/find when precision matters (e.g. tracing references, understanding symbol relationships, renaming across a codebase).
-- Activate a project with `activate_project` before use. Run `check_onboarding_performed` and `onboarding` on first use to populate memory files.
-
-**Important:** When modifying any managed files, make changes in the dotfiles repo, then commit and push.
+- shared agent instructions live in `home/.claude/CLAUDE.md` and are symlinked into Claude Code, Codex, and pi
+- shared skills live in `home/.claude/skills`
+- when modifying any managed global file, make the change in the dotfiles repo, not in the symlink target under `~/`
+- see the dotfiles repo's local `CLAUDE.md` for repo-specific workflow details
 
 ## Google Workspace CLI (`gws`)
 
