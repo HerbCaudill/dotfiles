@@ -13,8 +13,8 @@ LOG_PREFIX="[gh-sync]"
 
 log() { echo "$LOG_PREFIX $*"; }
 
-# Get all non-fork repo names from GitHub
-repos=$(gh repo list "$OWNER" --source --limit 1000 --json name --jq '.[].name')
+# Get all non-fork, non-archived repo names from GitHub
+repos=$(gh repo list "$OWNER" --source --no-archived --limit 1000 --json name --jq '.[].name')
 
 for repo in $repos; do
   dir="$BASE_DIR/$repo"
