@@ -65,17 +65,6 @@ These are installed into `~/.local/bin` by Home Manager rather than a custom sym
 | `wtclone <url> [name]`    | Clone repo optimized for worktrees (bare + git file setup) |
 | `_wt_dir`                 | Helper: outputs worktree directory path for current repo   |
 
-### Sprite / OpenClaw (Node.js)
-
-OpenClaw docs: https://docs.openclaw.ai/
-
-| Command         | Description                                                                                |
-| --------------- | ------------------------------------------------------------------------------------------ |
-| `sprite`        | Compiled Go binary for creating/managing isolated Linux environments                       |
-| `spc`           | Create a sprite with setup, then open a console session                                    |
-| `flyoc`         | Provision OpenClaw on Fly.io (app/volume creation, secrets, deploy, setup, Codex defaults) |
-| `_sp_setup.mjs` | Shared sprite setup helper: checks gh auth, creates sprite, runs remote setup              |
-
 ### Other tools
 
 | Command                          | Description                                                                                                                      | Language |
@@ -104,26 +93,6 @@ npx skills add https://github.com/googleworkspace/cli \
 ```
 
 Because `~/.claude/skills` is an out-of-store symlink back into `home/.claude/skills`, this updates the repo-managed files directly and the same skill becomes available to Codex and pi through their linked paths.
-
-## Marvin (OpenClaw on Fly.io)
-
-Marvin is an OpenClaw agent running on Fly.io as `herbcaudill-marvin` (CDG/Paris region).
-
-```bash
-# SSH into Marvin's VM
-fly ssh console --app herbcaudill-marvin
-
-# Run a single command
-fly ssh console --app herbcaudill-marvin --command "ls /data"
-```
-
-- **Alias:** `marvin` (defined in `nix/home/zsh.nix`) opens an SSH console
-- **Provisioning:** `flyoc` script handles full setup (app, volume, secrets, deploy, bootstrap)
-- **Model defaults:** `openai/gpt-5-codex` (primary), `openai/codex-mini-latest` (fallback)
-- **Bootstrap repo:** `../marvin-bootstrap` (github.com/HerbCaudill/marvin-bootstrap)
-- **Data volume:** persistent at `/data` (1GB)
-- **Dashboard:** `https://herbcaudill-marvin.fly.dev/#token=...`
-- **Secrets:** read from `~/.secrets`
 
 ## Issue Tracking
 

@@ -30,37 +30,6 @@ killport() {
   lsof -i tcp:$1 | awk 'NR!=1 {print $2}' | xargs kill
 }
 
-sp() { if [ -n "$1" ]; then sprite console -s "$@"; else sprite console; fi }
-
-spfs() {
-  local sprite_name="$1"
-  local mount_point="/tmp/sprite-mount"
-  mkdir -p "$mount_point"
-  if lsof -t -i :2000 > /dev/null 2>&1; then
-    read -r "yn?A Sprite is already mounted, unmount it? (y/n) "
-    [ "$yn" = "y" ] || return 1
-    diskutil umount "$mount_point" 2>/dev/null
-    lsof -t -i :2000 | xargs kill 2>/dev/null
-    sleep 1
-  fi
-  sprite proxy -s "$sprite_name" 2000:22 &
-  sleep 1
-  sshfs -o reconnect,ServerAliveInterval=15,ServerAliveCountMax=3 \
-    "sprite@localhost:" -p 2000 "$mount_point"
-  cd "$mount_point" || return 1
-}
-
-sppurge() {
-  local sprites=$(sprite list)
-  if [[ -z "$sprites" ]]; then
-    echo "No sprites to destroy"
-    return
-  fi
-  echo "$sprites" | while read -r name; do
-    sprite destroy -s "$name" --force
-  done
-}
-
 wt() { local dir; dir=$(command wt "$@") && cd "$dir"; }
 wtt() { local dir; dir=$(command wtt "$@") && cd "$dir"; }
 wtcd() { local dir; dir=$(command wtcd "$@") && cd "$dir"; }
@@ -72,16 +41,7 @@ _wt_branches() {
 }
 compdef _wt_branches wtcd wtrm
 
-if [[ -n "$SPRITE_NAME" ]]; then
-  precmd() { print -Pn "\e]0;👾 $SPRITE_NAME\a" }
-  if [[ -n "$SPRITE_REPO_DIR" && -d "$SPRITE_REPO_DIR" ]]; then
-    cd "$SPRITE_REPO_DIR"
-  else
-    cd ~/code
-  fi
-else
-  precmd() { print -Pn "\e]0;%~\a" }
-fi
+precmd() { print -Pn "\e]0;%~\a" }
 
 if [[ -x /opt/homebrew/bin/brew ]]; then
   eval "$(/opt/homebrew/bin/brew shellenv)"

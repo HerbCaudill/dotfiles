@@ -9,7 +9,6 @@
     expect
     fd
     findutils
-    flyctl
     fzf
     gawk
     gh
@@ -24,7 +23,6 @@
     pnpm
     python313
     ripgrep
-    sshfs-fuse
     tree
     uv
     watchman

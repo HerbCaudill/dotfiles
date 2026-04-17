@@ -1,7 +1,6 @@
 { dotfilesRoot, pkgs, ... }:
 {
   home.sessionPath = [
-    "$HOME/.fly/bin"
     "$HOME/.local/bin"
     "$HOME/.local/share/pnpm"
     "$HOME/.proto/bin"
@@ -58,7 +57,6 @@
       l = "ls -lah";
       lint = "pnpm lint";
       major = "bump major";
-      marvin = "fly ssh console --app herbcaudill-marvin";
       minor = "bump minor";
       nm = "open ./node_modules";
       nowrap = "tput rmam";
@@ -76,7 +74,6 @@
       reload = "exec zsh";
       s = "pnpm storybook";
       shad = "npx shadcn-ui@latest";
-      spl = "sprite ls";
       start = "pnpm start";
       t = "pnpm test";
       theme = "code ~/Code/HerbCaudill/dotfiles/home/.oh-my-zsh/custom/themes/herb.zsh-theme";
