@@ -83,7 +83,7 @@ OpenClaw docs: https://docs.openclaw.ai/
 | `agent-transcripts-sync`         | Sync raw local Claude Code, Codex, and Pi transcript stores into `~/Code/HerbCaudill/agent-transcripts` and commit changes there | Node.js  |
 | `install-agent-transcripts-cron` | Install/update a managed cron entry that runs `agent-transcripts-sync` every 15 minutes                                          | Node.js  |
 | `github-pr-task-sync`            | Poll GitHub notifications and create Google Tasks for assigned/review-requested PRs                                              | Node.js  |
-| `beads`                          | Wrapper/symlink for `bd`                                                                                                         | Symlink  |
+| `beads`                          | Wrapper for `bd`                                                                                                                 | Shell    |
 | `gh-sync`                        | Sync `~/Code/HerbCaudill` with all repos on github.com/HerbCaudill                                                               | Bash     |
 | `serena`                         | Invoke Serena CLI                                                                                                                | Python   |
 | `serena-mcp-server`              | Start the Serena MCP server                                                                                                      | Python   |
