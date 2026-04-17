@@ -30,12 +30,9 @@ For trivial, localized edits such as adding a shell alias, changing a small conf
 - `flake.nix` is the top-level entry point for the environment
 - `nix/darwin/default.nix` owns machine-level macOS configuration such as launchd agents
 - `nix/home/` owns user-level config such as zsh, git, packages, and file mappings
-- `home/` still stores repo-owned source assets like Claude skills, custom scripts, and JSON/YAML config files
-- some pre-Nix files remain under `home/` only as migration reference and are no longer applied
-- some pre-Nix files remain under `home/` only as migration reference and are no longer applied
+- `home/` stores repo-owned source assets like Claude skills, custom scripts, and JSON/YAML config files
 - Home Manager uses out-of-store symlinks for live repo-owned assets, so edits in this repo show up directly in `~/`
-- Extra harness links are now declared in `nix/home/files.nix` (`~/.codex/AGENTS.md`, `~/.pi/agent/AGENTS.md`, skills links, etc.)
-- The old symlink installer has been removed; `scripts/symlink.mjs` now throws a migration error
+- Extra harness links are declared in `nix/home/files.nix` (`~/.codex/AGENTS.md`, `~/.pi/agent/AGENTS.md`, skills links, etc.)
 
 ## Structure
 
