@@ -32,6 +32,7 @@ For trivial, localized dotfile edits such as adding a shell alias, changing a sm
 - Paths in `.symlinks` are linked as whole directories instead (currently `.claude/skills` and `.claude/agents`)
 - Extra symlinks: `~/.codex/AGENTS.md` and `~/.pi/agent/AGENTS.md` → `.claude/CLAUDE.md`; `~/.codex/skills` and `~/.pi/agent/skills` → `.claude/skills`
 - Repo-managed pi settings live at `home/.pi/agent/settings.json` and symlink to `~/.pi/agent/settings.json`
+- Repo-managed beads defaults live at `home/.config/bd/config.yaml` and symlink to `~/.config/bd/config.yaml`
 - Because `~/.claude/skills` points at `home/.claude/skills`, global `npx skills add ... -g` installs land in this repo and are automatically shared with Claude Code, Codex, and pi
 
 ## Structure
@@ -40,10 +41,11 @@ For trivial, localized dotfile edits such as adding a shell alias, changing a sm
   - `.claude/` — Claude Code config: `CLAUDE.md` (global instructions), `settings.json`, `statusline.js`, `skills/`, `agents/`
     - `skills/news-briefing/` includes Node-runnable TypeScript extractor scripts: `extract_article.ts` and `extract_headlines.ts`
   - `.pi/agent/settings.json` — pi global settings managed by this repo
+  - `.config/bd/config.yaml` — global beads defaults (shared Dolt server on port 3308)
   - `.local/bin/` — CLI tools: worktree helpers (`wt`, `wtt`, `wtcd`, etc.), sprite tools, `beads`, `serena`, etc.
   - `.zshrc`, `.gitconfig`, `.gitignore`, `.prettierrc`, `.asdfrc` — shell and tool config
   - `.oh-my-zsh/custom/themes/herb.zsh-theme` — custom Zsh theme
-  - `Library/LaunchAgents/` — macOS launch agents (e.g., `gh-sync`, `github-pr-task-sync`)
+  - `Library/LaunchAgents/` — macOS launch agents (e.g., `beads-shared-server`, `gh-sync`, `github-pr-task-sync`)
 - `scripts/` — `symlink.mjs` (installer), sprite setup scripts, Raycast commands
 - `.symlinks` — lists paths to symlink as directories rather than individual files
 

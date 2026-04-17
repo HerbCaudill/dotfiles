@@ -1,0 +1,3 @@
+dolt:
+  port: 3308
+  shared-server: true

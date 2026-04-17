@@ -6,6 +6,11 @@
 [[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
 [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]] && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
+export BEADS_DOLT_SERVER_MODE=1
+export BEADS_DOLT_SHARED_SERVER=1
+export BEADS_DOLT_SERVER_HOST=127.0.0.1
+export BEADS_DOLT_SERVER_PORT=3308
+
 #### ZSH SETUP
 
 # oh-my-zsh
