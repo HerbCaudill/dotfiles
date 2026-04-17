@@ -2,13 +2,13 @@
 {
   programs.git = {
     enable = true;
-    userName = fullName;
-    userEmail = email;
     ignores = [
       ".DS_Store"
       ".ralph/*.jsonl"
     ];
-    extraConfig = {
+    settings = {
+      user.name = fullName;
+      user.email = email;
       init.defaultBranch = "main";
       pull.rebase = true;
       advice.detachedHead = false;

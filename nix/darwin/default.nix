@@ -19,10 +19,8 @@ let
     pkgs.uv
   ];
 in {
-  nix.settings.experimental-features = "nix-command flakes";
+  nix.enable = false;
   nixpkgs.config.allowUnfree = true;
-
-  services.nix-daemon.enable = true;
 
   users.users.${username} = {
     home = homeDirectory;
@@ -32,6 +30,8 @@ in {
   programs.zsh.enable = true;
   environment.shells = [ pkgs.zsh ];
   system.primaryUser = username;
+
+  security.pam.services.sudo_local.enable = false;
 
   launchd.agents."beads-shared-server" = {
     serviceConfig = {

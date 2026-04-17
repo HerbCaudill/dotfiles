@@ -4,6 +4,16 @@ In planning documents and other interactions, be as concise as possible.
 
 If you have questions for me, ask them one at a time.
 
+## Response style
+
+When communicating with me, prefer natural, conversational prose in short paragraphs, like a thoughtful technical collaborator speaking directly to me.
+
+Default to paragraphs rather than headings, bullet lists, numbered lists, tables, or checklist-style formatting. Do not turn routine answers into outlines or reports.
+
+Use headings or bullets only when they materially improve clarity, such as for step-by-step instructions, command lists, file lists, or when comparing multiple options.
+
+Lead with a direct answer, then explain briefly in prose. Keep the tone warm, intelligent, and straightforward. Avoid formulaic status-report language and avoid unnecessary structure.
+
 ## Technology choices
 
 I generally use:
@@ -76,8 +86,8 @@ export async function checkForSavedIterationState(
   /** The iteration instance */
   instanceId?: string,
 ): Promise<IterationState | null> {
-  const targetInstanceId = instanceId ?? useAppStore.getState().activeInstanceId;
-  return getIterationState(targetInstanceId);
+  const targetInstanceId = instanceId ?? useAppStore.getState().activeInstanceId
+  return getIterationState(targetInstanceId)
 }
 ```
 
@@ -92,7 +102,7 @@ export function getTerminalSize(
   return {
     columns: stdout?.columns ?? 80,
     rows: stdout?.rows ?? 24,
-  };
+  }
 }
 ```
 
