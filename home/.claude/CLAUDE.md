@@ -116,50 +116,56 @@ NEVER put big headings in comments with ASCII borders:
 ## Testing
 
 - Use Vitest for unit testing and Playwright for end-to-end testing.
-- When creating any new non-trivial function, use test-driven development (TDD).
+- When modifying TypeScript code, use test-driven development (TDD).
 - Do not require TDD for trivial config edits, shell aliases, documentation-only changes, or other simple mechanical edits with no executable logic.
 - When using Playwright, selectors should be based on what users actually see and interact with: visible text, accessible roles, labels, and placeholders. When that's not possible, use domain data attributes like `data-player="name"` and `data-cell="row-col"`.
 
 ## Planning
 
 - At the end of each plan, include a list of unresolved questions, if any.
-- In planning mode, the output should always be (1) a plan document stored in the repository, and (2) a granular set of tasks. If the repository uses beads (`bd`) for issue management, you should file those tasks as issues, with appropriate dependencies, and grouped into epics as necessary. Otherwise put them in a `todo.md` file.
+- In planning mode, the output should always be (1) a plan document numbered and stored in the repository under `/plans`, and (2) a granular set of tasks. If the repository uses beads (`bd`) for issue management, you should file those tasks as issues, with appropriate dependencies, and grouped into epics as necessary. Otherwise put them in a `todo.md` file.
+
+## Task tracking
+
+Most of my repos use **bd (beads)** for issue tracking. You can tell by looking for a `.beads` directory in the root. Run `bd prime` to see full workflow context and commands.
+
+### Quick Reference
+
+```bash
+bd ready                                     # Find available work
+bd create --title="..." --description="..."  # Create issue
+bd show <id>                                 # View issue details
+bd update <id> --claim                       # Claim work
+bd close <id>                                # Complete work
+```
+
+### Rules
+
+- In beads-enabled repos, use `bd` for ALL task tracking — do NOT use TodoWrite, TaskCreate, or markdown TODO lists
+- Work is NOT complete until `git push` succeeds. NEVER stop before pushing - that leaves work stranded locally. NEVER say "ready to push when you are" - YOU must push. If push fails, resolve and retry until it succeeds.
 
 ## Trivial changes
 
-When instructions conflict, trivial localized changes should use the lightest reasonable workflow.
-
-A change is trivial if it is obvious and low-risk, affects a small number of files, does not require design exploration, and does not introduce meaningful new logic or architecture.
-
-Examples:
-
-- adding or tweaking a shell alias
-- changing a small config value
-- fixing a typo or comment
-- making a simple documentation edit
-- other straightforward mechanical edits
+Trivial localized changes should use the lightest reasonable workflow. A change is trivial if it is obvious and low-risk, affects a small number of files, does not require design exploration, and does not introduce meaningful new logic or architecture.
 
 For trivial changes:
 
 - do not use brainstorming or planning skills
-- do not use TDD unless the user explicitly asks
-- do not create beads tasks unless the user explicitly asks or the work is multi-step enough to benefit from tracking
+- only use TDD for code changes
+- do not create beads tasks unless the user explicitly asks or the work is complex enough to benefit from breaking down into multiple steps
 - do not update documentation or CLAUDE files unless the change affects durable guidance
-- do not run broad verification; run only the minimal relevant check, if any
-- do not run repo-wide formatters or tests unless the touched file or the user request justifies it
-- prefer making the minimal edit and reporting it concisely
 
 ## Workflow
 
-When creating new non-trivial functionality or fixing bugs, write tests first. Use the `Test-Driven Development (TDD)` skill. When fixing a bug, before doing anything else, start by writing a test that reproduces the bug. Then fix the bug and prove it with a passing test.
+When creating new functionality or fixing bugs, write tests first. Use the `Test-Driven Development (TDD)` skill. When fixing a bug, before doing anything else, start by writing a test that reproduces the bug. Then fix the bug and prove it with a passing test.
 
 After completing a request:
 
-- For non-trivial code changes, make sure everything compiles and runs.
-- For non-trivial code changes, run unit tests.
-- For non-trivial code changes, run Playwright tests if applicable.
-- For non-trivial code changes, run `pnpm format` to format code with Prettier before committing.
-- Commit the changes immediately without being asked when the work is substantial enough to justify a commit or when the repo workflow explicitly requires it. If a request requires a series of significant changes, make intermediate commits as well. Commit messages should succinctly summarize changes. Where applicable, prefix with the name of the primary class/function/component being edited, followed by a colon. Example: `EditTemplatePage: refactor data source handling`
+- Make sure everything compiles and runs.
+- Run unit tests.
+- Run Playwright tests if applicable.
+- Run `pnpm format` to format code with Prettier before committing.
+- Commit the changes immediately without being asked. If a request requires a series of significant changes, make intermediate commits as well. Commit messages should succinctly summarize changes. Where applicable, prefix with the name of the primary class/function/component being edited, followed by a colon. Example: `EditTemplatePage: refactor data source handling`
 - Update the project's documentation and CLAUDE.md file when the change affects durable behavior, workflows, setup, or instructions.
 
 ## Codex and pi
