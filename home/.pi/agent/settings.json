@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.67.3",
+  "lastChangelogVersion": "0.67.6",
   "defaultProvider": "openai",
   "defaultModel": "gpt-5.4",
   "packages": [
