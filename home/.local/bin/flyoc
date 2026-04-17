@@ -6,9 +6,8 @@
  * 1. Creates Fly app + volume (if needed)
  * 2. Sets API key secrets
  * 3. Deploys the OpenClaw container
- * 4. Runs setup.ts (dev environment) on the VM
- * 5. Clones marvin-bootstrap and runs bootstrap.ts (OpenClaw config + state)
- * 6. Switches model defaults to Codex
+ * 4. Clones marvin-bootstrap and runs bootstrap.ts (OpenClaw config + state)
+ * 5. Switches model defaults to Codex
  *
  * Usage:
  *   flyoc              # full setup (idempotent, skips unchanged steps)

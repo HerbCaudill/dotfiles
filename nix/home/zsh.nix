@@ -1,4 +1,4 @@
-{ dotfilesRoot, pkgs, username, ... }:
+{ dotfilesRoot, pkgs, ... }:
 {
   home.sessionPath = [
     "$HOME/.fly/bin"
@@ -78,7 +78,6 @@
       shad = "npx shadcn-ui@latest";
       spl = "sprite ls";
       start = "pnpm start";
-      switchdotfiles = "nix run github:LnL7/nix-darwin/master#darwin-rebuild -- switch --flake ~/Code/HerbCaudill/dotfiles#herbcaudill";
       t = "pnpm test";
       theme = "code ~/Code/HerbCaudill/dotfiles/home/.oh-my-zsh/custom/themes/herb.zsh-theme";
       timepi = "time pi";

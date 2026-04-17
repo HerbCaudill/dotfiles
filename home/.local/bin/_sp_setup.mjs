@@ -1,6 +1,6 @@
 /**
  * Shared sprite setup logic: checks gh auth, resolves sprite name from args or
- * git remote, creates the sprite, and runs setup-sprite.ts remotely.
+ * git remote, creates the sprite, and runs the sprite bootstrap script remotely.
  */
 
 import { execSync } from "node:child_process"
@@ -55,7 +55,7 @@ export const spSetup = (
     console.log(useOutput.split("\n")[0])
   }
 
-  // Run setup-sprite.ts remotely
+  // Run the sprite bootstrap script remotely
   const envVars = [
     `GITHUB_TOKEN='${ghToken}'`,
     `SPRITE_NAME='${spriteName}'`,
