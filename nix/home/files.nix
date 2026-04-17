@@ -1,0 +1,39 @@
+{ config, dotfilesRoot, ... }:
+let
+  mkRepoSymlink = path: config.lib.file.mkOutOfStoreSymlink "${dotfilesRoot}/${path}";
+in {
+  home.file = {
+    ".claude".source = mkRepoSymlink "home/.claude";
+    ".codex/AGENTS.md".source = mkRepoSymlink "home/.claude/CLAUDE.md";
+    ".codex/skills".source = mkRepoSymlink "home/.claude/skills";
+    ".config/bd/config.yaml".source = mkRepoSymlink "home/.config/bd/config.yaml";
+    ".oh-my-zsh/custom/themes/herb.zsh-theme".source = mkRepoSymlink "home/.oh-my-zsh/custom/themes/herb.zsh-theme";
+    ".pi/agent/AGENTS.md".source = mkRepoSymlink "home/.claude/CLAUDE.md";
+    ".pi/agent/settings.json".source = mkRepoSymlink "home/.pi/agent/settings.json";
+    ".pi/agent/skills".source = mkRepoSymlink "home/.claude/skills";
+    ".prettierrc".source = mkRepoSymlink "home/.prettierrc";
+    "iterm2/com.googlecode.iterm2.plist".source = mkRepoSymlink "home/iterm2/com.googlecode.iterm2.plist";
+
+    ".local/bin/_sp_setup.mjs".source = mkRepoSymlink "home/.local/bin/_sp_setup.mjs";
+    ".local/bin/_wt_dir".source = mkRepoSymlink "home/.local/bin/_wt_dir";
+    ".local/bin/agent-transcripts-sync".source = mkRepoSymlink "home/.local/bin/agent-transcripts-sync";
+    ".local/bin/create-daily-note".source = mkRepoSymlink "home/.local/bin/create-daily-note";
+    ".local/bin/flyoc".source = mkRepoSymlink "home/.local/bin/flyoc";
+    ".local/bin/gh-sync".source = mkRepoSymlink "home/.local/bin/gh-sync";
+    ".local/bin/github-pr-task-sync".source = mkRepoSymlink "home/.local/bin/github-pr-task-sync";
+    ".local/bin/index-project".source = mkRepoSymlink "home/.local/bin/index-project";
+    ".local/bin/install-agent-transcripts-cron".source = mkRepoSymlink "home/.local/bin/install-agent-transcripts-cron";
+    ".local/bin/obsidian-sync".source = mkRepoSymlink "home/.local/bin/obsidian-sync";
+    ".local/bin/serena".source = mkRepoSymlink "home/.local/bin/serena";
+    ".local/bin/serena-mcp-server".source = mkRepoSymlink "home/.local/bin/serena-mcp-server";
+    ".local/bin/spc".source = mkRepoSymlink "home/.local/bin/spc";
+    ".local/bin/sprite".source = mkRepoSymlink "home/.local/bin/sprite";
+    ".local/bin/wt".source = mkRepoSymlink "home/.local/bin/wt";
+    ".local/bin/wtcd".source = mkRepoSymlink "home/.local/bin/wtcd";
+    ".local/bin/wtclean".source = mkRepoSymlink "home/.local/bin/wtclean";
+    ".local/bin/wtclone".source = mkRepoSymlink "home/.local/bin/wtclone";
+    ".local/bin/wtls".source = mkRepoSymlink "home/.local/bin/wtls";
+    ".local/bin/wtrm".source = mkRepoSymlink "home/.local/bin/wtrm";
+    ".local/bin/wtt".source = mkRepoSymlink "home/.local/bin/wtt";
+  };
+}

@@ -8,6 +8,8 @@ home/.local/bin/claude
 
 
 home/.claude/skills/.system
+result
+result-*
 
 # Beads / Dolt files (added by bd init)
 .dolt/
