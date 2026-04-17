@@ -33,12 +33,12 @@
       };
       pkgs = nixpkgs.legacyPackages.${system};
     in {
-      formatter.${system} = pkgs.nixfmt-rfc-style;
+      formatter.${system} = pkgs.nixfmt;
 
       devShells.${system}.default = pkgs.mkShell {
         packages = with pkgs; [
           git
-          nixfmt-rfc-style
+          nixfmt
           nodejs_24
           pnpm
         ];

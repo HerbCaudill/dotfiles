@@ -29,7 +29,7 @@
       export EDITOR="$VISUAL"
       export CLOUDSDK_PYTHON=${pkgs.python313}/bin/python3
     '';
-    initExtra = builtins.readFile ./zsh-init.zsh;
+    initContent = builtins.readFile ./zsh-init.zsh;
     "oh-my-zsh" = {
       enable = true;
       custom = "${dotfilesRoot}/home/.oh-my-zsh/custom";

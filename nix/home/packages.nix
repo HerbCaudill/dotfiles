@@ -18,7 +18,7 @@
     gnused
     google-cloud-sdk
     jq
-    nixfmt-rfc-style
+    nixfmt
     nodejs_24
     openssh
     pnpm
