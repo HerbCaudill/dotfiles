@@ -7,7 +7,7 @@ export function getTextToolContent(
 ): string | undefined {
   const textContent = result.content.find(content => content.type === "text")
 
-  if (!textContent || textContent.type !== "text") {
+  if (!textContent || !("text" in textContent)) {
     return undefined
   }
 
