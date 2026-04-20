@@ -1,4 +1,4 @@
-import { installAgentTranscriptsCron } from "./installAgentTranscriptsCron.mjs"
+import { installAgentTranscriptsCron } from "./installAgentTranscriptsCron.ts"
 
 /** Install the managed transcript sync cron entry and print the result. */
 export const runInstallAgentTranscriptsCron = () => {

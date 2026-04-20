@@ -1,4 +1,4 @@
-import { CRON_LOG_PATH } from "./constants.mjs"
+import { CRON_LOG_PATH } from "./constants.ts"
 
 /** Build the managed cron line for transcript syncing. */
 export const getManagedCronLine = () =>

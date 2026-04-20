@@ -9,5 +9,5 @@
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "include": ["scripts/**/*.ts"]
+  "include": ["scripts/**/*.ts", "vitest.config.ts"]
 }

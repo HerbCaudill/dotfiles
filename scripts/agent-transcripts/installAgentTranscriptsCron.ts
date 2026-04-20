@@ -1,8 +1,8 @@
-import { CRON_BLOCK_NAME } from "./constants.mjs"
-import { getManagedCronLine } from "./getManagedCronLine.mjs"
-import { readCrontabContents } from "./readCrontabContents.mjs"
-import { upsertManagedBlock } from "./upsertManagedBlock.mjs"
-import { writeCrontabContents } from "./writeCrontabContents.mjs"
+import { CRON_BLOCK_NAME } from "./constants.ts"
+import { getManagedCronLine } from "./getManagedCronLine.ts"
+import { readCrontabContents } from "./readCrontabContents.ts"
+import { upsertManagedBlock } from "./upsertManagedBlock.ts"
+import { writeCrontabContents } from "./writeCrontabContents.ts"
 
 /** Install or update the managed cron entry for transcript syncing. */
 export const installAgentTranscriptsCron = () => {

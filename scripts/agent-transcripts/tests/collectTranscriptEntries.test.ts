@@ -3,7 +3,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { afterEach, describe, expect, test } from "vitest"
 
-import { collectTranscriptEntries } from "../collectTranscriptEntries.mjs"
+import { collectTranscriptEntries } from "../collectTranscriptEntries.ts"
 
 const tempDirs: string[] = []
 

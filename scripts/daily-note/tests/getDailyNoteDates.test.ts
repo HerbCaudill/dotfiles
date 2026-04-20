@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest"
 
-import { getDailyNoteDates } from "../getDailyNoteDates.mjs"
+import { getDailyNoteDates } from "../getDailyNoteDates.ts"
 
 describe("getDailyNoteDates", () => {
   test("returns note dates from tomorrow back through the previous 30 days", () => {

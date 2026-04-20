@@ -4,8 +4,8 @@ import { join } from "node:path"
 /** Recursively list all files beneath a directory. */
 export const listFilesRecursively = (
   /** The directory to walk. */
-  directoryPath,
-) => {
+  directoryPath: string,
+): string[] => {
   if (!existsSync(directoryPath)) {
     return []
   }

@@ -1,6 +1,8 @@
 import { homedir } from "node:os"
 import { join } from "node:path"
 
+import type { FixedTranscriptFile } from "./types.ts"
+
 /** The managed archive repo path. */
 export const AGENT_TRANSCRIPTS_REPO_PATH = join(homedir(), "Code/HerbCaudill/agent-transcripts")
 
@@ -11,7 +13,7 @@ export const CRON_BLOCK_NAME = "agent-transcripts"
 export const CRON_LOG_PATH = "/tmp/agent-transcripts-sync.log"
 
 /** The fixed raw transcript files that can be copied directly. */
-export const FIXED_TRANSCRIPT_FILES = [
+export const FIXED_TRANSCRIPT_FILES: FixedTranscriptFile[] = [
   {
     archiveRelativePath: "sources/claude/history.jsonl",
     sourceRelativePath: ".claude/history.jsonl",

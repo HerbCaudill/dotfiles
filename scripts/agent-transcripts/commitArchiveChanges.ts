@@ -1,10 +1,10 @@
-import { runCommand } from "./runCommand.mjs"
+import { runCommand } from "./runCommand.ts"
 
 /** Commit managed archive changes when the sync produced a diff. */
 export const commitArchiveChanges = (
   /** The absolute path to the archive repository. */
-  archiveRepositoryPath,
-) => {
+  archiveRepositoryPath: string,
+): boolean => {
   runCommand("git", ["add", "--all", "--", ".gitignore", "README.md", "sources"], {
     cwd: archiveRepositoryPath,
   })

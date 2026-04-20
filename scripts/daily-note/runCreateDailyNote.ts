@@ -1,5 +1,5 @@
-import { DEFAULT_DAILY_DIR } from "./constants.mjs"
-import { createDailyNoteFiles } from "./createDailyNoteFiles.mjs"
+import { DEFAULT_DAILY_DIR } from "./constants.ts"
+import { createDailyNoteFiles } from "./createDailyNoteFiles.ts"
 
 /** Create missing daily note files in the configured directory. */
 export const runCreateDailyNote = () => {

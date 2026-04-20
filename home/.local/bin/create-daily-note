@@ -1,5 +1,5 @@
 #!/usr/bin/env node
 
-import { runCreateDailyNote } from "../../../scripts/daily-note/runCreateDailyNote.mjs"
+import { runCreateDailyNote } from "../../../scripts/daily-note/runCreateDailyNote.ts"
 
 runCreateDailyNote()

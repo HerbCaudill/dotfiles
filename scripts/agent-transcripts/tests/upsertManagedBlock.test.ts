@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest"
 
-import { upsertManagedBlock } from "../upsertManagedBlock.mjs"
+import { upsertManagedBlock } from "../upsertManagedBlock.ts"
 
 describe("upsertManagedBlock", () => {
   test("appends a managed block when none exists", () => {

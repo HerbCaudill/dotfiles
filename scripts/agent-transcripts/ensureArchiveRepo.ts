@@ -1,13 +1,13 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
-import { runCommand } from "./runCommand.mjs"
+import { runCommand } from "./runCommand.ts"
 
 /** Ensure the archive repository exists and has its baseline files. */
 export const ensureArchiveRepo = (
   /** The absolute path to the archive repository. */
-  archiveRepositoryPath,
-) => {
+  archiveRepositoryPath: string,
+): void => {
   mkdirSync(archiveRepositoryPath, { recursive: true })
   mkdirSync(join(archiveRepositoryPath, "sources"), { recursive: true })
 

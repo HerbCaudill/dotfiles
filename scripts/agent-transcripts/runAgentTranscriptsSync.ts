@@ -1,10 +1,10 @@
 import { homedir } from "node:os"
 
-import { AGENT_TRANSCRIPTS_REPO_PATH } from "./constants.mjs"
-import { collectTranscriptEntries } from "./collectTranscriptEntries.mjs"
-import { commitArchiveChanges } from "./commitArchiveChanges.mjs"
-import { copyTranscriptEntries } from "./copyTranscriptEntries.mjs"
-import { ensureArchiveRepo } from "./ensureArchiveRepo.mjs"
+import { AGENT_TRANSCRIPTS_REPO_PATH } from "./constants.ts"
+import { collectTranscriptEntries } from "./collectTranscriptEntries.ts"
+import { commitArchiveChanges } from "./commitArchiveChanges.ts"
+import { copyTranscriptEntries } from "./copyTranscriptEntries.ts"
+import { ensureArchiveRepo } from "./ensureArchiveRepo.ts"
 
 /** Sync raw local transcript artifacts into the managed archive repository. */
 export const runAgentTranscriptsSync = () => {

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
 
-import { runInstallAgentTranscriptsCron } from "../../../scripts/agent-transcripts/runInstallAgentTranscriptsCron.mjs"
+import { runInstallAgentTranscriptsCron } from "../../../scripts/agent-transcripts/runInstallAgentTranscriptsCron.ts"
 
 runInstallAgentTranscriptsCron()

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
 
-import { runAgentTranscriptsSync } from "../../../scripts/agent-transcripts/runAgentTranscriptsSync.mjs"
+import { runAgentTranscriptsSync } from "../../../scripts/agent-transcripts/runAgentTranscriptsSync.ts"
 
 runAgentTranscriptsSync()

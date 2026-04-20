@@ -3,8 +3,8 @@ import { spawnSync } from "node:child_process"
 /** Replace the current user's crontab with the provided contents. */
 export const writeCrontabContents = (
   /** The full crontab text to install. */
-  crontabContents,
-) => {
+  crontabContents: string,
+): void => {
   const result = spawnSync("crontab", ["-"], {
     encoding: "utf8",
     input: crontabContents,
