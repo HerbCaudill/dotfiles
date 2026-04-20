@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.67.6",
+  "lastChangelogVersion": "0.67.68",
   "defaultProvider": "openai",
   "defaultModel": "gpt-5.4",
   "packages": [
@@ -19,7 +19,9 @@
     },
     "npm:pi-extmgr"
   ],
-  "extensions": ["extensions/hide-tool-results.ts"],
+  "extensions": [
+    "extensions/hide-tool-results.ts"
+  ],
   "quietStartup": true,
   "hideThinkingBlock": true
 }
