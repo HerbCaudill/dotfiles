@@ -9,6 +9,7 @@ in {
     ".config/bd/config.yaml".source = mkRepoSymlink "home/.config/bd/config.yaml";
     ".oh-my-zsh/custom/themes/herb.zsh-theme".source = mkRepoSymlink "home/.oh-my-zsh/custom/themes/herb.zsh-theme";
     ".pi/agent/AGENTS.md".source = mkRepoSymlink "home/.claude/CLAUDE.md";
+    ".pi/agent/extensions".source = mkRepoSymlink "home/.pi/agent/extensions";
     ".pi/agent/settings.json".source = mkRepoSymlink "home/.pi/agent/settings.json";
     ".pi/agent/skills".source = mkRepoSymlink "home/.claude/skills";
     ".prettierrc".source = mkRepoSymlink "home/.prettierrc";
