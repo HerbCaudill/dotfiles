@@ -22,3 +22,5 @@ home/.claude/**
 !home/.claude/settings.json
 !home/.claude/statusline.js
 
+home/.secrets
+
