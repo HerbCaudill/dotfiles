@@ -80,8 +80,14 @@
       timepi = "time pi";
       type = "pnpm typecheck";
       up = "pnpm update -i --latest";
+      updatebd = "curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash";
+      updateclaude = "claude install latest --force";
+      updatecodex = "pnpm install -g @openai/codex";
       updatemachine = "nix run github:LnL7/nix-darwin/master#darwin-rebuild -- switch --flake ~/Code/HerbCaudill/dotfiles#herbcaudill";
+      updatemcp = "npm update -g @upstash/context7-mcp @playwright/mcp && uv tool upgrade serena-agent";
       updatenix = "nix flake update ~/Code/HerbCaudill/dotfiles";
+      updatepi = "pnpm install -g @mariozechner/pi-coding-agent";
+      updatepnpm = "curl -fsSL https://get.pnpm.io/install.sh | sh -";
       wa = "pnpm watch";
       wrap = "tput smam";
       x = "open .";
