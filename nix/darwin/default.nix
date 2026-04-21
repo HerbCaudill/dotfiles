@@ -33,24 +33,6 @@ in {
 
   security.pam.services.sudo_local.enable = false;
 
-  launchd.agents."beads-shared-server" = {
-    serviceConfig = {
-      Label = "com.herbcaudill.beads-shared-server";
-      ProgramArguments = [
-        "/bin/sh"
-        "-lc"
-        ''mkdir -p "$HOME/.beads/shared-server/dolt" && cd "$HOME/.beads/shared-server/dolt" && { [ -d .dolt ] || ${pkgs.dolt}/bin/dolt init; } && exec ${pkgs.dolt}/bin/dolt sql-server -H 127.0.0.1 -P 3308''
-      ];
-      RunAtLoad = true;
-      KeepAlive = true;
-      StandardOutPath = "/tmp/beads-shared-server.log";
-      StandardErrorPath = "/tmp/beads-shared-server.log";
-      EnvironmentVariables = {
-        PATH = "${launchdPath}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin";
-      };
-    };
-  };
-
   launchd.agents."daily-note" = {
     serviceConfig = {
       Label = "com.herbcaudill.daily-note";
@@ -61,6 +43,19 @@ in {
       };
       StandardOutPath = "/tmp/daily-note.log";
       StandardErrorPath = "/tmp/daily-note.log";
+    };
+  };
+
+  launchd.agents."agent-transcripts-sync" = {
+    serviceConfig = {
+      Label = "com.herbcaudill.agent-transcripts-sync";
+      ProgramArguments = [ "${userBin}/agent-transcripts-sync" ];
+      StartInterval = 900;
+      StandardOutPath = "/tmp/agent-transcripts-sync.log";
+      StandardErrorPath = "/tmp/agent-transcripts-sync.log";
+      EnvironmentVariables = {
+        PATH = "${launchdPath}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin";
+      };
     };
   };
 
