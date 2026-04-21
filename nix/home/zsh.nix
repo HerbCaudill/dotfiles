@@ -23,6 +23,7 @@
       export BEADS_DOLT_SERVER_PORT=3308
 
       export PROTO_HOME="$HOME/.proto"
+      export PNPM_HOME="$HOME/Library/pnpm"
       export PATH="$PROTO_HOME/shims:$PROTO_HOME/bin:$PATH"
       export VISUAL=code
       export EDITOR="$VISUAL"
