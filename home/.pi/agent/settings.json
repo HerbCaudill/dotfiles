@@ -1,6 +1,6 @@
 {
-  "lastChangelogVersion": "0.67.68",
-  "defaultProvider": "openai",
+  "lastChangelogVersion": "0.68.0",
+  "defaultProvider": "openai-codex",
   "defaultModel": "gpt-5.4",
   "packages": [
     "npm:pi-web-access",
