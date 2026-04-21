@@ -13,6 +13,7 @@ in {
     ".pi/agent/settings.json".source = mkRepoSymlink "home/.pi/agent/settings.json";
     ".pi/agent/skills".source = mkRepoSymlink "home/.claude/skills";
     ".prettierrc".source = mkRepoSymlink "home/.prettierrc";
+    ".secrets".source = mkRepoSymlink "home/.secrets";
     "iterm2/com.googlecode.iterm2.plist".source = mkRepoSymlink "home/iterm2/com.googlecode.iterm2.plist";
 
     ".local/bin/_wt_dir".source = mkRepoSymlink "home/.local/bin/_wt_dir";
