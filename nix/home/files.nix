@@ -18,6 +18,7 @@ in {
     ".local/bin/_wt_dir".source = mkRepoSymlink "home/.local/bin/_wt_dir";
     ".local/bin/agent-transcripts-sync".source = mkRepoSymlink "home/.local/bin/agent-transcripts-sync";
     ".local/bin/create-daily-note".source = mkRepoSymlink "home/.local/bin/create-daily-note";
+    ".local/bin/devresults-vm".source = mkRepoSymlink "home/.local/bin/devresults-vm";
     ".local/bin/gh-sync".source = mkRepoSymlink "home/.local/bin/gh-sync";
     ".local/bin/github-pr-task-sync".source = mkRepoSymlink "home/.local/bin/github-pr-task-sync";
     ".local/bin/index-project".source = mkRepoSymlink "home/.local/bin/index-project";
