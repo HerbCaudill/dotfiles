@@ -5,7 +5,7 @@ description: Use when the user wants to run SQL queries against the dev SQL Serv
 
 # SQL Server dev
 
-Use `sqlcmd` from the Mac with the connection details from `~/.secrets`.
+Use the `sql` shell alias from the Mac with the connection details from `~/.secrets`.
 
 ## Prerequisites
 
@@ -17,28 +17,27 @@ source ~/.secrets
 ## Quick check
 
 ```bash
-sqlcmd \
-  -S "tcp:${SQL_SERVER_DEV_HOST},${SQL_SERVER_DEV_PORT}" \
-  -U "$SQL_SERVER_DEV_USER" \
-  -P "$SQL_SERVER_DEV_PASSWORD" \
-  -d "$SQL_SERVER_DEV_DATABASE" \
-  -Q "SELECT @@SERVERNAME AS server_name, DB_NAME() AS database_name"
+sql "SELECT @@SERVERNAME AS server_name, DB_NAME() AS database_name"
 ```
 
 ## Run a query
 
 ```bash
-sqlcmd \
-  -S "tcp:${SQL_SERVER_DEV_HOST},${SQL_SERVER_DEV_PORT}" \
-  -U "$SQL_SERVER_DEV_USER" \
-  -P "$SQL_SERVER_DEV_PASSWORD" \
-  -d "$SQL_SERVER_DEV_DATABASE" \
-  -Q "SELECT TOP 10 * FROM dbo.YourTable"
+sql "SELECT TOP 10 * FROM dbo.YourTable"
+```
+
+## Alias definition
+
+```bash
+alias sql='source ~/.secrets && sqlcmd -W -s '\''|'\'' -S "tcp:${SQL_SERVER_DEV_HOST},${SQL_SERVER_DEV_PORT}" -U "$SQL_SERVER_DEV_USER" -P "$SQL_SERVER_DEV_PASSWORD" -d "$SQL_SERVER_DEV_DATABASE" -Q'
 ```
 
 ## Run a script file
 
+For script files, use `sqlcmd` directly:
+
 ```bash
+source ~/.secrets
 sqlcmd \
   -S "tcp:${SQL_SERVER_DEV_HOST},${SQL_SERVER_DEV_PORT}" \
   -U "$SQL_SERVER_DEV_USER" \
