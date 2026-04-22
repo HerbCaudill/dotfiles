@@ -158,7 +158,7 @@ For trivial changes:
 
 - do not use brainstorming or planning skills
 - only use TDD for code changes
-- do not create beads tasks unless the user explicitly asks or the work is complex enough to benefit from breaking down into multiple steps
+- do not create beads tasks for work you are going to complete immediately; only create them when the user explicitly asks or the work is complex enough to benefit from breaking down into multiple steps
 - do not update documentation or CLAUDE files unless the change affects durable guidance
 
 ## Workflow
