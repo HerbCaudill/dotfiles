@@ -149,6 +149,7 @@ bd close <id>                                # Complete work
 
 - In beads-enabled repos, use `bd` for ALL task tracking — do NOT use TodoWrite, TaskCreate, or markdown TODO lists
 - Work is NOT complete until `git push` succeeds. NEVER stop before pushing - that leaves work stranded locally. NEVER say "ready to push when you are" - YOU must push. If push fails, resolve and retry until it succeeds.
+- Only create tasks when the user explicitly asks or the work is complex enough to benefit from breaking down into multiple steps. DO NOT create beads issues for one-off tasks that you are going to fix immediately.
 
 ## Trivial changes
 
@@ -158,7 +159,6 @@ For trivial changes:
 
 - do not use brainstorming or planning skills
 - only use TDD for code changes
-- do not create beads tasks for work you are going to complete immediately; only create them when the user explicitly asks or the work is complex enough to benefit from breaking down into multiple steps
 - do not update documentation or CLAUDE files unless the change affects durable guidance
 
 ## Workflow
