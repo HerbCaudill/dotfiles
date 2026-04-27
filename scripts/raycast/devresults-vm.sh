@@ -2,12 +2,13 @@
 
 # Required parameters:
 # @raycast.schemaVersion 1
-# @raycast.title DevResults VM
-# @raycast.mode fullOutput
+# @raycast.title DevResults VS Code
+# @raycast.mode silent
 # @raycast.packageName Developer Utils
 
 # Optional parameters:
-# @raycast.icon 💻
-# @raycast.description Start the Windows VM if needed and open C:/Code/DevResults in VS Code Remote-SSH
+# @raycast.icon 🟠
+# @raycast.description Open C:/Code/DevResults in VS Code using Remote-SSH
 
-exec devresults-vm
+code --folder-uri "vscode-remote://ssh-remote+devresults-vm/C:/Code/DevResults" >/dev/null 2>&1 &
+osascript -e 'tell application "Visual Studio Code" to activate'
