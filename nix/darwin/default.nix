@@ -43,6 +43,9 @@ in {
       };
       StandardOutPath = "/tmp/daily-note.log";
       StandardErrorPath = "/tmp/daily-note.log";
+      EnvironmentVariables = {
+        PATH = "${launchdPath}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin";
+      };
     };
   };
 
