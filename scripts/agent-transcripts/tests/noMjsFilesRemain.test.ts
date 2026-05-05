@@ -35,4 +35,10 @@ describe("TypeScript script migration", () => {
       readFileSync(join(process.cwd(), "home/.local/bin/install-agent-transcripts-cron"), "utf8"),
     ).toContain("runInstallAgentTranscriptsCron.ts")
   })
+
+  test("uses an explicit node runtime for the daily note launcher", () => {
+    expect(
+      readFileSync(join(process.cwd(), "home/.local/bin/create-daily-note"), "utf8"),
+    ).toContain("/etc/profiles/per-user/herbcaudill/bin/node --experimental-strip-types")
+  })
 })

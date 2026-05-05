@@ -1,5 +1,5 @@
-#!/usr/bin/env node
+#!/bin/bash
 
-import { runCreateDailyNote } from "../../../scripts/daily-note/runCreateDailyNote.ts"
-
-runCreateDailyNote()
+exec /etc/profiles/per-user/herbcaudill/bin/node --experimental-strip-types \
+  --eval 'import { runCreateDailyNote } from "/Users/herbcaudill/Code/HerbCaudill/dotfiles/scripts/daily-note/runCreateDailyNote.ts"; runCreateDailyNote()' \
+  "$@"

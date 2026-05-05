@@ -1,6 +1,7 @@
 import { existsSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
+import { alignFileOwnershipWithDirectory } from "./alignFileOwnershipWithDirectory.ts"
 import { getDailyNoteDates } from "./getDailyNoteDates.ts"
 
 /** Create any missing daily note files for the configured date range. */
@@ -15,6 +16,7 @@ export const createDailyNoteFiles = (
 
     if (!existsSync(filePath)) {
       writeFileSync(filePath, "", { flag: "wx" })
+      alignFileOwnershipWithDirectory(filePath, dailyDir)
     }
   }
 }
