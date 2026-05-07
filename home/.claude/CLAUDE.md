@@ -252,3 +252,7 @@ gws drive files export --fileId <id> --mimeType application/pdf
 ```
 
 Google Drive local path: `~/Library/CloudStorage/GoogleDrive-herb@devresults.com/My Drive` (regular files only — Google Docs/Sheets/Slides are cloud-only stubs).
+
+## OnePassword CLI (`op`)
+
+Use the `op` CLI to access secrets from 1Password when credentials, API keys, tokens, or other sensitive values are needed.
