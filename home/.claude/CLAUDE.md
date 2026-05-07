@@ -82,8 +82,8 @@ export async function checkForSavedIterationState(
   /** The iteration instance */
   instanceId?: string,
 ): Promise<IterationState | null> {
-  const targetInstanceId = instanceId ?? useAppStore.getState().activeInstanceId;
-  return getIterationState(targetInstanceId);
+  const targetInstanceId = instanceId ?? useAppStore.getState().activeInstanceId
+  return getIterationState(targetInstanceId)
 }
 ```
 
@@ -98,7 +98,7 @@ export function getTerminalSize(
   return {
     columns: stdout?.columns ?? 80,
     rows: stdout?.rows ?? 24,
-  };
+  }
 }
 ```
 
@@ -121,10 +121,17 @@ NEVER put big headings in comments with ASCII borders:
 
 ## Testing
 
-- Use Vitest for unit testing and Playwright for end-to-end testing.
-- When modifying TypeScript code, use test-driven development (TDD).
-- Do not require TDD for trivial config edits, shell aliases, documentation-only changes, or other simple mechanical edits with no executable logic.
-- When using Playwright, selectors should be based on what users actually see and interact with: visible text, accessible roles, labels, and placeholders. When that's not possible, use domain data attributes like `data-player="name"` and `data-cell="row-col"`.
+Use Vitest for unit testing and Playwright for end-to-end testing.
+
+Use TDD for meaningful executable behavior: business logic, data transforms, routing behavior, state changes, permissions, user interactions, and bug fixes where a regression test can describe the failure.
+
+Do not write tests for trivial presentational changes such as Tailwind class adjustments, spacing, colors, scrolling containers, or markup structure unless the user explicitly asks or there is observable user-facing behavior worth protecting.
+
+Tests should assert behavior users or callers care about, not implementation details. Avoid tests that merely check CSS class names, DOM nesting, or component internals.
+
+Do not require TDD for trivial config edits, shell aliases, documentation-only changes, or other simple mechanical edits with no executable logic.
+
+When using Playwright, selectors should be based on what users actually see and interact with: visible text, accessible roles, labels, and placeholders. When that's not possible, use domain data attributes like `data-player="name"` and `data-cell="row-col"`.
 
 ## Planning
 
