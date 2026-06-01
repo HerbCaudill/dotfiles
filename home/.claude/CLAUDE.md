@@ -235,6 +235,8 @@ Key points:
 
 Use the `gws` CLI (via Bash) to interact with Google Drive, Google Tasks, and other Workspace services. No MCP server needed — just call `gws` commands directly.
 
+If `gws` requires reauthentication, run `gws auth login --full` yourself, open the printed OAuth URL in Chrome with `open -a "Google Chrome" "<url>"`, ask the user to complete sign-in, then retry the original command.
+
 ```bash
 # Drive
 gws drive files list --params '{"q": "name contains \"report\"", "pageSize": 10}'
