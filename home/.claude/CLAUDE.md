@@ -158,16 +158,6 @@ bd close <id>                                # Complete work
 - Work is NOT complete until `git push` succeeds. NEVER stop before pushing - that leaves work stranded locally. NEVER say "ready to push when you are" - YOU must push. If push fails, resolve and retry until it succeeds.
 - Only create tasks when the user explicitly asks or the work is complex enough to benefit from breaking down into multiple steps. DO NOT create beads issues for one-off tasks that you are going to fix immediately.
 
-## Trivial changes
-
-Trivial localized changes should use the lightest reasonable workflow. A change is trivial if it is obvious and low-risk, affects a small number of files, does not require design exploration, and does not introduce meaningful new logic or architecture.
-
-For trivial changes:
-
-- do not use brainstorming or planning skills
-- only use TDD for code changes
-- do not update documentation or CLAUDE files unless the change affects durable guidance
-
 ## Workflow
 
 When creating new functionality or fixing bugs, write tests first. Use the `Test-Driven Development (TDD)` skill. When fixing a bug, before doing anything else, start by writing a test that reproduces the bug. Then fix the bug and prove it with a passing test.
@@ -180,6 +170,20 @@ After completing a request:
 - Run `pnpm format` to format code with Prettier before committing.
 - Commit the changes immediately without being asked. If a request requires a series of significant changes, make intermediate commits as well. Commit messages should succinctly summarize changes. Where applicable, prefix with the name of the primary class/function/component being edited, followed by a colon. Example: `EditTemplatePage: refactor data source handling`
 - Update the project's documentation and CLAUDE.md file when the change affects durable behavior, workflows, setup, or instructions.
+
+## Initiative
+
+When the next step is clear and low-risk, take it without waiting for confirmation. Pause and ask only when the next step is destructive, changes scope, risks data loss/customer data exposure, requires new credentials/permissions, or presents a meaningful architectural choice.
+
+## Trivial changes
+
+Trivial localized changes should use the lightest reasonable workflow. A change is trivial if it is obvious and low-risk, affects a small number of files, does not require design exploration, and does not introduce meaningful new logic or architecture.
+
+For trivial changes:
+
+- do not use brainstorming or planning skills
+- only use TDD for code changes
+- do not update documentation or CLAUDE files unless the change affects durable guidance
 
 ## Codex and pi
 

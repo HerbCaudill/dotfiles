@@ -12,9 +12,8 @@ export async function loadGithubPrTaskState(): Promise<GithubPrTaskState> {
 
     return {
       lastCheckedAt: parsedState.lastCheckedAt ?? null,
-      processedEventKeys:
-        Array.isArray(parsedState.processedEventKeys) ?
-          parsedState.processedEventKeys.filter(value => typeof value === "string")
+      processedEventKeys: Array.isArray(parsedState.processedEventKeys)
+        ? parsedState.processedEventKeys.filter(value => typeof value === "string")
         : [],
     }
   } catch (error) {

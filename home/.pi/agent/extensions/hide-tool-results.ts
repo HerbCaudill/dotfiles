@@ -72,19 +72,19 @@ export default function hideToolResultsExtension(
     },
 
     renderCall(args, theme, context) {
-      const pathDisplay =
-        args.path ? theme.fg("accent", shortenPath(args.path)) : theme.fg("toolOutput", "...")
+      const pathDisplay = args.path
+        ? theme.fg("accent", shortenPath(args.path))
+        : theme.fg("toolOutput", "...")
       const lineRange =
-        args.offset !== undefined || args.limit !== undefined ?
-          theme.fg(
-            "warning",
-            `:${args.offset ?? 1}${args.limit !== undefined ? `-${(args.offset ?? 1) + args.limit - 1}` : ""}`,
-          )
-        : ""
-      const expandHint =
-        context.expanded ? "" : (
-          theme.fg("muted", ` (${keyHint("app.tools.expand", "to show result")})`)
-        )
+        args.offset !== undefined || args.limit !== undefined
+          ? theme.fg(
+              "warning",
+              `:${args.offset ?? 1}${args.limit !== undefined ? `-${(args.offset ?? 1) + args.limit - 1}` : ""}`,
+            )
+          : ""
+      const expandHint = context.expanded
+        ? ""
+        : theme.fg("muted", ` (${keyHint("app.tools.expand", "to show result")})`)
 
       return new Text(
         `${theme.fg("toolTitle", theme.bold("read"))} ${pathDisplay}${lineRange}${expandHint}`,
@@ -118,10 +118,9 @@ export default function hideToolResultsExtension(
 
     renderCall(args, theme, context) {
       const timeoutSuffix = args.timeout ? theme.fg("muted", ` (timeout ${args.timeout}s)`) : ""
-      const expandHint =
-        context.expanded ? "" : (
-          theme.fg("muted", ` (${keyHint("app.tools.expand", "to show result")})`)
-        )
+      const expandHint = context.expanded
+        ? ""
+        : theme.fg("muted", ` (${keyHint("app.tools.expand", "to show result")})`)
 
       return new Text(
         `${theme.fg("toolTitle", theme.bold(`$ ${args.command || "..."}`))}${timeoutSuffix}${expandHint}`,
@@ -157,12 +156,12 @@ export default function hideToolResultsExtension(
     },
 
     renderCall(args, theme, context) {
-      const pathDisplay =
-        args.path ? theme.fg("accent", shortenPath(args.path)) : theme.fg("toolOutput", "...")
-      const expandHint =
-        context.expanded ? "" : (
-          theme.fg("muted", ` (${keyHint("app.tools.expand", "to show result")})`)
-        )
+      const pathDisplay = args.path
+        ? theme.fg("accent", shortenPath(args.path))
+        : theme.fg("toolOutput", "...")
+      const expandHint = context.expanded
+        ? ""
+        : theme.fg("muted", ` (${keyHint("app.tools.expand", "to show result")})`)
 
       return new Text(
         `${theme.fg("toolTitle", theme.bold("edit"))} ${pathDisplay}${expandHint}`,
@@ -195,14 +194,15 @@ export default function hideToolResultsExtension(
     },
 
     renderCall(args, theme, context) {
-      const pathDisplay =
-        args.path ? theme.fg("accent", shortenPath(args.path)) : theme.fg("toolOutput", "...")
-      const lineCount =
-        args.content ? theme.fg("muted", ` (${args.content.split("\n").length} lines)`) : ""
-      const expandHint =
-        context.expanded ? "" : (
-          theme.fg("muted", ` (${keyHint("app.tools.expand", "to show result")})`)
-        )
+      const pathDisplay = args.path
+        ? theme.fg("accent", shortenPath(args.path))
+        : theme.fg("toolOutput", "...")
+      const lineCount = args.content
+        ? theme.fg("muted", ` (${args.content.split("\n").length} lines)`)
+        : ""
+      const expandHint = context.expanded
+        ? ""
+        : theme.fg("muted", ` (${keyHint("app.tools.expand", "to show result")})`)
 
       return new Text(
         `${theme.fg("toolTitle", theme.bold("write"))} ${pathDisplay}${lineCount}${expandHint}`,

@@ -4,7 +4,11 @@ import type { ManagedBlock } from "./types.ts"
 /** Insert or replace a named managed block in a text file. */
 export const upsertManagedBlock = (
   /** The existing file contents, if any. */
-  { blockBody, existingContents, name }: ManagedBlock,
+  {
+    blockBody,
+    existingContents,
+    name,
+  }: ManagedBlock,
 ): string => {
   const beginMarker = `# BEGIN ${name}`
   const endMarker = `# END ${name}`

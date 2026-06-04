@@ -30,8 +30,9 @@ export default function statusLineExtension(
         render(width: number): string[] {
           const directory = theme.fg("accent", getDirectoryName(ctx.cwd))
           const branch = footerData.getGitBranch()
-          const branchDisplay =
-            branch ? theme.fg("success", `${branch}${isGitDirty(ctx.cwd) ? "*" : ""}`) : null
+          const branchDisplay = branch
+            ? theme.fg("success", `${branch}${isGitDirty(ctx.cwd) ? "*" : ""}`)
+            : null
           const model = theme.fg("dim", ctx.model?.name ?? ctx.model?.id ?? "no model")
           const line1Parts = [directory, branchDisplay, model].filter(
             (part): part is string => !!part,
