@@ -54,6 +54,7 @@ When writing scripts, prefer TypeScript over bash, Python, PowerShell, etc.
 - Shared types should be in a `types.ts` file
 - Shared constants should be in a `constants.ts` file.
 - When combining lists of Tailwind class names, use `cx` (or `cn`) rather than string interpolation.
+- When an `if` statement controls a single-line statement, put it on the same line without braces, like `if (!body) return null`.
 - Use named exports. Don't use default exports unless we're in a framework (like Next.js) that requires them
 - Name test files `foo.test.ts`
 - Put tests and stories in `tests/` and `stories/` subdirectories alongside the source files they refer to:
