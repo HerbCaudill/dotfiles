@@ -1,11 +1,8 @@
 {
   "name": "dotfiles",
   "version": "1.0.0",
-  "description": "",
-  "keywords": [],
   "license": "ISC",
-  "author": "",
-  "main": "index.js",
+  "author": "herb@devresults.com",
   "scripts": {
     "format": "oxfmt",
     "test": "vitest run"
