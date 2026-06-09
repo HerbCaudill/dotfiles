@@ -1,5 +1,7 @@
 # Global agent memory
 
+> Sections and notes tagged **[macOS only]** apply only on the macOS host. Ignore them in other environments (such as the Windows VM, which imports this file).
+
 In planning documents and other interactions, be as concise as possible.
 
 If you have questions for me, ask them one at a time.
@@ -10,7 +12,7 @@ When communicating with me, prefer natural, conversational prose in short paragr
 
 Default to paragraphs rather than headings, bullet lists, numbered lists, tables, or checklist-style formatting. Do not turn routine answers into outlines or reports. Use headings or bullets only when they materially improve clarity, such as for step-by-step instructions, command lists, file lists, or when comparing multiple options.
 
-When giving me a long command to run in the terminal, copy it to my clipboard with `pbcopy` as a single line so I don't get unwanted line breaks when copying from the terminal output.
+When giving me a long command to run in the terminal, copy it to my clipboard as a single line so I don't get unwanted line breaks when copying from the terminal output (`pbcopy` on macOS, `Set-Clipboard` on Windows).
 
 ## Technology choices
 
@@ -188,12 +190,12 @@ For trivial changes:
 - only use TDD for code changes
 - do not update documentation or CLAUDE files unless the change affects durable guidance
 
-## Codex and pi
+## Codex and pi [macOS only]
 
 - Global Codex and pi instructions and skills are sourced from `home/.claude/CLAUDE.md` and `home/.claude/skills`.
 - `scripts/symlink.mjs` replaces any existing `~/.codex/AGENTS.md`, `~/.codex/skills`, `~/.pi/agent/AGENTS.md`, and `~/.pi/agent/skills` with symlinks to those shared sources.
 
-## Worktrees
+## Worktrees [macOS only]
 
 The following shell commands are available:
 
@@ -227,7 +229,7 @@ Worktrees for a repo will be placed in a sibling directory to the repo named `.{
 - Keep commits atomic: commit only the files you touched and list each path explicitly.
 - Never amend commits unless you have explicit written approval in the task thread.
 
-## Dotfiles
+## Dotfiles [macOS only]
 
 The `~/Code/HerbCaudill/dotfiles` repo manages global configuration files using symlinks from `home/` into `~/`.
 
@@ -238,7 +240,7 @@ Key points:
 - when modifying any managed global file, make the change in the dotfiles repo, not in the symlink target under `~/`
 - see the dotfiles repo's local `CLAUDE.md` for repo-specific workflow details
 
-## Google Workspace CLI (`gws`)
+## Google Workspace CLI (`gws`) [macOS only]
 
 Use the `gws` CLI (via Bash) to interact with Google Drive, Google Tasks, and other Workspace services. No MCP server needed — just call `gws` commands directly.
 
@@ -262,6 +264,6 @@ gws drive files export --fileId <id> --mimeType application/pdf
 
 Google Drive local path: `~/Library/CloudStorage/GoogleDrive-herb@devresults.com/My Drive` (regular files only — Google Docs/Sheets/Slides are cloud-only stubs).
 
-## OnePassword CLI (`op`)
+## OnePassword CLI (`op`) [macOS only]
 
 Use the `op` CLI to access secrets from 1Password when credentials, API keys, tokens, or other sensitive values are needed.

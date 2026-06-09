@@ -19,5 +19,5 @@ nix run github:LnL7/nix-darwin/master#darwin-rebuild -- \
 
 ## Notes
 
-- `home/.claude`, `home/.local/bin`, and related repo-owned assets are linked into `~/` with out-of-store Home Manager symlinks, so edits in this repo take effect directly.
+- Selected files in `home/.claude`, `home/.local/bin`, and related repo-owned assets are linked into `~/` with out-of-store Home Manager symlinks, so edits in this repo take effect directly while Claude runtime state stays outside the repo.
 - LaunchAgents live in `nix/darwin/default.nix`.

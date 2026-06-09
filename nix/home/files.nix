@@ -3,7 +3,11 @@ let
   mkRepoSymlink = path: config.lib.file.mkOutOfStoreSymlink "${dotfilesRoot}/${path}";
 in {
   home.file = {
-    ".claude".source = mkRepoSymlink "home/.claude";
+    ".claude/CLAUDE.md".source = mkRepoSymlink "home/.claude/CLAUDE.md";
+    ".claude/agents".source = mkRepoSymlink "home/.claude/agents";
+    ".claude/settings.json".source = mkRepoSymlink "home/.claude/settings.json";
+    ".claude/skills".source = mkRepoSymlink "home/.claude/skills";
+    ".claude/statusline.js".source = mkRepoSymlink "home/.claude/statusline.js";
     ".codex/AGENTS.md".source = mkRepoSymlink "home/.claude/CLAUDE.md";
     ".codex/skills".source = mkRepoSymlink "home/.claude/skills";
     ".config/bd/config.yaml".source = mkRepoSymlink "home/.config/bd/config.yaml";

@@ -7,7 +7,6 @@ home/.local/bin/bd
 home/.local/bin/claude
 
 
-home/.claude/skills/.system
 result
 result-*
 
@@ -16,10 +15,14 @@ result-*
 *.db
 .beads-credential-key
 
-home/.claude/**
-!home/.claude/skills/**
+home/.claude/*
+!home/.claude/CLAUDE.md
+!home/.claude/agents/
 !home/.claude/agents/**
 !home/.claude/settings.json
+!home/.claude/skills/
+!home/.claude/skills/**
+home/.claude/skills/.system/
 !home/.claude/statusline.js
 
 home/.secrets

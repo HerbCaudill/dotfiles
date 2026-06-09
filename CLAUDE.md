@@ -2,7 +2,7 @@ This repo manages global configuration files with **Nix**, using `nix-darwin` fo
 
 ## Important: Global vs Project CLAUDE.md
 
-`home/.claude/CLAUDE.md` is the shared global agent instructions file. Home Manager links it into `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, and `~/.pi/agent/AGENTS.md`. Likewise, `home/.claude/skills` is linked into Claude, Codex, and Pi via `nix/home/files.nix`. The root `CLAUDE.md` in this repo is project-specific instructions for working within this repo.
+`home/.claude/CLAUDE.md` is the shared global agent instructions file. Home Manager links it into `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, and `~/.pi/agent/AGENTS.md`. Likewise, `home/.claude/skills` is linked into Claude, Codex, and Pi via `nix/home/files.nix`. Only selected durable Claude config files are linked; runtime state such as transcripts, cache, telemetry, and backups should stay outside the repo. The root `CLAUDE.md` in this repo is project-specific instructions for working within this repo.
 
 > [!NOTE] `AGENTS.md` is a symlink to `CLAUDE.md`.
 
@@ -25,7 +25,7 @@ pnpm format
 - `nix/darwin/` — nix-darwin modules
 - `nix/home/` — home-manager modules
 - `home/` — source assets linked into `~/`
-  - `.claude/` — Claude config, skills, and agents
+  - `.claude/` — durable Claude config, skills, and agents
   - `.local/bin/` — CLI scripts and wrappers
   - `.pi/agent/settings.json` — Pi settings
   - `.config/bd/config.yaml` — Beads defaults
