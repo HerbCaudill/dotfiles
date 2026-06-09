@@ -10,5 +10,5 @@
 # @raycast.icon 🟠
 # @raycast.description Open C:/Code/DevResults in VS Code using Remote-SSH
 
-code --folder-uri "vscode-remote://ssh-remote+devresults-vm/C:/Code/DevResults" >/dev/null 2>&1 &
+code -n --remote ssh-remote+devresults-vm 'C:\Code\DevResults' >/dev/null 2>&1 &
 osascript -e 'tell application "Visual Studio Code" to activate'
