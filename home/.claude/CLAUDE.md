@@ -10,6 +10,8 @@ When communicating with me, prefer natural, conversational prose in short paragr
 
 Default to paragraphs rather than headings, bullet lists, numbered lists, tables, or checklist-style formatting. Do not turn routine answers into outlines or reports. Use headings or bullets only when they materially improve clarity, such as for step-by-step instructions, command lists, file lists, or when comparing multiple options.
 
+When giving me a long command to run in the terminal, copy it to my clipboard with `pbcopy` as a single line so I don't get unwanted line breaks when copying from the terminal output.
+
 ## Technology choices
 
 I generally use:
