@@ -9,9 +9,8 @@ This repo manages global configuration files with **Nix**, using `nix-darwin` fo
 ## Key commands
 
 ```bash
-# Apply the full macOS + home configuration. (Run this after any changes to the configuration.)
-nix run github:LnL7/nix-darwin/master#darwin-rebuild -- \
-  switch --flake ~/Code/HerbCaudill/dotfiles#herbcaudill
+# Apply the full macOS + home configuration. (Requires root. Run this after any changes to the configuration.)
+pnpm nix:rebuild
 
 # Run unit tests for repo-managed automation scripts
 pnpm test
