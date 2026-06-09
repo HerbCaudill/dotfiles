@@ -1,4 +1,9 @@
-{ lib, pkgs, username, ... }:
+{
+  lib,
+  pkgs,
+  username,
+  ...
+}:
 let
   homeDirectory = "/Users/${username}";
   userBin = "${homeDirectory}/.local/bin";
@@ -18,7 +23,8 @@ let
     pkgs.python313
     pkgs.uv
   ];
-in {
+in
+{
   nix.enable = false;
   nixpkgs.config.allowUnfree = true;
 
@@ -43,6 +49,26 @@ in {
       };
       StandardOutPath = "/tmp/daily-note.log";
       StandardErrorPath = "/tmp/daily-note.log";
+      EnvironmentVariables = {
+        PATH = "${launchdPath}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin";
+      };
+    };
+  };
+
+  launchd.agents."briefing" = {
+    serviceConfig = {
+      Label = "com.herbcaudill.briefing";
+      ProgramArguments = [
+        "${pkgs.pnpm}/bin/pnpm"
+        "briefing"
+      ];
+      WorkingDirectory = "${homeDirectory}/Code/HerbCaudill/briefings";
+      StartCalendarInterval = {
+        Hour = 5;
+        Minute = 0;
+      };
+      StandardOutPath = "/tmp/briefing.log";
+      StandardErrorPath = "/tmp/briefing.log";
       EnvironmentVariables = {
         PATH = "${launchdPath}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin";
       };
