@@ -4,7 +4,7 @@
   "license": "ISC",
   "author": "herb@devresults.com",
   "scripts": {
-    "darwin:switch": "sudo nix run github:LnL7/nix-darwin/master#darwin-rebuild -- switch --flake ~/Code/HerbCaudill/dotfiles#herbcaudill",
+    "rebuild": "sudo nix run github:LnL7/nix-darwin/master#darwin-rebuild -- switch --flake ~/Code/HerbCaudill/dotfiles#herbcaudill",
     "format": "oxfmt",
     "test": "vitest run"
   },
