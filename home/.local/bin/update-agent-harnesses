@@ -4,28 +4,65 @@ set -euo pipefail
 export HOME="${HOME:-/Users/herbcaudill}"
 export SHELL="/bin/zsh"
 export PNPM_HOME="${PNPM_HOME:-$HOME/Library/pnpm}"
-export PATH="$PNPM_HOME:$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+export PATH="$PNPM_HOME:$PNPM_HOME/bin:$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
-lock_dir="/tmp/update-agent-harnesses.lock"
+cd "$HOME"
+
+timestamp() {
+  date +%Y-%m-%dT%H:%M:%S%z
+}
+
+state_dir="$HOME/.local/state"
+mkdir -p "$state_dir"
+lock_dir="$state_dir/update-agent-harnesses.lock"
+pid_file="$lock_dir/pid"
 if ! mkdir "$lock_dir" 2>/dev/null; then
-  echo "[$(date -Is)] update already running"
-  exit 0
+  if [[ -f "$pid_file" ]] && kill -0 "$(cat "$pid_file")" 2>/dev/null; then
+    echo "[$(timestamp)] update already running"
+    exit 0
+  fi
+
+  echo "[$(timestamp)] clearing stale update lock"
+  rm -rf "$lock_dir"
+  mkdir "$lock_dir"
 fi
-trap 'rmdir "$lock_dir"' EXIT
+printf '%s\n' "$$" > "$pid_file"
+trap 'rm -rf "$lock_dir"' EXIT
 
 run_step() {
   local name="$1"
   shift
 
-  echo "[$(date -Is)] starting $name"
+  echo "[$(timestamp)] starting $name"
   "$@"
-  echo "[$(date -Is)] finished $name"
+  echo "[$(timestamp)] finished $name"
 }
 
-run_step updatepnpm /bin/zsh -lc 'curl -fsSL https://get.pnpm.io/install.sh | sh -'
-run_step updatecodex /bin/zsh -lc 'pnpm install -g @openai/codex'
-run_step updatepi /bin/zsh -lc 'pnpm install -g @earendil-works/pi-coding-agent'
+removeStalePnpmExeDependency() {
+  node <<'NODE'
+const { existsSync, readFileSync, unlinkSync, writeFileSync } = require("node:fs")
+const { join } = require("node:path")
+
+const globalRoot = join(process.env.PNPM_HOME, "global", "5")
+const packagePath = join(globalRoot, "package.json")
+const lockfilePath = join(globalRoot, "pnpm-lock.yaml")
+
+if (!existsSync(packagePath)) process.exit(0)
+
+const manifest = JSON.parse(readFileSync(packagePath, "utf8"))
+if (!manifest.dependencies?.["@pnpm/exe"]) process.exit(0)
+
+delete manifest.dependencies["@pnpm/exe"]
+writeFileSync(packagePath, `${JSON.stringify(manifest, null, "\t")}\n`)
+if (existsSync(lockfilePath)) unlinkSync(lockfilePath)
+NODE
+}
+
+run_step updatepnpm /bin/zsh -lc 'pnpm self-update'
+run_step repairpnpm removeStalePnpmExeDependency
+run_step updatecodex /bin/zsh -lc 'pnpm add -g @openai/codex@latest'
+run_step updatepi /bin/zsh -lc 'pnpm add -g @earendil-works/pi-coding-agent@latest'
 run_step updateclaude /bin/zsh -lc 'claude install latest --force'
 run_step updatebd /bin/zsh -lc 'curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash'
 
-echo "[$(date -Is)] agent harness updates complete"
+echo "[$(timestamp)] agent harness updates complete"
