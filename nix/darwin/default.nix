@@ -1,5 +1,6 @@
 {
   lib,
+  dotfilesRoot,
   pkgs,
   username,
   ...
@@ -121,6 +122,19 @@ in
       StartInterval = 300;
       StandardOutPath = "/tmp/obsidian-sync.log";
       StandardErrorPath = "/tmp/obsidian-sync.log";
+    };
+  };
+
+  launchd.agents."windows-claude-config-sync" = {
+    serviceConfig = {
+      Label = "com.herbcaudill.windows-claude-config-sync";
+      ProgramArguments = [ "${dotfilesRoot}/scripts/windows/install-claude-shared-config-from-mac.sh" ];
+      WatchPaths = [ "${dotfilesRoot}/home/.claude" ];
+      StandardOutPath = "/tmp/windows-claude-config-sync.log";
+      StandardErrorPath = "/tmp/windows-claude-config-sync.log";
+      EnvironmentVariables = {
+        PATH = "${launchdPath}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin";
+      };
     };
   };
 

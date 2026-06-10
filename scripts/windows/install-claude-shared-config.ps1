@@ -17,6 +17,20 @@ $items = @(
   @{ Name = "statusline.js"; Source = Join-Path $RepoRoot "home\.claude\statusline.js" }
 )
 
+function Remove-ExistingLink {
+  param(
+    [string]$Path,
+    [bool]$IsDirectory
+  )
+
+  if ($IsDirectory) {
+    cmd /c rmdir "$Path" | Out-Null
+    return
+  }
+
+  cmd /c del "$Path" | Out-Null
+}
+
 function Backup-ExistingItem {
   param(
     [string]$Path
@@ -25,8 +39,8 @@ function Backup-ExistingItem {
   if (-not (Test-Path -LiteralPath $Path)) { return }
 
   $item = Get-Item -LiteralPath $Path -Force
-  if ($item.LinkType -eq "SymbolicLink") {
-    Remove-Item -LiteralPath $Path -Force
+  if ($item.LinkType -eq "SymbolicLink" -or $item.LinkType -eq "Junction") {
+    Remove-ExistingLink -Path $Path -IsDirectory $item.PSIsContainer
     return
   }
 
