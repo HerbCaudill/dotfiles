@@ -63,6 +63,10 @@ These are installed into `~/.local/bin` by Home Manager rather than a custom sym
 | `serena-mcp-server`      | Start the Serena MCP server                                                                                                      | Python   |
 | `index-project`          | Invoke Serena's project indexing                                                                                                 | Python   |
 
+## Windows Parallels Claude setup
+
+Run `scripts/windows/install-claude-shared-config.ps1` inside the Windows VM to link native Windows Claude to the repo-managed global instructions, agents, skills, and status line through the Parallels `\\Mac\Home\Code\HerbCaudill\dotfiles` shared folder. Use the script's `-Copy` flag only when Windows cannot create symlinks.
+
 ## Installing shared agent skills
 
 Use `npx skills add ... -g --copy` when you want a third-party skill written into the shared global skills directory managed by this repo.

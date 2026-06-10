@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const { execSync } = require("child_process")
+const { execFileSync, execSync } = require("child_process")
 const { readFileSync } = require("fs")
 
 // ANSI color codes
@@ -19,37 +19,53 @@ const BOLD = "\x1b[1m"
 const NORMAL = "\x1b[22m"
 
 function getGitBranch(cwd) {
-  try {
-    execSync(`git -c core.fileMode=false config --global --add safe.directory "${cwd}"`, {
-      cwd,
-      stdio: "ignore",
-    })
+  addSafeDirectory(cwd)
 
-    const branch = execSync(
-      "git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD",
+  return (
+    runGit(["symbolic-ref", "--short", "HEAD"], cwd) ??
+    runGit(["rev-parse", "--short", "HEAD"], cwd)
+  )
+}
+
+function isGitDirty(cwd) {
+  const status = runGit(["status", "--porcelain"], cwd)
+
+  return status !== null && status.length > 0
+}
+
+function addSafeDirectory(cwd) {
+  try {
+    execFileSync(
+      "git",
+      ["-c", "core.fileMode=false", "config", "--global", "--add", "safe.directory", cwd],
       {
         cwd,
-        encoding: "utf-8",
+        stdio: "ignore",
       },
-    ).trim()
+    )
+  } catch {
+    // Ignore missing git or inaccessible config.
+  }
+}
 
-    return branch || null
+function runGit(args, cwd) {
+  try {
+    const output = execFileSync("git", ["-c", "core.fileMode=false", ...args], {
+      cwd,
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim()
+
+    return output || null
   } catch {
     return null
   }
 }
 
-function isGitDirty(cwd) {
-  try {
-    const status = execSync("git -c core.fileMode=false status --porcelain", {
-      cwd,
-      encoding: "utf-8",
-    }).trim()
+function getDirectoryName(cwd) {
+  const parts = cwd.split(/[\\/]/).filter(Boolean)
 
-    return status.length > 0
-  } catch {
-    return false
-  }
+  return parts.at(-1) || cwd
 }
 
 function formatNumber(num) {
@@ -212,7 +228,7 @@ function main() {
   const leftParts = []
 
   const cwd = data.workspace.current_dir
-  const dir = cwd.split("/").pop() || cwd
+  const dir = getDirectoryName(cwd)
   leftParts.push(`${CYAN}${dir}${RESET}`)
 
   const branch = getGitBranch(cwd)
@@ -265,4 +281,13 @@ function main() {
   process.stdout.write(`${line1}\n${line2}`)
 }
 
-main()
+if (require.main === module) {
+  main()
+}
+
+module.exports = {
+  getDirectoryName,
+  getGitBranch,
+  isGitDirty,
+  runGit,
+}
