@@ -124,5 +124,31 @@ in
     };
   };
 
+  launchd.agents."update-agent-harnesses" = {
+    serviceConfig = {
+      Label = "com.herbcaudill.update-agent-harnesses";
+      ProgramArguments = [ "${userBin}/update-agent-harnesses" ];
+      StartCalendarInterval = [
+        {
+          Hour = 9;
+          Minute = 20;
+        }
+        {
+          Hour = 15;
+          Minute = 20;
+        }
+        {
+          Hour = 21;
+          Minute = 20;
+        }
+      ];
+      StandardOutPath = "/tmp/update-agent-harnesses.log";
+      StandardErrorPath = "/tmp/update-agent-harnesses.log";
+      EnvironmentVariables = {
+        PATH = "${launchdPath}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin";
+      };
+    };
+  };
+
   system.stateVersion = 6;
 }

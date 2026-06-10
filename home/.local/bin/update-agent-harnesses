@@ -1,0 +1,31 @@
+#!/usr/bin/env zsh
+set -euo pipefail
+
+export HOME="${HOME:-/Users/herbcaudill}"
+export SHELL="/bin/zsh"
+export PNPM_HOME="${PNPM_HOME:-$HOME/Library/pnpm}"
+export PATH="$PNPM_HOME:$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+
+lock_dir="/tmp/update-agent-harnesses.lock"
+if ! mkdir "$lock_dir" 2>/dev/null; then
+  echo "[$(date -Is)] update already running"
+  exit 0
+fi
+trap 'rmdir "$lock_dir"' EXIT
+
+run_step() {
+  local name="$1"
+  shift
+
+  echo "[$(date -Is)] starting $name"
+  "$@"
+  echo "[$(date -Is)] finished $name"
+}
+
+run_step updatepnpm /bin/zsh -lc 'curl -fsSL https://get.pnpm.io/install.sh | sh -'
+run_step updatecodex /bin/zsh -lc 'pnpm install -g @openai/codex'
+run_step updatepi /bin/zsh -lc 'pnpm install -g @earendil-works/pi-coding-agent'
+run_step updateclaude /bin/zsh -lc 'claude install latest --force'
+run_step updatebd /bin/zsh -lc 'curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash'
+
+echo "[$(date -Is)] agent harness updates complete"

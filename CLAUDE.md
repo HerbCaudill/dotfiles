@@ -56,6 +56,7 @@ These are installed into `~/.local/bin` by Home Manager rather than a custom sym
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | `agent-transcripts-sync` | Sync raw local Claude Code, Codex, and Pi transcript stores into `~/Code/HerbCaudill/agent-transcripts` and commit changes there | Node.js  |
 | `github-pr-task-sync`    | Poll GitHub notifications and create Google Tasks for assigned/review-requested PRs                                              | Node.js  |
+| `update-agent-harnesses` | Update Claude Code, Pi, Codex, pnpm, and bd                                                                                      | Zsh      |
 | `beads`                  | Wrapper for `bd`                                                                                                                 | Shell    |
 | `gh-sync`                | Sync `~/Code/HerbCaudill` with all repos on github.com/HerbCaudill                                                               | Bash     |
 | `serena`                 | Invoke Serena CLI                                                                                                                | Python   |
@@ -94,6 +95,13 @@ The dotfiles repo manages GitHub-to-Google-Tasks automation with:
 - persistent state in `~/.local/share/github-pr-task-sync/state.json` so repeated polls do not recreate the same task for the same notification update
 
 Tasks are created in the default Google Tasks list with title `PR: {title}` and the PR URL in the notes.
+
+## Agent harness updates
+
+The dotfiles repo manages automated harness updates with:
+
+- `update-agent-harnesses`, a Zsh script that updates pnpm, Codex, Pi, Claude Code, and bd directly
+- a nix-darwin `launchd` agent in `nix/darwin/default.nix` that runs it at 9:20, 15:20, and 21:20 and logs to `/tmp/update-agent-harnesses.log`
 
 ## Agent transcript archive
 
