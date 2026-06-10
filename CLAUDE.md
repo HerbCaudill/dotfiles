@@ -65,7 +65,7 @@ These are installed into `~/.local/bin` by Home Manager rather than a custom sym
 
 ## Windows Parallels Claude setup
 
-Run `scripts/windows/install-claude-shared-config.ps1` inside the Windows VM to link native Windows Claude to the repo-managed global instructions, agents, skills, and status line through the Parallels `\\Mac\Home\Code\HerbCaudill\dotfiles` shared folder. Use the script's `-Copy` flag only when Windows cannot create symlinks.
+Run `scripts/windows/install-claude-shared-config-from-mac.sh` from macOS to configure native Windows Claude through `prlctl`. The macOS wrapper runs the PowerShell installer against `C:\Users\herbcaudill\.claude` and links Claude to the repo-managed global instructions, agents, skills, and status line through the Parallels `\\Mac\Home\Code\HerbCaudill\dotfiles` shared folder. If running from inside Windows, use `scripts/windows/install-claude-shared-config.ps1`; use its `-Copy` flag only when Windows cannot create symlinks.
 
 ## Installing shared agent skills
 

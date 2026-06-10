@@ -121,6 +121,8 @@ function visibleLength(str) {
  * Returns { utilization, resetsAt } or null if unable to fetch.
  */
 function getWeeklyUsage() {
+  if (process.platform !== "darwin") return null
+
   try {
     const tokenJson = execSync(
       'security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null',

@@ -1,11 +1,12 @@
 param(
   [string]$RepoRoot = "\\Mac\Home\Code\HerbCaudill\dotfiles",
+  [string]$UserProfile = $env:USERPROFILE,
   [switch]$Copy
 )
 
 $ErrorActionPreference = "Stop"
 
-$claudeDirectory = Join-Path $env:USERPROFILE ".claude"
+$claudeDirectory = Join-Path $UserProfile ".claude"
 $settingsPath = Join-Path $claudeDirectory "settings.json"
 $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
 
