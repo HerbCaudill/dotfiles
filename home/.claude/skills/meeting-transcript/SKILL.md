@@ -49,6 +49,29 @@ Herb: Well, let me explain. What I’m working on right now is setting up an aut
 
 The summary is useful meeting notes, not a transcript.
 
+After YAML frontmatter, begin with a human-readable meeting header before the summary content:
+
+```markdown
+# Report automation check-in
+
+Monday, June 15, 2026
+
+- Herb Caudill
+- Amanda Pinkston
+- Brent Keller
+
+Topics
+
+- Report automation and template generation
+- AI coding agents
+
+[Full transcript](../cleaned/20260615-1300-amanda-herb.md)
+
+---
+```
+
+Use the improved title as the H1, derive the human-readable date from meeting metadata or filename, list participants by full name, infer concise topics, and link only to the cleaned transcript. Do not link to the raw transcript.
+
 If the meeting has distinct agenda items, infer them and repeat this structure for each item. If not, use the structure once for the whole meeting.
 
 1. One or two summary paragraphs.
@@ -74,7 +97,7 @@ source_path: /absolute/path/to/raw.md
 output_type: cleaned_transcript
 ```
 
-For summaries, include relative links to raw and cleaned files in the body when possible.
+For summaries, include a relative link to the cleaned transcript in the human-readable header. Do not include a raw transcript link.
 
 ## Common mistakes
 
