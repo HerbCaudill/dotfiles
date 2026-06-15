@@ -1,17 +1,20 @@
 ---
 name: meeting-transcript
-description: Use when turning an explicit raw Zoom-style meeting transcript path into a cleaned transcript, meeting summary, agenda-based notes, chronological narrative, decisions, and action items.
+description: Use when turning a raw Zoom-style meeting transcript path or natural-language meeting reference into a cleaned transcript, meeting summary, agenda-based notes, chronological narrative, decisions, and action items.
 ---
 
 # Meeting Transcript
 
 ## Overview
 
-Create two generated Markdown files from one explicit raw Zoom transcript: a cleaned transcript and a summary. Preserve the raw file, overwrite generated outputs, and keep filenames unchanged.
+Create two generated Markdown files from one raw Zoom transcript: a cleaned transcript and a summary. Preserve the raw file, overwrite generated outputs, and keep filenames unchanged. The user may provide either an explicit path or a natural-language reference such as `/meeting-transcript today's meeting with amanda`.
 
 ## Workflow
 
-1. Require an explicit raw transcript path from the user.
+1. Resolve the raw transcript path.
+   - If the user provided an explicit path, use it.
+   - If the user provided a natural-language reference, search the default raw meetings folder: `/Users/herbcaudill/Library/CloudStorage/GoogleDrive-herb@devresults.com/My Drive/Notes/meetings/raw`.
+   - Match date words like `today`, `yesterday`, or an explicit date against filenames and frontmatter. Match participant words case-insensitively against filenames and transcript speaker labels. If exactly one good match is found, use it without asking. If none or multiple plausible matches are found, show the candidates and ask which one to use.
 2. Run the parser and capture JSON:
 
    ```bash
@@ -80,3 +83,4 @@ For summaries, include relative links to raw and cleaned files in the body when 
 - Do not ask before overwriting generated outputs.
 - Do not invent decisions, action items, dates, or certainty.
 - Do not require confirmation of inferred agenda items or title.
+- Do not ask for an explicit path when a natural-language reference clearly identifies one raw transcript in the default folder.
