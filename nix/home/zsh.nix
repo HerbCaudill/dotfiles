@@ -5,6 +5,7 @@
     "$HOME/.local/share/pnpm"
     "$HOME/.proto/bin"
     "$HOME/.proto/shims"
+    "$HOME/Library/pnpm/bin"
     "$HOME/Library/pnpm"
   ];
 
@@ -24,7 +25,7 @@
 
       export PROTO_HOME="$HOME/.proto"
       export PNPM_HOME="$HOME/Library/pnpm"
-      export PATH="$PROTO_HOME/shims:$PROTO_HOME/bin:$PATH"
+      export PATH="$PNPM_HOME/bin:$PNPM_HOME:$PROTO_HOME/shims:$PROTO_HOME/bin:$PATH"
       export VISUAL=code
       export EDITOR="$VISUAL"
       export CLOUDSDK_PYTHON=${pkgs.python313}/bin/python3
@@ -64,7 +65,7 @@
       obs = "code ~/Code/HerbCaudill/notes";
       ohmyzsh = "code ~/Code/HerbCaudill/dotfiles/home/.oh-my-zsh";
       patch = "bump patch";
-      pb = "pg; d";
+      pb = "pg; b";
       pd = "pg; d";
       pg = "rm -rf **/node_modules; rm -rf **/dist; rm -rf .next; i";
       profile = "code ~/Code/HerbCaudill/dotfiles/nix/home/zsh.nix";
@@ -87,9 +88,8 @@
       updateclaude = "claude install latest --force";
       updatecodex = "pnpm install -g @openai/codex";
       updatemachine = "sudo nix run github:LnL7/nix-darwin/master#darwin-rebuild -- switch --flake ~/Code/HerbCaudill/dotfiles#herbcaudill";
-      updatemcp = "npm update -g @upstash/context7-mcp @playwright/mcp && uv tool upgrade serena-agent";
       updatenix = "nix flake update ~/Code/HerbCaudill/dotfiles";
-      updatepi = "pnpm install -g @mariozechner/pi-coding-agent";
+      updatepi = "pnpm install -g @earendil-works/pi-coding-agent@latest";
       updatepnpm = "curl -fsSL https://get.pnpm.io/install.sh | sh -";
       wa = "pnpm watch";
       wrap = "tput smam";
