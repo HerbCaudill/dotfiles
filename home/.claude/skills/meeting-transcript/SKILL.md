@@ -13,7 +13,7 @@ Create two generated Markdown files from one raw Zoom transcript: a cleaned tran
 
 1. Resolve the raw transcript path.
    - If the user provided an explicit path, use it.
-   - If the user provided a natural-language reference, search the default raw meetings folder: `/Users/herbcaudill/Library/CloudStorage/GoogleDrive-herb@devresults.com/My Drive/Notes/meetings/raw`.
+   - If the user provided a natural-language reference, search the default raw meetings folder: `/Users/herbcaudill/Code/herbcaudill/notes/meetings/raw`.
    - Match date words like `today`, `yesterday`, or an explicit date against filenames and frontmatter. Match participant words case-insensitively against filenames and transcript speaker labels. If exactly one good match is found, use it without asking. If none or multiple plausible matches are found, show the candidates and ask which one to use.
 2. Run the parser and capture JSON:
 
@@ -21,7 +21,7 @@ Create two generated Markdown files from one raw Zoom transcript: a cleaned tran
    node ~/.claude/skills/meeting-transcript/scripts/parseZoomTranscript.ts "/path/to/raw.md"
    ```
 
-3. Derive output paths. If the raw path contains `/meetings/raw/`, replace it with `/meetings/cleaned/` and `/meetings/summaries/`. Otherwise write sibling files named `{basename}.cleaned.md` and `{basename}.summary.md`.
+3. Derive output paths. If the raw path contains `/meetings/raw/`, replace it with `/meetings/cleaned/` for the cleaned transcript and `/meetings/` for the summary. Otherwise write sibling files named `{basename}.cleaned.md` and `{basename}.summary.md`.
 4. Create parent directories as needed and overwrite existing generated files.
 5. Write both files with YAML frontmatter copied from source metadata plus derived fields such as `title`, `participants`, `generated_at`, `source_path`, and `output_type`.
 
@@ -65,7 +65,7 @@ Topics
 - Report automation and template generation
 - AI coding agents
 
-[Full transcript](../cleaned/20260615-1300-amanda-herb.md)
+[Full transcript](cleaned/20260615-1300-amanda-herb.md)
 
 ---
 ```
