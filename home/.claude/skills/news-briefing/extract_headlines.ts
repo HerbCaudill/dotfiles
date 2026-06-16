@@ -54,9 +54,9 @@ function extractHeadlineLines(
       anchorRange => anchorRange.start < headingPosition && headingPosition < anchorRange.end,
     )
     const resolvedHref = inlineHrefMatch?.[1] ?? parentAnchor?.href ?? ariaMap.get(text) ?? ""
-    const url =
-      resolvedHref ?
-        baseUrl ? new URL(resolvedHref, baseUrl).toString()
+    const url = resolvedHref
+      ? baseUrl
+        ? new URL(resolvedHref, baseUrl).toString()
         : resolvedHref
       : ""
 

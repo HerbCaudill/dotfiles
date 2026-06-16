@@ -167,8 +167,8 @@ import { ParseResult } from "effect"
 const SafeStringToNumber = Schema.transformOrFail(Schema.String, Schema.Number, {
   decode: s => {
     const n = parseFloat(s)
-    return isNaN(n) ?
-        ParseResult.fail(new ParseResult.Type(Schema.Number.ast, s))
+    return isNaN(n)
+      ? ParseResult.fail(new ParseResult.Type(Schema.Number.ast, s))
       : ParseResult.succeed(n)
   },
   encode: n => ParseResult.succeed(String(n)),
