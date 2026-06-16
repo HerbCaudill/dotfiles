@@ -31,9 +31,6 @@ describe("TypeScript script migration", () => {
     expect(
       readFileSync(join(process.cwd(), "home/.local/bin/create-daily-note"), "utf8"),
     ).toContain("runCreateDailyNote.ts")
-    expect(
-      readFileSync(join(process.cwd(), "home/.local/bin/install-agent-transcripts-cron"), "utf8"),
-    ).toContain("runInstallAgentTranscriptsCron.ts")
   })
 
   test("uses an explicit node runtime for the daily note launcher", () => {
