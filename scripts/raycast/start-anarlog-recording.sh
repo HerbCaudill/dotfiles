@@ -12,7 +12,7 @@ else
   startup_delay=3
 fi
 
-osascript "$startup_delay" <<'APPLESCRIPT'
+osascript - "$startup_delay" <<'APPLESCRIPT'
 on run argv
   set startupDelay to item 1 of argv as real
 
