@@ -6,20 +6,30 @@
 # @raycast.icon 🎙️
 # @raycast.packageName Meetings
 
-osascript <<'APPLESCRIPT'
-tell application "anarlog" to activate
+if pgrep -x "anarlog" >/dev/null; then
+  startup_delay=0.2
+else
+  startup_delay=3
+fi
 
-tell application "System Events"
-  repeat 100 times
-    if exists process "anarlog" then
-      tell process "anarlog" to set frontmost to true
+osascript "$startup_delay" <<'APPLESCRIPT'
+on run argv
+  set startupDelay to item 1 of argv as real
+
+  tell application "anarlog" to activate
+
+  tell application "System Events"
+    repeat 100 times
+      if exists process "anarlog" then
+        tell process "anarlog" to set frontmost to true
+        if frontmost of process "anarlog" then exit repeat
+      end if
+
       delay 0.1
-      if frontmost of process "anarlog" then exit repeat
-    end if
+    end repeat
 
-    delay 0.1
-  end repeat
-
-  keystroke "n" using {command down, shift down}
-end tell
+    delay startupDelay
+    keystroke "n" using {command down, shift down}
+  end tell
+end run
 APPLESCRIPT
