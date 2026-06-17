@@ -89,7 +89,7 @@
       updatecodex = "pnpm install -g @openai/codex";
       updatemachine = "sudo nix run github:LnL7/nix-darwin/master#darwin-rebuild -- switch --flake ~/Code/HerbCaudill/dotfiles#herbcaudill";
       updatenix = "nix flake update ~/Code/HerbCaudill/dotfiles";
-      updatepi = "pnpm remove -g @mariozechner/pi-coding-agent || true; pnpm install -g @earendil-works/pi-coding-agent@latest";
+      updatepi = "pnpm install -g @earendil-works/pi-coding-agent@latest";
       updatepnpm = "curl -fsSL https://get.pnpm.io/install.sh | sh -";
       wa = "pnpm watch";
       wrap = "tput smam";
