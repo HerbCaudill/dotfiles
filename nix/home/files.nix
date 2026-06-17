@@ -26,7 +26,6 @@ in {
     ".local/bin/gh-sync".source = mkRepoSymlink "home/.local/bin/gh-sync";
     ".local/bin/github-pr-task-sync".source = mkRepoSymlink "home/.local/bin/github-pr-task-sync";
     ".local/bin/index-project".source = mkRepoSymlink "home/.local/bin/index-project";
-    ".local/bin/install-agent-transcripts-cron".source = mkRepoSymlink "home/.local/bin/install-agent-transcripts-cron";
     ".local/bin/obsidian-sync".source = mkRepoSymlink "home/.local/bin/obsidian-sync";
     ".local/bin/update-agent-harnesses".source = mkRepoSymlink "home/.local/bin/update-agent-harnesses";
     ".local/bin/serena".source = mkRepoSymlink "home/.local/bin/serena";

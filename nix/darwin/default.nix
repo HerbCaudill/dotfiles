@@ -76,6 +76,24 @@ in
     };
   };
 
+  launchd.agents."meeting-notes" = {
+    serviceConfig = {
+      Label = "com.herbcaudill.meeting-notes";
+      ProgramArguments = [
+        "${pkgs.pnpm}/bin/pnpm"
+        "sync"
+      ];
+      WorkingDirectory = "${homeDirectory}/Code/HerbCaudill/zoom-transcripts";
+      StartInterval = 900;
+      StandardOutPath = "/tmp/meeting-notes.log";
+      StandardErrorPath = "/tmp/meeting-notes.log";
+      EnvironmentVariables = {
+        # pi lives in the pnpm global bin, which is not part of launchdPath.
+        PATH = "${homeDirectory}/Library/pnpm/bin:${launchdPath}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin";
+      };
+    };
+  };
+
   launchd.agents."agent-transcripts-sync" = {
     serviceConfig = {
       Label = "com.herbcaudill.agent-transcripts-sync";

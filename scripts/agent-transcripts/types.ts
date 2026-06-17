@@ -15,13 +15,3 @@ export type FixedTranscriptFile = {
   /** The source path relative to the local home directory. */
   sourceRelativePath: string
 }
-
-/** The input for inserting or updating a managed text block. */
-export type ManagedBlock = {
-  /** The body content that should appear between the managed markers. */
-  blockBody: string
-  /** The full existing file contents. */
-  existingContents: string
-  /** The logical block name used in begin and end markers. */
-  name: string
-}
