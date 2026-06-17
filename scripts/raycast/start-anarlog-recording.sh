@@ -7,20 +7,22 @@
 # @raycast.packageName Meetings
 
 osascript <<'APPLESCRIPT'
-tell application "anarlog" to activate
+set appId to "com.hyprnote.stable"
+
+tell application id appId to activate
 
 tell application "System Events"
   repeat 100 times
-    if exists process "anarlog" then
-      tell process "anarlog"
-        if frontmost and exists menu bar 1 then exit repeat
-      end tell
+    if exists application process whose bundle identifier is appId then
+      set anarlogProcess to first application process whose bundle identifier is appId
+      if frontmost of anarlogProcess then exit repeat
+      set frontmost of anarlogProcess to true
     end if
 
     delay 0.1
   end repeat
 
-  tell process "anarlog" to set frontmost to true
+  delay 0.2
   keystroke "n" using {command down, shift down}
 end tell
 APPLESCRIPT
