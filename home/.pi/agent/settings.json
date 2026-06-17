@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.79.3",
+  "lastChangelogVersion": "0.79.6",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-5.5",
   "packages": [
@@ -24,10 +24,11 @@
     "extensions/status-line/index.ts"
   ],
   "quietStartup": true,
-  "hideThinkingBlock": false,
+  "hideThinkingBlock": true,
   "defaultThinkingLevel": "medium",
   "enabledModels": [
     "openai-codex/gpt-5.4",
     "openai-codex/gpt-5.5"
-  ]
+  ],
+  "theme": "dark"
 }
