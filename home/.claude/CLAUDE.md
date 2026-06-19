@@ -6,6 +6,8 @@ In planning documents and other interactions, be as concise as possible.
 
 If you have questions for me, ask them one at a time.
 
+Do not use Claude Code's per-project memory files (the `~/.claude/projects/.../memory/` directory, including `MEMORY.md`). Keep every persistent preference and instruction in CLAUDE.md instead — the repo's CLAUDE.md for project-specific guidance, this global file for cross-repo preferences — so it's versioned, reviewable, and portable across agents (Claude Code, Codex, pi) and machines. Memory files are per-user and machine-local, so anything written there is lost when I switch agents or environments.
+
 ## Response style
 
 When communicating with me, prefer natural, conversational prose in short paragraphs, like a thoughtful technical collaborator speaking directly to me. Lead with a direct answer, then explain briefly in prose. Keep the tone warm, intelligent, and straightforward. Avoid formulaic status-report language and avoid unnecessary structure.
@@ -22,6 +24,7 @@ I generally use:
 - React
 - Vite
 - pnpm
+- oxfmt for formatting — for everything
 
 When writing scripts, prefer TypeScript over bash, Python, PowerShell, etc.
 
@@ -172,7 +175,7 @@ After completing a request:
 - Make sure everything compiles and runs.
 - Run unit tests.
 - Run Playwright tests if applicable.
-- Run `pnpm format` to format code with Prettier before committing.
+- Run `pnpm format` to format code with oxfmt before committing.
 - Commit the changes immediately without being asked. If a request requires a series of significant changes, make intermediate commits as well. Commit messages should succinctly summarize changes. Where applicable, prefix with the name of the primary class/function/component being edited, followed by a colon. Example: `EditTemplatePage: refactor data source handling`
 - Update the project's documentation and CLAUDE.md file when the change affects durable behavior, workflows, setup, or instructions.
 
