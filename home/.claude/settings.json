@@ -33,5 +33,6 @@
     "document-skills@anthropic-agent-skills": true
   },
   "autoUpdatesChannel": "latest",
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "editorMode": "normal"
 }
