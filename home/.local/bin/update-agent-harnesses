@@ -4,7 +4,7 @@ set -euo pipefail
 export HOME="${HOME:-/Users/herbcaudill}"
 export SHELL="/bin/zsh"
 export PNPM_HOME="${PNPM_HOME:-$HOME/Library/pnpm}"
-export PATH="$PNPM_HOME:$PNPM_HOME/bin:$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+export PATH="$PNPM_HOME/bin:$PNPM_HOME:$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
 cd "$HOME"
 

@@ -5,8 +5,8 @@
     "$HOME/.local/share/pnpm"
     "$HOME/.proto/bin"
     "$HOME/.proto/shims"
-    "$HOME/Library/pnpm"
     "$HOME/Library/pnpm/bin"
+    "$HOME/Library/pnpm"
   ];
 
   programs.zsh = {
@@ -25,7 +25,7 @@
 
       export PROTO_HOME="$HOME/.proto"
       export PNPM_HOME="$HOME/Library/pnpm"
-      export PATH="$PNPM_HOME:$PNPM_HOME/bin:$PROTO_HOME/shims:$PROTO_HOME/bin:$PATH"
+      export PATH="$PNPM_HOME/bin:$PNPM_HOME:$PROTO_HOME/shims:$PROTO_HOME/bin:$PATH"
       export VISUAL=code
       export EDITOR="$VISUAL"
       export CLOUDSDK_PYTHON=${pkgs.python313}/bin/python3
