@@ -81,6 +81,10 @@ When writing scripts, prefer TypeScript over bash, Python, PowerShell, etc.
 
 Every function, class, property, parameter, method, etc. should be preceded by a block comment starting with `/**`. Function parameters should be documented independently, not using jsdoc syntax.
 
+Do not use `//` comments to document functions, classes, properties, parameters, methods, interfaces, type aliases, constants, or other declarations. Use JSDoc block comments for declaration docs; keep `//` comments only for inline implementation notes, section markers, or file-level context that is not attached to a specific declaration.
+
+For multi-line JSDoc comments, put the opening `/**` on its own line and the closing `*/` on its own line. Do not put summary text on the same line as `/**` when the comment wraps.
+
 ```ts
 /**
  * Check if there's a recent saved iteration state that can be restored.
