@@ -88,7 +88,7 @@ Complete bead {id}: {title} end to end: claim it, implement it, verify it, forma
 > - Write tests first. Use the `Test-Driven Development (TDD)` skill. When fixing a bug, before doing anything else, start by writing a test that reproduces the bug. Then fix the bug and prove it with a passing test.
 > - Make reasonable assumptions for ordinary ambiguity. Ask for human input only when the next step is destructive, changes scope, risks data loss or customer data exposure, requires credentials or permissions, or presents a meaningful architectural choice.
 > - While you're working, if you notice unrelated bugs or other issues, use `bd create` to file issues for another agent to work on.
-> - Run `pnpm test:all` to verify everything works.
+> - Run `pnpm test` to verify everything works.
 > - Update the project's CLAUDE.md or README.md with relevant changes.
 > - Run `pnpm format` to format code.
 > - Commit and push your changes. If you come across unrelated changes, probably the user or another agent is working in the codebase at the same time. Be careful just to commit the changes you made.
