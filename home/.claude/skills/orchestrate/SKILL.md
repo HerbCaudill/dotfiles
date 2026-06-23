@@ -93,7 +93,18 @@ Complete bead {id}: {title} end to end: claim it, implement it, verify it, forma
 > - Run `bd close {id}` to mark the task complete.
 > - If you need human input and the harness provides an explicit notification mechanism, notify the user. Otherwise leave a clear final message explaining the blocker and stop.
 
-If thread-management tools can create threads but cannot wait for automatic replies, check in every 5 minutes or so. Use beads as the source of truth: a task is done when its issue is closed. If a task remains `in_progress` for longer than expected, or the user asks for a status update, inspect that task thread's latest output to see whether it is stuck, blocked, or still working.
+### Monitor quietly
+
+Use beads as the source of truth: a task is done when its issue is closed.
+
+While a batch is running:
+
+- Poll bead state about every 30 seconds with `bd show <id>` or `bd ready --json`.
+- Inspect a task thread's latest output no more than about every 5 minutes unless the user asks for status or the bead state suggests failure/blockage.
+- Do not mirror routine task-thread progress back into the orchestration thread. The user can read that in the task thread.
+- Report in the orchestration thread only when a task is done, stuck, failed, or blocked on human input.
+
+If a task remains `in_progress` after a thread inspection and is still actively working, keep monitoring silently.
 
 ### Repeat
 
