@@ -48,7 +48,9 @@ For each ready task:
 
 ### Dispatch tasks in batches
 
-Create one standalone thread for each task in the batch. Use a local project thread by default. Use a worktree only when the user explicitly asks for isolation, the user is actively working in the same checkout, or the task is long-running/high-risk enough that local checkout interference is likely.
+Create one standalone local project thread for each task in the batch. Do not use worktrees for orchestration task threads unless the user explicitly asks for a worktree in the current conversation. Worktrees add setup overhead, can make large submodules expensive to materialize, and can confuse shared beads state.
+
+If a task seems unsafe to run in the local checkout, do not silently switch it to a worktree. Pause before dispatching that task, explain the collision risk, and ask the user whether to run it sequentially, skip it, or use a worktree anyway.
 
 Name each task thread exactly:
 
