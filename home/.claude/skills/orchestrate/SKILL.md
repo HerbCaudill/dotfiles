@@ -103,10 +103,11 @@ While a batch is running:
 
 - Poll bead state about every 30 seconds with `bd show <id>` or `bd ready --json`.
 - Inspect a task thread's latest output no more than about every 5 minutes unless the user asks for status or the bead state suggests failure/blockage.
-- Do not mirror routine task-thread progress back into the orchestration thread. The user can read that in the task thread.
-- Report in the orchestration thread only when a task is done, stuck, failed, or blocked on human input.
+- Polling is silent. Do not say that there is no bead-level change, that a task is still in progress, that you will keep polling, or that you are checking the thread again.
+- Do not summarize routine task-thread progress back into the orchestration thread. The user can read that in the task thread.
+- Report in the orchestration thread only when a task is done, stuck, failed, blocked on human input, or a new issue/dependency is discovered that changes orchestration decisions.
 
-If a task remains `in_progress` after a thread inspection and is still actively working, keep monitoring silently.
+If a task remains `in_progress` after a bead poll or thread inspection and is still actively working, keep monitoring silently. Tool calls may appear in the transcript, but do not add assistant commentary for unchanged state.
 
 ### Repeat
 
