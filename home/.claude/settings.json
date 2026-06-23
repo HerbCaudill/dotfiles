@@ -34,5 +34,6 @@
   },
   "autoUpdatesChannel": "latest",
   "skipDangerousModePermissionPrompt": true,
-  "editorMode": "normal"
+  "editorMode": "normal",
+  "agentPushNotifEnabled": true
 }
