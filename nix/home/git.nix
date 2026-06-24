@@ -17,7 +17,10 @@
         enabled = true;
         autoupdate = true;
       };
-      credential.helper = "osxkeychain";
+      credential = {
+        helper = "osxkeychain";
+        "https://github.com".helper = "!gh auth git-credential";
+      };
       safe.directory = [
         "/Users/${username}"
         "/Users/${username}/Code/HerbCaudill"
