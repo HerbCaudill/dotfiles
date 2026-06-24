@@ -18,6 +18,8 @@ DevResults is a Windows-native .NET/SQL Server application. Treat the Parallels 
 | Run the web app       | Use IIS Express in the Windows VM                       |
 | Test browser behavior | Open the VM-hosted app URL from macOS when reachable    |
 | Edit files            | Prefer edits in the Windows checkout, not a macOS clone |
+| Repo instructions     | Read `CLAUDE.md` from the DevResults repo root          |
+| Repo-specific skills  | Check `.claude/skills` inside the DevResults repo       |
 
 ## SSH
 
@@ -41,9 +43,11 @@ The default SSH shell is Windows PowerShell 5.1, so use PowerShell syntax for re
 
 1. SSH into `devresults-vm`.
 2. Find or enter the DevResults checkout on the Windows filesystem.
-3. Run `git status` before changing files.
-4. Keep git, builds, tests, and IIS Express commands inside Windows unless there is a clear reason not to.
-5. Use macOS tools only for host-side checks, SQL access, or browser verification against the VM-hosted app.
+3. Read the repo root `CLAUDE.md` before making changes.
+4. Check the repo's `.claude/skills` directory and use any relevant repo-specific skills.
+5. Run `git status` before changing files.
+6. Keep git, builds, tests, and IIS Express commands inside Windows unless there is a clear reason not to.
+7. Use macOS tools only for host-side checks, SQL access, or browser verification against the VM-hosted app.
 
 ## Guardrails
 
