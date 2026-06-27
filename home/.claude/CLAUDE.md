@@ -57,6 +57,13 @@ When writing shell scripts, prefer TypeScript over bash, Python, PowerShell, etc
 - Prefer function composition over class hierarchies
 - Keep side effects (I/O, state changes) at the edges of the system
 
+### Effect
+
+Reach for [Effect](https://effect.website) when a problem has real structural complexity — typed/recoverable errors, dependency injection, concurrency, resource lifecycle (acquire/release), retries and timeouts, or pipelines where failures need to compose. Use Effect Schema for
+parsing, validation, and encode/decode at system boundaries.
+
+Don't reach for it by default. Plain async/await and pure functions are better for simple scripts, one-off transforms, and small components — Effect's overhead (learning curve, syntax, bundle size) only pays off once the failure/dependency/concurrency story is genuinely hard. When in doubt, start plain and adopt Effect at the layer where the complexity actually lives. There are `effect-ts` and `effect-schema` skills for the details.
+
 ### General
 
 - Unless instructed otherwise, don't worry about backwards compatibility; use a hard cutover approach.
