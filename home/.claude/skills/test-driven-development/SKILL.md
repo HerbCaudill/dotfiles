@@ -1,6 +1,6 @@
 ---
 name: test-driven-development
-description: Use when implementing any feature or bugfix, before writing implementation code
+description: Use when implementing a feature, bug fix, refactor, or behavior change after the target behavior is understood
 ---
 
 # Test-Driven Development (TDD)
@@ -18,9 +18,13 @@ Write the test first. Watch it fail. Write minimal code to pass.
 **Always:**
 
 - New features
-- Bug fixes
+- Bug fixes with a known or reproducible failure
 - Refactoring
 - Behavior changes
+
+**Do not trigger this skill just because a user reports a problem.** Investigation is not implementation. If the failure mode, cause, or reproducible boundary is still unknown, investigate first: read the code, inspect logs, run the tool, examine live data, reproduce manually, or gather whatever evidence is cheapest and most reliable.
+
+Once the problem is understood well enough to state expected behavior, write a failing regression test before changing production code.
 
 **Exceptions (ask your human partner):**
 
@@ -268,19 +272,19 @@ Tests-first force edge case discovery before implementing. Tests-after verify yo
 
 ## Common Rationalizations
 
-| Excuse                                 | Reality                                                                 |
-| -------------------------------------- | ----------------------------------------------------------------------- |
-| "Too simple to test"                   | Simple code breaks. Test takes 30 seconds.                              |
-| "I'll test after"                      | Tests passing immediately prove nothing.                                |
-| "Tests after achieve same goals"       | Tests-after = "what does this do?" Tests-first = "what should this do?" |
-| "Already manually tested"              | Ad-hoc ≠ systematic. No record, can't re-run.                           |
-| "Deleting X hours is wasteful"         | Sunk cost fallacy. Keeping unverified code is technical debt.           |
-| "Keep as reference, write tests first" | You'll adapt it. That's testing after. Delete means delete.             |
-| "Need to explore first"                | Fine. Throw away exploration, start with TDD.                           |
-| "Test hard = design unclear"           | Listen to test. Hard to test = hard to use.                             |
-| "TDD will slow me down"                | TDD faster than debugging. Pragmatic = test-first.                      |
-| "Manual test faster"                   | Manual doesn't prove edge cases. You'll re-test every change.           |
-| "Existing code has no tests"           | You're improving it. Add tests for existing code.                       |
+| Excuse                                 | Reality                                                                        |
+| -------------------------------------- | ------------------------------------------------------------------------------ |
+| "Too simple to test"                   | Simple code breaks. Test takes 30 seconds.                                     |
+| "I'll test after"                      | Tests passing immediately prove nothing.                                       |
+| "Tests after achieve same goals"       | Tests-after = "what does this do?" Tests-first = "what should this do?"        |
+| "Already manually tested"              | Ad-hoc ≠ systematic. No record, can't re-run.                                  |
+| "Deleting X hours is wasteful"         | Sunk cost fallacy. Keeping unverified code is technical debt.                  |
+| "Keep as reference, write tests first" | You'll adapt it. That's testing after. Delete means delete.                    |
+| "Need to explore first"                | Valid during diagnosis. Once behavior is known, start implementation with TDD. |
+| "Test hard = design unclear"           | Listen to test. Hard to test = hard to use.                                    |
+| "TDD will slow me down"                | TDD faster than debugging. Pragmatic = test-first.                             |
+| "Manual test faster"                   | Manual doesn't prove edge cases. You'll re-test every change.                  |
+| "Existing code has no tests"           | You're improving it. Add tests for existing code.                              |
 
 ## Red Flags - STOP and Start Over
 
@@ -367,7 +371,9 @@ Can't check all boxes? You skipped TDD. Start over.
 
 ## Debugging Integration
 
-Bug found? Write failing test reproducing it. Follow TDD cycle. Test proves fix and prevents regression.
+Bug report with unknown cause? Investigate first. Do not invent a test before you understand the behavior boundary; a fake regression test is worse than no test because it anchors the fix at the wrong layer.
+
+Bug found and reproducible? Write a failing test reproducing it. Follow TDD cycle. Test proves fix and prevents regression.
 
 Never fix bugs without a test.
 
