@@ -11,45 +11,21 @@ Write the test first. Watch it fail. Write minimal code to pass.
 
 **Core principle:** If you didn't watch the test fail, you don't know if it tests the right thing.
 
-**Violating the letter of the rules is violating the spirit of the rules.**
-
 ## When to Use
 
 **Always:**
 
 - New features
-- Bug fixes with a known or reproducible failure
+- Bug fixes that we know how to reproduce
 - Refactoring
 - Behavior changes
 
-**Do not trigger this skill just because a user reports a problem.** Investigation is not implementation. If the failure mode, cause, or reproducible boundary is still unknown, investigate first: read the code, inspect logs, run the tool, examine live data, reproduce manually, or gather whatever evidence is cheapest and most reliable.
+## When not to use
 
-Once the problem is understood well enough to state expected behavior, write a failing regression test before changing production code.
-
-**Exceptions (ask your human partner):**
-
-- Throwaway prototypes
-- Generated code
-- Configuration files
-
-Thinking "skip TDD just this once"? Stop. That's rationalization.
-
-## The Iron Law
-
-```
-NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST
-```
-
-Write code before the test? Delete it. Start over.
-
-**No exceptions:**
-
-- Don't keep it as "reference"
-- Don't "adapt" it while writing tests
-- Don't look at it
-- Delete means delete
-
-Implement fresh from tests. Period.
+- **When we don't know if we're even dealing with a code problem.** Investigation is not implementation. If the failure mode, cause, or reproducible boundary is still unknown, investigate first: read the code, inspect logs, run the tool, examine live data, reproduce manually, or gather whatever evidence is cheapest and most reliable. Once the problem is understood well enough to state expected behavior, write a failing regression test before changing production code.
+- **When we're not writing code**. TDD is about writing code to implement behavior. If the work is research, design, or documentation, TDD is not applicable.
+- **When making shell scripts or one-off commands**. TDD is about writing code to implement behavior. If the work is a throwaway script, TDD is not applicable.
+- **When modifying settings or configuration**. TDD is about writing code to implement behavior. If the work is changing settings or configuration, TDD is not applicable.
 
 ## Red-Green-Refactor
 
@@ -79,40 +55,41 @@ digraph tdd_cycle {
 
 Write one minimal test showing what should happen.
 
-<Good>
+#### Good
+
 ```typescript
-test('retries failed operations 3 times', async () => {
-  let attempts = 0;
+test("retries failed operations 3 times", async () => {
+  let attempts = 0
   const operation = () => {
-    attempts++;
-    if (attempts < 3) throw new Error('fail');
-    return 'success';
-  };
+    attempts++
+    if (attempts < 3) throw new Error("fail")
+    return "success"
+  }
 
-const result = await retryOperation(operation);
+  const result = await retryOperation(operation)
 
-expect(result).toBe('success');
-expect(attempts).toBe(3);
-});
+  expect(result).toBe("success")
+  expect(attempts).toBe(3)
+})
+```
 
-````
 Clear name, tests real behavior, one thing
-</Good>
 
-<Bad>
-```typescript
-test('retry works', async () => {
-  const mock = jest.fn()
+#### Bad
+
+```ts
+test("retry works", async () => {
+  const mock = jest
+    .fn()
     .mockRejectedValueOnce(new Error())
     .mockRejectedValueOnce(new Error())
-    .mockResolvedValueOnce('success');
-  await retryOperation(mock);
-  expect(mock).toHaveBeenCalledTimes(3);
-});
-````
+    .mockResolvedValueOnce("success")
+  await retryOperation(mock)
+  expect(mock).toHaveBeenCalledTimes(3)
+})
+```
 
 Vague name, tests mock not code
-</Bad>
 
 **Requirements:**
 
@@ -142,37 +119,39 @@ Confirm:
 
 Write simplest code to pass the test.
 
-<Good>
-```typescript
+#### Good
+
+```ts
 async function retryOperation<T>(fn: () => Promise<T>): Promise<T> {
   for (let i = 0; i < 3; i++) {
     try {
-      return await fn();
+      return await fn()
     } catch (e) {
-      if (i === 2) throw e;
+      if (i === 2) throw e
     }
   }
-  throw new Error('unreachable');
+  throw new Error("unreachable")
 }
 ```
-Just enough to pass
-</Good>
 
-<Bad>
-```typescript
+Just enough to pass
+
+#### Bad
+
+```ts
 async function retryOperation<T>(
   fn: () => Promise<T>,
   options?: {
-    maxRetries?: number;
-    backoff?: 'linear' | 'exponential';
-    onRetry?: (attempt: number) => void;
-  }
+    maxRetries?: number
+    backoff?: "linear" | "exponential"
+    onRetry?: (attempt: number) => void
+  },
 ): Promise<T> {
   // YAGNI
 }
 ```
+
 Over-engineered
-</Bad>
 
 Don't add features, refactor other code, or "improve" beyond the test.
 
@@ -240,52 +219,6 @@ Manual testing is ad-hoc. You think you tested everything but:
 
 Automated tests are systematic. They run the same way every time.
 
-**"Deleting X hours of work is wasteful"**
-
-Sunk cost fallacy. The time is already gone. Your choice now:
-
-- Delete and rewrite with TDD (X more hours, high confidence)
-- Keep it and add tests after (30 min, low confidence, likely bugs)
-
-The "waste" is keeping code you can't trust. Working code without real tests is technical debt.
-
-**"TDD is dogmatic, being pragmatic means adapting"**
-
-TDD IS pragmatic:
-
-- Finds bugs before commit (faster than debugging after)
-- Prevents regressions (tests catch breaks immediately)
-- Documents behavior (tests show how to use code)
-- Enables refactoring (change freely, tests catch breaks)
-
-"Pragmatic" shortcuts = debugging in production = slower.
-
-**"Tests after achieve the same goals - it's spirit not ritual"**
-
-No. Tests-after answer "What does this do?" Tests-first answer "What should this do?"
-
-Tests-after are biased by your implementation. You test what you built, not what's required. You verify remembered edge cases, not discovered ones.
-
-Tests-first force edge case discovery before implementing. Tests-after verify you remembered everything (you didn't).
-
-30 minutes of tests after ≠ TDD. You get coverage, lose proof tests work.
-
-## Common Rationalizations
-
-| Excuse                                 | Reality                                                                        |
-| -------------------------------------- | ------------------------------------------------------------------------------ |
-| "Too simple to test"                   | Simple code breaks. Test takes 30 seconds.                                     |
-| "I'll test after"                      | Tests passing immediately prove nothing.                                       |
-| "Tests after achieve same goals"       | Tests-after = "what does this do?" Tests-first = "what should this do?"        |
-| "Already manually tested"              | Ad-hoc ≠ systematic. No record, can't re-run.                                  |
-| "Deleting X hours is wasteful"         | Sunk cost fallacy. Keeping unverified code is technical debt.                  |
-| "Keep as reference, write tests first" | You'll adapt it. That's testing after. Delete means delete.                    |
-| "Need to explore first"                | Valid during diagnosis. Once behavior is known, start implementation with TDD. |
-| "Test hard = design unclear"           | Listen to test. Hard to test = hard to use.                                    |
-| "TDD will slow me down"                | TDD faster than debugging. Pragmatic = test-first.                             |
-| "Manual test faster"                   | Manual doesn't prove edge cases. You'll re-test every change.                  |
-| "Existing code has no tests"           | You're improving it. Add tests for existing code.                              |
-
 ## Red Flags - STOP and Start Over
 
 - Code before test
@@ -302,7 +235,7 @@ Tests-first force edge case discovery before implementing. Tests-after verify yo
 - "TDD is dogmatic, I'm being pragmatic"
 - "This is different because..."
 
-**All of these mean: Delete code. Start over with TDD.**
+**All of these mean: Start over with TDD.**
 
 ## Example: Bug Fix
 
@@ -359,37 +292,3 @@ Before marking work complete:
 - [ ] Edge cases and errors covered
 
 Can't check all boxes? You skipped TDD. Start over.
-
-## When Stuck
-
-| Problem                | Solution                                                             |
-| ---------------------- | -------------------------------------------------------------------- |
-| Don't know how to test | Write wished-for API. Write assertion first. Ask your human partner. |
-| Test too complicated   | Design too complicated. Simplify interface.                          |
-| Must mock everything   | Code too coupled. Use dependency injection.                          |
-| Test setup huge        | Extract helpers. Still complex? Simplify design.                     |
-
-## Debugging Integration
-
-Bug report with unknown cause? Investigate first. Do not invent a test before you understand the behavior boundary; a fake regression test is worse than no test because it anchors the fix at the wrong layer.
-
-Bug found and reproducible? Write a failing test reproducing it. Follow TDD cycle. Test proves fix and prevents regression.
-
-Never fix bugs without a test.
-
-## Testing Anti-Patterns
-
-When adding mocks or test utilities, read @testing-anti-patterns.md to avoid common pitfalls:
-
-- Testing mock behavior instead of real behavior
-- Adding test-only methods to production classes
-- Mocking without understanding dependencies
-
-## Final Rule
-
-```
-Production code → test exists and failed first
-Otherwise → not TDD
-```
-
-No exceptions without your human partner's permission.
