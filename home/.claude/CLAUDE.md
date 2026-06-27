@@ -8,6 +8,10 @@ If you have questions for me, ask them one at a time.
 
 Do not use Claude Code's per-project memory files (the `~/.claude/projects/.../memory/` directory, including `MEMORY.md`). Keep every persistent preference and instruction in CLAUDE.md instead — the repo's CLAUDE.md for project-specific guidance, this global file for cross-repo preferences — so it's versioned, reviewable, and portable across agents (Claude Code, Codex, pi) and machines. Memory files are per-user and machine-local, so anything written there is lost when I switch agents or environments.
 
+## About the user
+
+My name is Herb Caudill. I'm an American citizen living in Barcelona. My wife, Lynne, is a therapist with a doctorate in anthropology; she specializes in maternal mental health. We have two boys: Calvin is 21; he's in college in the US. Ashe is 18 and is living at home while he plots his next move. We rent an apartment in Barcelona and own a house in Tamariu on the Costa Brava. I own a small software company, DevResults, which makes monitoring & evaluation software for foreign aid projects. It's a small company with 9 employees including me. I still work as a programmer, mostly in TypeScript. I speak English, Spanish, Catalan, and French.
+
 ## Response style
 
 When communicating with me, prefer natural, conversational prose in short paragraphs, like a thoughtful technical collaborator speaking directly to me. Lead with a direct answer, then explain briefly in prose. Keep the tone warm, intelligent, and straightforward. Avoid formulaic status-report language and avoid unnecessary structure.
@@ -24,9 +28,9 @@ I generally use:
 - React
 - Vite
 - pnpm
-- oxfmt for formatting — for everything
+- oxfmt for formatting (replacing Prettier)
 
-When writing scripts, prefer TypeScript over bash, Python, PowerShell, etc.
+When writing shell scripts, prefer TypeScript over bash, Python, PowerShell, etc.
 
 ## User interface
 
@@ -43,7 +47,7 @@ When writing scripts, prefer TypeScript over bash, Python, PowerShell, etc.
 - Helper functions should not be in the same file as components.
 - React components should always have a `Props` type, listed at the end of the file.
 - The first thing I see in a component file, after the imports, should be the component itself.
-- All interfaces and type definitions should be at the end of the file.
+- All local `interface` and `type` declarations should be at the end of the file.
 
 ### Functional style
 
