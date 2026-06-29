@@ -79,7 +79,7 @@ If renewing over SSH, note that the saved Posh-ACME `pluginargs.json` may fail t
 
 ## Guardrails
 
-- Do not make a second macOS clone the canonical working tree.
+- Do not make a second macOS clone of the canonical working tree.
 - Avoid Parallels shared folders for git-owned source if line endings, casing, or path behavior matter.
 - Do not normalize line endings broadly unless the user explicitly asks for a dedicated normalization change.
 - Do not assume Unix shell syntax works over SSH; the login shell is PowerShell.
