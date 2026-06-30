@@ -213,6 +213,10 @@ For trivial changes:
 - Global Codex and pi instructions and skills are sourced from `home/.claude/CLAUDE.md` and `home/.claude/skills`.
 - `scripts/symlink.mjs` replaces any existing `~/.codex/AGENTS.md`, `~/.codex/skills`, `~/.pi/agent/AGENTS.md`, and `~/.pi/agent/skills` with symlinks to those shared sources.
 
+## DevResults repo [macOS only]
+
+When working in `/Users/herbcaudill/Code/HerbCaudill/devresults`, use the `devresults` skill before making changes. This repo depends on the local Parallels Windows VM setup, SQL Server access, and macOS-only helper scripts, so those instructions intentionally live outside the repo.
+
 ## Worktrees [macOS only]
 
 The following shell commands are available:
