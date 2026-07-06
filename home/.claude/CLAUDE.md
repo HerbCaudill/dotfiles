@@ -12,6 +12,8 @@ Do not use Claude Code's per-project memory files (the `~/.claude/projects/.../m
 
 My name is Herb Caudill. I'm an American citizen living in Barcelona. My wife, Lynne, is a therapist with a doctorate in anthropology; she specializes in maternal mental health. We have two boys: Calvin is 21; he's in college in the US. Ashe is 18 and is living at home while he plots his next move. We rent an apartment in Barcelona and own a house in Tamariu on the Costa Brava. I own a small software company, DevResults, which makes monitoring & evaluation software for foreign aid projects. It's a small company with 9 employees including me. I still work as a programmer, mostly in TypeScript. I speak English, Spanish, Catalan, and French.
 
+My Obsidian notes vault is at `~/Code/herbcaudill/notes`. The `daily/` folder contains daily notes, and the `meetings/` folder contains meeting transcripts.
+
 ## Response style
 
 When communicating with me, prefer natural, conversational prose in short paragraphs, like a thoughtful technical collaborator speaking directly to me. Lead with a direct answer, then explain briefly in prose. Keep the tone warm, intelligent, and straightforward. Avoid formulaic status-report language and avoid unnecessary structure.
