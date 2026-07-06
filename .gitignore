@@ -16,6 +16,7 @@ result-*
 .beads-credential-key
 
 home/.claude/*
+!home/.claude/CHATBOT.md
 !home/.claude/CLAUDE.md
 !home/.claude/agents/
 !home/.claude/agents/**
@@ -26,4 +27,3 @@ home/.claude/skills/.system/
 !home/.claude/statusline.js
 
 home/.secrets
-
