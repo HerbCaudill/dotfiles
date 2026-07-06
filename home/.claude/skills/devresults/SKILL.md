@@ -11,15 +11,28 @@ DevResults is a Windows-native .NET/SQL Server application. Treat the Parallels 
 
 ## Quick Reference
 
-| Need                  | Default approach                                        |
-| --------------------- | ------------------------------------------------------- |
-| Work in the repo      | SSH to `devresults-vm` and run commands inside Windows  |
-| Query dev SQL Server  | Use the `sql-server-dev` skill from macOS               |
-| Run the web app       | Use IIS Express in the Windows VM                       |
-| Test browser behavior | Open the VM-hosted app URL from macOS when reachable    |
-| Edit files            | Prefer edits in the Windows checkout, not a macOS clone |
-| Repo instructions     | Read `CLAUDE.md` from the DevResults repo root          |
-| Repo-specific skills  | Check `.claude/skills` inside the DevResults repo       |
+| Need                  | Default approach                                       |
+| --------------------- | ------------------------------------------------------ |
+| Work in the repo      | SSH to `devresults-vm` and run commands inside Windows |
+| Query dev SQL Server  | Use the `sql-server-dev` skill from macOS              |
+| Run the web app       | Use IIS Express in the Windows VM                      |
+| Test browser behavior | Open the VM-hosted app URL from macOS when reachable   |
+| Edit files            | Edit inside the Windows VM checkout only               |
+| Repo instructions     | Read `CLAUDE.md` from the DevResults repo root         |
+| Repo-specific skills  | Check `.claude/skills` inside the DevResults repo      |
+| Common repo commands  | Use `dr <command>` from macOS                          |
+
+## Hard Rule: Never Use macOS Mounts for Repo Files
+
+When working on DevResults from macOS, do not read, edit, patch, format, test, stage, commit, or run git against repo files through `/Volumes/[C] Windows 11/...` or any other Parallels shared-folder path.
+
+If a DevResults path begins with `/Volumes/`, stop and switch to the Windows VM:
+
+```bash
+dr git status --short
+```
+
+Do not use `apply_patch` against the mounted Windows checkout. It can create AppleDouble `._*` files and disturb line endings. All source edits must happen inside the Windows VM.
 
 ## SSH
 
@@ -39,6 +52,29 @@ ssh devresults-vm '$PSVersionTable.PSVersion.ToString(); hostname; whoami; Get-L
 
 The default SSH shell is Windows PowerShell 5.1, so use PowerShell syntax for remote commands.
 
+## `dr` Helper
+
+From macOS, use `dr` to run commands from `C:\Code\DevResults` inside the Windows VM:
+
+```bash
+dr git status --short
+dr pnpm test
+dr git add DevResults/Web/Scripts/ng/directives/ReportTemplateIndex.html
+dr git commit -m "ReportTemplateIndex: shrink template thumbnails"
+```
+
+For patch-style edits, apply the patch inside Windows:
+
+```bash
+dr git apply --whitespace=nowarn -
+```
+
+Pipe the patch on stdin. After applying, immediately run:
+
+```bash
+dr git status --short
+```
+
 ## Working Pattern
 
 1. SSH into `devresults-vm`.
@@ -46,7 +82,7 @@ The default SSH shell is Windows PowerShell 5.1, so use PowerShell syntax for re
 3. Read the repo root `CLAUDE.md` before making changes.
 4. Check the repo's `.claude/skills` directory and use any relevant repo-specific skills.
 5. Run `git status` before changing files.
-6. Keep git, builds, tests, and IIS Express commands inside Windows unless there is a clear reason not to.
+6. Keep git, source inspection, edits, builds, tests, and IIS Express commands inside Windows unless there is a clear reason not to.
 7. Use macOS tools only for host-side checks, SQL access, or browser verification against the VM-hosted app.
 
 ## Local TLS for `*.devlocal.us`
@@ -80,7 +116,7 @@ If renewing over SSH, note that the saved Posh-ACME `pluginargs.json` may fail t
 ## Guardrails
 
 - Do not make a second macOS clone of the canonical working tree.
-- Prefer editing through the Windows VM checkout over SSH instead of writing through the mounted `C:` volume. macOS can create AppleDouble sidecar files like `._Web.config` on the shared volume; if they appear during a task, delete them before finishing.
+- Never write through the mounted `C:` volume. macOS can create AppleDouble sidecar files like `._Web.config`; if they appear during a task, delete only those generated sidecars before finishing.
 - Avoid Parallels shared folders for git-owned source if line endings, casing, or path behavior matter.
 - Do not normalize line endings broadly unless the user explicitly asks for a dedicated normalization change.
 - Do not assume Unix shell syntax works over SSH; the login shell is PowerShell.

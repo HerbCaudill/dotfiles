@@ -217,7 +217,7 @@ For trivial changes:
 
 ## DevResults repo [macOS only]
 
-When working in `/Users/herbcaudill/Code/HerbCaudill/devresults`, use the `devresults` skill before making changes. This repo depends on the local Parallels Windows VM setup, SQL Server access, and macOS-only helper scripts, so those instructions intentionally live outside the repo.
+When working in DevResults from macOS, use the `devresults` skill before making changes. Never operate on the mounted Windows checkout directly: do not use local editing tools, `apply_patch`, `git`, test commands, or formatters against `/Volumes/[C] Windows 11/...`. Run repo commands through SSH to `devresults-vm`, preferably with the `dr` helper.
 
 ## Worktrees [macOS only]
 

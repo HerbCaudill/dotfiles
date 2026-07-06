@@ -1,0 +1,47 @@
+#!/usr/bin/env -S node --experimental-strip-types
+
+import { spawn } from "node:child_process"
+
+const host = "devresults-vm"
+const repo = "C:\\Code\\DevResults"
+
+if (process.argv.length < 3) {
+  console.error("Usage: dr <command> [args...]")
+  process.exit(1)
+}
+
+const remoteCommand = [
+  "$ProgressPreference = 'SilentlyContinue'",
+  `Set-Location -LiteralPath ${quotePowerShell(repo)}`,
+  `& ${process.argv.slice(2).map(quotePowerShell).join(" ")}`,
+].join("; ")
+
+const encodedCommand = Buffer.from(remoteCommand, "utf16le").toString("base64")
+
+const child = spawn(
+  "ssh",
+  [host, "powershell.exe", "-NoProfile", "-NonInteractive", "-EncodedCommand", encodedCommand],
+  { stdio: "inherit" },
+)
+
+child.on("exit", (code, signal) => {
+  if (signal) {
+    console.error(`dr: ssh exited from signal ${signal}`)
+    process.exit(1)
+  }
+
+  process.exit(code ?? 1)
+})
+
+child.on("error", (error) => {
+  console.error(`dr: ${error.message}`)
+  process.exit(1)
+})
+
+/** Quote a value as a PowerShell single-quoted string. */
+function quotePowerShell(
+  /** The raw argument value */
+  value,
+) {
+  return `'${value.replaceAll("'", "''")}'`
+}
