@@ -85,6 +85,17 @@ dr git status --short
 6. Keep git, source inspection, edits, builds, tests, and IIS Express commands inside Windows unless there is a clear reason not to.
 7. Use macOS tools only for host-side checks, SQL access, or browser verification against the VM-hosted app.
 
+## After Pulls, Rebases, and Merges
+
+When a pull, rebase, merge, branch switch, or dependency update changes server-side project files, `packages.config`, `*.csproj`, `*.vbproj`, `Web.config`, `packages/`, or generated T4 outputs, refresh the Windows build output before trusting IIS Express:
+
+```bash
+dr just nuget
+dr just msbuild-app
+```
+
+This prevents stale `DevResults\bin` assemblies from crashing app startup with binding errors such as `Could not load file or assembly 'Azure.Core'`. After the build, verify the target URL with a browser or `Invoke-WebRequest` before reporting the app is usable.
+
 ## Local TLS for `*.devlocal.us`
 
 `*.devlocal.us` is served by IIS Express/HTTP.sys in the Windows VM using a local Let's Encrypt wildcard certificate. Cloudflare is only used for DNS-01 validation through Posh-ACME; the certificate itself is stored in the VM's LocalMachine certificate store and bound to `0.0.0.0:443`.
