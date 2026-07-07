@@ -19,6 +19,8 @@ pnpm test
 pnpm format
 ```
 
+Agents may run `pnpm nix:rebuild` themselves after changes that need the live macOS or Home Manager configuration to take effect. Run it in an interactive terminal/PTY so `sudo` can prompt the user for Touch ID or a password; do not ask the user to run it manually just to handle sudo.
+
 ## Structure
 
 - `flake.nix` — top-level flake
@@ -124,7 +126,7 @@ For trivial, localized edits such as adding a shell alias, changing a small conf
 - edit the relevant file directly
 - do not use planning or brainstorming workflows
 - do not run repo-wide tests or formatters unless they are relevant to the touched file
-- re-apply the Nix configuration only when the change needs to take effect immediately
+- run `pnpm nix:rebuild` only when the change needs to take effect immediately
 - do not update `README.md` or instruction files unless the change affects durable guidance
 - prefer the smallest possible verification step, if any
 
