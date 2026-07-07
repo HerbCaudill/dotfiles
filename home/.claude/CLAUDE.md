@@ -146,7 +146,7 @@ NEVER put big headings in comments with ASCII borders:
 
 Use Vitest for unit testing and Playwright for end-to-end testing.
 
-Use TDD for meaningful executable behavior: business logic, data transforms, routing behavior, state changes, permissions, user interactions, and bug fixes where a regression test can describe the failure.
+Use TDD after diagnosis for meaningful executable behavior: business logic, data transforms, routing behavior, state changes, permissions, user interactions, and bug fixes where a regression test can describe the failure.
 
 Do not write tests for trivial presentational changes such as Tailwind class adjustments, spacing, colors, scrolling containers, or markup structure unless the user explicitly asks or there is observable user-facing behavior worth protecting.
 
@@ -183,7 +183,11 @@ bd close <id>                                # Complete work
 
 ## Workflow
 
-When creating new functionality or fixing bugs, write tests first. Use the `Test-Driven Development (TDD)` skill. When fixing a bug, before doing anything else, start by writing a test that reproduces the bug. Then fix the bug and prove it with a passing test.
+When fixing a bug, diagnose first. Reproduce or inspect the failure enough to understand the intended behavior, likely cause, affected code path, and whether a regression test is practical. Do not start by invoking TDD or writing a test before this diagnosis.
+
+After diagnosis, use the `Test-Driven Development (TDD)` skill when the fix changes meaningful executable behavior and a regression test can describe the failure. Write the failing test before changing production code, then fix the bug and prove it with a passing test.
+
+If the issue is exploratory, environmental, flaky, unclear, or caused by configuration/build/tooling rather than product behavior, investigate first and add tests only once there is a stable behavior worth protecting.
 
 After completing a request:
 
@@ -205,7 +209,7 @@ Trivial localized changes should use the lightest reasonable workflow. A change 
 For trivial changes:
 
 - do not use brainstorming or planning skills
-- only use TDD for code changes
+- use TDD only for non-trivial code changes with meaningful executable behavior
 - do not update documentation or CLAUDE files unless the change affects durable guidance
 
 ## Codex and pi [macOS only]
