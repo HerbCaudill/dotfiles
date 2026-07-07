@@ -1,4 +1,5 @@
 import { WINDOWS_REPO_PATH } from "./constants.ts"
+import { buildWindowsDirtyGuardCommand } from "./buildWindowsDirtyGuardCommand.ts"
 import { buildNativeCommand } from "./buildNativeCommand.ts"
 import { quotePowerShell } from "./quotePowerShell.ts"
 
@@ -25,8 +26,7 @@ export function buildWindowsSyncCommand(
     "$ErrorActionPreference = 'Stop'",
     "$ProgressPreference = 'SilentlyContinue'",
     `Set-Location -LiteralPath ${quotePowerShell(WINDOWS_REPO_PATH)}`,
-    "$status = git status --porcelain",
-    "if ($status) { Write-Error 'Windows checkout has uncommitted changes; commit, stash, or clean it before drsync.'; exit 2 }",
+    buildWindowsDirtyGuardCommand(),
     buildNativeCommand(["git", "fetch", "origin", fetchRefspec]),
     switchCommand,
     buildNativeCommand(["git", "merge", "--ff-only", remoteBranch]),

@@ -91,9 +91,9 @@ drsync just build-client
 
 1. Refuses to run from `/Volumes/...`.
 2. Finds the current macOS branch.
-3. Commits any local macOS changes with message `wip`.
-4. Pushes `HEAD` to the matching WIP branch on `origin`.
-5. Refuses to sync if the Windows checkout has uncommitted changes.
+3. Refuses to sync if the Windows checkout has uncommitted changes.
+4. Commits any local macOS changes with message `wip`.
+5. Pushes `HEAD` to the matching WIP branch on `origin`.
 6. Fetches and fast-forwards the Windows checkout to the WIP branch.
 7. Runs the requested command inside `C:\Code\DevResults`.
 

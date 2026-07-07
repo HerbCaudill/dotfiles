@@ -4,9 +4,11 @@ import { buildWindowsSyncCommand } from "../buildWindowsSyncCommand.ts"
 
 describe("buildWindowsSyncCommand", () => {
   test("refuses to sync over a dirty Windows checkout", () => {
-    expect(buildWindowsSyncCommand("herb/wip/some-feature", ["pnpm", "test"])).toContain(
-      "Windows checkout has uncommitted changes",
-    )
+    const command = buildWindowsSyncCommand("herb/wip/some-feature", ["pnpm", "test"])
+
+    expect(command).toContain("Windows checkout has uncommitted changes")
+    expect(command).toContain("[Console]::Out.WriteLine")
+    expect(command).not.toContain("Write-Error")
   })
 
   test("fetches and fast-forwards the matching WIP branch before running a command", () => {

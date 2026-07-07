@@ -12,4 +12,4 @@ if (args.includes("--help") || args.includes("-h")) {
   process.exit(0)
 }
 
-runDrsync(args)
+await runDrsync(args)

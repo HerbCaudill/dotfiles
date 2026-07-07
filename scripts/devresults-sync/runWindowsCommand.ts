@@ -16,23 +16,41 @@ export function runWindowsCommand(
       "powershell.exe",
       "-NoProfile",
       "-NonInteractive",
+      "-OutputFormat",
+      "Text",
       "-EncodedCommand",
       encodedCommand,
     ],
     { stdio: "inherit" },
   )
 
-  child.on("exit", (code, signal) => {
-    if (signal) {
-      console.error(`drsync: ssh exited from signal ${signal}`)
-      process.exit(1)
-    }
+  return new Promise<number>((resolve, reject) => {
+    child.on("exit", (code, signal) => {
+      if (signal) {
+        reject(new Error(`ssh exited from signal ${signal}`))
+        return
+      }
 
-    process.exit(code ?? 1)
+      resolve(code ?? 1)
+    })
+
+    child.on("error", error => {
+      reject(error)
+    })
   })
+}
 
-  child.on("error", error => {
-    console.error(`drsync: ${error.message}`)
+/** Run a PowerShell command on the DevResults Windows VM and exit if it fails. */
+export async function runWindowsCommandOrExit(
+  /** The PowerShell command text */
+  command: string,
+) {
+  try {
+    const code = await runWindowsCommand(command)
+
+    if (code !== 0) process.exit(code)
+  } catch (error) {
+    console.error(`drsync: ${error instanceof Error ? error.message : String(error)}`)
     process.exit(1)
-  })
+  }
 }

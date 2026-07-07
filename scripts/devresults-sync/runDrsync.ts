@@ -1,13 +1,14 @@
 import { assertSafeMacCheckout } from "./assertSafeMacCheckout.ts"
+import { buildWindowsCleanCheckCommand } from "./buildWindowsCleanCheckCommand.ts"
 import { buildWindowsSyncCommand } from "./buildWindowsSyncCommand.ts"
 import { commitWipChanges } from "./commitWipChanges.ts"
 import { getCurrentBranch } from "./getCurrentBranch.ts"
 import { getWipBranch } from "./getWipBranch.ts"
 import { pushWipBranch } from "./pushWipBranch.ts"
-import { runWindowsCommand } from "./runWindowsCommand.ts"
+import { runWindowsCommandOrExit } from "./runWindowsCommand.ts"
 
 /** Run drsync. */
-export function runDrsync(
+export async function runDrsync(
   /** The command-line arguments after drsync */
   args: string[],
 ) {
@@ -16,7 +17,8 @@ export function runDrsync(
   const branch = getCurrentBranch()
   const wipBranch = getWipBranch(branch)
 
+  await runWindowsCommandOrExit(buildWindowsCleanCheckCommand())
   commitWipChanges()
   pushWipBranch(wipBranch)
-  runWindowsCommand(buildWindowsSyncCommand(wipBranch, args))
+  await runWindowsCommandOrExit(buildWindowsSyncCommand(wipBranch, args))
 }
