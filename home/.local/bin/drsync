@@ -1,0 +1,15 @@
+#!/usr/bin/env -S node --experimental-strip-types
+
+import { runDrsync } from "../../../scripts/devresults-sync/runDrsync.ts"
+
+const args = process.argv.slice(2)
+
+if (args.includes("--help") || args.includes("-h")) {
+  console.log("Usage: drsync [command] [args...]")
+  console.log("")
+  console.log("Commits local changes as 'wip', pushes HEAD to herb/wip/...,")
+  console.log("fast-forwards the Windows DevResults checkout, then runs the command.")
+  process.exit(0)
+}
+
+runDrsync(args)
