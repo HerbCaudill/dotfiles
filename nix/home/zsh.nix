@@ -87,7 +87,7 @@
       updatebd = "curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash";
       updateclaude = "claude install latest --force";
       updatecodex = "pnpm install -g @openai/codex";
-      updatemachine = "sudo nix run github:LnL7/nix-darwin/master#darwin-rebuild -- switch --flake ~/Code/HerbCaudill/dotfiles#herbcaudill";
+      updatemachine = "sudo -H darwin-rebuild switch --flake /Users/herbcaudill/Code/HerbCaudill/dotfiles#herbcaudill";
       updatenix = "nix flake update ~/Code/HerbCaudill/dotfiles";
       updatepi = "pnpm install -g @earendil-works/pi-coding-agent@latest";
       updatepnpm = "curl -fsSL https://get.pnpm.io/install.sh | sh -";
