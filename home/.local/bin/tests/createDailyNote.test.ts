@@ -4,6 +4,8 @@ import { tmpdir } from "node:os"
 import { execFileSync } from "node:child_process"
 import { describe, expect, test } from "vitest"
 
+import { getDailyNoteDates } from "../../../../scripts/daily-note/getDailyNoteDates.ts"
+
 describe("create-daily-note launcher", () => {
   test("creates daily note files when invoked as a script", () => {
     const dailyDir = mkdtempSync(join(tmpdir(), "daily-note-launcher-"))
@@ -16,7 +18,7 @@ describe("create-daily-note launcher", () => {
         },
       })
 
-      expect(readFileSync(join(dailyDir, "2026-05-06.md"), "utf8")).toBe("")
+      expect(readFileSync(join(dailyDir, `${getDailyNoteDates()[0]}.md`), "utf8")).toBe("")
     } finally {
       rmSync(dailyDir, { force: true, recursive: true })
     }
