@@ -128,7 +128,8 @@ Background sync logs are written under `~/.local/state/drsync/`.
 4. Edit, inspect, and stage changes in the macOS clone.
 5. Use `drsync <command>` to save, push, sync, and run Windows-side commands.
 6. Keep builds, tests, IIS Express, SQL Server behavior, and final browser verification tied to the Windows checkout.
-7. Use `dr <command>` when you intentionally need a Windows-only command that should not sync macOS changes first.
+7. Before reporting work complete, run `drsync git status --short --branch` or another `drsync` verification command from the macOS clone so the Windows checkout is synced and confirmed clean.
+8. Use `dr <command>` when you intentionally need a Windows-only command that should not sync macOS changes first.
 
 ## After Pulls, Rebases, and Merges
 

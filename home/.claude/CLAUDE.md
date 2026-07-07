@@ -215,7 +215,7 @@ For trivial changes:
 
 ## DevResults repo [macOS only]
 
-When working in DevResults from macOS, use the `devresults` skill before making changes. Never operate on the mounted Windows checkout directly: do not use local editing tools, `apply_patch`, `git`, test commands, or formatters against `/Volumes/[C] Windows 11/...`. Run repo commands through SSH to `devresults-vm`, preferably with the `dr` helper.
+When working in DevResults from macOS, use the `devresults` skill before making changes. Never operate on the mounted Windows checkout directly: do not use local editing tools, `apply_patch`, `git`, test commands, or formatters against `/Volumes/[C] Windows 11/...`. Run repo commands through SSH to `devresults-vm`, preferably with the `dr` helper. Before reporting DevResults work complete from a macOS clone, run `drsync git status --short --branch` or another `drsync` verification command so the Windows VM checkout is synced and confirmed clean.
 
 ## Worktrees [macOS only]
 
