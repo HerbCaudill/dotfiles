@@ -129,7 +129,8 @@ Background sync logs are written under `~/.local/state/drsync/`.
 5. Use `drsync <command>` to save, push, sync, and run Windows-side commands.
 6. Keep builds, tests, IIS Express, SQL Server behavior, and final browser verification tied to the Windows checkout.
 7. Before reporting work complete, run `drsync git status --short --branch` or another `drsync` verification command from the macOS clone so the Windows checkout is synced and confirmed clean.
-8. Use `dr <command>` when you intentionally need a Windows-only command that should not sync macOS changes first.
+8. For UI or client work, browser-verifiable client freshness is also a completion gate: sync with `drsync`, run `drsync just build-client` unless an active `just watch` process is already rebuilding the client, then verify the target `*.devlocal.us` page in the browser so Herb and the agent can both see the updated Windows VM-served client.
+9. Use `dr <command>` when you intentionally need a Windows-only command that should not sync macOS changes first.
 
 ## After Pulls, Rebases, and Merges
 
