@@ -19,16 +19,10 @@
     },
     "npm:pi-extmgr"
   ],
-  "extensions": [
-    "extensions/hide-tool-results.ts",
-    "extensions/status-line/index.ts"
-  ],
+  "extensions": ["extensions/hide-tool-results.ts", "extensions/status-line/index.ts"],
   "quietStartup": true,
   "hideThinkingBlock": true,
   "defaultThinkingLevel": "medium",
-  "enabledModels": [
-    "openai-codex/gpt-5.4",
-    "openai-codex/gpt-5.5"
-  ],
+  "enabledModels": ["openai-codex/gpt-5.4", "openai-codex/gpt-5.5"],
   "theme": "dark"
 }
