@@ -101,6 +101,25 @@ Branch mapping inserts `wip` after the owner namespace: `herb/some-feature` sync
 
 WIP commits are the logical equivalent of file saves. Before final delivery, squash or rewrite the WIP commits into a reasonable commit history on the real feature branch, such as `herb/some-feature`, then run verification from Windows and push that feature branch. Do not leave final work only on `herb/wip/...`.
 
+For editor save hooks, use `drsync --background` instead of `drsync`. Background mode records a pending sync request and starts one detached worker per macOS clone. The worker waits for a short quiet period, runs one sync at a time, and queues a follow-up sync if more saves happen while it is running.
+
+With the VS Code Run on Save extension, configure the macOS DevResults clone like this:
+
+```json
+{
+  "emeraldwalk.runonsave": {
+    "commands": [
+      {
+        "match": ".*",
+        "cmd": "drsync --background"
+      }
+    ]
+  }
+}
+```
+
+Background sync logs are written under `~/.local/state/drsync/`.
+
 ## Working Pattern
 
 1. Start in a separate macOS DevResults clone, not the mounted `/Volumes/...` path.

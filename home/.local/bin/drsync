@@ -1,5 +1,8 @@
 #!/usr/bin/env -S node --experimental-strip-types
 
+import { parseDrsyncArgs } from "../../../scripts/devresults-sync/parseDrsyncArgs.ts"
+import { runBackgroundTrigger } from "../../../scripts/devresults-sync/runBackgroundTrigger.ts"
+import { runBackgroundWorker } from "../../../scripts/devresults-sync/runBackgroundWorker.ts"
 import { runDrsync } from "../../../scripts/devresults-sync/runDrsync.ts"
 
 const args = process.argv.slice(2)
@@ -9,7 +12,17 @@ if (args.includes("--help") || args.includes("-h")) {
   console.log("")
   console.log("Commits local changes as 'wip', pushes HEAD to herb/wip/...,")
   console.log("fast-forwards the Windows DevResults checkout, then runs the command.")
+  console.log("")
+  console.log("Use --background from editor save hooks to debounce syncs in a worker.")
   process.exit(0)
 }
 
-await runDrsync(args)
+const parsed = parseDrsyncArgs(args)
+
+if (parsed.mode === "background") {
+  runBackgroundTrigger(parsed.args)
+} else if (parsed.mode === "worker") {
+  await runBackgroundWorker()
+} else {
+  await runDrsync(parsed.args)
+}
