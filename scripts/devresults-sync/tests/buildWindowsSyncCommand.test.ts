@@ -22,4 +22,13 @@ describe("buildWindowsSyncCommand", () => {
     expect(command).toContain("& 'git' 'merge' '--ff-only' 'origin/herb/wip/some-feature'")
     expect(command).toContain("& 'pnpm' 'test'")
   })
+
+  test("checks whether the local WIP branch exists using the git exit code", () => {
+    const command = buildWindowsSyncCommand("herb/wip/some-feature", [])
+
+    expect(command).toContain("git show-ref --verify --quiet")
+    expect(command).toContain("refs/heads/herb/wip/some-feature' ; if ($LASTEXITCODE -eq 0)")
+    expect(command).toContain("if ($LASTEXITCODE -eq 0)")
+    expect(command).not.toContain("if (git show-ref")
+  })
 })

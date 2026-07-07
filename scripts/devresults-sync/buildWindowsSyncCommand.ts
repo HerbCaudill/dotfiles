@@ -13,7 +13,9 @@ export function buildWindowsSyncCommand(
   const remoteBranch = `origin/${wipBranch}`
   const fetchRefspec = `+refs/heads/${wipBranch}:refs/remotes/${remoteBranch}`
   const switchCommand = [
-    `if (git show-ref --verify --quiet ${quotePowerShell(`refs/heads/${wipBranch}`)}) {`,
+    `git show-ref --verify --quiet ${quotePowerShell(`refs/heads/${wipBranch}`)}`,
+    ";",
+    "if ($LASTEXITCODE -eq 0) {",
     `git switch ${quotePowerShell(wipBranch)}`,
     "} else {",
     `git switch --create ${quotePowerShell(wipBranch)} --track ${quotePowerShell(remoteBranch)}`,
