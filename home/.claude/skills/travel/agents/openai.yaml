@@ -1,0 +1,4 @@
+interface:
+  display_name: "Travel"
+  short_description: "Use Herb's travel booking preferences"
+  default_prompt: "Use $travel to help plan a trip or make booking choices that match Herb's preferences."
