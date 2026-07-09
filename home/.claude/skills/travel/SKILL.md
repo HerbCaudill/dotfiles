@@ -11,7 +11,7 @@ Use these preferences when making travel recommendations or booking decisions fo
 
 When actual booking, seat selection, account status, saved payment methods, or logged-in travel sites are involved, use Herb's computer and active browser session directly instead of trying to do the task with detached browser automation or scraping.
 
-Always get Herb's explicit confirmation before finalizing any travel booking or payment.
+Always get Herb's explicit confirmation before finalizing any travel booking or payment. Include links to the booking pages and a summary of the itinerary, including total cost, before asking for confirmation.
 
 ## Flights
 
