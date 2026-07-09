@@ -15,6 +15,7 @@ Always get Herb's explicit confirmation before finalizing any travel booking or 
 
 ## Flights
 
+- Obviously prefer nonstop flights when available.
 - Prefer window seats.
 - When Herb is flying with Lynne, prefer booking an aisle seat and a window seat in the same row with the middle seat empty, in the hope that no one books the middle seat.
 
