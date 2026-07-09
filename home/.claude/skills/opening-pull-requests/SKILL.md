@@ -32,11 +32,12 @@ Always create a draft PR so the user can review it first.
 
 Include:
 
-- A summary of what changed.
-- Why it changed, when that is not obvious.
+- A summary of the problem or motivation for the change
+- Summary of this solution, possibly including rejected alternatives (and why)
 - A more detailed description of individual changes.
-- Screenshots or recordings for meaningful UI changes.
+- Screenshots or recordings for UI changes.
 - Follow-ups, omissions, or known risks.
+- Description of any manual/automated testing done
 - Instructions for how a reviewer can verify the change.
 
 ## After opening
