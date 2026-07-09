@@ -11,6 +11,8 @@ Use these preferences when making travel recommendations or booking decisions fo
 
 When actual booking, seat selection, account status, saved payment methods, or logged-in travel sites are involved, use Herb's computer and active browser session directly instead of trying to do the task with detached browser automation or scraping.
 
+Always get Herb's explicit confirmation before finalizing any travel booking or payment.
+
 ## Flights
 
 - Prefer window seats.
@@ -26,8 +28,7 @@ When actual booking, seat selection, account status, saved payment methods, or l
 ## Europe Flights
 
 - Herb does not have strong airline preferences within Europe.
-- Budget airlines are acceptable.
-- On budget airlines, choose the most all-inclusive ticket option so seat selection, priority boarding, and comparable conveniences are included.
+- Budget airlines are acceptable. Choose the most all-inclusive ticket option so seat selection, priority boarding, and comparable conveniences are included.
 
 ## Car Rental
 
@@ -39,7 +40,7 @@ When actual booking, seat selection, account status, saved payment methods, or l
 - Prefer Booking.com and rely heavily on its ratings.
 - Prefer hotels over apartments unless traveling with family.
 
-## Payment Cards
+## Payment
 
 - Use 1Password in the browser for payment card details.
 - Use Chase or Personal AA for personal travel.
