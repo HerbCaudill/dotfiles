@@ -1,6 +1,6 @@
 ---
 name: travel
-description: Use when helping Herb plan travel, compare itineraries, book flights, choose seats, select fare classes, rent cars, or choose lodging. Apply Herb's preferences for flights, long-haul transatlantic travel, European flights, car rentals, and hotels.
+description: Use when helping Herb plan travel, compare itineraries, book flights, choose seats, select fare classes, rent cars, choose lodging, or decide which payment card to use for travel. Apply Herb's preferences for flights, long-haul transatlantic travel, European flights, car rentals, hotels, and travel payment cards.
 ---
 
 # Travel
@@ -38,3 +38,9 @@ When actual booking, seat selection, account status, saved payment methods, or l
 
 - Prefer Booking.com and rely heavily on its ratings.
 - Prefer hotels over apartments unless traveling with family.
+
+## Payment Cards
+
+- Use 1Password in the browser for payment card details.
+- Use Chase or Personal AA for personal travel.
+- Use Business AA for business travel.
