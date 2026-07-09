@@ -1,6 +1,6 @@
 ---
-name: write-plan
-description: Use this skill when the user asks to write a planning document or otherwise indicates a desire to plan before building. Create a plan document and granular tasks for a feature or change. Outputs a plan doc to the repo and files issues (beads).
+name: planning
+description: Use when the user asks to write a planning document or otherwise indicates a desire to plan before building
 ---
 
 # Writing a plan

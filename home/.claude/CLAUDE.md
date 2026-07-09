@@ -143,23 +143,15 @@ Do not require TDD for trivial config edits, shell aliases, documentation-only c
 
 When using Playwright, selectors should be based on what users actually see and interact with: visible text, accessible roles, labels, and placeholders. When that's not possible, use domain data attributes like `data-player="name"` and `data-cell="row-col"`.
 
+## Planning
+
+Use the `planning` skill when I ask to make a plan, write a planning document, or otherwise plan before building. Plans should end with unresolved questions, if any.
+
 ## Task tracking
 
-Most of my repos use **bd (beads)** for issue tracking. You can tell by looking for a `.beads` directory in the root. Run `bd prime` to see full workflow context and commands.
+Use the `manage-tasks` skill when creating, updating, organizing, or investigating tasks. Most of my repos use **bd (beads)** for issue tracking; you can tell by looking for a `.beads` directory in the root.
 
-### Quick Reference
-
-```
-bd ready                                     # Find available work
-bd create --title="..." --description="..."  # Create issue
-bd show <id>                                 # View issue details
-bd update <id> --claim                       # Claim work
-bd close <id>                                # Complete work
-```
-
-### Rules
-
-- In beads-enabled repos, use `bd` for ALL task tracking — do NOT use TodoWrite, TaskCreate, or markdown TODO lists
+- In beads-enabled repos, use `bd` for all task tracking. Do not use TodoWrite, TaskCreate, or markdown TODO lists.
 - Work is NOT complete until `git push` succeeds. NEVER stop before pushing - that leaves work stranded locally. NEVER say "ready to push when you are" - YOU must push. If push fails, resolve and retry until it succeeds.
 - Only create tasks when the user explicitly asks or the work is complex enough to benefit from breaking down into multiple steps. DO NOT create beads issues for one-off tasks that you are going to fix immediately.
 
@@ -171,14 +163,9 @@ After diagnosis, if the fix requires code changes or new code, use the `Test-Dri
 
 If the issue is exploratory, environmental, flaky, unclear, or caused by configuration/build/tooling rather than product behavior, investigate first and add tests only once there is a stable behavior worth protecting.
 
-After completing a request:
+Use the `finishing-work` skill before committing, pushing, or claiming code work is complete.
 
-- Make sure everything compiles and runs.
-- Run unit tests.
-- Run Playwright or Storybook tests if applicable.
-- Run `pnpm format` to format code with oxfmt before committing.
-- Commit the changes immediately without being asked. If a request requires a series of significant changes, make intermediate commits as well. The first line of a commit message should succinctly summarize changes. Where applicable, prefix with the name of the primary class/function/component being edited, followed by a colon. Example: `EditTemplatePage: refactor data source handling`
-- Update the project's documentation and CLAUDE.md file when the change affects durable behavior, workflows, setup, or instructions.
+Use the `opening-pull-requests` skill before opening or updating a pull request.
 
 ## Initiative
 
@@ -201,7 +188,7 @@ For trivial changes:
 
 ## DevResults repo \[macOS only\]
 
-When working in DevResults from macOS, use the `devresults` skill before making changes. Never operate on the mounted Windows checkout directly: do not use local editing tools, `apply_patch`, `git`, test commands, or formatters against `/Volumes/[C] Windows 11/...`. Run repo commands through SSH to `devresults-vm`, preferably with the `dr` helper. Before reporting DevResults work complete from a macOS clone, run `drsync git status --short --branch` or another `drsync` verification command so the Windows VM checkout is synced and confirmed clean. For UI or client work, also make the Windows VM-served `*.devlocal.us` browser page reflect the change before reporting completion.
+When working in DevResults from macOS, use the `devresults` skill before making changes. Never operate on the mounted Windows checkout directly: do not use local editing tools, `apply_patch`, `git`, test commands, or formatters against `/Volumes/[C] Windows 11/...`.
 
 ## Worktrees \[macOS only\]
 
@@ -250,31 +237,13 @@ Key points:
 
 ## Google Workspace CLI (`gws`) \[macOS only\]
 
-Use the `gws` CLI (via Bash) to interact with Google Drive, Google Tasks, and other Workspace services. No MCP server needed — just call `gws` commands directly.
-
-If `gws` requires reauthentication, run `gws auth login --full` yourself, open the printed OAuth URL in Chrome with `open -a "Google Chrome" "<url>"`, ask the user to complete sign-in, then retry the original command.
-
-```
-# Drive
-gws drive files list --params '{"q": "name contains \"report\"", "pageSize": 10}'
-gws drive files get --fileId <id>
-gws drive +upload ./file.pdf          # helper shortcut
-
-# Tasks
-gws tasks tasklists list
-gws tasks tasks list --tasklist <id>
-gws tasks tasks insert --tasklist <id> --params '{"title": "Do the thing"}'
-
-# Export Google Docs content (native Docs can't be read as files)
-gws drive files export --fileId <id> --mimeType text/plain
-gws drive files export --fileId <id> --mimeType application/pdf
-```
+Use the relevant `gws-*` skill when interacting with Google Drive, Google Tasks, Gmail, Calendar, Docs, or Sheets. These skills use the `gws` CLI via Bash; no MCP server is needed.
 
 Google Drive local path: `~/Library/CloudStorage/GoogleDrive-herb@devresults.com/My Drive` (regular files only — Google Docs/Sheets/Slides are cloud-only stubs).
 
 ## OnePassword CLI (`op`) \[macOS only\]
 
-Use the `op` CLI to access secrets from 1Password when credentials, API keys, tokens, or other sensitive values are needed.
+Use the `onepassword` skill when credentials, API keys, tokens, passwords, or other secrets are needed.
 
 ## Notes and transcripts
 
