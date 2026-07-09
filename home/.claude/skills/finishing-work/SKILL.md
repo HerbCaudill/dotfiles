@@ -26,14 +26,23 @@ Finish changes with evidence, a clean diff, and a useful commit history. Use `ve
 - Use sentence case after the colon.
 - Do not end the first line with a period.
 - Keep the first line specific enough that `git log --oneline` explains the change.
-- Add a body only when it helps future readers understand motivation, tradeoffs, migrations, or verification.
+- Add a second line that briefly explains the purpose of the commit.
+- Add more body text only when it helps future readers understand tradeoffs, migrations, or verification.
 
 Good:
 
 ```text
 EditTemplatePage: refactor data source handling
+
+Make template editing use the shared data-loading path.
+
 github-pr-task-sync: avoid duplicate task creation
+
+Track notification updates so repeated polls do not recreate tasks.
+
 Document shared agent publishing workflow
+
+Move commit, push, and PR conventions out of always-on instructions.
 ```
 
 Avoid:
