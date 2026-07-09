@@ -1,6 +1,6 @@
 # Global agent memory
 
-> Sections and notes tagged **[macOS only]** apply only on the macOS host. Ignore them in other environments (such as the Windows VM, which imports this file).
+> Sections and notes tagged **\[macOS only\]** apply only on the macOS host. Ignore them in other environments (such as the Windows VM, which imports this file).
 
 In planning documents and other interactions, be as concise as possible.
 
@@ -59,34 +59,21 @@ When writing shell scripts, prefer TypeScript over bash, Python, PowerShell, etc
 
 ### Effect
 
-Reach for [Effect](https://effect.website) when a problem has real structural complexity — typed/recoverable errors, dependency injection, concurrency, resource lifecycle (acquire/release), retries and timeouts, or pipelines where failures need to compose. Use Effect Schema for
-parsing, validation, and encode/decode at system boundaries.
+Reach for [Effect](https://effect.website) when a problem has real structural complexity — typed/recoverable errors, dependency injection, concurrency, resource lifecycle (acquire/release), retries and timeouts, or pipelines where failures need to compose. Use Effect Schema for parsing, validation, and encode/decode at system boundaries.
 
-Don't reach for it by default. Plain async/await and pure functions are better for simple scripts, one-off transforms, and small components — Effect's overhead (learning curve, syntax, bundle size) only pays off once the failure/dependency/concurrency story is genuinely hard. When in doubt, start plain and adopt Effect at the layer where the complexity actually lives. There are `effect-ts` and `effect-schema` skills for the details.
+Don't use Effect by default. Plain async/await and pure functions are better for simple scripts, one-off transforms, and small components — Effect's overhead (learning curve, syntax, bundle size) only pays off once the failure/dependency/concurrency story is genuinely hard. When in doubt, start plain and adopt Effect at the layer where the complexity actually lives. There are `effect-ts` and `effect-schema` skills for the details.
 
 ### General
 
-- Unless instructed otherwise, don't worry about backwards compatibility; use a hard cutover approach.
-- Each function should be in its own file.
-- Don't put multiple helper functions in a single file; put each function in its own file.
-- Shared types should be in a `types.ts` file
+- Each function should be in its own file. Don't put multiple helper functions in a single file.
+- A function `foo` lives in `some-directory/foo.ts` and its test file is `some-directory/tests/foo.test.ts`
+- Shared types should be in a `types.ts` file.
 - Shared constants should be in a `constants.ts` file.
-- When combining lists of Tailwind class names, use `cx` (or `cn`) rather than string interpolation.
+- When combining lists of Tailwind class names, use `cx` (called `cn` in some repos) rather than string interpolation.
 - When an `if` statement controls a single-line statement, put it on the same line without braces, like `if (!body) return null`.
-- Use named exports. Don't use default exports unless we're in a framework (like Next.js) that requires them
-- Name test files `foo.test.ts`
+- Use named exports. Don't use default exports unless we're in a framework (like Next.js) that requires them.
+- Unless instructed otherwise, don't worry about backwards compatibility; use a hard cutover approach.
 - Put tests and stories in `tests/` and `stories/` subdirectories alongside the source files they refer to:
-  ```
-  components/
-  - tests/
-    - Foo.test.ts
-    - Bar.test.ts
-  - stories/
-    - Foo.stories.ts
-    - Bar.stories.ts
-  - Foo.tsx
-  - Bar.tsx
-  ```
 
 ### Comments
 
@@ -96,7 +83,7 @@ Do not use `//` comments to document functions, classes, properties, parameters,
 
 For multi-line JSDoc comments, put the opening `/**` on its own line and the closing `*/` on its own line. Do not put summary text on the same line as `/**` when the comment wraps.
 
-```ts
+```
 /**
  * Check if there's a recent saved iteration state that can be restored.
  * This is called on reconnection to determine whether to auto-resume.
@@ -112,7 +99,7 @@ export async function checkForSavedIterationState(
 
 Keep this to a single line if possible.
 
-```ts
+```
 /** Get the current terminal size with sensible defaults. */
 export function getTerminalSize(
   /** The stdout object from Ink's useStdout hook */
@@ -127,7 +114,7 @@ export function getTerminalSize(
 
 NEVER put big headings in comments with ASCII borders:
 
-```ts
+```
 // ❌ don't do this
 // =============================================================================
 // CodexAdapter
@@ -156,18 +143,13 @@ Do not require TDD for trivial config edits, shell aliases, documentation-only c
 
 When using Playwright, selectors should be based on what users actually see and interact with: visible text, accessible roles, labels, and placeholders. When that's not possible, use domain data attributes like `data-player="name"` and `data-cell="row-col"`.
 
-## Planning
-
-- At the end of each plan, include a list of unresolved questions, if any.
-- In planning mode, the output should always be (1) a plan document numbered and stored in the repository under `/plans`, and (2) a granular set of tasks. If the repository uses beads (`bd`) for issue management, you should file those tasks as issues, with appropriate dependencies, and grouped into epics as necessary. Otherwise put them in a `todo.md` file.
-
 ## Task tracking
 
 Most of my repos use **bd (beads)** for issue tracking. You can tell by looking for a `.beads` directory in the root. Run `bd prime` to see full workflow context and commands.
 
 ### Quick Reference
 
-```bash
+```
 bd ready                                     # Find available work
 bd create --title="..." --description="..."  # Create issue
 bd show <id>                                 # View issue details
@@ -185,7 +167,7 @@ bd close <id>                                # Complete work
 
 When fixing a bug, diagnose first. Reproduce or inspect the failure enough to understand the intended behavior, likely cause, affected code path, and whether a regression test is practical. Do not start by invoking TDD or writing a test before this diagnosis.
 
-After diagnosis, use the `Test-Driven Development (TDD)` skill when the fix changes meaningful executable behavior and a regression test can describe the failure. Write the failing test before changing production code, then fix the bug and prove it with a passing test.
+After diagnosis, if the fix requires code changes or new code, use the `Test-Driven Development (TDD)` skill. Write the failing test before changing production code, then fix the bug and prove it with a passing test.
 
 If the issue is exploratory, environmental, flaky, unclear, or caused by configuration/build/tooling rather than product behavior, investigate first and add tests only once there is a stable behavior worth protecting.
 
@@ -193,9 +175,9 @@ After completing a request:
 
 - Make sure everything compiles and runs.
 - Run unit tests.
-- Run Playwright tests if applicable.
+- Run Playwright or Storybook tests if applicable.
 - Run `pnpm format` to format code with oxfmt before committing.
-- Commit the changes immediately without being asked. If a request requires a series of significant changes, make intermediate commits as well. Commit messages should succinctly summarize changes. Where applicable, prefix with the name of the primary class/function/component being edited, followed by a colon. Example: `EditTemplatePage: refactor data source handling`
+- Commit the changes immediately without being asked. If a request requires a series of significant changes, make intermediate commits as well. The first line of a commit message should succinctly summarize changes. Where applicable, prefix with the name of the primary class/function/component being edited, followed by a colon. Example: `EditTemplatePage: refactor data source handling`
 - Update the project's documentation and CLAUDE.md file when the change affects durable behavior, workflows, setup, or instructions.
 
 ## Initiative
@@ -212,16 +194,16 @@ For trivial changes:
 - use TDD only for non-trivial code changes with meaningful executable behavior
 - do not update documentation or CLAUDE files unless the change affects durable guidance
 
-## Codex and pi [macOS only]
+## Codex and pi \[macOS only\]
 
 - Global Codex and pi instructions and skills are sourced from `home/.claude/CLAUDE.md` and `home/.claude/skills`.
 - `scripts/symlink.mjs` replaces any existing `~/.codex/AGENTS.md`, `~/.codex/skills`, `~/.pi/agent/AGENTS.md`, and `~/.pi/agent/skills` with symlinks to those shared sources.
 
-## DevResults repo [macOS only]
+## DevResults repo \[macOS only\]
 
 When working in DevResults from macOS, use the `devresults` skill before making changes. Never operate on the mounted Windows checkout directly: do not use local editing tools, `apply_patch`, `git`, test commands, or formatters against `/Volumes/[C] Windows 11/...`. Run repo commands through SSH to `devresults-vm`, preferably with the `dr` helper. Before reporting DevResults work complete from a macOS clone, run `drsync git status --short --branch` or another `drsync` verification command so the Windows VM checkout is synced and confirmed clean. For UI or client work, also make the Windows VM-served `*.devlocal.us` browser page reflect the change before reporting completion.
 
-## Worktrees [macOS only]
+## Worktrees \[macOS only\]
 
 The following shell commands are available:
 
@@ -237,7 +219,7 @@ The following shell commands are available:
 
 Worktrees for a repo will be placed in a sibling directory to the repo named `.{repo name}-worktrees`.
 
-```bash
+```
 ~/Code/herbcaudill/ralph # repository
 ~/Code/herbcaudill/.ralph-worktrees
 ```
@@ -255,7 +237,7 @@ Worktrees for a repo will be placed in a sibling directory to the repo named `.{
 - Keep commits atomic: commit only the files you touched and list each path explicitly.
 - Never amend commits unless you have explicit written approval in the task thread.
 
-## Dotfiles [macOS only]
+## Dotfiles \[macOS only\]
 
 The `~/Code/HerbCaudill/dotfiles` repo manages global configuration files using symlinks from `home/` into `~/`.
 
@@ -266,13 +248,13 @@ Key points:
 - when modifying any managed global file, make the change in the dotfiles repo, not in the symlink target under `~/`
 - see the dotfiles repo's local `CLAUDE.md` for repo-specific workflow details
 
-## Google Workspace CLI (`gws`) [macOS only]
+## Google Workspace CLI (`gws`) \[macOS only\]
 
 Use the `gws` CLI (via Bash) to interact with Google Drive, Google Tasks, and other Workspace services. No MCP server needed — just call `gws` commands directly.
 
 If `gws` requires reauthentication, run `gws auth login --full` yourself, open the printed OAuth URL in Chrome with `open -a "Google Chrome" "<url>"`, ask the user to complete sign-in, then retry the original command.
 
-```bash
+```
 # Drive
 gws drive files list --params '{"q": "name contains \"report\"", "pageSize": 10}'
 gws drive files get --fileId <id>
@@ -290,10 +272,22 @@ gws drive files export --fileId <id> --mimeType application/pdf
 
 Google Drive local path: `~/Library/CloudStorage/GoogleDrive-herb@devresults.com/My Drive` (regular files only — Google Docs/Sheets/Slides are cloud-only stubs).
 
-## OnePassword CLI (`op`) [macOS only]
+## OnePassword CLI (`op`) \[macOS only\]
 
 Use the `op` CLI to access secrets from 1Password when credentials, API keys, tokens, or other sensitive values are needed.
 
 ## Notes and transcripts
 
 My Obsidian notes vault is at `~/Code/herbcaudill/notes`. The `daily/` folder contains daily notes, and the `meetings/` folder contains meeting transcripts.
+
+```
+components/
+- tests/
+  - Foo.test.ts
+  - Bar.test.ts
+- stories/
+  - Foo.stories.ts
+  - Bar.stories.ts
+- Foo.tsx
+- Bar.tsx
+```

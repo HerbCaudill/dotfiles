@@ -77,6 +77,24 @@ Pipe the patch on stdin. After applying, immediately run:
 dr git status --short
 ```
 
+## Windows Command Quoting
+
+The `dr` helper is convenient for simple commands, but nested PowerShell quoting can break easily, especially with `$env:...`, pipes, script blocks, JSON, XML, regexes, or complex one-liners.
+
+For anything beyond a simple command, prefer direct SSH:
+
+```bash
+ssh devresults-vm 'Get-ChildItem C:\Code\DevResults'
+```
+
+For longer commands, put the PowerShell in a temporary `.ps1` script and run it through SSH:
+
+```bash
+ssh devresults-vm 'powershell -NoProfile -ExecutionPolicy Bypass -File C:\path\to\script.ps1'
+```
+
+If a `dr` command fails with strange quoting or parameter-binding errors, do not keep retrying small quoting variations. Switch to direct `ssh devresults-vm '...'` or a script file.
+
 ## `drsync` Helper
 
 From a separate macOS DevResults clone, use `drsync` when you want to edit with normal macOS tools but execute in the Windows VM:
@@ -131,6 +149,18 @@ Background sync logs are written under `~/.local/state/drsync/`.
 7. Before reporting work complete, run `drsync git status --short --branch` or another `drsync` verification command from the macOS clone so the Windows checkout is synced and confirmed clean.
 8. For UI or client work, browser-verifiable client freshness is also a completion gate: sync with `drsync`, run `drsync just build-client` unless an active `just watch` process is already rebuilding the client, then verify the target `*.devlocal.us` page in the browser so Herb and the agent can both see the updated Windows VM-served client.
 9. Use `dr <command>` when you intentionally need a Windows-only command that should not sync macOS changes first.
+
+## Backend Changes and IIS Express Freshness
+
+After changing backend code that affects the running web app, especially API controllers, dependency injection registrations, models, `Web.config`, project files, or shared `DevResults.Core` / `DevResults.Api` code, run:
+
+```bash
+drsync just msbuild-app
+```
+
+before browser verification or asking Herb to test on `*.devlocal.us`.
+
+Building `DevResults.Api`, `DevResults.Core`, or a test project is not enough for the VM-served IIS Express app. The running site loads assemblies from `DevResults\bin`, and `just msbuild-app` is the build that refreshes those assemblies.
 
 ## After Pulls, Rebases, and Merges
 

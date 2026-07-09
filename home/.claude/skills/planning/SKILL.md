@@ -1,37 +1,31 @@
 ---
-name: plan-b
-description: Use this skill when the user says "let's make a plan" or otherwise indicates a desire to plan before building. Create a plan document and granular tasks for a feature or change. Outputs a plan doc to the repo and files issues (beads).
-user_invocation: plan-b {feature-description}
+name: write-plan
+description: Use this skill when the user asks to write a planning document or otherwise indicates a desire to plan before building. Create a plan document and granular tasks for a feature or change. Outputs a plan doc to the repo and files issues (beads).
 ---
 
-# Plan-B: Planning workflow
+# Writing a plan
 
 ## Overview
 
 Creates a structured plan for implementing a feature or change. Outputs:
 
-1. A plan document in `plans/`
-2. Granular tasks as beads issues
-
-## Usage
-
-`/plan-b {brief description of what to build}`
-
-Example: `/plan-b add user authentication with OAuth`
+1.  A plan document in `plans/`
+2.  Granular tasks as beads issues
 
 ## Process
 
-### 1. Gather context
+### 1\. Gather context, if you haven't already
 
 - Read the project's CLAUDE.md and README
 - Explore relevant parts of the codebase
 - Identify existing patterns and conventions
+- Use the `grill-me` skill to clarify the user's thinking
 
-### 2. Create plan document
+### 2\. Create plan document
 
 Create `plans/{num}-{name}.md` where `num` is a padded three-digit number and `name` is a one- or two-word label for the plan. Example: `003-react-port.md`.
 
-```markdown
+```
 # {Feature Name}
 
 ## Goal
@@ -45,13 +39,9 @@ Create `plans/{num}-{name}.md` where `num` is a padded three-digit number and `n
 ## Tasks
 
 {Numbered list of implementation steps}
-
-## Unresolved Questions
-
-{List any open questions that need answers before or during implementation}
 ```
 
-### 3. Create tasks
+### 3\. Create tasks
 
 Once the user has approved the plan, proceed to breaking it down into
 
@@ -63,7 +53,7 @@ Check if the project uses beads by looking for a `.beads` folder in the root of 
 - Set dependencies between issues where applicable
 - Link issues to the epics as appropriate
 
-### 4. Summary
+### 4\. Summary
 
 After completing the plan, summarize:
 
