@@ -1,5 +1,5 @@
 ---
-name: opening-pull-requests
+name: opening-prs
 description: Use when opening, updating, or preparing a pull request after local changes are committed
 ---
 
@@ -9,32 +9,41 @@ description: Use when opening, updating, or preparing a pull request after local
 
 Open pull requests that are easy to review: pushed branch, focused summary, clear verification, and honest remaining risk.
 
-## Before Opening
+## Before opening
 
-1. Use `finishing-work` first.
-2. Confirm the branch is pushed and contains only intended commits.
-3. Review the diff against the target branch.
-4. Check for project PR templates or repo-specific instructions.
+1. Confirm the branch is pushed and contains only intended commits.
+2. Review the diff against the target branch.
+3. Check for project PR templates or repo-specific instructions.
+4. If there are UI changes, take screenshots or screen recordings (using the computer use skill) to include in the PR description.
+5. Collapse any runs of `WIP`commits into a single commit
 
-## PR Title
+## Opening a PR
+
+Use the `gh` tool to open a PR from the command line.
+
+Always create a draft PR so the user can review it first.
+
+## PR title
 
 - Use the same style as commit messages.
 - Prefer `{PrimaryThing}: {change}` when there is a clear primary area.
-- Keep it specific and reviewable.
 
-## PR Body
+## PR body
 
-Keep the body concise. Include:
+Include:
 
-- What changed.
+- A summary of what changed.
 - Why it changed, when that is not obvious.
-- Verification actually run, with command names.
+- A more detailed description of individual changes.
 - Screenshots or recordings for meaningful UI changes.
 - Follow-ups, omissions, or known risks.
+- Instructions for how a reviewer can verify the change.
 
-Use a draft PR when verification is incomplete, scope is intentionally still moving, or the user asked for early review.
+## After opening
 
-## Review Hygiene
+Give the user a link to the PR.
+
+## Review hygiene
 
 - Link related issues or beads tasks when available.
 - Do not overstate confidence; report evidence.
