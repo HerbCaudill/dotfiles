@@ -77,7 +77,7 @@
       s = "pnpm storybook";
       shad = "npx shadcn-ui@latest";
       sql = "source ~/.secrets && sqlcmd -W -s '|' -S \"tcp:\${SQL_SERVER_DEV_HOST},\${SQL_SERVER_DEV_PORT}\" -U \"$SQL_SERVER_DEV_USER\" -P \"$SQL_SERVER_DEV_PASSWORD\" -d \"$SQL_SERVER_DEV_DATABASE\" -Q";
-      inlsql = "sqlcmd -W -s '|' -S devresults.database.windows.net -d dev-export-inl --authentication-method ActiveDirectoryAzCli -C -Q";
+      inlsql = "sqlcmd -W -s '|' -S devresults.database.windows.net -d dev-training --authentication-method ActiveDirectoryAzCli -C -Q";
       start = "pnpm start";
       t = "pnpm test";
       theme = "code ~/Code/HerbCaudill/dotfiles/home/.oh-my-zsh/custom/themes/herb.zsh-theme";
