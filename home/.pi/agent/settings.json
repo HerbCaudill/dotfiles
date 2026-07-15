@@ -1,7 +1,7 @@
 {
-  "lastChangelogVersion": "0.79.10",
+  "lastChangelogVersion": "0.80.6",
   "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-5.5",
+  "defaultModel": "gpt-5.6-sol",
   "packages": [
     "npm:pi-web-access",
     "git:github.com/ferologics/pi-verbosity-control",
@@ -19,10 +19,17 @@
     },
     "npm:pi-extmgr"
   ],
-  "extensions": ["extensions/hide-tool-results.ts", "extensions/status-line/index.ts"],
+  "extensions": [
+    "extensions/hide-tool-results.ts",
+    "extensions/status-line/index.ts"
+  ],
   "quietStartup": true,
-  "hideThinkingBlock": true,
+  "hideThinkingBlock": false,
   "defaultThinkingLevel": "medium",
-  "enabledModels": ["openai-codex/gpt-5.4", "openai-codex/gpt-5.5"],
+  "enabledModels": [
+    "openai-codex/gpt-5.6-luna",
+    "openai-codex/gpt-5.6-sol",
+    "openai-codex/gpt-5.6-terra"
+  ],
   "theme": "dark"
 }
