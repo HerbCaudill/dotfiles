@@ -137,6 +137,8 @@ Use TDD after diagnosis for meaningful executable behavior: business logic, data
 
 Do not write tests for trivial presentational changes such as Tailwind class adjustments, spacing, colors, scrolling containers, or markup structure unless the user explicitly asks or there is observable user-facing behavior worth protecting.
 
+Do not write direct tests for test helpers, fixtures, mocks, or other test infrastructure by default. Exercise them through the real tests that use them. Add direct tests only when the infrastructure contains substantial standalone logic that is difficult to cover through the real test flow.
+
 Tests should assert behavior users or callers care about, not implementation details. Avoid tests that merely check CSS class names, DOM nesting, or component internals.
 
 Do not require TDD for trivial config edits, shell aliases, documentation-only changes, or other simple mechanical edits with no executable logic.
