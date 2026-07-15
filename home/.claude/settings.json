@@ -36,5 +36,6 @@
   "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
   "editorMode": "normal",
+  "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true
 }
