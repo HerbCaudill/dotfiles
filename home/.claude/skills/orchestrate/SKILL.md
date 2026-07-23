@@ -1,15 +1,15 @@
 ---
 name: orchestrate
-description: Use when the user wants to clear a beads task backlog across multiple independent issue threads.
+description: Use when the user wants to clear a ready beads backlog containing multiple independent tasks.
 ---
 
-# Orchestrate: Beads Thread Dispatcher
+# Orchestrate: Beads Agent Dispatcher
 
 ## Overview
 
-Dispatch ready beads tasks into named standalone Codex threads. Use the current thread as the coordinator: choose safe batches, create one implementation thread and one independent review thread per issue, enforce review before closure, and repeat until the queue is drained or blocked.
+Dispatch ready beads tasks to subagents while the current task remains the coordinator and the only routine user-visible task. Choose safe batches, use one implementation subagent and one independent review subagent per issue, enforce review before closure, and repeat until the queue is drained or blocked.
 
-**Core principle:** An implementation thread must never review or close its own bead. Only the orchestrator closes a bead after an independent reviewer approves the pushed changes.
+**Core principle:** An implementation worker must never review or close its own bead. Only the orchestrator closes a bead after an independent reviewer approves the pushed changes.
 
 ## Usage
 
@@ -48,33 +48,48 @@ For each ready task:
 - File overlap is heuristic - when in doubt, put tasks in separate batches
 - If you cannot batch tasks, run them sequentially in separate batches of one
 
-### Dispatch tasks in batches
+### Choose the worker type
 
-Create one standalone local project thread for each task in the batch. Do not use worktrees for orchestration task threads unless the user explicitly asks for a worktree in the current conversation. Worktrees add setup overhead, can make large submodules expensive to materialize, and can confuse shared beads state.
+Use subagents for implementation and review by default. They keep internal coordination out of the user's task list while the bead, commits, pushed branch, and orchestration task provide durable state.
 
-If a task seems unsafe to run in the local checkout, do not silently switch it to a worktree. Pause before dispatching that task, explain the collision risk, and ask the user whether to run it sequentially, skip it, or use a worktree anyway.
+Create a standalone task only when:
 
-Name each task thread exactly:
+- The user explicitly asks for one
+- The work needs sustained user interaction or a meaningful decision before it can proceed
+- The work should remain independently visible and resumable after the orchestration task ends
+- Subagents are unavailable in the current harness
+
+Do not create standalone tasks merely to bypass a subagent concurrency limit. Queue the remaining work and dispatch it as capacity becomes available.
+
+When a standalone task is warranted, name it exactly:
 
 ```text
 {id}: {title}
 ```
 
-If the harness supports thread goals, set a goal for the orchestration thread and for each task thread.
+### Dispatch tasks in batches
 
-**Orchestration thread goal**
+For tasks that do not need a standalone task, create one implementation subagent for each task that fits within the harness's available concurrency. Keep enough capacity for the orchestrator; queue the rest of the batch until a worker finishes. Give each subagent the bead ID and title as its task label where the harness allows.
+
+Do not use worktrees for orchestration workers unless the user explicitly asks for a worktree in the current conversation. Worktrees add setup overhead, can make large submodules expensive to materialize, and can confuse shared beads state.
+
+If a task seems unsafe to run in the local checkout, do not silently switch it to a worktree. Pause before dispatching that task, explain the collision risk, and ask the user whether to run it sequentially, skip it, or use a worktree anyway.
+
+If the harness supports goals, set a goal for the orchestration task and include the task goal in each implementation worker's prompt.
+
+**Orchestration goal**
 
 ```text
-Drain the ready beads queue by creating named task threads for safe batches, monitoring bead status, checking stuck threads when needed, and repeating until no ready tasks remain or a real blocker appears.
+Drain the ready beads queue by dispatching safe batches to implementation and review workers, monitoring bead status, checking stuck workers when needed, and repeating until no ready tasks remain or a real blocker appears.
 ```
 
-**Task thread goal**
+**Implementation goal**
 
 ```text
 Complete the implementation for bead {id}: {title}: claim it, implement it, verify it, format, commit, push, report the exact task commit SHAs, and leave the bead open for independent review.
 ```
 
-**Task thread prompt template**
+**Implementation prompt template**
 
 > Complete the following task. Do not do unrelated work. Make reasonable assumptions for ordinary ambiguity and proceed. Stop after the implementation and any requested review fixes are verified, committed, and pushed. Leave the bead open for independent review.
 >
@@ -101,15 +116,15 @@ Complete the implementation for bead {id}: {title}: claim it, implement it, veri
 
 ### Dispatch independent review
 
-When an implementation thread reports `READY FOR REVIEW`, leave the bead `in_progress` and create a fresh review thread named exactly:
+When an implementation worker reports `READY FOR REVIEW`, leave the bead `in_progress` and create a fresh review subagent. If subagents are unavailable, create a standalone review task instead. The reviewer must not be the implementation agent. Give it the label below where the harness allows:
 
 ```text
 Review {id}: {title}
 ```
 
-The reviewer must not be the implementation agent. Require the reviewer to use the `request-code-review` skill.
+Require the reviewer to use the `request-code-review` skill.
 
-**Review thread prompt template**
+**Review prompt template**
 
 > Independently review bead {id}: {title}. Do not edit files, commit, push, or close the bead.
 >
@@ -130,7 +145,7 @@ The reviewer must not be the implementation agent. Require the reviewer to use t
 ### Resolve review findings
 
 - `APPROVED`: Confirm every reviewed commit is pushed, then the orchestrator runs `bd close {id}`.
-- `CHANGES REQUESTED`: Send all blocking findings to the original implementation thread. It must fix, verify, commit, push, and report the new commit SHAs without closing the bead. Return the complete updated commit list to the independent reviewer. Repeat until approved.
+- `CHANGES REQUESTED`: Send all blocking findings to the original implementation worker and trigger a follow-up turn. It must fix, verify, commit, push, and report the new commit SHAs without closing the bead. Return the complete updated commit list to the same independent reviewer and trigger a follow-up review. Repeat until approved.
 - `BLOCKED`: Keep the bead open and report the blocker to the user.
 - File worthwhile non-blocking findings as separate beads when they should not expand the current task.
 
@@ -138,20 +153,21 @@ Never waive review because a change is trivial, tests pass, a deadline is near, 
 
 ### Monitor quietly
 
-Use beads as the source of truth: a task is done when its issue is closed. An `in_progress` implementation may be implementing, awaiting review, or addressing findings; inspect its task thread when its state stops changing.
+Use beads as the source of truth: a task is done when its issue is closed. An `in_progress` implementation may be implementing, awaiting review, or addressing findings; inspect the worker when its state stops changing.
 
 While a batch is running:
 
 - Poll bead state about every 30 seconds with `bd show <id>` or `bd ready --json`.
-- Inspect an implementation or review thread's latest output no more than about every 5 minutes unless the user asks for status or the bead state suggests failure/blockage.
+- Prefer the harness's agent wait/status mechanism over repeatedly inspecting worker output.
+- Inspect an implementation or review worker's latest output no more than about every 5 minutes unless the user asks for status or the bead state suggests failure/blockage.
 - Polling is silent. Do not say that there is no bead-level change, that a task is still in progress, that you will keep polling, or that you are checking the thread again.
-- Do not summarize routine task-thread progress back into the orchestration thread. The user can read that in the task thread.
-- Report in the orchestration thread only when a task is done, stuck, failed, blocked on human input, or a new issue/dependency is discovered that changes orchestration decisions.
+- Do not summarize routine worker progress into the orchestration task.
+- Report in the orchestration task only when a task is done, stuck, failed, blocked on human input, or a new issue/dependency is discovered that changes orchestration decisions.
 
-If a task remains `in_progress` after a bead poll or thread inspection and is still actively working, keep monitoring silently. Tool calls may appear in the transcript, but do not add assistant commentary for unchanged state.
+If a task remains `in_progress` after a bead poll or worker inspection and is still actively working, keep monitoring silently. Tool calls may appear in the transcript, but do not add assistant commentary for unchanged state.
 
 ### Repeat
 
 After all issues in a batch are independently approved and closed, make a new batch and start it. Newly unblocked tasks from completed dependencies can be added to subsequent batches. Repeat until no open ready tasks remain.
 
-If a task thread appears stuck, failed, or blocked on human input, notify the user if the harness supports explicit notifications. Otherwise report the issue clearly in the orchestration thread.
+If a worker appears stuck, failed, or blocked on human input, notify the user if the harness supports explicit notifications. Otherwise report the issue clearly in the orchestration task.
