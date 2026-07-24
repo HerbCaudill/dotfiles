@@ -1,0 +1,4 @@
+interface:
+  display_name: "Publishing to npm"
+  short_description: "Publish packages safely to the npm registry"
+  default_prompt: "Use $publishing-to-npm to publish the current package to the npm registry and verify the release."
