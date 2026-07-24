@@ -61,7 +61,7 @@ Create a standalone task only when:
 
 Do not create standalone tasks merely to bypass a subagent concurrency limit. Queue the remaining work and dispatch it as capacity becomes available.
 
-When multiple models are available, use the default or balanced model for clear, localized tasks and the strongest coding/reasoning model for ambiguous, cross-cutting, or high-risk work. Escalate when a worker is blocked by reasoning, and honor any explicit user preference.
+When multiple models or reasoning levels are available, use the default or balanced model and reasoning effort for clear, localized tasks, and the strongest coding/reasoning model with high reasoning effort for ambiguous, cross-cutting, or high-risk work. Escalate the model or reasoning effort when a worker is blocked by reasoning, and honor any explicit user preference.
 
 When a standalone task is warranted, name it exactly:
 
