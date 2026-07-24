@@ -1,9 +1,13 @@
 ---
 name: devresults
-description: Use when working on the DevResults .NET/SQL Server application from macOS through the Parallels Windows VM.
+description: Use only when working on the DevResults application repository whose primary macOS checkout is at ~/Code/DevResults/DevResults; do not use for sibling repositories under ~/Code/DevResults.
 ---
 
 # DevResults
+
+## Scope
+
+This skill applies only to the DevResults application repository at `~/Code/DevResults/DevResults` and its worktrees or clones. Do not trigger it merely because another repository is somewhere under `~/Code/DevResults`.
 
 ## Overview
 
