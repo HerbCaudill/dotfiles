@@ -173,3 +173,7 @@ If a task remains `in_progress` after a bead poll or worker inspection and is st
 After all issues in a batch are independently approved and closed, make a new batch and start it. Newly unblocked tasks from completed dependencies can be added to subsequent batches. Repeat until no open ready tasks remain.
 
 If a worker appears stuck, failed, or blocked on human input, notify the user if the harness supports explicit notifications. Otherwise report the issue clearly in the orchestration task.
+
+### Status report
+
+If asked for a "status report" (or "update", or "how's it going", etc.), provide a concise summary of the current state of all tasks, preferably in the form of a markdown task list. Include the bead ID, title, and status for each task. Do not include implementation or review worker output unless a task is blocked or failed.
