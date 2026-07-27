@@ -19,10 +19,7 @@
     },
     "npm:pi-extmgr"
   ],
-  "extensions": [
-    "extensions/hide-tool-results.ts",
-    "extensions/status-line/index.ts"
-  ],
+  "extensions": ["extensions/hide-tool-results.ts", "extensions/status-line/index.ts"],
   "quietStartup": true,
   "hideThinkingBlock": false,
   "defaultThinkingLevel": "medium",

@@ -1,7 +1,8 @@
 dolt:
-    port: 3308
-    shared-server: true
+  port: 3308
+  shared-server: true
 metrics:
-    disabled: false
-    endpoint: "https://gastownhall-eventsapi.com/mp/collect"
-    notice_shown: true
+  disabled: false
+  endpoint: https://gastownhall-eventsapi.com/mp/collect
+  notice_shown: true
+no-git-ops: true

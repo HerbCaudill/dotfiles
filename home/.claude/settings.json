@@ -32,6 +32,7 @@
     "beads@beads-marketplace": true,
     "document-skills@anthropic-agent-skills": true
   },
+  "effortLevel": "xhigh",
   "autoUpdatesChannel": "latest",
   "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
