@@ -56,26 +56,6 @@ in
     };
   };
 
-  launchd.agents."briefing" = {
-    serviceConfig = {
-      Label = "com.herbcaudill.briefing";
-      ProgramArguments = [
-        "${pkgs.pnpm}/bin/pnpm"
-        "briefing"
-      ];
-      WorkingDirectory = "${homeDirectory}/Code/HerbCaudill/briefings";
-      StartCalendarInterval = {
-        Hour = 5;
-        Minute = 0;
-      };
-      StandardOutPath = "/tmp/briefing.log";
-      StandardErrorPath = "/tmp/briefing.log";
-      EnvironmentVariables = {
-        PATH = "${launchdPath}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin";
-      };
-    };
-  };
-
   launchd.agents."meeting-notes" = {
     serviceConfig = {
       Label = "com.herbcaudill.meeting-notes";
