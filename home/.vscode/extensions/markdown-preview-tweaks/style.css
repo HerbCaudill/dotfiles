@@ -1,0 +1,18 @@
+/* Shrink the YAML front matter table at the top of a preview.
+   Two selectors because two things can render it: the bierner
+   markdown-yaml-preamble extension emits an unclassed table as the first
+   element, and VS Code's own renderer emits <table class="frontmatter">. */
+
+table.frontmatter,
+.markdown-body > table:first-child {
+  font-size: 0.8em;
+  line-height: 1.4;
+  font-family: var(--vscode-editor-font-family, monospace);
+}
+
+table.frontmatter th,
+table.frontmatter td,
+.markdown-body > table:first-child th,
+.markdown-body > table:first-child td {
+  padding: 3px 8px;
+}

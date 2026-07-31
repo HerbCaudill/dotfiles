@@ -1,0 +1,20 @@
+{
+  "name": "markdown-preview-tweaks",
+  "displayName": "Markdown preview tweaks",
+  "version": "1.0.1",
+  "private": true,
+  "description": "Personal CSS overrides for the built-in markdown preview",
+  "categories": [
+    "Other"
+  ],
+  "license": "MIT",
+  "publisher": "herbcaudill",
+  "contributes": {
+    "markdown.previewStyles": [
+      "./style.css"
+    ]
+  },
+  "engines": {
+    "vscode": "^1.70.0"
+  }
+}

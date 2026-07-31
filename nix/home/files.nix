@@ -18,6 +18,8 @@ in {
     ".pi/agent/skills".source = mkRepoSymlink "home/.claude/skills";
     ".prettierrc".source = mkRepoSymlink "home/.prettierrc";
     ".ssh/config".source = mkRepoSymlink "home/.ssh/config";
+    ".vscode/extensions/herbcaudill.markdown-preview-tweaks".source =
+      mkRepoSymlink "home/.vscode/extensions/markdown-preview-tweaks";
     "iterm2/com.googlecode.iterm2.plist".source = mkRepoSymlink "home/iterm2/com.googlecode.iterm2.plist";
 
     ".local/bin/_wt_dir".source = mkRepoSymlink "home/.local/bin/_wt_dir";
