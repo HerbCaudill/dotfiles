@@ -1,18 +1,17 @@
-/* Shrink the YAML front matter table at the top of a preview.
-   Two selectors because two things can render it: the bierner
-   markdown-yaml-preamble extension emits an unclassed table as the first
-   element, and VS Code's own renderer emits <table class="frontmatter">. */
+/* Shrink the YAML front matter table at the top of a preview and render it in
+   the editor font. Everything else about it — borders, cell padding, row
+   striping — is left to the GitHub styles so it matches every other table.
 
-table.frontmatter,
-.markdown-body > table:first-child {
+   Three selectors because the table can come from either renderer, and the
+   markdown-preview-github-styles extension wraps the whole document in
+   .markdown-body > .github-markdown-body > .github-markdown-content.
+   markdown-yaml-preamble emits an unclassed table as the first element inside
+   that wrapper; VS Code's own renderer emits <table class="frontmatter">. */
+
+.github-markdown-content > table:first-child,
+.markdown-body > table:first-child,
+table.frontmatter {
   font-size: 0.8em;
   line-height: 1.4;
   font-family: var(--vscode-editor-font-family, monospace);
-}
-
-table.frontmatter th,
-table.frontmatter td,
-.markdown-body > table:first-child th,
-.markdown-body > table:first-child td {
-  padding: 3px 8px;
 }
