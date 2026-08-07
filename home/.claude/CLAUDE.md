@@ -42,6 +42,8 @@ Most of my repos use **bd (beads)** for issue tracking; you can tell by looking 
 
 When work is complete, commit it, push it, and close the task if applicable.
 
+Write commit messages with a concise subject line followed by a short paragraph explaining the context and reasoning behind the change.
+
 Work is NOT complete until `git push` succeeds. If push fails, resolve and retry until it succeeds.
 
 Within a repository, always use relative paths.
