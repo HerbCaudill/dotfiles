@@ -82,7 +82,7 @@ If the harness supports goals, set a goal for the orchestration task and include
 **Orchestration goal**
 
 ```text
-Drain the ready beads queue by dispatching safe batches to implementation and review workers, monitoring bead status, checking stuck workers when needed, and repeating until no ready tasks remain or a real blocker appears.
+Resolve all ready beads by dispatching safe batches to implementation and review workers, monitoring bead status, checking stuck workers when needed, and repeating until no ready tasks remain or a real blocker appears.
 ```
 
 **Implementation goal**
@@ -177,3 +177,5 @@ If a worker appears stuck, failed, or blocked on human input, notify the user if
 ### Status report
 
 If asked for a "status report" (or "update", or "how's it going", etc.), provide a concise summary of the current state of all tasks, preferably in the form of a markdown task list. Include the bead ID, title, and status for each task. Do not include implementation or review worker output unless a task is blocked or failed.
+
+###
