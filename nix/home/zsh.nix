@@ -46,7 +46,7 @@
       bdr = "bd list --pretty --ready";
       bdlw = "bd list --pretty --watch";
       bdrw = "bd list --pretty --ready --watch";
-      bdui = "npx @herbcaudill/beads-ui";
+      bdui = "pnpm dlx @herbcaudill/beads-ui@latest";
       bs = "pnpm build && pnpm start";
       c = "code .";
       cl = "cls && claude --dangerously-skip-permissions";
