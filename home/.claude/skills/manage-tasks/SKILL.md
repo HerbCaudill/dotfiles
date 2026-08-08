@@ -80,6 +80,16 @@ If the user says something is "still" happening or otherwise indicates that they
 - Set blocking dependencies between issues when appropriate (using `bd dep add <issue> <depends-on>`)
 - If there are previous issues on the same topic, link to them (using `--deps related:<id>`)
 
+### Task size
+
+Treat a top-level task or epic child as a separate implementation and review unit. It should have a coherent outcome, acceptance criteria, and verification strategy that justify a fresh session.
+
+- Prefer one task when the steps touch the same files, repeat the same verification, or only make sense together.
+- Split work when the children can proceed independently, expose a real dependency or decision boundary, carry different risks, or need separate rollback boundaries.
+- Keep small implementation steps in the issue description or model them as subtasks.
+- Do not create separate issues merely because a plan has numbered steps or a change touches many files.
+- Small high-risk changes may still deserve their own task; size the boundary around review risk, not line count.
+
 ### Subtasks vs epics
 
 There are two ways to break down work:
@@ -87,7 +97,7 @@ There are two ways to break down work:
 - **Subtasks** (non-epic parent): Create children with `--parent={id}`. IDs are `{parentId}.1`, `{parentId}.2`, etc. Ralph treats the parent + all subtasks as a single unit of work, completing them in one session.
 - **Epics** (type `epic`): Create children with `--parent={id}`. Children get their own random IDs. Each child is an independent task that Ralph works on in a separate session.
 
-Use subtasks for granular steps within a single task. Use epics when work is large enough to span multiple sessions.
+Use subtasks for granular steps within a single implementation and review unit. Use an epic only when its children are substantial enough to warrant separate implementation sessions and independent reviews.
 
 ## Updating issues
 
