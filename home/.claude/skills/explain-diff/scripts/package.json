@@ -1,4 +1,5 @@
 {
+  "name": "@herbcaudill/explain-diff-renderer",
   "private": true,
   "type": "module",
   "dependencies": {

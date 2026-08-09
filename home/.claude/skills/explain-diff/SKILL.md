@@ -49,7 +49,7 @@ Prepare a versioned JSON input and render it with:
 node ~/.claude/skills/explain-diff/scripts/runRenderExplanation.ts <input.json> <output.html>
 ```
 
-If the renderer dependencies are not installed yet, run `pnpm install --dir ~/.claude/skills/explain-diff/scripts --frozen-lockfile` once before rendering.
+The managed dotfiles workspace installs the renderer dependencies with its normal root `pnpm install`. For a standalone copy of the skill, run `pnpm install --dir ~/.claude/skills/explain-diff/scripts --frozen-lockfile` once before rendering.
 
 Put both input and output in a global temporary location outside the code repository. The HTML filename must start with today's date in `YYYY-MM-DD-` format, for example `/tmp/2026-01-12-explanation-<slug>.html`.
 
