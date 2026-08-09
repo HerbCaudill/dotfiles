@@ -7,8 +7,14 @@ description: Use when writing or editing code in Herb's repos — file and folde
 
 ## File organization
 
-- Each function should be in its own file. Don't put multiple helper functions in a single file.
-- A function `foo` lives in `some-directory/foo.ts` and its test file is `some-directory/tests/foo.test.ts`.
+- Keep an implementation helper in the file of its only intended production caller. It does not
+  need to be exported or tested separately just because it is a named function.
+- Extract a function when it has multiple production callers, represents an independently
+  meaningful concept, establishes a useful architectural boundary, is expected to be reused, or
+  would make its owning file hard to navigate. Current caller count is evidence, not a mechanical
+  rule.
+- When a function is extracted, `foo` lives in `some-directory/foo.ts` and its focused test file,
+  when one is useful, lives in `some-directory/tests/foo.test.ts`.
 - Shared types go in a `types.ts` file; shared constants go in a `constants.ts` file.
 - Use named exports. Don't use default exports unless the framework (like Next.js) requires them.
 - Put tests and stories in `tests/` and `stories/` subdirectories alongside the source files they refer to:
@@ -28,7 +34,8 @@ components/
 ## React components
 
 - Each component should be in its own file; there should not be multiple components in a single file.
-- Helper functions should not be in the same file as components.
+- An ordinary helper used only by one component may live in the component file. Put file-local
+  helpers after the component and before local types.
 - Components should always have a `Props` type, listed at the end of the file.
 - The first thing I see in a component file, after the imports, should be the component itself.
 - All local `interface` and `type` declarations should be at the end of the file.
