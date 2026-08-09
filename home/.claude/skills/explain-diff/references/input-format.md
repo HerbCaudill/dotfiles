@@ -7,7 +7,7 @@ The renderer accepts a JSON document with `schemaVersion: 1`. The TypeScript con
 ```json
 {
   "schemaVersion": 1,
-  "title": "Why the cache key now includes the response variant",
+  "title": "Plan 007: Including the response variant in the cache key",
   "lede": "The same endpoint can return two valid shapes. The cache now keeps them separate.",
   "date": "2026-08-09",
   "slug": "variant-cache-key",
