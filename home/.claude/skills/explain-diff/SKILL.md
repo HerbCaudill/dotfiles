@@ -55,13 +55,7 @@ Put both input and output in a global temporary location outside the code reposi
 
 The bundled [assets/explanation-template.html](assets/explanation-template.html) produces one self-contained HTML file with embedded CSS, JavaScript, and IBM Plex fonts.
 
-Make the whole thing one long page with section headers and a table of contents. Don't use tabs for the top-level structure.
-
-Keep the GitHub-like light styling from the template. Use Shiki's `github-light` theme. Do not add dark-mode syntax colors.
-
-For code blocks, always use `<pre>` tags. If you use a custom styled div instead, it **must** have `white-space: pre-wrap` in its CSS, or the browser will collapse all newlines into a single line. Before saving the file, scan each code block in the HTML source and confirm its CSS includes `white-space: pre` or `pre-wrap`.
-
-Show complete semantic units. For a TypeScript or JavaScript function, class, object, or method, use a pinned `source` declaration in the renderer input so [scripts/extractBracedDeclaration.ts](scripts/extractBracedDeclaration.ts) includes the signature, body, closing boundary, and adjacent JSDoc. Use explicit complete excerpts for other languages. Do not use arbitrary line slices. Include an import only when the explanation needs it; never sacrifice the end of the declaration to make room for an import.
+Show complete semantic units. For a TypeScript or JavaScript function, class, object, or method, use a pinned `source` declaration in the renderer input so [scripts/extractBracedDeclaration.ts](scripts/extractBracedDeclaration.ts) includes the signature, body, closing boundary, and adjacent JSDoc. Use explicit complete excerpts for other languages. Do not use arbitrary line slices. Include an import only when the explanation needs it;.
 
 Use the one blue callout style for key concepts, definitions, and edge cases. Do not introduce warning-colored callouts. Keep headings inside callouts and summary cards black.
 
