@@ -27,11 +27,15 @@ Example: `/deploy myproject` deploys to `myproject.herbcaudill.com`
    ```
 
 2. **Porkbun API credentials** available in `~/.secrets`:
+
    ```bash
    source ~/.secrets
    ```
+
    The file should contain `PORKBUN_API_KEY` and `PORKBUN_SECRET_KEY`.
    Get these from https://porkbun.com/account/api
+
+   See the `porkbun` skill for working with the Porkbun API beyond this script.
 
 ## Process
 
