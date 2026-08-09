@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@fontsource/ibm-plex-mono": "5.2.7",
+    "@fontsource/ibm-plex-sans": "5.2.8",
+    "shiki": "4.4.2",
+    "typescript": "5.9.3"
+  },
+  "packageManager": "pnpm@10.28.2"
+}

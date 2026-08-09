@@ -5,9 +5,17 @@ description: Use when the user asks for a rich explanation of a code change, dif
 
 # Explain Diff
 
-Please make me a rich, interactive explanation of the specified code change. Use the `writing` skill.
+Create a rich, interactive explanation of the specified code change. Use the `writing` skill for the prose and the bundled renderer for the document.
 
-Put the file in a global place on my computer outside of the code repo, and make sure the filename always starts with today's date in `YYYY-MM-DD-` format. For example: `/tmp/2026-01-12-explanation-<slug>.html`
+Read [references/input-format.md](references/input-format.md) before authoring the renderer input.
+
+## Inspect the range
+
+Resolve the requested base and head to commit SHAs before reading source. Inspect the commit sequence, name-status diff, line counts, and surrounding code at both revisions.
+
+Read historical source with `git show <sha>:<path>`. Do not read a pinned explanation from the current worktree: it may move while the explanation is being written.
+
+Explore enough surrounding code to explain the system, not only the changed lines. Trace callers, tests, generated output, persistence boundaries, and user-visible behavior when they matter.
 
 ## Structure
 
@@ -23,19 +31,41 @@ Explain the core intuition for the code change. The focus here is to explain the
 
 Do a high-level walkthrough of the changes to the code. Group/order the changes in an understandable way. Include links to the relevant code files and line numbers that will open in VS Code.
 
+### File index
+
+Include every changed file as an always-visible card. Give each card its Git status, linked filename, one-sentence description, and one or more category tags.
+
+The renderer links added files to the current file in VS Code. It writes a companion combined diff and links modified, renamed, and deleted files to the first line of their exact patch.
+
+### Verification
+
+Explain what was tested, what passed, and any known unrelated failures or remaining risks.
+
 ## Format
 
-Output a single self-contained HTML file which includes CSS and JavaScript.
+Prepare a versioned JSON input and render it with:
+
+```sh
+node ~/.claude/skills/explain-diff/scripts/runRenderExplanation.ts <input.json> <output.html>
+```
+
+If the renderer dependencies are not installed yet, run `pnpm install --dir ~/.claude/skills/explain-diff/scripts --frozen-lockfile` once before rendering.
+
+Put both input and output in a global temporary location outside the code repository. The HTML filename must start with today's date in `YYYY-MM-DD-` format, for example `/tmp/2026-01-12-explanation-<slug>.html`.
+
+The bundled [assets/explanation-template.html](assets/explanation-template.html) produces one self-contained HTML file with embedded CSS, JavaScript, and IBM Plex fonts.
 
 Make the whole thing one long page with section headers and a table of contents. Don't use tabs for the top-level structure.
 
-Styling should be simple, responsive, and readable - like GitHub's markdown style with IBM Plex fonts.
+Keep the GitHub-like light styling from the template. Use Shiki's `github-light` theme. Do not add dark-mode syntax colors.
 
 For code blocks, always use `<pre>` tags. If you use a custom styled div instead, it **must** have `white-space: pre-wrap` in its CSS, or the browser will collapse all newlines into a single line. Before saving the file, scan each code block in the HTML source and confirm its CSS includes `white-space: pre` or `pre-wrap`.
 
-Apply syntax highlighting.
+Show complete semantic units. For a TypeScript or JavaScript function, class, object, or method, use a pinned `source` declaration in the renderer input so [scripts/extractBracedDeclaration.ts](scripts/extractBracedDeclaration.ts) includes the signature, body, closing boundary, and adjacent JSDoc. Use explicit complete excerpts for other languages. Do not use arbitrary line slices. Include an import only when the explanation needs it; never sacrifice the end of the declaration to make room for an import.
 
-Use callouts for key concepts or definitions, important edge cases, etc.
+Use the one blue callout style for key concepts, definitions, and edge cases. Do not introduce warning-colored callouts. Keep headings inside callouts and summary cards black.
+
+Render the file index as cards, not a table. Keep every description and tag visible. Do not add expand/collapse behavior. Keep filenames on one line with ellipsis rather than wrapping; the full path belongs in the link tooltip.
 
 ## Diagrams
 
@@ -46,3 +76,18 @@ Ideally, you should pick a small number of diagram families that can be reused t
 - A system diagram showing data flow or communication between components. Make sure to include example data here!
 
 Don't use ASCII diagrams. Always use simple HTML designs for your diagrams, HTML lists for lists of things, etc.
+
+## Verify the artifact
+
+Run the renderer, open the HTML, and inspect it at desktop and narrow widths. Confirm:
+
+- the narrative follows Background → Intuition → Code → File index → Verification;
+- every changed file appears once;
+- code snippets start and end at coherent semantic boundaries;
+- modified, renamed, and deleted file links point into the companion diff;
+- added file links point to the repository file;
+- file descriptions and tags are visible without interaction;
+- filenames do not wrap and the page has no horizontal overflow;
+- all callouts use the blue style and card headings are black;
+- code uses GitHub light syntax colors and preserves whitespace; and
+- the browser console has no errors.
