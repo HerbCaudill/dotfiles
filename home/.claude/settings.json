@@ -41,7 +41,8 @@
       }
     }
   },
-  "effortLevel": "xhigh",
+  "model": "fable",
+  "effortLevel": "medium",
   "autoUpdatesChannel": "latest",
   "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
