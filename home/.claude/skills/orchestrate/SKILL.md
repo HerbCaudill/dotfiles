@@ -124,7 +124,7 @@ When an implementation worker reports `READY FOR REVIEW`, leave the bead `in_pro
 Review {id}: {title}
 ```
 
-Require the reviewer to use the `request-code-review` skill.
+Require the reviewer to use the `do-code-review` skill.
 
 **Review prompt template**
 
@@ -140,7 +140,7 @@ Require the reviewer to use the `request-code-review` skill.
 > Task commit SHAs, in order: {task_commit_shas}
 > Implementation verification: {verification_summary}
 >
-> Use the `request-code-review` skill. Review the requirements, exact task commits, final affected code, tests, and integration risks. In a shared checkout, inspect each task commit directly with `git show`; do not assume `BASE_SHA..HEAD_SHA` contains only this task. Run additional non-mutating verification when safe.
+> Use the `do-code-review` skill. Review the requirements, exact task commits, final affected code, tests, and integration risks. In a shared checkout, inspect each task commit directly with `git show`; do not assume `BASE_SHA..HEAD_SHA` contains only this task. Run additional non-mutating verification when safe.
 >
 > Report specific findings with file and line references. Critical and Important findings block approval. Minor findings do not block unless they reveal a requirement violation. End with exactly one verdict: `APPROVED`, `CHANGES REQUESTED`, or `BLOCKED`.
 
