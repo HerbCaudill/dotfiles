@@ -93,9 +93,9 @@ Complete the implementation for bead {id}: {title}: claim it, implement it, veri
 
 **Implementation prompt template**
 
-> Complete the following task. Do not do unrelated work. Make reasonable assumptions for ordinary ambiguity and proceed. Stop after the implementation and any requested review fixes are verified, committed, and pushed. Leave the bead open for independent review.
+> Complete the following task. Do not do unrelated work.
 >
-> Goal: Complete the implementation for bead {id}: {title}. Claim it, implement it, verify it, format, commit, push, report the exact task commit SHAs, and leave the bead open for independent review.
+> Goal: Complete the implementation for bead {id}: {title}.
 >
 > ## Task: {title}
 >
@@ -104,13 +104,8 @@ Complete the implementation for bead {id}: {title}: claim it, implement it, veri
 > ### Instructions
 >
 > - Run `bd update {id} --status=in_progress` to claim the task.
-> - Write tests first. Use the `Test-Driven Development (TDD)` skill. When fixing a bug, before doing anything else, start by writing a test that reproduces the bug. Then fix the bug and prove it with a passing test.
 > - Make reasonable assumptions for ordinary ambiguity. Ask for human input only when the next step is destructive, changes scope, risks data loss or customer data exposure, requires credentials or permissions, or presents a meaningful architectural choice.
 > - While you're working, if you notice unrelated bugs or other issues, use `bd create` to file issues for another agent to work on.
-> - Run `pnpm test` to verify everything works.
-> - Update the project's CLAUDE.md or README.md with relevant changes.
-> - Run `pnpm format` to format code.
-> - Commit and push your changes. If you come across unrelated changes, probably the user or another agent is working in the codebase at the same time. Be careful just to commit the changes you made.
 > - Record the starting commit before editing. In your final message, report that base SHA and the ordered SHA of every commit created for this task. Do not rely only on `HEAD`, because concurrent tasks may interleave commits in the shared checkout.
 > - Do not review your own work and do not run `bd close {id}`. The orchestrator will dispatch an independent reviewer and close the bead after approval.
 > - End a review-ready implementation with `READY FOR REVIEW`, followed by the base SHA, task commit SHAs, verification commands and results, and pushed branch name.
@@ -177,5 +172,3 @@ If a worker appears stuck, failed, or blocked on human input, notify the user if
 ### Status report
 
 If asked for a "status report" (or "update", or "how's it going", etc.), provide a concise summary of the current state of all tasks, preferably in the form of a markdown task list. Include the bead ID, title, and status for each task. Do not include implementation or review worker output unless a task is blocked or failed.
-
-###
