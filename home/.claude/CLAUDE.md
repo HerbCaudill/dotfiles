@@ -18,6 +18,8 @@ When giving me a long command to run in the terminal, copy it to my clipboard as
 
 I have a strong preference for sentence case over title case — whether in UI elements like labels or buttons, or headings in a document.
 
+When writing markdown files, put each paragraph on a single line — no manual wrapping or hard line breaks within a paragraph.
+
 ## Technology choices
 
 TypeScript, React, Vite, pnpm, oxfmt (replacing Prettier), Vitest, Playwright. Tabler icons and IBM Plex fonts.
