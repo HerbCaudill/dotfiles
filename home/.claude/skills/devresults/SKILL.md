@@ -21,6 +21,7 @@ DevResults is a Windows-native .NET/SQL Server application. Treat the Parallels 
 | Query dev SQL Server  | Use the `sql-server-dev` skill from macOS                                                                         |
 | Run the web app       | Use IIS Express in the Windows VM                                                                                 |
 | Test browser behavior | Open the VM-hosted app URL from macOS when reachable                                                              |
+| Verify logged-in app state | Use Herb's logged-in Chrome (claude-in-chrome MCP) — don't fight cookie auth with curl/bearer tokens on non-API pages |
 | Edit files            | Prefer a separate macOS clone synced with `drsync`; never edit through the mounted Windows checkout               |
 | Repo instructions     | Read `CLAUDE.md` from the DevResults repo root                                                                    |
 | Repo-specific skills  | Check `.claude/skills` inside the DevResults repo                                                                 |
