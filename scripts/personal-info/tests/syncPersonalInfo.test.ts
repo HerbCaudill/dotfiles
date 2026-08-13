@@ -46,6 +46,8 @@ describe("syncPersonalInfo", () => {
 
     expect(calls).toHaveLength(2)
     expect(calls.flatMap(call => call.args)).not.toContain(localContents)
+    expect(calls[1]?.args).toContain("--template")
+    expect(calls[1]?.args).toContain("/dev/stdin")
     expect(JSON.parse(calls[1]?.input ?? "").fields).toContainEqual(
       expect.objectContaining({ id: "notesPlain", value: localContents }),
     )

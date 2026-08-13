@@ -59,7 +59,10 @@ export const syncPersonalInfo = (
   chmodSync(filePath, 0o600)
   const localContents = readFileSync(filePath, "utf8")
   const updatedItem = setNotes(remoteItem, localContents)
-  runOp(["item", "edit", remoteItem.id, "--vault", vault], JSON.stringify(updatedItem))
+  runOp(
+    ["item", "edit", remoteItem.id, "--vault", vault, "--template", "/dev/stdin"],
+    JSON.stringify(updatedItem),
+  )
 }
 
 /** Retrieve a Secure Note without writing its contents to the terminal. */
