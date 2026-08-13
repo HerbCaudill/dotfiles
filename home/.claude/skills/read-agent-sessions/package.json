@@ -2,6 +2,9 @@
   "name": "read-agent-sessions",
   "private": true,
   "type": "module",
+  "scripts": {
+    "test": "node --test scripts/tests/agent-sessions.node-test.ts"
+  },
   "engines": {
     "node": ">=22.18"
   }

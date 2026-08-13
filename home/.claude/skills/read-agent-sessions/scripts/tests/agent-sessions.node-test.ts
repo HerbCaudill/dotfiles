@@ -1,8 +1,9 @@
+import assert from "node:assert/strict"
+import { spawnSync } from "node:child_process"
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { spawnSync } from "node:child_process"
-import { describe, expect, test } from "vitest"
+import { describe, test } from "node:test"
 import { arePathsEqual } from "../are-paths-equal.ts"
 import { chunkSessionFiles } from "../chunk-session-files.ts"
 
@@ -16,14 +17,14 @@ describe("agent-sessions", () => {
       env: fixture.env,
     })
 
-    expect(result.status, result.stderr).toBe(0)
-    expect(result.stdout).toContain("claude")
-    expect(result.stdout).toContain("claude-session-1234")
-    expect(result.stdout).toContain("Fix the flaky login test")
-    expect(result.stdout).toContain("codex")
-    expect(result.stdout).toContain("codex-session-5678")
-    expect(result.stdout).toContain("Build the reports page")
-    expect(result.stdout).not.toContain("recommended_plugins")
+    assert.equal(result.status, 0, result.stderr)
+    assert.ok(result.stdout.includes("claude"))
+    assert.ok(result.stdout.includes("claude-session-1234"))
+    assert.ok(result.stdout.includes("Fix the flaky login test"))
+    assert.ok(result.stdout.includes("codex"))
+    assert.ok(result.stdout.includes("codex-session-5678"))
+    assert.ok(result.stdout.includes("Build the reports page"))
+    assert.ok(!result.stdout.includes("recommended_plugins"))
   })
 
   test("renders conversation text without tool traffic by default", () => {
@@ -33,13 +34,13 @@ describe("agent-sessions", () => {
       env: fixture.env,
     })
 
-    expect(result.status, result.stderr).toBe(0)
-    expect(result.stdout).toContain("## User")
-    expect(result.stdout).toContain("Fix the flaky login test")
-    expect(result.stdout).toContain("## Assistant")
-    expect(result.stdout).toContain("I found the race condition.")
-    expect(result.stdout).not.toContain("pnpm test")
-    expect(result.stdout).not.toContain("private tool output")
+    assert.equal(result.status, 0, result.stderr)
+    assert.ok(result.stdout.includes("## User"))
+    assert.ok(result.stdout.includes("Fix the flaky login test"))
+    assert.ok(result.stdout.includes("## Assistant"))
+    assert.ok(result.stdout.includes("I found the race condition."))
+    assert.ok(!result.stdout.includes("pnpm test"))
+    assert.ok(!result.stdout.includes("private tool output"))
   })
 
   test("includes tool calls and results when requested", () => {
@@ -49,10 +50,10 @@ describe("agent-sessions", () => {
       env: fixture.env,
     })
 
-    expect(result.status, result.stderr).toBe(0)
-    expect(result.stdout).toContain("## Tool")
-    expect(result.stdout).toContain("pnpm test")
-    expect(result.stdout).toContain("private tool output")
+    assert.equal(result.status, 0, result.stderr)
+    assert.ok(result.stdout.includes("## Tool"))
+    assert.ok(result.stdout.includes("pnpm test"))
+    assert.ok(result.stdout.includes("private tool output"))
   })
 
   test("searches user-visible conversation text across harnesses", () => {
@@ -62,10 +63,10 @@ describe("agent-sessions", () => {
       env: fixture.env,
     })
 
-    expect(result.status, result.stderr).toBe(0)
-    expect(result.stdout).toContain("codex-session-5678")
-    expect(result.stdout).toContain("Build the reports page")
-    expect(result.stdout).not.toContain("claude-session-1234")
+    assert.equal(result.status, 0, result.stderr)
+    assert.ok(result.stdout.includes("codex-session-5678"))
+    assert.ok(result.stdout.includes("Build the reports page"))
+    assert.ok(!result.stdout.includes("claude-session-1234"))
   })
 
   test("infers the provider for a transcript outside the default session roots", () => {
@@ -75,9 +76,9 @@ describe("agent-sessions", () => {
       env: fixture.env,
     })
 
-    expect(result.status, result.stderr).toBe(0)
-    expect(result.stdout).toContain("# claude session exported-claude-session")
-    expect(result.stdout).toContain("Recover this exported Claude conversation")
+    assert.equal(result.status, 0, result.stderr)
+    assert.ok(result.stdout.includes("# claude session exported-claude-session"))
+    assert.ok(result.stdout.includes("Recover this exported Claude conversation"))
   })
 
   test("filters sessions to the requested working directory", () => {
@@ -91,21 +92,22 @@ describe("agent-sessions", () => {
       },
     )
 
-    expect(result.status, result.stderr).toBe(0)
-    expect(result.stdout).toContain("claude-session-1234")
-    expect(result.stdout).not.toContain("codex-session-5678")
+    assert.equal(result.status, 0, result.stderr)
+    assert.ok(result.stdout.includes("claude-session-1234"))
+    assert.ok(!result.stdout.includes("codex-session-5678"))
   })
 })
 
 describe("arePathsEqual", () => {
   test("compares Windows paths without case or separator sensitivity", () => {
-    expect(
+    assert.equal(
       arePathsEqual(
         "C:\\Users\\Colleague\\Code\\Project",
         "c:/users/colleague/code/project",
         "win32",
       ),
-    ).toBe(true)
+      true,
+    )
   })
 })
 
@@ -116,7 +118,7 @@ describe("chunkSessionFiles", () => {
       path,
     }))
 
-    expect(chunkSessionFiles(files, 200, 15)).toEqual([[files[0]], [files[1]], [files[2]]])
+    assert.deepEqual(chunkSessionFiles(files, 200, 15), [[files[0]], [files[1]], [files[2]]])
   })
 })
 

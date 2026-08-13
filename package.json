@@ -6,7 +6,7 @@
   "scripts": {
     "nix:rebuild": "sudo -H darwin-rebuild switch --flake /Users/herbcaudill/Code/HerbCaudill/dotfiles#herbcaudill",
     "format": "oxfmt",
-    "test": "vitest run"
+    "test": "vitest run && node --test home/.claude/skills/read-agent-sessions/scripts/tests/agent-sessions.node-test.ts"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
