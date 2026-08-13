@@ -24,6 +24,7 @@ home/.claude/*
 !home/.claude/skills/
 !home/.claude/skills/**
 home/.claude/skills/.system/
+home/.claude/skills/personal-info/personal-info.md
 !home/.claude/statusline.js
 
 home/.secrets

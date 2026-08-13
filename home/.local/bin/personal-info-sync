@@ -1,0 +1,11 @@
+#!/usr/bin/env -S node --experimental-strip-types
+
+import { runPersonalInfoSync } from "../../../scripts/personal-info/runPersonalInfoSync.ts"
+
+try {
+  runPersonalInfoSync(process.argv.slice(2))
+} catch (error) {
+  const message = error instanceof Error ? error.message : "Personal info sync failed"
+  process.stderr.write(`${message}\n`)
+  process.exitCode = 1
+}
