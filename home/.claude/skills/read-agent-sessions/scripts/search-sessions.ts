@@ -1,5 +1,5 @@
 import { readFileSync, statSync } from "node:fs"
-import { resolve } from "node:path"
+import { arePathsEqual } from "./are-paths-equal.ts"
 import { findMatchingSessionFiles } from "./find-matching-session-files.ts"
 import { findSessionFiles } from "./find-session-files.ts"
 import { parseSession } from "./parse-session.ts"
@@ -19,7 +19,6 @@ export function searchSessions(
   includeArchived: boolean,
 ) {
   const normalizedQuery = query.toLocaleLowerCase()
-  const expectedCwd = cwd ? resolve(cwd) : undefined
   const sessions: Session[] = []
   const candidates = findMatchingSessionFiles(
     findSessionFiles(source, includeArchived),
@@ -29,7 +28,7 @@ export function searchSessions(
   for (const file of candidates) {
     const stats = statSync(file.path)
     const session = parseSession(file, readFileSync(file.path, "utf8"), false, stats.mtime)
-    if (expectedCwd && session.cwd !== expectedCwd) continue
+    if (cwd && (!session.cwd || !arePathsEqual(session.cwd, cwd))) continue
     if (
       !session.messages.some(message => message.text.toLocaleLowerCase().includes(normalizedQuery))
     ) {

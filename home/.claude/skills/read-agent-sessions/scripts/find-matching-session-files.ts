@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs"
 import { spawnSync } from "node:child_process"
+import { chunkSessionFiles } from "./chunk-session-files.ts"
 import type { SessionFile } from "./types.ts"
 
 /** Narrow transcript files with ripgrep before structured parsing. */
@@ -11,9 +12,9 @@ export function findMatchingSessionFiles(
 ) {
   const matches = new Set<string>()
   let useFallback = false
+  const maxPathCharacters = process.platform === "win32" ? 24_000 : Number.POSITIVE_INFINITY
 
-  for (let index = 0; index < files.length; index += 200) {
-    const chunk = files.slice(index, index + 200)
+  for (const chunk of chunkSessionFiles(files, 200, maxPathCharacters)) {
     const result = spawnSync(
       "rg",
       [

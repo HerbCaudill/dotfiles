@@ -1,4 +1,14 @@
 {
+  "name": "read-agent-sessions",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "scripts": {
+    "test": "vitest run scripts/tests/agent-sessions.test.ts"
+  },
+  "devDependencies": {
+    "vitest": "4.1.4"
+  },
+  "engines": {
+    "node": ">=22.18"
+  }
 }

@@ -3,6 +3,8 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { spawnSync } from "node:child_process"
 import { describe, expect, test } from "vitest"
+import { arePathsEqual } from "../are-paths-equal.ts"
+import { chunkSessionFiles } from "../chunk-session-files.ts"
 
 const scriptPath = join(import.meta.dirname, "..", "agent-sessions.ts")
 
@@ -65,6 +67,57 @@ describe("agent-sessions", () => {
     expect(result.stdout).toContain("Build the reports page")
     expect(result.stdout).not.toContain("claude-session-1234")
   })
+
+  test("infers the provider for a transcript outside the default session roots", () => {
+    const fixture = createFixture()
+    const result = spawnSync(process.execPath, [scriptPath, "show", fixture.exportedClaudePath], {
+      encoding: "utf8",
+      env: fixture.env,
+    })
+
+    expect(result.status, result.stderr).toBe(0)
+    expect(result.stdout).toContain("# claude session exported-claude-session")
+    expect(result.stdout).toContain("Recover this exported Claude conversation")
+  })
+
+  test("filters sessions to the requested working directory", () => {
+    const fixture = createFixture()
+    const result = spawnSync(
+      process.execPath,
+      [scriptPath, "list", "--cwd", "/workspace/claude-project"],
+      {
+        encoding: "utf8",
+        env: fixture.env,
+      },
+    )
+
+    expect(result.status, result.stderr).toBe(0)
+    expect(result.stdout).toContain("claude-session-1234")
+    expect(result.stdout).not.toContain("codex-session-5678")
+  })
+})
+
+describe("arePathsEqual", () => {
+  test("compares Windows paths without case or separator sensitivity", () => {
+    expect(
+      arePathsEqual(
+        "C:\\Users\\Colleague\\Code\\Project",
+        "c:/users/colleague/code/project",
+        "win32",
+      ),
+    ).toBe(true)
+  })
+})
+
+describe("chunkSessionFiles", () => {
+  test("keeps path arguments within the command character budget", () => {
+    const files = ["first.jsonl", "second.jsonl", "third.jsonl"].map(path => ({
+      provider: "codex" as const,
+      path,
+    }))
+
+    expect(chunkSessionFiles(files, 200, 15)).toEqual([[files[0]], [files[1]], [files[2]]])
+  })
 })
 
 /** Create isolated Claude and Codex transcript trees. */
@@ -73,10 +126,12 @@ function createFixture() {
   const claudeRoot = join(root, "claude", "project")
   const codexRoot = join(root, "codex", "2026", "08", "01")
   const archivedRoot = join(root, "codex-archived")
+  const exportedClaudePath = join(root, "exports", "exported-claude-session.jsonl")
 
   mkdirSync(claudeRoot, { recursive: true })
   mkdirSync(codexRoot, { recursive: true })
   mkdirSync(archivedRoot, { recursive: true })
+  mkdirSync(join(root, "exports"), { recursive: true })
 
   writeFileSync(
     join(claudeRoot, "claude-session-1234.jsonl"),
@@ -186,7 +241,22 @@ function createFixture() {
     ].join("\n"),
   )
 
+  writeFileSync(
+    exportedClaudePath,
+    JSON.stringify({
+      type: "user",
+      sessionId: "exported-claude-session",
+      cwd: "C:\\workspace\\exported-project",
+      timestamp: "2026-08-01T12:00:00.000Z",
+      message: {
+        role: "user",
+        content: "Recover this exported Claude conversation",
+      },
+    }),
+  )
+
   return {
+    exportedClaudePath,
     env: {
       ...process.env,
       AGENT_SESSIONS_CLAUDE_ROOT: join(root, "claude"),

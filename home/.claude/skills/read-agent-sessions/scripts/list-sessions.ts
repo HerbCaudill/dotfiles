@@ -1,5 +1,5 @@
 import { statSync } from "node:fs"
-import { resolve } from "node:path"
+import { arePathsEqual } from "./are-paths-equal.ts"
 import { findSessionFiles } from "./find-session-files.ts"
 import { getSessionSummary } from "./get-session-summary.ts"
 import type { Provider, Session } from "./types.ts"
@@ -15,7 +15,6 @@ export function listSessions(
   /** Whether to include archived Codex sessions. */
   includeArchived: boolean,
 ) {
-  const expectedCwd = cwd ? resolve(cwd) : undefined
   const sessions: Session[] = []
   const files = findSessionFiles(source, includeArchived).sort(
     (left, right) => statSync(right.path).mtimeMs - statSync(left.path).mtimeMs,
@@ -23,7 +22,7 @@ export function listSessions(
 
   for (const file of files) {
     const session = getSessionSummary(file)
-    if (expectedCwd && session.cwd !== expectedCwd) continue
+    if (cwd && (!session.cwd || !arePathsEqual(session.cwd, cwd))) continue
 
     sessions.push(session)
     if (sessions.length === limit) break
