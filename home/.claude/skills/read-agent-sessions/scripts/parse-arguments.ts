@@ -1,4 +1,5 @@
 import type { CliOptions, Provider } from "./types.ts"
+import { parseTimeWindow } from "./parse-time-window.ts"
 
 /** Parse and validate the agent session CLI arguments. */
 export function parseArguments(
@@ -10,6 +11,7 @@ export function parseArguments(
     rawCommand !== "list" &&
     rawCommand !== "search" &&
     rawCommand !== "show" &&
+    rawCommand !== "activity" &&
     rawCommand !== "help" &&
     rawCommand !== "--help" &&
     rawCommand !== "-h"
@@ -20,9 +22,14 @@ export function parseArguments(
   const command = rawCommand === "--help" || rawCommand === "-h" ? "help" : rawCommand
   let source: Provider | "all" = "all"
   let cwd: string | undefined
-  let limit = 20
+  let limit = command === "activity" ? Number.MAX_SAFE_INTEGER : 20
   let archived = false
   let tools = false
+  let timestamps = false
+  let format: "markdown" | "json" = "markdown"
+  let on: string | undefined
+  let since: string | undefined
+  let until: string | undefined
   const positional: string[] = []
 
   for (let index = 1; index < args.length; index++) {
@@ -61,6 +68,38 @@ export function parseArguments(
       continue
     }
 
+    if (argument === "--timestamps") {
+      timestamps = true
+      continue
+    }
+
+    if (argument === "--format") {
+      const value = args[++index]
+      if (value !== "markdown" && value !== "json") {
+        throw new Error("--format must be markdown or json")
+      }
+      format = value
+      continue
+    }
+
+    if (argument === "--on") {
+      on = args[++index]
+      if (!on) throw new Error("--on requires a calendar day")
+      continue
+    }
+
+    if (argument === "--since") {
+      since = args[++index]
+      if (!since) throw new Error("--since requires a date or date-time")
+      continue
+    }
+
+    if (argument === "--until") {
+      until = args[++index]
+      if (!until) throw new Error("--until requires a date or date-time")
+      continue
+    }
+
     if (argument.startsWith("-")) {
       throw new Error(`Unknown option "${argument}"`)
     }
@@ -76,6 +115,15 @@ export function parseArguments(
     throw new Error("show requires one session path, ID, or ID prefix")
   }
 
+  if ((command === "list" || command === "activity") && positional.length > 0) {
+    throw new Error(`${command} does not accept positional arguments`)
+  }
+
+  const timeWindow = parseTimeWindow(on, since, until)
+  if (command === "activity" && !timeWindow) {
+    throw new Error("activity requires --on, --since, or --until")
+  }
+
   return {
     command,
     source,
@@ -83,6 +131,9 @@ export function parseArguments(
     limit,
     archived,
     tools,
+    timestamps,
+    format,
+    timeWindow,
     value: positional.join(" ") || undefined,
   }
 }

@@ -1,9 +1,10 @@
 import { readFileSync, statSync } from "node:fs"
 import { arePathsEqual } from "./are-paths-equal.ts"
+import { filterSessionByTime, getLastMessageTime } from "./filter-session-by-time.ts"
 import { findMatchingSessionFiles } from "./find-matching-session-files.ts"
 import { findSessionFiles } from "./find-session-files.ts"
 import { parseSession } from "./parse-session.ts"
-import type { Provider, Session } from "./types.ts"
+import type { Provider, Session, TimeWindow } from "./types.ts"
 
 /** Search normalized user-visible conversation text. */
 export function searchSessions(
@@ -17,6 +18,8 @@ export function searchSessions(
   limit: number,
   /** Whether to include archived Codex sessions. */
   includeArchived: boolean,
+  /** Optional message-level time filter. */
+  timeWindow?: TimeWindow,
 ) {
   const normalizedQuery = query.toLocaleLowerCase()
   const sessions: Session[] = []
@@ -29,15 +32,22 @@ export function searchSessions(
     const stats = statSync(file.path)
     const session = parseSession(file, readFileSync(file.path, "utf8"), false, stats.mtime)
     if (cwd && (!session.cwd || !arePathsEqual(session.cwd, cwd))) continue
+    const candidate = timeWindow ? filterSessionByTime(session, timeWindow) : session
     if (
-      !session.messages.some(message => message.text.toLocaleLowerCase().includes(normalizedQuery))
+      !candidate.messages.some(message =>
+        message.text.toLocaleLowerCase().includes(normalizedQuery),
+      )
     ) {
       continue
     }
 
-    sessions.push(session)
-    if (sessions.length === limit) break
+    sessions.push(candidate)
   }
 
   return sessions
+    .sort((left, right) => {
+      if (!timeWindow) return right.fileModifiedAt.getTime() - left.fileModifiedAt.getTime()
+      return (getLastMessageTime(right) ?? 0) - (getLastMessageTime(left) ?? 0)
+    })
+    .slice(0, limit)
 }

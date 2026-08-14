@@ -26,6 +26,13 @@ node "<skill-directory>/scripts/agent-sessions.ts" list --source claude --cwd "<
 
 Use `--source all` when the originating harness is unknown. Add `--archived` to list older archived Codex sessions. Results are newest first and include the ID, project directory, and first user prompt.
 
+Filter by actual message timestamps with `--on`, `--since`, and `--until`. Calendar days and offset-free date-times use the current environment's local timezone. `--until` is exclusive.
+
+```text
+node "<skill-directory>/scripts/agent-sessions.ts" list --on yesterday --source all --archived
+node "<skill-directory>/scripts/agent-sessions.ts" search "distinctive phrase" --since 2026-08-13T09:00 --until 2026-08-13T18:00
+```
+
 Search literal conversation text when recency and project are insufficient:
 
 ```text
@@ -47,6 +54,18 @@ The default transcript contains user and assistant text. Add `--tools` only when
 ```text
 node "<skill-directory>/scripts/agent-sessions.ts" show SESSION_ID --tools
 ```
+
+Add `--on`, `--since`, or `--until` to render only matching turns. Time-filtered transcripts show each turn's local timestamp automatically; use `--timestamps` to show them in an unfiltered transcript.
+
+## Review daily activity
+
+Use `activity` to read all turns from a local calendar day across both harnesses, grouped by session. This avoids attributing a multi-day session's complete history to the day when its transcript file was last modified.
+
+```text
+node "<skill-directory>/scripts/agent-sessions.ts" activity --on yesterday --source all --archived
+```
+
+Add `--tools` only when tool traffic is necessary. Add `--format json` when a structured result is more useful than Markdown.
 
 Summarize the relevant state instead of pasting a long transcript back to the user. Verify important claims against the working tree or current external state before acting; logs are historical evidence and a live session may still be appending.
 

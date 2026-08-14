@@ -32,15 +32,27 @@ export type Session = {
   /** Session creation timestamp, when available. */
   createdAt?: string
   /** Source file modification time. */
-  updatedAt: Date
+  fileModifiedAt: Date
   /** User-visible conversation events. */
   messages: SessionMessage[]
+  /** Events omitted from a time-filtered result because they had no timestamp. */
+  untimestampedMessagesOmitted?: number
+}
+
+/** Inclusive start and exclusive end for message filtering. */
+export type TimeWindow = {
+  /** Inclusive lower timestamp boundary. */
+  since?: Date
+  /** Exclusive upper timestamp boundary. */
+  until?: Date
+  /** Human-readable description for rendered output. */
+  label: string
 }
 
 /** Parsed command-line options. */
 export type CliOptions = {
   /** Requested operation. */
-  command: "list" | "search" | "show" | "help"
+  command: "list" | "search" | "show" | "activity" | "help"
   /** Harness filter. */
   source: Provider | "all"
   /** Exact working-directory filter. */
@@ -51,6 +63,12 @@ export type CliOptions = {
   archived: boolean
   /** Whether transcript rendering includes tool traffic. */
   tools: boolean
+  /** Whether transcript headings include local event timestamps. */
+  timestamps: boolean
+  /** Output serialization format. */
+  format: "markdown" | "json"
+  /** Optional message-level time filter. */
+  timeWindow?: TimeWindow
   /** Search query or session identifier. */
   value?: string
 }

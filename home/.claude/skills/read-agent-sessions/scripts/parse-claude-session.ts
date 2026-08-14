@@ -11,7 +11,7 @@ export function parseClaudeSession(
   /** Whether to retain tool calls and results. */
   includeTools: boolean,
   /** Source file modification time. */
-  updatedAt: Date,
+  fileModifiedAt: Date,
 ): Session {
   let id = basename(path, ".jsonl")
   let cwd: string | undefined
@@ -90,7 +90,7 @@ export function parseClaudeSession(
     path,
     cwd,
     createdAt,
-    updatedAt,
+    fileModifiedAt,
     messages,
   }
 }

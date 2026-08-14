@@ -11,9 +11,9 @@ export function parseSession(
   /** Whether to retain tool traffic. */
   includeTools: boolean,
   /** Source file modification time. */
-  updatedAt: Date,
+  fileModifiedAt: Date,
 ) {
   return file.provider === "claude"
-    ? parseClaudeSession(file.path, text, includeTools, updatedAt)
-    : parseCodexSession(file.path, text, includeTools, updatedAt)
+    ? parseClaudeSession(file.path, text, includeTools, fileModifiedAt)
+    : parseCodexSession(file.path, text, includeTools, fileModifiedAt)
 }

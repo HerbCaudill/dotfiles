@@ -12,7 +12,7 @@ export function parseCodexSession(
   /** Whether to retain tool calls and results. */
   includeTools: boolean,
   /** Source file modification time. */
-  updatedAt: Date,
+  fileModifiedAt: Date,
 ): Session {
   let id = basename(path, ".jsonl").replace(/^rollout-[^-]+-[^-]+-/, "")
   let cwd: string | undefined
@@ -95,7 +95,7 @@ export function parseCodexSession(
     path,
     cwd,
     createdAt,
-    updatedAt,
+    fileModifiedAt,
     messages,
   }
 }

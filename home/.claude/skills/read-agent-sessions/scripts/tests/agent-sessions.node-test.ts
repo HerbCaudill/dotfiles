@@ -96,6 +96,106 @@ describe("agent-sessions", () => {
     assert.ok(result.stdout.includes("claude-session-1234"))
     assert.ok(!result.stdout.includes("codex-session-5678"))
   })
+
+  test("lists sessions with messages on a local calendar day", () => {
+    const fixture = createFixture()
+    const result = spawnSync(process.execPath, [scriptPath, "list", "--on", "2026-08-01"], {
+      encoding: "utf8",
+      env: { ...fixture.env, TZ: "Europe/Madrid" },
+    })
+
+    assert.equal(result.status, 0, result.stderr)
+    assert.ok(result.stdout.includes("claude-session-1234"))
+    assert.ok(result.stdout.includes("local-midnight-session"))
+    assert.ok(!result.stdout.includes("codex-session-5678"))
+  })
+
+  test("shows only messages within a local calendar day with timestamps", () => {
+    const fixture = createFixture()
+    const result = spawnSync(
+      process.execPath,
+      [scriptPath, "show", "claude-session", "--on", "2026-08-01"],
+      {
+        encoding: "utf8",
+        env: { ...fixture.env, TZ: "UTC" },
+      },
+    )
+
+    assert.equal(result.status, 0, result.stderr)
+    assert.ok(result.stdout.includes("## User — 2026-08-01 10:00:00"))
+    assert.ok(result.stdout.includes("Fix the flaky login test"))
+    assert.ok(!result.stdout.includes("Continue the fix tomorrow"))
+  })
+
+  test("treats --until as an exclusive message boundary", () => {
+    const fixture = createFixture()
+    const result = spawnSync(
+      process.execPath,
+      [
+        scriptPath,
+        "show",
+        "claude-session",
+        "--since",
+        "2026-08-01T10:00:00",
+        "--until",
+        "2026-08-01T10:01:00",
+      ],
+      {
+        encoding: "utf8",
+        env: { ...fixture.env, TZ: "UTC" },
+      },
+    )
+
+    assert.equal(result.status, 0, result.stderr)
+    assert.ok(result.stdout.includes("Fix the flaky login test"))
+    assert.ok(!result.stdout.includes("I found the race condition."))
+  })
+
+  test("renders daily activity from both harnesses without other days", () => {
+    const fixture = createFixture()
+    const result = spawnSync(
+      process.execPath,
+      [scriptPath, "activity", "--on", "2026-08-02", "--source", "all"],
+      {
+        encoding: "utf8",
+        env: { ...fixture.env, TZ: "UTC" },
+      },
+    )
+
+    assert.equal(result.status, 0, result.stderr)
+    assert.ok(result.stdout.includes("# Activity for 2026-08-02"))
+    assert.ok(result.stdout.includes("claude-session-1234"))
+    assert.ok(result.stdout.includes("Continue the fix tomorrow"))
+    assert.ok(result.stdout.includes("codex-session-5678"))
+    assert.ok(result.stdout.includes("Build the reports page"))
+    assert.ok(!result.stdout.includes("Fix the flaky login test"))
+  })
+
+  test("renders filtered activity as structured JSON", () => {
+    const fixture = createFixture()
+    const result = spawnSync(
+      process.execPath,
+      [scriptPath, "activity", "--on", "2026-08-02", "--format", "json"],
+      {
+        encoding: "utf8",
+        env: { ...fixture.env, TZ: "UTC" },
+      },
+    )
+
+    assert.equal(result.status, 0, result.stderr)
+    const activity = JSON.parse(result.stdout) as {
+      sessions: Array<{ id: string; messages: Array<{ text: string }> }>
+    }
+    assert.deepEqual(
+      activity.sessions.map(session => session.id),
+      ["claude-session-1234", "codex-session-5678"],
+    )
+    assert.ok(
+      activity.sessions.every(session =>
+        session.messages.every(message => !message.text.includes("Fix the flaky login test")),
+      ),
+    )
+  })
 })
 
 describe("arePathsEqual", () => {
@@ -183,6 +283,31 @@ function createFixture() {
           ],
         },
       }),
+      JSON.stringify({
+        type: "user",
+        sessionId: "claude-session-1234",
+        cwd: "/workspace/claude-project",
+        timestamp: "2026-08-02T09:00:00.000Z",
+        message: {
+          role: "user",
+          content: "Continue the fix tomorrow",
+        },
+      }),
+      JSON.stringify({
+        type: "assistant",
+        sessionId: "claude-session-1234",
+        cwd: "/workspace/claude-project",
+        timestamp: "2026-08-02T09:01:00.000Z",
+        message: {
+          role: "assistant",
+          content: [
+            {
+              type: "text",
+              text: "The next-day follow-up is complete.",
+            },
+          ],
+        },
+      }),
     ].join("\n"),
   )
 
@@ -190,16 +315,16 @@ function createFixture() {
     join(codexRoot, "rollout-2026-08-01T11-00-00-codex-session-5678.jsonl"),
     [
       JSON.stringify({
-        timestamp: "2026-08-01T11:00:00.000Z",
+        timestamp: "2026-08-02T11:00:00.000Z",
         type: "session_meta",
         payload: {
           id: "codex-session-5678",
           cwd: "/workspace/codex-project",
-          timestamp: "2026-08-01T11:00:00.000Z",
+          timestamp: "2026-08-02T11:00:00.000Z",
         },
       }),
       JSON.stringify({
-        timestamp: "2026-08-01T11:00:01.000Z",
+        timestamp: "2026-08-02T11:00:01.000Z",
         type: "response_item",
         payload: {
           type: "message",
@@ -213,7 +338,7 @@ function createFixture() {
         },
       }),
       JSON.stringify({
-        timestamp: "2026-08-01T11:00:02.000Z",
+        timestamp: "2026-08-02T11:00:02.000Z",
         type: "response_item",
         payload: {
           type: "message",
@@ -227,7 +352,7 @@ function createFixture() {
         },
       }),
       JSON.stringify({
-        timestamp: "2026-08-01T11:01:00.000Z",
+        timestamp: "2026-08-02T11:01:00.000Z",
         type: "response_item",
         payload: {
           type: "message",
@@ -241,6 +366,20 @@ function createFixture() {
         },
       }),
     ].join("\n"),
+  )
+
+  writeFileSync(
+    join(claudeRoot, "local-midnight-session.jsonl"),
+    JSON.stringify({
+      type: "user",
+      sessionId: "local-midnight-session",
+      cwd: "/workspace/local-midnight-project",
+      timestamp: "2026-07-31T22:30:00.000Z",
+      message: {
+        role: "user",
+        content: "This happened after midnight in Madrid",
+      },
+    }),
   )
 
   writeFileSync(
