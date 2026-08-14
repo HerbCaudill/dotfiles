@@ -15,6 +15,18 @@ Start with the real problem, shared premise, or purpose. Move quickly from the p
 
 Prefer small, common words. Use “use,” not “utilize”; “try,” not “endeavor”; “for now,” not “at this point in time.” Do not inflate a sentence to make it sound more official.
 
+Build sentences in the spirit of ASD-STE100 (Simplified Technical English): one idea per sentence, active voice with the actor as the subject and the action in the verb, one name per concept reused exactly, steps in the order they happen. Use normal English vocabulary and natural sentence rhythm – the goal is that register of clarity, not compliance with the controlled vocabulary.
+
+> ✅ **Good:** We cache the result and invalidate it when the config changes.
+
+> ❌ **Not:** Caching of the result is performed, with invalidation occurring upon configuration changes.
+
+Call each thing by one name and reuse that name exactly. Never vary a term for style; the reader cannot tell whether two names mean one thing or two.
+
+> ✅ **Good:** The importer validates each row. If the importer finds an error, it stops and reports the row number.
+
+> ❌ **Not:** The importer validates each row. If the ingestion component finds an error, the module stops and reports the row number.
+
 Use ordinary pronouns when they fit. “We,” “you,” and “I” are often clearer and warmer than formal third-person phrasing.
 
 > ✅ **Good:** We look forward to working with you.
@@ -72,6 +84,12 @@ Keep lists internally consistent. Use either complete sentences or sentence frag
 > - User permissions.
 > - reporting workflows
 > - Approval deadlines are required.
+
+Use a spaced en dash (–) for breaks and asides in a sentence, not an em dash. The em dash has become a strong AI tell. Reserve em dashes for polished formal copy – website text, proposals, published documents – where typographic convention matters more than sounding human.
+
+> ✅ **Good:** The sync runs nightly – or on demand, if someone clicks the button.
+
+> ❌ **Not:** The sync runs nightly—or on demand, if someone clicks the button.
 
 Do not put a colon at the end of a heading.
 
@@ -151,6 +169,18 @@ Avoid clichés and generic filler. These are not forbidden words in every contex
 
 If a sentence claims importance, impact, legacy, or significance, make it prove the claim with facts.
 
+#### ❌ Filler intensifiers
+
+- genuinely
+- really
+- truly
+- actually
+- honestly
+- incredibly
+- deeply
+
+These boost the volume without adding a fact, and they often signal the opposite: “genuinely impressive” reads as less sure than “impressive.”
+
 #### ❌ Vague authority and over-attribution
 
 - observers note
@@ -177,3 +207,15 @@ If a sentence claims importance, impact, legacy, or significance, make it prove 
 - In conclusion...
 
 Prefer the plain version. Use “is” instead of “serves as,” “has” instead of “boasts,” “shows” instead of “underscores,” and a specific claim instead of “reflects broader trends.”
+
+#### ❌ Structural tics
+
+These are rhythm and structure habits that perform the shape of good writing instead of delivering content.
+
+- Do not open a paragraph with a label sentence that announces the topic before saying anything (“Here’s the thing.” “This is where it gets interesting.”). Start with the content.
+- Do not recap what you just said before moving on (“In short,” “The key takeaway is...”). In a short piece, say everything once.
+- Do not end every paragraph with a punchy closer (“And that changes everything.”). Stop when the information runs out; one earned closer at the end of a piece is plenty.
+- Do not use setup/payoff fragments (“The culprit? A missing semicolon.”). Just state the fact.
+- Do not default to threes: three adjectives, three examples, three bullets. Use the honest count, even when it is two or five.
+- Do not cut every sentence in a paragraph to the same template (“The parser handles X. The linter catches Y. The formatter fixes Z.”). Vary sentence length and shape.
+- Do not perform enthusiasm (“I’d love to!”, “This is a fantastic approach!”). Exclamation points should be rare.
