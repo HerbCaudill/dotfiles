@@ -2,7 +2,6 @@
 {
   home.packages = with pkgs; [
     bat
-    beads
     coreutils
     curl
     dolt
@@ -27,8 +26,11 @@
     uv
     watchman
     yarn
+    # bd itself is installed by update-agent-harnesses into ~/.local/bin, which
+    # precedes the Nix profile on PATH. nixpkgs' beads is far behind upstream and
+    # having a second bd on PATH risks an older binary touching the Dolt databases.
     (writeShellScriptBin "beads" ''
-      exec ${beads}/bin/bd "$@"
+      exec "$HOME/.local/bin/bd" "$@"
     '')
   ];
 }
