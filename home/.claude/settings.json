@@ -1,4 +1,5 @@
 {
+  "model": "fable",
   "hooks": {
     "PreCompact": [
       {
@@ -41,7 +42,6 @@
       }
     }
   },
-  "model": "fable",
   "effortLevel": "medium",
   "autoUpdatesChannel": "latest",
   "tui": "fullscreen",
