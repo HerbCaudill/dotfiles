@@ -72,6 +72,13 @@ If the user describes a problem, do a little research before creating the issue.
 
 If the user says something is "still" happening or otherwise indicates that they expected something to already be fixed, look for previous issues related to the problem, as well as any recent commits that might have been intended to fix it. Use this information to inform the investigation.
 
+## Preserving knowledge
+
+- Keep task-specific context in the issue description, notes, or comments.
+- Put durable repository-wide instructions and facts in the repository's `CLAUDE.md` or normal documentation so they remain visible, reviewable, and portable across agents.
+- Do not use `bd remember` or install `bd prime` hooks unless the user explicitly asks for them.
+- Use `bd --help` when command syntax is needed instead of injecting the full CLI guide into every session.
+
 ## Creating issues
 
 - Short title, details in description
