@@ -1,136 +1,80 @@
 ---
 name: manage-tasks
-description: Create and manage beads issues. Uses judgment for priority, type, dependencies, and hierarchy.
+description: Create and manage Beads issues during planning, implementation, and triage. Use when an agent needs to record, organize, prioritize, relate, claim, defer, or close repository work with `bd`.
 ---
 
-You are a task management assistant. Your role is to help users manage their issues and tasks using the beads (`bd`) issue tracking system.
+# Manage tasks
 
-At the beginning of a session, and when finished working, just prompt the user for instructions and end your turn. Don't run status commands unprompted.
+Use the Beads (`bd`) issue tracker for repositories that contain a `.beads` directory. Follow repository instructions when they differ from this skill.
 
-## Critical constraint
+## Decide whether to create an issue
 
-**You are NOT a coding agent.** Your job is ONLY to create and manage issues. You must NEVER:
+- Create an issue when the user asks for one or when complex work benefits from durable tracking.
+- Do not create an issue for a small, one-off task that is about to be completed unless the user asks.
+- Search for related issues before creating a duplicate.
 
-- Edit, write, or modify any code files
-- Use the Edit, Write, or NotebookEdit tools
-- Implement fixes, even if they seem trivial
-- Make "quick" changes to the codebase
+## Research the work
 
-When a user mentions a problem or something they want to accomplish, just create an issue. Only ask questions if you're unclear on what the issue should say. Include the new issue's id and title in your output. No additional commentary needed.
+Inspect the relevant code, documentation, history, and existing issues before describing a problem. Record the likely cause and recommended approach when that information is practical to obtain.
 
-If the user specifically asks you to investigate the causes of a problem, do a thorough investigation and report back.
+If the user says a problem is "still" happening or otherwise expected it to be fixed, look for related issues and recent commits that may have attempted a fix.
 
-### Examples
+## Create issues
 
-#### Wrong:
-
-> **User**: The submit button is misaligned
->
-> **Assistant**: (edits the component)  
-> ❌ It is not the assistant's job to implement fixes
-
-#### Wrong:
-
-> **User**: The submit button is misaligned
->
-> **Assistant**: I've created issue x-xxx: Fix submit button alignment. These kinds of aesthetic problems are detrimental to the user's experience.  
-> ❌ No commentary on the issue is required
-
-#### Wrong:
-
-> **User**: The submit button is misaligned
->
-> **Assistant**: I'm just a task manager and can't edit files. Would you like me to create an issue?  
-> ❌ Don't ask, just create the issue
-
-#### Wrong:
-
-> **User**: The submit button is misaligned
->
-> **Assistant**: Created x-xxx: Fix button alignment  
-> ❌ Don't just say you created a task if you didn't use `bd create` to create it
-
-#### Right:
-
-> **User**: The submit button is misaligned
->
-> **Assistant**:  
-> `bd create --title="Fix button alignment"`  
-> Created x-xxx: Fix button alignment.  
-> ✅ It is the assistant's job to create and manage tasks
-
-#### Right:
-
-> **User**: Why is the submit button misaligned?
->
-> **Assistant**: It looks like the submit button has vertical margins that differ from the other buttons. Want me to file an issue?  
-> ✅ It is also the assistant's job to investigate problems when asked
-
-## Responding to user input
-
-If the user describes a problem, do a little research before creating the issue. Investigate the root cause and make recommendations in the issue description.
-
-If the user says something is "still" happening or otherwise indicates that they expected something to already be fixed, look for previous issues related to the problem, as well as any recent commits that might have been intended to fix it. Use this information to inform the investigation.
-
-## Preserving knowledge
-
-- Keep task-specific context in the issue description, notes, or comments.
-- Put durable repository-wide instructions and facts in the repository's `CLAUDE.md` or normal documentation so they remain visible, reviewable, and portable across agents.
-- Do not use `bd remember` or install `bd prime` hooks unless the user explicitly asks for them.
-- Use `bd --help` when command syntax is needed instead of injecting the full CLI guide into every session.
-
-## Creating issues
-
-- Short title, details in description
-- Use the right type: `task` (default), `bug`, or `epic`. Don't use `feature`.
-- Set appropriate priorities: P0-P4 (P2 is default, P0 is highest priority)
-- Set blocking dependencies between issues when appropriate (using `bd dep add <issue> <depends-on>`)
-- If there are previous issues on the same topic, link to them (using `--deps related:<id>`)
+- Use a short title and put the details in the description.
+- Use `task` by default, `bug` for incorrect behavior, and `epic` for independently deliverable child tasks. Do not use `feature`.
+- Use priorities P0-P4, where P0 is highest and P2 is the default.
+- Add blocking dependencies with `bd dep add <issue> <depends-on>`.
+- Link earlier work on the same topic with `--deps related:<id>`.
+- Include acceptance criteria and a verification strategy when the outcome is not obvious.
 
 ### Task size
 
-Treat a top-level task or epic child as a separate implementation and review unit. It should have a coherent outcome, acceptance criteria, and verification strategy that justify a fresh session.
+Treat a top-level task or epic child as a separate implementation and review unit. Give it a coherent outcome, acceptance criteria, and verification strategy that justify a fresh session.
 
 - Prefer one task when the steps touch the same files, repeat the same verification, or only make sense together.
 - Split work when the children can proceed independently, expose a real dependency or decision boundary, carry different risks, or need separate rollback boundaries.
 - Keep small implementation steps in the issue description or model them as subtasks.
 - Do not create separate issues merely because a plan has numbered steps or a change touches many files.
-- Small high-risk changes may still deserve their own task; size the boundary around review risk, not line count.
+- Size the boundary around review risk, not line count.
 
-### Subtasks vs epics
+### Subtasks and epics
 
-There are two ways to break down work:
+- Create subtasks under a non-epic parent with `--parent=<id>`. Their IDs use the form `<parent-id>.1`. Ralph completes the parent and its subtasks as one implementation unit.
+- Create independent tasks under an `epic` with `--parent=<id>`. Each child gets its own ID and implementation session.
 
-- **Subtasks** (non-epic parent): Create children with `--parent={id}`. IDs are `{parentId}.1`, `{parentId}.2`, etc. Ralph treats the parent + all subtasks as a single unit of work, completing them in one session.
-- **Epics** (type `epic`): Create children with `--parent={id}`. Children get their own random IDs. Each child is an independent task that Ralph works on in a separate session.
+Use subtasks for granular steps within one implementation and review unit. Use an epic only when its children warrant separate implementation sessions and independent reviews.
 
-Use subtasks for granular steps within a single implementation and review unit. Use an epic only when its children are substantial enough to warrant separate implementation sessions and independent reviews.
+## Update issues
 
-## Updating issues
+- Change status, title, description, priority, assignee, or parent as needed.
+- Add comments when they preserve useful task-specific history.
+- Close completed issues and close a parent when all its children are complete.
+- Use dependencies to represent actual blocking relationships, not mere sequencing preferences.
 
-- Change status (open, in_progress, blocked, deferred, closed)
-- Update titles, descriptions, priorities
-- Add comments
-- Set or change parent issues
-- Close parent tasks when all children are closed
+## Preserve knowledge
 
-## Beads reference
+- Keep task-specific context in the issue description, notes, or comments.
+- Put durable repository-wide instructions and facts in the repository's `CLAUDE.md` or normal documentation so they remain visible, reviewable, and portable across agents.
+- Do not use `bd remember` or install `bd prime` hooks unless the user explicitly asks for them.
+- Use `bd --help` for unfamiliar syntax instead of injecting the full CLI guide into every session.
+
+## Command reference
 
 ```bash
-bd ready                    # Show issues ready to work
-bd list --status=open       # All open issues
-bd list --status=in_progress # Active work
-bd show <id>                # Issue details
+bd ready                     # Show issues ready to work
+bd list --status=open        # Show open issues
+bd list --status=in_progress # Show active work
+bd show <id>                 # Show issue details
 
-bd create --title="..." --type=task|bug|epic --priority=2
+bd create --title="..." --description="..." --type=task|bug|epic --priority=2
+bd update <id> --claim
 bd update <id> --status=in_progress
 bd update <id> --assignee=username
 bd close <id>
-bd close <id1> <id2> ...    # Close multiple
+bd close <id1> <id2> ...
 
-bd dep add <issue> <depends-on>  # Add dependency
-bd blocked                  # Show blocked issues
-bd comments add <id> "..." --author=Ralph  # Add comment
+bd dep add <issue> <depends-on>
+bd blocked
+bd comments add <id> "..." --author=<name>
 ```
-
-Priority: 0-4 or P0-P4 (0=critical, 2=medium, 4=backlog).

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Task assistant"
+  short_description: "Manage Beads tasks without editing code"
+  default_prompt: "Use $task-assistant to start a session devoted only to managing Beads tasks."
+policy:
+  allow_implicit_invocation: false
