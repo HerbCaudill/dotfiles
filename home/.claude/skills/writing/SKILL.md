@@ -11,7 +11,7 @@ Start with the real problem, shared premise, or purpose. Move quickly from the p
 
 > ✅ **Good:** The goal is simple: make the reporting process less painful without losing the details funders need.
 
-> ❌ **Not:** This initiative seeks to leverage cross-functional alignment to optimize stakeholder reporting outcomes.
+> ❌ **Bad:** This initiative seeks to leverage cross-functional alignment to optimize stakeholder reporting outcomes.
 
 Prefer small, common words. Use “use,” not “utilize”; “try,” not “endeavor”; “for now,” not “at this point in time.” Do not inflate a sentence to make it sound more official.
 
@@ -19,37 +19,37 @@ Build sentences in the spirit of ASD-STE100 (Simplified Technical English): one 
 
 > ✅ **Good:** We cache the result and invalidate it when the config changes.
 
-> ❌ **Not:** Caching of the result is performed, with invalidation occurring upon configuration changes.
+> ❌ **Bad:** Caching of the result is performed, with invalidation occurring upon configuration changes.
 
 Call each thing by one name and reuse that name exactly. Never vary a term for style; the reader cannot tell whether two names mean one thing or two.
 
 > ✅ **Good:** The importer validates each row. If the importer finds an error, it stops and reports the row number.
 
-> ❌ **Not:** The importer validates each row. If the ingestion component finds an error, the module stops and reports the row number.
+> ❌ **Bad:** The importer validates each row. If the ingestion component finds an error, the module stops and reports the row number.
 
 Use ordinary pronouns when they fit. “We,” “you,” and “I” are often clearer and warmer than formal third-person phrasing.
 
 > ✅ **Good:** We look forward to working with you.
 
-> ❌ **Not:** The team looks forward to working with the organization.
+> ❌ **Bad:** The team looks forward to working with the organization.
 
 Make the reasoning visible. Name the context, constraints, incentives, tradeoffs, likely consequences, and edge cases. Prefer concrete examples over abstract principles: a workflow, a price, a deadline, a data field, a user trying to get something done.
 
 > ✅ **Good:** If the data only lives in the spreadsheet, the dashboard is always a week out of date. Someone has to copy the numbers, check the formulas, and explain why the totals changed.
 
-> ❌ **Not:** Data synchronization is an important consideration for operational excellence.
+> ❌ **Bad:** Data synchronization is an important consideration for operational excellence.
 
 When the goal is persuasion, concede before disagreeing. Acknowledge the strongest fair version of the other side, then state the problem directly. Disagree to clarify reality, not to score points.
 
-> ✅ **Good:** The concern is real: nobody wants to make parking harder for people who already have long days. But free curb space is not actually free; it is scarce public land, and the current system hides the cost.
+> ✅ **Good:** That's a valid concern: Nobody wants to make parking harder for people who already have long days. But free curb space is not actually free; it is scarce public land, and the current system hides the cost.
 
-> ❌ **Not:** Opponents of this proposal simply do not understand urban economics.
+> ❌ **Bad:** Opponents of this proposal simply do not understand urban economics.
 
 Use uncertainty honestly. Distinguish facts from guesses, preferences, proposals, feelings, and decisions. Phrases like “I think,” “my sense is,” “probably,” or “for now,” are useful when they make the claim more accurate.
 
-> ✅ **Good:** My sense is that this will work for the first version, but it may break down once teams need custom approval steps.
+> ✅ **Good:** My sense is that this will work for the first version.
 
-> ❌ **Not:** This approach will future-proof the platform.
+> ❌ **Bad:** This approach will future-proof the platform.
 
 Prefer practical frames over ideological ones. Useful arguments often come from incentives, maintenance burden, coordination cost, fairness, scarcity, or cognitive load. Do not reach for grand abstractions when a concrete constraint explains the issue.
 
@@ -59,7 +59,7 @@ Use sentence case for headings and titles. Capitalize proper names and brand nam
 
 > ✅ **Good:** Technical requirements for user access
 
-> ❌ **Not:** Technical Requirements for User Access
+> ❌ **Bad:** Technical Requirements for User Access
 
 Keep lists internally consistent. Use either complete sentences or sentence fragments, not a mix. Capitalize and punctuate list items only when they are complete sentences.
 
@@ -79,7 +79,7 @@ Keep lists internally consistent. Use either complete sentences or sentence frag
 > - Administrators can manage reporting workflows.
 > - Managers can set approval deadlines.
 
-> ❌ **Not:**
+> ❌ **Bad:**
 >
 > - User permissions.
 > - reporting workflows
@@ -89,7 +89,7 @@ Use a spaced en dash (–) for breaks and asides in a sentence, not an em dash. 
 
 > ✅ **Good:** The sync runs nightly – or on demand, if someone clicks the button.
 
-> ❌ **Not:** The sync runs nightly—or on demand, if someone clicks the button.
+> ❌ **Bad:** The sync runs nightly—or on demand, if someone clicks the button.
 
 Do not put a colon at the end of a heading.
 
@@ -97,7 +97,7 @@ Do not put a colon at the end of a heading.
 >
 > #### Implementation plan
 
-> ❌ **Not:**
+> ❌ **Bad:**
 >
 > #### Implementation plan:
 
@@ -105,7 +105,7 @@ Use rhetorical questions only when they expose a hidden assumption.
 
 > ✅ **Good:** What happens when the person who understands the spreadsheet leaves?
 
-> ❌ **Not:** But what does success really mean in today’s rapidly changing world?
+> ❌ **Bad:** But what does success really mean in today’s rapidly changing world?
 
 Use conversational transitions: “So,” “But,” “Now,” “To be clear,” “In practice,” “For example,” “At the same time,” and “The problem is.” Avoid stock transitions like “Moreover,” “In conclusion,” or “It is important to note.”
 
@@ -113,9 +113,9 @@ Use humor sparingly to deflate hype or bureaucracy. It should clarify the point,
 
 End with a useful next step, question, decision path, or reframing. Do not end with a press-release flourish.
 
-> ✅ **Good:** So the next step is not to design the perfect system. It is to pick one reporting cycle, run it both ways, and see where the manual work actually appears.
+> ✅ **Good:** The next step is to pick one reporting cycle, run it both ways, and see where the manual work actually appears.
 
-> ❌ **Not:** Together, we can unlock a brighter future through innovation and collaboration.
+> ❌ **Bad:** Together, we can unlock a brighter future through innovation and collaboration.
 
 Avoid passive prose that hides agency, false certainty, both-sides neutrality that refuses to reach a conclusion, and summaries that erase judgment. Be fair, be specific, and say what you actually mean.
 
@@ -125,86 +125,31 @@ Avoid clichés and generic filler. These are not forbidden words in every contex
 
 #### ❌ Significance inflation
 
-- stands as
-- serves as
-- is a testament to
-- is a reminder of
-- marks a pivotal moment
-- underscores the importance of
-- highlights the significance of
-- reflects broader trends
-- symbolizes an enduring legacy
-- contributes to the evolving landscape
-- sets the stage for
-- indelible mark
-- deeply rooted
+Watch for phrases like “stands as,” “is a testament to,” “marks a pivotal moment,” and “underscores the importance of.”
 
-#### ❌ Analysis that sounds like analysis but does not say much
+#### ❌ Analysis that does not say much
 
-- highlighting
-- underscoring
-- emphasizing
-- ensuring
-- reflecting
-- symbolizing
-- cultivating
-- fostering
-- valuable insights
-- resonates with
-- broader implications
-- sparked debate about
-- raises questions about
+Watch for words like “highlighting,” “reflecting,” “fostering,” and “broader implications” when they stand in for an actual observation.
 
 #### ❌ Promotional polish
 
-- boasts
-- profound
-- enhancing
-- showcasing
-- groundbreaking
-- renowned
-- diverse array
-- cutting-edge
-- elevate
+Watch for words like “boasts,” “groundbreaking,” “renowned,” and “cutting-edge.”
 
 If a sentence claims importance, impact, legacy, or significance, make it prove the claim with facts.
 
 #### ❌ Filler intensifiers
 
-- genuinely
-- really
-- truly
-- actually
-- honestly
-- incredibly
-- deeply
+Watch for words like “genuinely,” “really,” “truly,” and “incredibly.”
 
 These boost the volume without adding a fact, and they often signal the opposite: “genuinely impressive” reads as less sure than “impressive.”
 
 #### ❌ Vague authority and over-attribution
 
-- observers note
-- experts argue
-- industry reports suggest
-- some critics argue
-- several sources say
-- widely regarded as
-- independent coverage
-- profiled in major outlets
-- active social media presence
-- based on available information
+Watch for phrases like “observers note,” “experts argue,” “several sources say,” and “widely regarded as.”
 
-#### Stock structures
+#### ❌ Stock structures
 
-- It's not X. It's Y.
-- Not only X, but also Y.
-- It is not just X; it is Y.
-- Despite these challenges, X continues to thrive.
-- As the world continues to evolve...
-- In today's rapidly changing landscape...
-- It is important to note that...
-- Worth noting is...
-- In conclusion...
+Watch for templates like “It's not X. It's Y,” “Despite these challenges, X continues to thrive,” “In today's rapidly changing landscape,” and “It is important to note that.”
 
 Prefer the plain version. Use “is” instead of “serves as,” “has” instead of “boasts,” “shows” instead of “underscores,” and a specific claim instead of “reflects broader trends.”
 
