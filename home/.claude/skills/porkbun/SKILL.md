@@ -32,7 +32,7 @@ The flat reference is large (~130KB), so prefer the per-topic page — `https://
 source ~/.secrets
 ```
 
-They can also come from 1Password — see the `onepassword` skill. Never print key values.
+Never print key values.
 
 Manage keys at https://porkbun.com/account/api. Keys work whether or not account 2FA is on, and each key can be scoped to specific source IPs and specific domains, which is the right move for anything unattended.
 

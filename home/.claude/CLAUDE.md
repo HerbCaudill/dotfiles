@@ -36,6 +36,10 @@ Plans should end with unresolved questions, if any.
 
 Unless I say otherwise, don't worry about backwards compatibility; use a hard cutover.
 
+## Browser use \[macOS only\]
+
+When a task requires browser UI, default to my actual Chrome browser rather than the in-app browser. Chrome is more likely to have the right signed-in sessions; if it does not, ask me to sign in there. Still prefer a purpose-built connector, API, or CLI when one can do the job.
+
 ## Task tracking
 
 Most of my repos use **bd (beads)** for issue tracking; you can tell by looking for a `.beads` directory in the root. In those repos, use `bd` rather than TodoWrite, TaskCreate, or markdown TODO lists. Create issues only when I ask or when the work is complex enough to benefit from breaking down — not for one-off tasks you're about to fix immediately.
