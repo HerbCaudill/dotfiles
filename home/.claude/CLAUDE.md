@@ -42,6 +42,8 @@ Most of my repos use **bd (beads)** for issue tracking; you can tell by looking 
 
 ## Using git and the filesystem
 
+When creating a repository, create `CLAUDE.md` as the canonical agent instructions file and create `AGENTS.md` as a symlink to `CLAUDE.md`.
+
 When work is complete, commit it, push it, and close the task if applicable.
 
 Write commit messages with a concise subject line followed by a short paragraph explaining the context and reasoning behind the change.
