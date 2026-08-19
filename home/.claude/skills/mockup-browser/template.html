@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITLE}}</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'IBM Plex Sans', system-ui, sans-serif; background: #f0efec; color: #1e2024; }
+  header { padding: 20px 28px 0 28px; }
+  h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px 0; }
+  .sub { font-size: 13px; color: #77756f; margin: 0 0 16px 0; }
+  nav { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 28px 16px 28px; }
+  .tab { font: inherit; font-size: 13px; padding: 7px 14px; border-radius: 7px; border: 1px solid #d8d6d0;
+         background: #ffffff; color: #45443f; cursor: pointer; }
+  .tab:hover { border-color: #b9b7b0; }
+  .tab.active { background: #1e2024; border-color: #1e2024; color: #ffffff; }
+  main { padding: 0 28px 28px 28px; }
+  .meta { max-width: 900px; font-size: 13.5px; line-height: 1.5; color: #45443f; margin-bottom: 14px; }
+  .meta p { margin: 0 0 4px 0; }
+  .frame-wrap { width: 100%; max-width: calc(var(--w) * 1px); border-radius: 8px; overflow: hidden;
+                box-shadow: 0 2px 12px rgba(25, 25, 30, 0.10); background: #ffffff; }
+  .frame-wrap iframe { border: 0; display: block; transform-origin: top left; }
+  footer { padding: 0 28px 24px 28px; font-size: 12.5px; color: #77756f; }
+  kbd { font-family: inherit; background: #e3e1dc; border-radius: 4px; padding: 1px 6px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>{{TITLE}}</h1>
+  <p class="sub">{{SUBTITLE}}</p>
+</header>
+<nav>
+  <!-- One button per option, in order. data-i matches the panel's data-i. -->
+  <!-- <button class="tab" data-i="0">A · Option name</button> -->
+  {{TABS}}
+</nav>
+<main>
+
+  <!-- One section per option. Structure:
+
+  <section class="panel" data-i="0" hidden>
+    <div class="meta">
+      <p><strong>Why:</strong> One sentence on the philosophy of this direction and what it's best at.</p>
+      <p><strong>Tradeoff:</strong> One honest sentence on the cost.</p>
+    </div>
+    <div class="frame-wrap" style="--w: 1280; --h: 840">
+      <iframe title="A · Option name" width="1280" height="840" loading="lazy" srcdoc="ESCAPED STANDALONE HTML"></iframe>
+    </div>
+  </section>
+
+  -->
+  {{PANELS}}
+
+</main>
+<footer>Switch options with <kbd>←</kbd> <kbd>→</kbd> or the tabs above. Mockups scale to fit the window.</footer>
+<script>
+  const tabs = [...document.querySelectorAll('.tab')]
+  const panels = [...document.querySelectorAll('.panel')]
+  let current = 0
+
+  const select = i => {
+    current = (i + tabs.length) % tabs.length
+    tabs.forEach((t, j) => t.classList.toggle('active', j === current))
+    panels.forEach((p, j) => p.hidden = j !== current)
+    history.replaceState(null, '', '#' + (current + 1))
+    fit()
+  }
+
+  const fit = () => {
+    const panel = panels[current]
+    const wrap = panel.querySelector('.frame-wrap')
+    const iframe = panel.querySelector('iframe')
+    const w = Number(wrap.style.getPropertyValue('--w'))
+    const h = Number(wrap.style.getPropertyValue('--h'))
+    const scale = Math.min(1, wrap.clientWidth / w)
+    iframe.style.transform = 'scale(' + scale + ')'
+    wrap.style.height = h * scale + 'px'
+  }
+
+  tabs.forEach((t, i) => t.addEventListener('click', () => select(i)))
+  addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight') select(current + 1)
+    if (e.key === 'ArrowLeft') select(current - 1)
+  })
+  addEventListener('resize', fit)
+
+  const fromHash = parseInt(location.hash.slice(1), 10)
+  select(Number.isInteger(fromHash) ? fromHash - 1 : 0)
+</script>
+</body>
+</html>
