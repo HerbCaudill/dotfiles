@@ -27,6 +27,7 @@ If the user says a problem is "still" happening or otherwise expected it to be f
 - Add blocking dependencies with `bd dep add <issue> <depends-on>`.
 - Link earlier work on the same topic with `--deps related:<id>`.
 - Include acceptance criteria and a verification strategy when the outcome is not obvious.
+- Mark work that needs a human — portal access, credentials, approvals — with a `human` label and an assignee. bd has no built-in concept for this; `bd human` is only a help screen.
 
 ### Task size
 
@@ -57,7 +58,19 @@ Use subtasks for granular steps within one implementation and review unit. Use a
 - Keep task-specific context in the issue description, notes, or comments.
 - Put durable repository-wide instructions and facts in the repository's `CLAUDE.md` or normal documentation so they remain visible, reviewable, and portable across agents.
 - Do not use `bd remember` or install `bd prime` hooks unless the user explicitly asks for them.
+
+## Using the CLI
+
+- Never run `bd edit`. It opens an interactive editor and hangs a non-interactive session. Use `bd update` flags instead.
+- Parse output with `--json` rather than scraping the human-readable form. Issue IDs are alphanumeric, so a regex assuming hex silently truncates them.
+- Wire many dependencies in one call with `bd dep add --file`, passing newline-delimited JSON with `from` and `to` on each line.
 - Use `bd --help` for unfamiliar syntax instead of injecting the full CLI guide into every session.
+
+## Sync
+
+Issues live in a Dolt database, not in tracked files, so `git push` does not carry them and a clean working tree does not mean the work is shared. Publish with `bd dolt push`, which writes to `refs/dolt/data` on the same git remote, and retrieve with `bd dolt pull`.
+
+`.beads/issues.jsonl` is a passive export rather than the source of truth. Do not `bd import` during normal operation.
 
 ## Command reference
 
@@ -72,9 +85,16 @@ bd update <id> --claim
 bd update <id> --status=in_progress
 bd update <id> --assignee=username
 bd close <id>
+bd close <id> --reason="..."
 bd close <id1> <id2> ...
 
 bd dep add <issue> <depends-on>
+bd dep add --file deps.ndjson   # bulk: {"from":"<issue>","to":"<depends-on>"} per line
 bd blocked
 bd comments add <id> "..." --author=<name>
+
+bd list --label=human           # work that is not an agent's to do
+bd dolt push                    # publish issues to the git remote
+bd dolt pull                    # retrieve issues from the git remote
+bd doctor                       # check setup health
 ```
