@@ -59,6 +59,18 @@ Use subtasks for granular steps within one implementation and review unit. Use a
 - Put durable repository-wide instructions and facts in the repository's `CLAUDE.md` or normal documentation so they remain visible, reviewable, and portable across agents.
 - Do not use `bd remember` or install `bd prime` hooks unless the user explicitly asks for them.
 
+## Setting up a new repository
+
+Set the prefix explicitly — the default is the directory name — and suppress the scaffolding:
+
+```bash
+bd init --prefix=<prefix> --skip-agents --skip-hooks
+```
+
+`--skip-agents` suppresses `AGENTS.md`, the block appended to `CLAUDE.md`, `.claude/settings.json`, `.codex/config.toml`, and `.agents/skills/beads/`. `--skip-hooks` leaves `core.hookspath` alone, which matters if the repo uses husky or lefthook. The beads hooks self-skip their work when run as git hooks and play no part in committing or pushing issues, so nothing durable depends on them.
+
+`bd init` commits its own files regardless of these flags. It also creates a database on the shared Dolt server, and there is no command to remove one. To clear a stray database, stop the server, remove its directory, then start it again — removing it while the server runs leaves reads working and writes failing with `no root value found in session` until a restart.
+
 ## Using the CLI
 
 - Never run `bd edit`. It opens an interactive editor and hangs a non-interactive session. Use `bd update` flags instead.
@@ -71,6 +83,8 @@ Use subtasks for granular steps within one implementation and review unit. Use a
 Issues live in a Dolt database, not in tracked files, so `git push` does not carry them and a clean working tree does not mean the work is shared. Publish with `bd dolt push`, which writes to `refs/dolt/data` on the same git remote, and retrieve with `bd dolt pull`.
 
 `.beads/issues.jsonl` is a passive export rather than the source of truth. Do not `bd import` during normal operation.
+
+The beads git hooks do not sync anything; publishing is always an explicit `bd dolt push`.
 
 ## Command reference
 

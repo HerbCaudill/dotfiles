@@ -42,7 +42,7 @@ Most of my repos use **bd (beads)** for issue tracking; you can tell by looking 
 
 ## Using git and the filesystem
 
-When creating a repository, create `CLAUDE.md` as the canonical agent instructions file and create `AGENTS.md` as a symlink to `CLAUDE.md`.
+When creating a repository, keep one canonical agent instructions file and symlink the other to it, so every agent harness reads one source. Either direction is fine — match whatever the repo's tooling expects, and don't relink an existing pair just to change the direction.
 
 When work is complete, commit it, push it, and close the task if applicable.
 
@@ -57,6 +57,10 @@ Never run destructive git operations (`git reset --hard`, `git checkout`/`git re
 Never revert or delete work you didn't author — other agents are often editing adjacent files, so coordinate instead of clobbering. That includes deleting a file to silence a local typecheck, lint, or test failure: stop and ask first.
 
 Never amend commits without explicit written approval.
+
+Never remove or modify files that a running service has open — a database directory, cache, or lockfile. Stop the service first, or leave the file alone and tell me. Reaching for `rm -rf` because the proper removal command was awkward is how state gets corrupted.
+
+Don't print the contents of files that hold credentials (`~/.npmrc`, `.env`, auth exports). Inspect them narrowly enough to answer the question at hand — a printed secret is in the transcript for good.
 
 Moving, renaming, and restoring files is fine, as is deleting files that your own changes make obsolete.
 
