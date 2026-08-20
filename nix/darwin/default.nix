@@ -12,6 +12,7 @@ let
   marvinRuntimeDirectory = "${homeDirectory}/Library/Application Support/Marvin";
   marvinConfigPath = "${marvinRuntimeDirectory}/config.json";
   marvinLogDirectory = "${homeDirectory}/Library/Logs/Marvin";
+  marvinSecretsPath = "${homeDirectory}/.secrets";
   launchdPath = lib.makeBinPath [
     pkgs.coreutils
     pkgs.dolt
@@ -41,14 +42,23 @@ let
       port = 43127;
     }
   );
+  marvinCredentialValidator = pkgs.writeText "assert-private-credential-file.ts" (
+    builtins.readFile ../../scripts/marvin/assertPrivateCredentialFile.ts
+  );
   marvinDigest = pkgs.writeShellScript "marvin-digest" ''
     set -eu
 
-    if [[ ! -r "${homeDirectory}/.secrets" ]]; then
+    expected_uid="$(${pkgs.coreutils}/bin/id -u)"
+    if ! ${pkgs.nodejs_24}/bin/node --experimental-strip-types ${marvinCredentialValidator} \
+      --check "${marvinSecretsPath}" "$expected_uid" >/dev/null 2>&1
+    then
       echo "Marvin digest credentials are unavailable" >&2
       exit 1
     fi
-    source "${homeDirectory}/.secrets"
+    if ! source "${marvinSecretsPath}" >/dev/null 2>&1; then
+      echo "Marvin digest credentials are unavailable" >&2
+      exit 1
+    fi
     if [[ -z "''${OPENAI_API_KEY:-}" ]]; then
       echo "Marvin digest credentials are unavailable" >&2
       exit 1
@@ -95,6 +105,15 @@ in
     ${pkgs.coreutils}/bin/touch "${marvinLogDirectory}/digest.log"
     ${pkgs.coreutils}/bin/chown ${username}:staff "${marvinLogDirectory}/digest.log"
     ${pkgs.coreutils}/bin/chmod 0600 "${marvinLogDirectory}/digest.log"
+    if [[ -e "${marvinSecretsPath}" || -L "${marvinSecretsPath}" ]]; then
+      expected_uid="$(${pkgs.coreutils}/bin/id -u ${username})"
+      if ! ${pkgs.nodejs_24}/bin/node --experimental-strip-types ${marvinCredentialValidator} \
+        --repair-mode "${marvinSecretsPath}" "$expected_uid" >/dev/null 2>&1
+      then
+        echo "Marvin digest credentials are unavailable" >&2
+        exit 1
+      fi
+    fi
   '';
 
   launchd.agents."daily-note" = {
