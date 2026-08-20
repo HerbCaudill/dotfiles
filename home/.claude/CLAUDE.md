@@ -46,6 +46,8 @@ Most of my repos use **bd (beads)** for issue tracking; you can tell by looking 
 
 ## Using git and the filesystem
 
+Always clone repositories into `~/Code/{orgname}/{reponame}`.
+
 When creating a repository, keep one canonical agent instructions file and symlink the other to it, so every agent harness reads one source. Either direction is fine — match whatever the repo's tooling expects, and don't relink an existing pair just to change the direction.
 
 When work is complete, commit it, push it, and close the task if applicable.
