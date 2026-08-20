@@ -95,6 +95,18 @@ The script handles everything:
 | `format`         | Format code with Prettier           |
 | `ralph`          | Run Ralph                           |
 
+## Shared lint setup
+
+The scaffold script does not install linting yet. After scaffolding, add the shared warning-only Oxlint rules:
+
+```bash
+pnpm add -D @herbcaudill/eslint-plugin oxlint eslint
+```
+
+Create a root `.oxlintrc.json` that loads `@herbcaudill/eslint-plugin` as the `herbcaudill` JavaScript plugin, then enable its recommended rules at `warn`. Add `"lint": "oxlint --config .oxlintrc.json ."` to `package.json`. Use the package README for the complete rule list, options, and default exceptions.
+
+New scaffolded apps use root `e2e/` Playwright tests, so configure `herbcaudill/test-story-paths` with `"frameworkFilePatterns": ["e2e/**"]`. Add focused exceptions for other generated or framework-owned files as the project needs them.
+
 ## Common Issues
 
 | Issue                        | Fix                                         |
