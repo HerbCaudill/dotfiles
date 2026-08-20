@@ -1,4 +1,0 @@
-interface:
-  display_name: "GitHub video"
-  short_description: "Record and attach UI videos to GitHub"
-  default_prompt: "Use $github-video to record or upload a UI video and attach it to the requested GitHub PR or issue."
