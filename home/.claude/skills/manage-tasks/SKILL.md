@@ -69,6 +69,10 @@ bd init --prefix=<prefix> --skip-agents --skip-hooks
 
 `--skip-agents` suppresses `AGENTS.md`, the block appended to `CLAUDE.md`, `.claude/settings.json`, `.codex/config.toml`, and `.agents/skills/beads/`. `--skip-hooks` leaves `core.hookspath` alone, which matters if the repo uses husky or lefthook. The beads hooks self-skip their work when run as git hooks and play no part in committing or pushing issues, so nothing durable depends on them.
 
+On the shared Dolt server, the first initialization of a new database can take about 80 seconds and may produce no output after `Global database beads_global available`. Allow at least two minutes before treating it as stuck. A successful initialization may still end with `Database: No dolt database found`; verify it with `bd ready --json` and `bd doctor`. Treat the initialization as successful when `bd ready` works and `bd doctor` reports no errors.
+
+If an execution timeout interrupts initialization and leaves only partial `.beads` scaffolding, rerun it non-interactively with `--reinit-local --role=maintainer` in addition to the original flags.
+
 `bd init` commits its own files regardless of these flags. It also creates a database on the shared Dolt server, and there is no command to remove one. To clear a stray database, stop the server, remove its directory, then start it again — removing it while the server runs leaves reads working and writes failing with `no root value found in session` until a restart.
 
 ## Using the CLI
