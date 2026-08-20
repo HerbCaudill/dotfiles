@@ -14,7 +14,7 @@ Open pull requests that are easy to review: pushed branch, focused summary, clea
 1. Confirm the branch is pushed and contains only intended commits.
 2. Review the diff against the target branch.
 3. Check for project PR templates or repo-specific instructions.
-4. If there are UI changes, take screenshots or screen recordings (using the computer use skill) to include in the PR description.
+4. If there are UI changes, use screenshots for static changes and the `github-video` skill for motion or interaction changes.
 5. Collapse any runs of `WIP` commits into a single commit
 
 ## Opening a PR
