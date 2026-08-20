@@ -3,6 +3,8 @@ import {
   chmodSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
+  renameSync,
   rmSync,
   statSync,
   symlinkSync,
@@ -13,6 +15,7 @@ import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { afterEach, describe, expect, test } from "vitest"
 import { assertPrivateCredentialFile } from "../assertPrivateCredentialFile"
+import { repairPrivateCredentialFile } from "../repairPrivateCredentialFile"
 
 const cleanups: Array<() => void> = []
 
@@ -92,6 +95,46 @@ describe("assertPrivateCredentialFile", () => {
     expect(result.status).toBe(1)
     expect(result.stderr).toBe(`${safeError}\n`)
     expect(statSync(fixture.path).mode & 0o777).toBe(0o644)
+  })
+
+  test("activation repair cannot chmod a symlink target swapped in before open", () => {
+    const fixture = createCredentialFixture()
+    chmodSync(fixture.path, 0o644)
+    const original = join(fixture.directory, "original-secrets")
+    const target = join(fixture.directory, "target")
+    writeFileSync(target, "target contents\n", { mode: 0o644 })
+    const targetContents = readFileSync(target, "utf8")
+
+    expect(() =>
+      repairPrivateCredentialFile(fixture.path, process.getuid?.() ?? 0, {
+        beforeOpen: () => {
+          renameSync(fixture.path, original)
+          symlinkSync(target, fixture.path)
+        },
+      }),
+    ).toThrow(safeError)
+    expect(statSync(target).mode & 0o777).toBe(0o644)
+    expect(readFileSync(target, "utf8")).toBe(targetContents)
+    expect(statSync(original).mode & 0o777).toBe(0o644)
+  })
+
+  test("activation repair refuses a different regular inode swapped in before open", () => {
+    const fixture = createCredentialFixture()
+    chmodSync(fixture.path, 0o644)
+    const original = join(fixture.directory, "original-secrets")
+    const replacement = join(fixture.directory, "replacement-secrets")
+    writeFileSync(replacement, "replacement contents\n", { mode: 0o644 })
+
+    expect(() =>
+      repairPrivateCredentialFile(fixture.path, process.getuid?.() ?? 0, {
+        beforeOpen: () => {
+          renameSync(fixture.path, original)
+          renameSync(replacement, fixture.path)
+        },
+      }),
+    ).toThrow(safeError)
+    expect(statSync(fixture.path).mode & 0o777).toBe(0o644)
+    expect(statSync(original).mode & 0o777).toBe(0o644)
   })
 })
 

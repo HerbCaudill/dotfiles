@@ -42,14 +42,17 @@ let
       port = 43127;
     }
   );
-  marvinCredentialValidator = pkgs.writeText "assert-private-credential-file.ts" (
-    builtins.readFile ../../scripts/marvin/assertPrivateCredentialFile.ts
-  );
+  marvinCredentialValidator = pkgs.runCommand "marvin-credential-validator" { } ''
+    ${pkgs.coreutils}/bin/mkdir -p "$out"
+    ${pkgs.coreutils}/bin/cp ${../../scripts/marvin/assertPrivateCredentialFile.ts} "$out/assertPrivateCredentialFile.ts"
+    ${pkgs.coreutils}/bin/cp ${../../scripts/marvin/constants.ts} "$out/constants.ts"
+    ${pkgs.coreutils}/bin/cp ${../../scripts/marvin/repairPrivateCredentialFile.ts} "$out/repairPrivateCredentialFile.ts"
+  '';
   marvinDigest = pkgs.writeShellScript "marvin-digest" ''
     set -eu
 
     expected_uid="$(${pkgs.coreutils}/bin/id -u)"
-    if ! ${pkgs.nodejs_24}/bin/node --experimental-strip-types ${marvinCredentialValidator} \
+    if ! ${pkgs.nodejs_24}/bin/node --experimental-strip-types ${marvinCredentialValidator}/assertPrivateCredentialFile.ts \
       --check "${marvinSecretsPath}" "$expected_uid" >/dev/null 2>&1
     then
       echo "Marvin digest credentials are unavailable" >&2
@@ -107,7 +110,7 @@ in
     ${pkgs.coreutils}/bin/chmod 0600 "${marvinLogDirectory}/digest.log"
     if [[ -e "${marvinSecretsPath}" || -L "${marvinSecretsPath}" ]]; then
       expected_uid="$(${pkgs.coreutils}/bin/id -u ${username})"
-      if ! ${pkgs.nodejs_24}/bin/node --experimental-strip-types ${marvinCredentialValidator} \
+      if ! ${pkgs.nodejs_24}/bin/node --experimental-strip-types ${marvinCredentialValidator}/assertPrivateCredentialFile.ts \
         --repair-mode "${marvinSecretsPath}" "$expected_uid" >/dev/null 2>&1
       then
         echo "Marvin digest credentials are unavailable" >&2
