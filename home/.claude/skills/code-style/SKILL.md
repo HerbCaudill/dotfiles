@@ -51,6 +51,8 @@ components/
 
 ## Formatting
 
+Use [`assets/.oxfmtrc.json`](assets/.oxfmtrc.json) as the default oxfmt configuration for new JavaScript and TypeScript repositories. Preserve existing repository configuration; do not replace intentional deviations unless the user asks.
+
 When an `if` statement controls a single-line statement, put it on the same line without braces:
 
 ```ts
