@@ -54,19 +54,22 @@ let
       exit 1
     fi
 
-    exec ${pkgs.coreutils}/bin/env -i \
+    ${pkgs.coreutils}/bin/env -i \
       HOME="${homeDirectory}" \
       LANG="en_US.UTF-8" \
       LOGNAME="${username}" \
       OPENAI_API_KEY="$OPENAI_API_KEY" \
       PATH="${marvinPath}" \
       USER="${username}" \
-      ${pkgs.pnpm}/bin/pnpm digest -- \
+      ${pkgs.pnpm}/bin/pnpm --silent digest -- \
         --config "${marvinConfigPath}" \
-        --model gpt-5.6-luna \
+        --model gpt-5.6-terra \
+        --model-timeout-ms 60000 \
         --beads-timeout-ms 60000 \
         --collection-timeout-ms 300000 \
-        --operation-timeout-ms 90000
+        --operation-timeout-ms 90000 \
+        >/dev/null
+    echo "Marvin digest completed"
   '';
 in
 {
@@ -89,6 +92,9 @@ in
     ${pkgs.coreutils}/bin/install -d -m 0700 -o ${username} -g staff "${marvinLogDirectory}"
     ${pkgs.coreutils}/bin/install -m 0600 -o ${username} -g staff ${marvinConfig} "${marvinConfigPath}.new"
     ${pkgs.coreutils}/bin/mv -f "${marvinConfigPath}.new" "${marvinConfigPath}"
+    ${pkgs.coreutils}/bin/touch "${marvinLogDirectory}/digest.log"
+    ${pkgs.coreutils}/bin/chown ${username}:staff "${marvinLogDirectory}/digest.log"
+    ${pkgs.coreutils}/bin/chmod 0600 "${marvinLogDirectory}/digest.log"
   '';
 
   launchd.agents."daily-note" = {
@@ -137,6 +143,7 @@ in
       };
       StandardOutPath = "${marvinLogDirectory}/digest.log";
       StandardErrorPath = "${marvinLogDirectory}/digest.log";
+      Umask = 63;
       EnvironmentVariables = {
         HOME = homeDirectory;
         PATH = marvinPath;
