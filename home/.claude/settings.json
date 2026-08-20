@@ -18,6 +18,16 @@
       }
     }
   },
+  "skillOverrides": {
+    "gws-calendar-agenda": "off",
+    "gws-calendar-insert": "off",
+    "gws-docs-write": "off",
+    "gws-drive-upload": "off",
+    "gws-gmail-forward": "off",
+    "gws-gmail-read": "off",
+    "gws-sheets-append": "off",
+    "gws-sheets-read": "off"
+  },
   "effortLevel": "medium",
   "autoUpdatesChannel": "latest",
   "tui": "fullscreen",
