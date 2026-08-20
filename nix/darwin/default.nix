@@ -61,7 +61,11 @@ let
       OPENAI_API_KEY="$OPENAI_API_KEY" \
       PATH="${marvinPath}" \
       USER="${username}" \
-      ${pkgs.pnpm}/bin/pnpm digest -- --config "${marvinConfigPath}" --model gpt-5.6-luna
+      ${pkgs.pnpm}/bin/pnpm digest -- \
+        --config "${marvinConfigPath}" \
+        --model gpt-5.6-luna \
+        --collection-timeout-ms 180000 \
+        --operation-timeout-ms 60000
   '';
 in
 {
