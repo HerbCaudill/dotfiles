@@ -6,8 +6,6 @@
   },
   "enabledPlugins": {
     "vercel@claude-plugins-official": false,
-    "beads@beads-marketplace": true,
-    "document-skills@anthropic-agent-skills": true,
     "beads@herbcaudill": true
   },
   "extraKnownMarketplaces": {
