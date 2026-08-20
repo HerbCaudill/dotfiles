@@ -103,9 +103,24 @@ The scaffold script does not install linting yet. After scaffolding, add the sha
 pnpm add -D @herbcaudill/eslint-plugin oxlint eslint
 ```
 
-Create a root `.oxlintrc.json` that loads `@herbcaudill/eslint-plugin` as the `herbcaudill` JavaScript plugin, then enable its recommended rules at `warn`. Add `"lint": "oxlint --config .oxlintrc.json ."` to `package.json`. Use the package README for the complete rule list, options, and default exceptions.
+Create `oxlint.config.mts` and extend the shared preset with Oxlint's `defineConfig`. New scaffolded apps use root `e2e/` Playwright tests, so add that exception through the preset factory:
 
-New scaffolded apps use root `e2e/` Playwright tests, so configure `herbcaudill/test-story-paths` with `"frameworkFilePatterns": ["e2e/**"]`. Add focused exceptions for other generated or framework-owned files as the project needs them.
+```ts
+import { createRecommendedOxlintConfig } from "@herbcaudill/eslint-plugin"
+import { defineConfig } from "oxlint"
+
+export default defineConfig({
+  extends: [
+    createRecommendedOxlintConfig({
+      testStoryFileExceptions: {
+        frameworkFilePatterns: ["e2e/**"],
+      },
+    }),
+  ],
+})
+```
+
+Projects without exceptions can import `recommendedOxlintConfig` instead. Add `"lint": "oxlint ."` to `package.json`; Oxlint auto-discovers `oxlint.config.mts`. Use the package README for other generated or framework-owned file exceptions.
 
 ## Common Issues
 
