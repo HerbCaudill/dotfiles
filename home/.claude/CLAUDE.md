@@ -52,6 +52,8 @@ When work is complete, commit it, push it, and close the task if applicable.
 
 Write commit messages with a concise subject line followed by a short paragraph explaining the context and reasoning behind the change.
 
+When Codex creates a commit, set `GIT_AUTHOR_NAME=Codex` and `GIT_AUTHOR_EMAIL=codex@localhost` for the commit command. Leave the configured Git identity unchanged so it remains the committer.
+
 Work is NOT complete until `git push` succeeds. If push fails, resolve and retry until it succeeds.
 
 Within a repository, always use relative paths.
