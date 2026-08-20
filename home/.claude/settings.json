@@ -1,21 +1,5 @@
 {
   "model": "fable",
-  "statusLine": {
-    "type": "command",
-    "command": "node ~/.claude/statusline.js"
-  },
-  "enabledPlugins": {
-    "vercel@claude-plugins-official": false,
-    "beads@herbcaudill": true
-  },
-  "extraKnownMarketplaces": {
-    "herbcaudill": {
-      "source": {
-        "source": "git",
-        "url": "https://github.com/HerbCaudill/plugins.git"
-      }
-    }
-  },
   "skillOverrides": {
     "gws-calendar-agenda": "off",
     "gws-calendar-insert": "off",
@@ -25,6 +9,21 @@
     "gws-gmail-read": "off",
     "gws-sheets-append": "off",
     "gws-sheets-read": "off"
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "node ~/.claude/statusline.js"
+  },
+  "enabledPlugins": {
+    "vercel@claude-plugins-official": false
+  },
+  "extraKnownMarketplaces": {
+    "herbcaudill": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/HerbCaudill/plugins.git"
+      }
+    }
   },
   "effortLevel": "medium",
   "autoUpdatesChannel": "latest",
