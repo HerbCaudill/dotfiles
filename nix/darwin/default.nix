@@ -8,6 +8,10 @@
 let
   homeDirectory = "/Users/${username}";
   userBin = "${homeDirectory}/.local/bin";
+  marvinRepository = "${homeDirectory}/Code/HerbCaudill/marvin";
+  marvinRuntimeDirectory = "${homeDirectory}/Library/Application Support/Marvin";
+  marvinConfigPath = "${marvinRuntimeDirectory}/config.json";
+  marvinLogDirectory = "${homeDirectory}/Library/Logs/Marvin";
   launchdPath = lib.makeBinPath [
     pkgs.coreutils
     pkgs.dolt
@@ -24,6 +28,41 @@ let
     pkgs.python313
     pkgs.uv
   ];
+  marvinPath = "${userBin}:${homeDirectory}/Library/pnpm/bin:${launchdPath}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin";
+  marvinConfig = pkgs.writeText "marvin-config.json" (
+    builtins.toJSON {
+      schemaVersion = 1;
+      repositoryRoot = marvinRepository;
+      roots = [
+        "${homeDirectory}/Code/DevResults"
+        "${homeDirectory}/Code/HerbCaudill"
+      ];
+      collectionIntervalMs = 60000;
+      port = 43127;
+    }
+  );
+  marvinDigest = pkgs.writeShellScript "marvin-digest" ''
+    set -eu
+
+    if [[ ! -r "${homeDirectory}/.secrets" ]]; then
+      echo "Marvin digest credentials are unavailable" >&2
+      exit 1
+    fi
+    source "${homeDirectory}/.secrets"
+    if [[ -z "''${OPENAI_API_KEY:-}" ]]; then
+      echo "Marvin digest credentials are unavailable" >&2
+      exit 1
+    fi
+
+    exec ${pkgs.coreutils}/bin/env -i \
+      HOME="${homeDirectory}" \
+      LANG="en_US.UTF-8" \
+      LOGNAME="${username}" \
+      OPENAI_API_KEY="$OPENAI_API_KEY" \
+      PATH="${marvinPath}" \
+      USER="${username}" \
+      ${pkgs.pnpm}/bin/pnpm digest -- --config "${marvinConfigPath}" --model gpt-5.6-luna
+  '';
 in
 {
   nix.enable = false;
@@ -39,6 +78,13 @@ in
   system.primaryUser = username;
 
   security.pam.services.sudo_local.enable = false;
+
+  system.activationScripts.postActivation.text = ''
+    ${pkgs.coreutils}/bin/install -d -m 0700 -o ${username} -g staff "${marvinRuntimeDirectory}"
+    ${pkgs.coreutils}/bin/install -d -m 0700 -o ${username} -g staff "${marvinLogDirectory}"
+    ${pkgs.coreutils}/bin/install -m 0600 -o ${username} -g staff ${marvinConfig} "${marvinConfigPath}.new"
+    ${pkgs.coreutils}/bin/mv -f "${marvinConfigPath}.new" "${marvinConfigPath}"
+  '';
 
   launchd.agents."daily-note" = {
     serviceConfig = {
@@ -70,6 +116,25 @@ in
       EnvironmentVariables = {
         # pi lives in the pnpm global bin, which is not part of launchdPath.
         PATH = "${homeDirectory}/Library/pnpm/bin:${launchdPath}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin";
+      };
+    };
+  };
+
+  launchd.agents."marvin-digest" = {
+    serviceConfig = {
+      Label = "com.herbcaudill.marvin-digest";
+      ProgramArguments = [ "${marvinDigest}" ];
+      WorkingDirectory = marvinRepository;
+      RunAtLoad = true;
+      StartCalendarInterval = {
+        Hour = 7;
+        Minute = 0;
+      };
+      StandardOutPath = "${marvinLogDirectory}/digest.log";
+      StandardErrorPath = "${marvinLogDirectory}/digest.log";
+      EnvironmentVariables = {
+        HOME = homeDirectory;
+        PATH = marvinPath;
       };
     };
   };
