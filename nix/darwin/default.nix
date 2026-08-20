@@ -64,8 +64,9 @@ let
       ${pkgs.pnpm}/bin/pnpm digest -- \
         --config "${marvinConfigPath}" \
         --model gpt-5.6-luna \
-        --collection-timeout-ms 180000 \
-        --operation-timeout-ms 60000
+        --beads-timeout-ms 60000 \
+        --collection-timeout-ms 300000 \
+        --operation-timeout-ms 90000
   '';
 in
 {
