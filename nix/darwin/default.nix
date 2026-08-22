@@ -39,6 +39,11 @@ let
         "${homeDirectory}/Code/HerbCaudill"
       ];
       collectionIntervalMs = 60000;
+      laneSummary = {
+        checkpointIntervalMs = 600000;
+        model = "gpt-5.6-luna";
+        timeoutMs = 10000;
+      };
       port = 43127;
     }
   );
@@ -84,6 +89,34 @@ let
         >/dev/null
     echo "Marvin digest completed"
   '';
+  marvinDaemon = pkgs.writeShellScript "marvin-daemon" ''
+    set -eu
+
+    expected_uid="$(${pkgs.coreutils}/bin/id -u)"
+    if ! ${pkgs.nodejs_24}/bin/node --experimental-strip-types ${marvinCredentialValidator}/assertPrivateCredentialFile.ts \
+      --check "${marvinSecretsPath}" "$expected_uid" >/dev/null 2>&1
+    then
+      echo "Marvin daemon credentials are unavailable" >&2
+      exit 1
+    fi
+    if ! source "${marvinSecretsPath}" >/dev/null 2>&1; then
+      echo "Marvin daemon credentials are unavailable" >&2
+      exit 1
+    fi
+    if [[ -z "''${OPENAI_API_KEY:-}" ]]; then
+      echo "Marvin daemon credentials are unavailable" >&2
+      exit 1
+    fi
+
+    exec ${pkgs.coreutils}/bin/env -i \
+      HOME="${homeDirectory}" \
+      LANG="en_US.UTF-8" \
+      LOGNAME="${username}" \
+      OPENAI_API_KEY="$OPENAI_API_KEY" \
+      PATH="${marvinPath}" \
+      USER="${username}" \
+      ${pkgs.pnpm}/bin/pnpm --silent daemon -- --config "${marvinConfigPath}"
+  '';
 in
 {
   nix.enable = false;
@@ -106,8 +139,9 @@ in
     ${pkgs.coreutils}/bin/install -m 0600 -o ${username} -g staff ${marvinConfig} "${marvinConfigPath}.new"
     ${pkgs.coreutils}/bin/mv -f "${marvinConfigPath}.new" "${marvinConfigPath}"
     ${pkgs.coreutils}/bin/touch "${marvinLogDirectory}/digest.log"
-    ${pkgs.coreutils}/bin/chown ${username}:staff "${marvinLogDirectory}/digest.log"
-    ${pkgs.coreutils}/bin/chmod 0600 "${marvinLogDirectory}/digest.log"
+    ${pkgs.coreutils}/bin/touch "${marvinLogDirectory}/daemon.log"
+    ${pkgs.coreutils}/bin/chown ${username}:staff "${marvinLogDirectory}/digest.log" "${marvinLogDirectory}/daemon.log"
+    ${pkgs.coreutils}/bin/chmod 0600 "${marvinLogDirectory}/digest.log" "${marvinLogDirectory}/daemon.log"
     if [[ -e "${marvinSecretsPath}" || -L "${marvinSecretsPath}" ]]; then
       expected_uid="$(${pkgs.coreutils}/bin/id -u ${username})"
       if ! ${pkgs.nodejs_24}/bin/node --experimental-strip-types ${marvinCredentialValidator}/assertPrivateCredentialFile.ts \
@@ -165,6 +199,26 @@ in
       };
       StandardOutPath = "${marvinLogDirectory}/digest.log";
       StandardErrorPath = "${marvinLogDirectory}/digest.log";
+      Umask = 63;
+      EnvironmentVariables = {
+        HOME = homeDirectory;
+        PATH = marvinPath;
+      };
+    };
+  };
+
+  launchd.agents."marvin-daemon" = {
+    serviceConfig = {
+      Label = "com.herbcaudill.marvin-daemon";
+      ProgramArguments = [ "${marvinDaemon}" ];
+      WorkingDirectory = marvinRepository;
+      RunAtLoad = true;
+      KeepAlive = {
+        SuccessfulExit = false;
+      };
+      ProcessType = "Background";
+      StandardOutPath = "${marvinLogDirectory}/daemon.log";
+      StandardErrorPath = "${marvinLogDirectory}/daemon.log";
       Umask = 63;
       EnvironmentVariables = {
         HOME = homeDirectory;
