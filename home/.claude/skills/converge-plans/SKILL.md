@@ -1,138 +1,134 @@
 ---
 name: converge-plans
-description: Use when Claude and Codex should independently plan the same work, cross-review numbered drafts through a shared plan directory, and stop after semantic convergence or five review rounds so the user can choose the final plan.
+description: Use when Claude and Codex should independently plan the same work, cross-review numbered drafts through a shared plan directory, and produce one final plan after semantic convergence or five review rounds.
 ---
 
 # Converge plans
 
-Create two independent plans, let each agent absorb improvements from the other, and stop when both plans agree semantically. Neither agent owns the final plan. The user chooses or combines the final candidates.
+Claude and Codex independently plan the same work, review the same numbered draft pair, and keep revising until their plans agree semantically or they complete five review rounds. Both participants share one dedicated `plan-NNN` branch and worktree. The helper owns every write and Git-changing operation in that worktree.
 
-This skill supports one Claude participant and one Codex participant working in the same repository checkout. Use `claude` or `codex` as your participant name based on the current harness.
+Read [the planning skill](../planning/SKILL.md) before starting. Use its research, interview, plan format, and task-sizing guidance. This skill replaces its file, branch, worktree, commit, and finalization steps until `plan.md` is on `main`. Do not create Beads issues until the user later approves that final plan.
 
-## Usage
+## Start or resume a run
 
-The prompt must name the shared plan directory:
+The prompt should name a directory such as `plans/014-detail-forms`. If it does not, inspect existing plan directories and `plan-NNN` branches, then choose the next unused padded number and a short lowercase label. Resume an existing run when its recorded goal matches; never reuse its number for another goal.
 
-> Independently plan [goal], then converge with the other agent using `converge-plans` in `plans/NNN-name`.
+Use your harness name, `claude` or `codex`, as the participant value:
 
-If the user does not provide a plan directory, ask for it. Do not guess from the newest directory.
-
-Read [the planning skill](../planning/SKILL.md) and follow its research and interview process. This skill replaces the planning skill's plan-writing and task-creation timing:
-
-- Write agent-specific drafts during convergence, not `plan.md`.
-- Do not create Beads issues until the user has selected or approved the final `plan.md`.
-
-## Shared workspace
-
-Use this uncommitted workspace inside the supplied plan directory:
-
-```text
-plans/NNN-name/
-  convergence/
-    claude/
-      draft-001.md
-      response-001-to-codex-draft-001.md
-      draft-002.md
-    codex/
-      draft-001.md
-      response-001-to-claude-draft-001.md
-      draft-002.md
+```bash
+node "$HOME/.claude/skills/converge-plans/scripts/converge-plans.ts" init plans/014-detail-forms --participant claude
 ```
 
-Never stage or commit anything under `convergence/`. Do not add it to `.gitignore`; it should remain visible in `git status` until finalization. Never edit or delete the peer's artifacts.
+`init` creates `plan-014` from `main` and adds its shared worktree the first time. Later calls resume that exact branch and worktree. Use the returned `worktree` path for every later command and all repository reads. Claude and Codex may run in that same path.
 
-Treat every completed artifact as immutable. If you need to correct one, publish the next numbered artifact.
+Immediately after `init`, create a persistent harness goal for your participant. The objective must say to advance this run autonomously until mutual convergence, the round limit, successful finalization or a lost finalizer claim, or a genuine blocker. Do not set a token budget. Resume the existing goal when the session already has one for this run. Keep advancing without waiting for another user turn while the peer protocol can make progress.
 
-When resuming an interrupted run, inspect filenames and EOF markers without opening incomplete peer files. Resume at the first unfinished protocol step. Never overwrite a complete artifact. If an incomplete artifact in your own directory has uncertain ownership, stop and ask the user before changing it.
+## Shared-worktree rules
 
-## Complete artifacts
+The shared branch must stay checked out for the whole run. Never run `git switch`, `git checkout`, `git worktree`, `git add`, `git commit`, `git merge`, `git rebase`, `git cherry-pick`, `git reset`, or another Git-changing command in any worktree for this run. Never ask the peer to change branches. The helper serializes state changes and commits with a repository-wide lock.
 
-Another agent may read an artifact only when its final line is the exact EOF marker described below. Ignore incomplete files and keep waiting. Writers must add the marker last.
+Do not write directly anywhere in the shared worktree. Draft an artifact in harness scratch space or a temporary file outside the repository, then publish it through the helper. The helper permits only:
 
-Start each draft with this header, replacing the values:
+```text
+plans/NNN-name/convergence/
+  .protocol/state.json
+  claude/
+    draft-001.md
+    response-001-to-codex-draft-001.md
+  codex/
+    draft-001.md
+    response-001-to-claude-draft-001.md
+```
+
+Each participant may publish only its own artifacts. Protocol state belongs to the helper. Published artifacts are immutable. Corrections require the next numbered artifact.
+
+Run this before reading a peer artifact and whenever repository state looks surprising:
+
+```bash
+node "$HOME/.claude/skills/converge-plans/scripts/converge-plans.ts" check plans/014-detail-forms --participant claude
+node "$HOME/.claude/skills/converge-plans/scripts/converge-plans.ts" status plans/014-detail-forms
+```
+
+`check` verifies the worktree and branch, committed and uncommitted paths, registered artifact hashes, metadata, headings, rounds, EOF markers, conflict markers, and literal `\n` text outside fenced code. Stop if it reports an uncoordinated write. Do not repair, delete, stage, or commit the write by hand.
+
+Every state-changing helper command commits only protocol paths on `plan-NNN`. These intermediate commits are expected. They preserve the exchange as an audit trail and remain on the plan branch.
+
+## Artifact format
+
+Start a draft with this exact metadata, using the directory basename as `run`:
 
 ```html
 <!-- converge-plans:artifact run=014-detail-forms author=claude kind=draft sequence=001 -->
 ```
 
-End it with the matching marker:
+End it with the matching marker as the final nonblank line:
 
 ```html
 <!-- converge-plans:eof run=014-detail-forms author=claude kind=draft sequence=001 -->
 ```
 
-Start each response with a header that names both drafts and its verdict:
+Drafts use the planning skill's full plan format. A draft must stand on its own and end with `## Unresolved questions`, using `None` when there are no questions.
+
+Start a response with exact metadata that names both drafts and its verdict:
 
 ```html
 <!-- converge-plans:artifact run=014-detail-forms author=claude kind=response sequence=001 own-draft=claude/draft-001.md responds-to=codex/draft-001.md verdict=revise -->
 ```
 
-End it with a matching marker:
+End it with the same fields after `converge-plans:eof`. Valid verdicts are `revise`, `converged`, and `round-limit`. Use `round-limit` only in round 005; never use `revise` in round 005.
 
-```html
-<!-- converge-plans:eof run=014-detail-forms author=claude kind=response sequence=001 own-draft=claude/draft-001.md responds-to=codex/draft-001.md verdict=revise -->
-```
-
-Use the plan directory's basename as `run`. Valid response verdicts are `revise`, `converged`, and `round-limit`. Use `round-limit` only in round 5.
-
-Check the final line rather than searching the file for `converge-plans:eof`. A partial file may contain examples or stale text that resembles a marker.
-
-## Phase 1: independent drafts
-
-Research and interview independently. Do not open the peer's draft, response, transcript, or planning notes until you have published your complete `draft-001.md`. You may inspect filenames only to learn whether the peer artifact exists.
-
-After both initial drafts are complete, use the workspace artifacts as the only agent-to-agent exchange. Do not use the peer transcript as a backchannel.
-
-Each initial draft must be a complete implementation plan that can stand on its own. Follow the target repository's plan format and instructions. Record unresolved questions honestly.
-
-Do not write or edit `plan.md`. If this agent already wrote `plan.md` earlier in the current session, copy its plan content into your `draft-001.md` and leave `plan.md` unchanged until finalization. If ownership of an existing `plan.md` is unclear, stop and ask the user before using it.
-
-## Phase 2: review rounds
-
-Run at most five review rounds. `draft-001.md` is the independent starting point; review round 1 compares the two `draft-001.md` files.
-
-For each round `N`:
-
-1. Wait until both `draft-NNN.md` files have valid EOF markers.
-2. Read the peer draft completely and verify important claims against the repository, tests, specifications, or other primary evidence.
-3. Compare it with your own draft at the same number.
-4. Write `response-NNN-to-{peer}-draft-NNN.md` with a valid EOF marker.
-5. Wait until both response files for the round have valid EOF markers.
-6. Read the peer response completely.
-7. If both responses say `converged`, stop. Do not write another draft.
-8. Otherwise, incorporate accepted improvements and publish the next complete numbered draft. Publish the next draft even if its plan body remains semantically unchanged; the new artifact confirms that you considered the peer response and keeps both participants in the same round.
-
-Do not begin round `N + 1` until both complete responses from round `N` exist. Do not respond to a newer draft while the peer is still writing it.
-
-If the peer takes time, wait using short checks rather than one blocking wait longer than 60 seconds. Keep the user informed at least once per minute while actively waiting. If the harness cannot remain active, report the exact artifact you are waiting for and resume from the workspace later; do not treat ordinary waiting as a blocker.
-
-## Response format
-
-Use these sections in every response:
+Every response uses these exact headings:
 
 ```markdown
-# Response to {peer} draft {NNN}
+# Response to Codex draft 001
 
 ## Improvements to absorb
 
-List material improvements that should change your plan, or `None`.
-
 ## Suggestions not accepted
-
-List rejected suggestions with evidence or reasoning, or `None`.
 
 ## Remaining material differences
 
-List unresolved semantic differences, or `None`.
-
 ## Verdict
-
-`revise`, `converged`, or `round-limit`.
 ```
 
-A response is a critique, not a rewritten plan. The next draft contains the complete revised plan.
+The verdict body is the metadata verdict in backticks. A response is a critique, not a replacement plan.
 
-Evaluate suggestions on their merits. Explicit user decisions outrank both drafts. Repository instructions, executable behavior, tests, specifications, and source evidence outrank unsupported plan claims. Never accept a suggestion merely to manufacture agreement, and never preserve your own choice merely because it was yours.
+Publish a complete artifact from its temporary source file. The helper validates it, chooses its immutable destination, records its hash, and commits it:
+
+```bash
+node "$HOME/.claude/skills/converge-plans/scripts/converge-plans.ts" publish plans/014-detail-forms --participant claude --file /tmp/claude-draft-001.md
+```
+
+## Phase 1: independent drafts
+
+Research and interview independently. Before publishing your complete `draft-001.md`, do not open the peer's draft, response, transcript, private interview, planning notes, or artifact contents. You may use `status` to see whether filenames have been published.
+
+Use repository evidence and the shared user prompt as common ground. Agent-specific interview notes do not become separate hard requirements. If private interviews appear to report different user decisions, treat both reports as evidence. Resolve ordinary conflicts without asking the user by choosing the best approach and recording your rationale in the response and next draft. Only an explicit hard requirement in the shared prompt acts as a veto.
+
+## Phase 2: review rounds
+
+Run at most five review rounds. `draft-001.md` is the independent starting pair; response round 001 compares those two drafts.
+
+For each round `N`:
+
+1. Use `status` and `check` until both `draft-NNN.md` artifacts are published.
+2. Read the peer draft completely and verify important claims against the repository, tests, specifications, or other primary evidence.
+3. Compare it with your draft from the same round.
+4. Publish `response-NNN-to-{peer}-draft-NNN.md`.
+5. Wait until both response artifacts for the round are published, then read the peer response completely.
+6. If both verdicts are `converged`, record `converged` status and proceed to finalizer selection.
+7. Otherwise, absorb accepted improvements and publish the next complete draft. Publish it even when the plan body stays semantically unchanged; the new artifact proves that you considered the response and keeps both participants on one round.
+
+Do not start round `N + 1` until both responses from round `N` exist. Do not respond to a newer draft while the peer is still writing it. Ordinary waiting is not a blocker. Use short checks, keep the user informed at least once per minute while active, and resume later from protocol state if the harness cannot stay awake.
+
+Record nonterminal status when useful:
+
+```bash
+node "$HOME/.claude/skills/converge-plans/scripts/converge-plans.ts" status plans/014-detail-forms --participant claude --status waiting
+node "$HOME/.claude/skills/converge-plans/scripts/converge-plans.ts" status plans/014-detail-forms --participant claude --status blocked --reason "Exact blocker"
+```
+
+Use `blocked` only for a genuine blocker under the harness's blocker rules.
 
 ## Semantic convergence
 
@@ -146,37 +142,51 @@ Plans have converged when they have no material difference in:
 - factual claims that affect implementation; and
 - unresolved questions that require later evidence or user input.
 
-Wording, heading order, examples, and equivalent task phrasing are not material differences.
+Wording, heading order, examples, and equivalent task phrasing are not material differences. Declare `converged` only when you see no material improvement to absorb and no material correction the peer still needs. Both responses must say `converged` against the same exact draft pair.
 
-Declare `converged` only when you see no material improvement to absorb and no material correction that the peer still needs. Convergence requires complementary `converged` responses from both agents against the same exact pair of numbered drafts. If either agent says `revise`, neither agent has converged for that round.
+After both converged responses exist, each participant records terminal status:
+
+```bash
+node "$HOME/.claude/skills/converge-plans/scripts/converge-plans.ts" status plans/014-detail-forms --participant claude --status converged
+```
+
+The helper rejects terminal status without matching artifact evidence.
 
 ## Round limit
 
-In round 5, use `converged` when your own assessment finds no material difference. Otherwise use `round-limit` and list every remaining material difference. Do not use `revise` in round 5.
+In round 005, use `converged` when no material difference remains. Otherwise use `round-limit` and list every remaining material difference. After both round-005 responses exist:
 
-After both round-5 responses are complete:
+1. If both verdicts are `converged`, use the normal convergence path.
+2. Otherwise, incorporate the final improvements you accept into `draft-006.md`.
+3. Publish both draft-006 candidates without starting response round 006.
+4. Record `round-limit` status for both participants.
 
-1. If both responses say `converged`, stop under the normal mutual-convergence rule.
-2. Otherwise, incorporate any final improvements you accept into `draft-006.md`.
-3. Stop without starting a sixth review round.
-4. Report both final candidate paths and the remaining differences to the user.
+The finalizer resolves the remaining differences using the shared prompt, repository evidence, and its best judgment. It records the rationale in the final plan where the decision affects implementation. The round limit ends the exchange; it does not pretend that the drafts converged.
 
-The round limit ends the exchange; it does not imply convergence.
+## Finalizer selection
 
-## Handoff to the user
+As soon as both participants have terminal status, both call:
 
-After mutual convergence, report both converged draft paths and say that they are semantically equivalent. After the round limit, report both final candidate paths and summarize the unresolved differences without choosing a winner.
+```bash
+node "$HOME/.claude/skills/converge-plans/scripts/converge-plans.ts" claim-finalizer plans/014-detail-forms --participant claude
+```
 
-Do not create `plan.md`, choose a candidate, combine plans, create Beads issues, or clean up until the user explicitly selects or approves the result.
+The lock makes the first successful claim atomic. The winner receives `"won": true` and becomes the only finalizer. The helper records the loser as `stopped`; the loser marks its persistent goal complete and performs no synthesis, export, branch, cleanup, or Git work.
 
-## Finalization and cleanup
+A claim becomes stale after 15 minutes without a finalization heartbeat. The winner reruns `claim-finalizer` to renew the heartbeat if synthesis will take that long. If the winner disappears, the stopped participant calls `claim-finalizer` again. The helper atomically transfers a stale claim and records the recovery. A live claim never transfers.
 
-After the user selects a candidate or asks for a combination, one active agent may finalize the plan:
+## Final export
 
-1. Confirm that both convergence participants have stopped writing.
-2. Write the selected or combined plan body to `plan.md` without convergence headers, response text, or EOF markers.
-3. Remove the entire `convergence/` directory.
-4. Check `git status` and confirm that no convergence artifacts remain and no unrelated work changed.
-5. Follow the planning skill's approval and Beads workflow for the finalized plan.
+The finalizer chooses or combines the converged drafts, or resolves the draft-006 differences after the round limit. Write the plain final plan to a temporary file outside the repository. Do not include artifact metadata, response text, or EOF markers.
 
-Never clean up merely because one participant declared convergence. The user's selection or approval is the cleanup trigger.
+Then export and push it:
+
+```bash
+node "$HOME/.claude/skills/converge-plans/scripts/converge-plans.ts" finalize plans/014-detail-forms --participant claude --file /tmp/plan.md --push
+```
+
+`finalize` requires the finalizer claim and a clean `main` worktree. It validates the plan, creates a new commit whose parent is current `main`, and fast-forwards `main` to that commit. The commit contains only `plans/NNN-name/plan.md`. It does not merge, cherry-pick, copy, or replay the `plan-NNN` history. The convergence directory, protocol state, artifacts, and their commits remain on `plan-NNN` as the audit trail and do not appear on `main`.
+
+If `finalize` fails because `main` is dirty or moved concurrently, report the exact condition and retry only after it is safe. Never work around the guard with ad hoc Git commands.
+
+The winner marks its persistent goal complete only after `finalize --push` succeeds. Report the final `plan.md` path, main commit, plan branch, convergence outcome, and any questions that still require user input. Beads task creation remains paused until the user approves the final plan.

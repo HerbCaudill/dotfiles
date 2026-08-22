@@ -5,71 +5,77 @@ description: Use when the user asks to write a planning document or otherwise in
 
 # Writing a plan
 
-## Overview
+Create a plan that another implementation session can execute without reconstructing the important decisions. This skill owns research, interviews, plan content, user approval, and Beads task creation. The `converge-plans` skill owns the shared branch, worktree, artifacts, coordination state, commits, and final export when Claude and Codex plan together.
 
-Creates a structured plan for implementing a feature or change. Outputs:
+## Plan layout
 
-1.  A plan document in `plans/`
-2.  Reviewable implementation tasks as Beads issues
+Every plan uses a numbered directory:
+
+```text
+plans/NNN-name/
+  plan.md
+```
+
+Use a padded three-digit number and a one- or two-word lowercase label, such as `plans/003-react-port/plan.md`. Inspect existing `plans/` entries and `plan-NNN` branches before choosing the next number. Resume the existing run when the user names one or when its goal clearly matches; never reuse a number for a different plan.
+
+During a converged planning run, do not create `plan.md`, a branch, or a worktree yourself. Follow `converge-plans`; its finalizer creates `plan.md` on `main`. For a solo plan, write `plan.md` in the current user-provided worktree and branch. Do not create an extra worktree merely because this skill is active.
 
 ## Process
 
-### 1\. Gather context, if you haven't already
+### 1. Gather context
 
-- Read the project's CLAUDE.md and README
-- Explore relevant parts of the codebase
-- Identify existing patterns and conventions
-- Use the `grill-me` skill to clarify the user's thinking
+- Read the repository's `CLAUDE.md` and `README.md`.
+- Explore the relevant code, tests, specifications, and conventions.
+- Use the `grill-me` skill when the user's decisions need clarification.
+- Separate explicit requirements from preferences, tentative ideas, and your own recommendations.
 
-### 2\. Create plan document
+### 2. Write the plan
 
-Create `plans/{num}-{name}.md` where `num` is a padded three-digit number and `name` is a one- or two-word label for the plan. Example: `003-react-port.md`.
+Use this structure for `plan.md` and every convergence draft:
 
-```
-# {Feature Name}
+```markdown
+# {Feature name}
 
 ## Goal
 
-{One sentence describing what we're doing and why}
+{One sentence describing what we are doing and why.}
 
 ## Approach
 
-{High-level approach, key decisions, alternatives considered}
+{The main design, decisions, constraints, and alternatives considered.}
 
 ## Tasks
 
-{Numbered list of implementation checkpoints}
+1. {A review-sized implementation checkpoint with acceptance and verification details.}
+
+## Unresolved questions
+
+{Questions that truly require later evidence or user input, or `None`.}
 ```
 
-### 3\. Create tasks
+Keep the plan concise and scannable. Include enough context in each task that a fresh implementation session can understand its outcome, acceptance criteria, and verification strategy.
 
-Once the user has approved the plan, translate its checkpoints into reviewable work units.
+### 3. Get approval and create tasks
 
-Check if the project uses beads by looking for a `.beads` folder in the root of the repository.
+Do not create Beads issues until the user approves the final `plan.md`. In a converged run, mutual convergence and final export do not count as user approval for task creation.
 
-- If beads is not set up, use `/beads:init` to do that.
-- Create an epic when the plan is large enough to span multiple implementation sessions.
-- File one issue for each task that warrants its own implementation session and independent review.
-- Keep smaller steps in the issue description or create subtasks when they belong to the same implementation and review unit.
-- Set dependencies between issues where applicable
-- Link issues to the epics as appropriate
+After approval, check for a `.beads` directory in the repository root.
 
-### 4\. Summary
+- If Beads is not set up, use `/beads:init`.
+- Create an epic when the plan spans multiple implementation sessions.
+- Create one issue for each task that warrants its own implementation session and independent review.
+- Keep small steps in the parent issue when they share one implementation and verification boundary.
+- Record dependencies and link issues to the epic where applicable.
 
-After completing the plan, summarize:
+### 4. Report the result
 
-- Path to plan document
-- Number of tasks created
-- Any unresolved questions that need user input
+Report the `plan.md` path, the number of tasks created, and any unresolved questions that still need user input.
 
-## Guidelines
+## Task sizing
 
-- Be concise; plans should be scannable.
-- Prefer the largest task that still has one coherent outcome, one set of acceptance criteria, and one verification strategy.
-- Treat every top-level task or epic child as an orchestration boundary: it will usually require fresh implementation context, verification, a commit and push, and independent review.
-- Split work when it enables meaningful parallelism, introduces a real dependency or decision boundary, carries materially different risk, or needs an independent rollback boundary.
-- Combine work that touches the same files, repeats the same verification, or is only meaningful when the neighboring steps are complete.
-- Keep minute-scale implementation steps inside a task rather than turning each one into a separate issue.
-- For mechanical changes across many files, prefer a few invariant-based checkpoints over file-by-file tasks.
-- Most plans should need roughly 3-8 top-level tasks. Use fewer or more when the actual implementation and review boundaries justify it.
-- Don't over-specify implementation details, but do provide a sentence or two of context in each issue's description.
+- Prefer the largest task with one coherent outcome, one set of acceptance criteria, and one verification strategy.
+- Treat each top-level task or epic child as an orchestration boundary. It will usually need fresh context, verification, a commit and push, and independent review.
+- Split work when it enables useful parallelism, creates a real dependency or decision boundary, carries materially different risk, or needs an independent rollback boundary.
+- Combine work that touches the same files, repeats the same verification, or has no useful outcome on its own.
+- For mechanical changes across many files, use a few invariant-based checkpoints instead of file-by-file tasks.
+- Most plans need roughly three to eight top-level tasks, but the actual implementation boundaries decide the count.
