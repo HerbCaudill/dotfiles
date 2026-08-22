@@ -39,6 +39,7 @@ let
         "${homeDirectory}/Code/HerbCaudill"
       ];
       collectionIntervalMs = 60000;
+      collectionTimeoutMs = 120000;
       laneSummary = {
         checkpointIntervalMs = 600000;
         model = "gpt-5.6-luna";
@@ -115,7 +116,8 @@ let
       OPENAI_API_KEY="$OPENAI_API_KEY" \
       PATH="${marvinPath}" \
       USER="${username}" \
-      ${pkgs.pnpm}/bin/pnpm --silent daemon -- --config "${marvinConfigPath}"
+      ${pkgs.nodejs_24}/bin/node --disable-warning=ExperimentalWarning --experimental-strip-types \
+        "${marvinRepository}/src/daemon-command.ts" --config "${marvinConfigPath}"
   '';
 in
 {
@@ -216,7 +218,6 @@ in
       KeepAlive = {
         SuccessfulExit = false;
       };
-      ProcessType = "Background";
       StandardOutPath = "${marvinLogDirectory}/daemon.log";
       StandardErrorPath = "${marvinLogDirectory}/daemon.log";
       Umask = 63;
