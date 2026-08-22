@@ -1,9 +1,11 @@
 ---
 name: writing
-description: Use when writing, editing, rewriting, or reviewing prose to match our preferred plain-English writing style and avoid generic AI-sounding language.
+description: Use when drafting, editing, rewriting, or reviewing substantial prose or a durable written artifact. Applies the global communication style in greater detail, especially for documents, proposals, explanations, public copy, and sensitive correspondence.
 ---
 
 # Writing
+
+Apply the global communication style throughout. The guidance below expands it for deliberate prose work.
 
 Write in plain English for smart readers. The voice should feel like a candid practitioner explaining what is actually going on: smart, serious, optimistic, honest, practical, specific, and human. Avoid corporate polish, consultant language, academic density, generic AI smoothness, and anything sales-y, stuffy, pompous, obfuscating, or slick.
 
