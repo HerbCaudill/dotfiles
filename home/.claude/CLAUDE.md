@@ -38,6 +38,8 @@ Unless I say otherwise, don't worry about backwards compatibility; use a hard cu
 
 When estimating implementation time, estimate the wall-clock time for an AI agent working continuously at high speed, with parallel subagents where useful. Do not default to human business-day estimates; account for 24/7 availability and parallel execution.
 
+When assigning work to an agent — whether starting a new session, giving additional work to an existing session, or directing a subagent — keep the instruction concise. Point to authoritative task sources instead of restating them, and do not repeat inherited repository instructions or standard workflows. Include only the objective, necessary identifiers, context the agent cannot discover independently, deviations from the normal workflow, and coordination constraints.
+
 ## Browser use \[macOS only\]
 
 When a task requires browser UI, default to my actual Chrome browser rather than the in-app browser. Chrome is more likely to have the right signed-in sessions; if it does not, ask me to sign in there. Still prefer a purpose-built connector, API, or CLI when one can do the job.

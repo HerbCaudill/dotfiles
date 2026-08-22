@@ -88,28 +88,12 @@ Resolve all ready beads by dispatching safe batches to implementation and review
 **Implementation goal**
 
 ```text
-Complete the implementation for bead {id}: {title}: claim it, implement it, verify it, format, commit, push, report the exact task commit SHAs, and leave the bead open for independent review.
+Complete Beads task {id}: {title} and leave it open for independent review.
 ```
 
 **Implementation prompt template**
 
-> Complete the following task. Do not do unrelated work.
->
-> Goal: Complete the implementation for bead {id}: {title}.
->
-> ## Task: {title}
->
-> {description}
->
-> ### Instructions
->
-> - Run `bd update {id} --status=in_progress` to claim the task.
-> - Make reasonable assumptions for ordinary ambiguity. Ask for human input only when the next step is destructive, changes scope, risks data loss or customer data exposure, requires credentials or permissions, or presents a meaningful architectural choice.
-> - While you're working, if you notice unrelated bugs or other issues, use `bd create` to file issues for another agent to work on.
-> - Record the starting commit before editing. In your final message, report that base SHA and the ordered SHA of every commit created for this task. Do not rely only on `HEAD`, because concurrent tasks may interleave commits in the shared checkout.
-> - Do not review your own work and do not run `bd close {id}`. The orchestrator will dispatch an independent reviewer and close the bead after approval.
-> - End a review-ready implementation with `READY FOR REVIEW`, followed by the base SHA, task commit SHAs, verification commands and results, and pushed branch name.
-> - If you need human input and the harness provides an explicit notification mechanism, notify the user. Otherwise leave a clear final message explaining the blocker and stop.
+> Complete Beads task {id}: {title}. Leave the bead open for independent review. When ready, report `READY FOR REVIEW` with the base SHA, ordered task commit SHAs, verification commands and results, and pushed branch name.
 
 ### Dispatch independent review
 
@@ -123,21 +107,7 @@ Require the reviewer to use the `do-code-review` skill.
 
 **Review prompt template**
 
-> Independently review bead {id}: {title}. Do not edit files, commit, push, or close the bead.
->
-> ## Requirements
->
-> {description}
->
-> ## Changes to review
->
-> Base SHA: {base_sha}
-> Task commit SHAs, in order: {task_commit_shas}
-> Implementation verification: {verification_summary}
->
-> Use the `do-code-review` skill. Review the requirements, exact task commits, final affected code, tests, and integration risks. In a shared checkout, inspect each task commit directly with `git show`; do not assume `BASE_SHA..HEAD_SHA` contains only this task. Run additional non-mutating verification when safe.
->
-> Report specific findings with file and line references. Critical and Important findings block approval. Minor findings do not block unless they reveal a requirement violation. End with exactly one verdict: `APPROVED`, `CHANGES REQUESTED`, or `BLOCKED`.
+> Independently review Beads task {id}: {title} using the `do-code-review` skill. The base SHA is {base_sha}; the ordered task commit SHAs are {task_commit_shas}. The implementation agent reported: {verification_summary}. Do not edit, commit, push, or close the bead. End with exactly one verdict: `APPROVED`, `CHANGES REQUESTED`, or `BLOCKED`.
 
 ### Resolve review findings
 
