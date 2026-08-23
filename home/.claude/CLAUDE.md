@@ -44,7 +44,7 @@ Unless I say otherwise, don't worry about backwards compatibility; use a hard cu
 
 When estimating implementation time, estimate the wall-clock time for an AI agent working continuously at high speed, with parallel subagents where useful. Do not default to human business-day estimates; account for 24/7 availability and parallel execution.
 
-When assigning work to an agent — whether starting a new session, giving additional work to an existing session, or directing a subagent — keep the instruction concise. Point to authoritative task sources instead of restating them, and do not repeat inherited repository instructions or standard workflows. Include only the objective, necessary identifiers, context the agent cannot discover independently, deviations from the normal workflow, and coordination constraints.
+When assigning work to an agent — whether starting a new session, giving additional work to an existing session, or directing a subagent — use the shortest instruction that uniquely identifies the work. If an authoritative task already contains the requirements, give only the action and identifier: `Complete ee-0sey.` Do not restate the title, requirements, inherited repository instructions, or normal workflow. Add context only when the agent cannot discover it, or when the assignment changes the task, normal workflow, or coordination requirements.
 
 ## Browser use \[macOS only\]
 
