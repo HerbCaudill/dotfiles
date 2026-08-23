@@ -1,6 +1,6 @@
 ---
 name: github-discussion
-description: Use when the user shares a GitHub discussion URL and wants its content pulled into context. Handles both repo discussions (github.com/owner/repo/discussions/N) and org discussions (github.com/orgs/org/discussions/N).
+description: Use to load a repository or organization GitHub discussion from its URL.
 ---
 
 # GitHub Discussion

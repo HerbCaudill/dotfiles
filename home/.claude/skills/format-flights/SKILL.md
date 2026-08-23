@@ -1,6 +1,6 @@
 ---
 name: format-flights
-description: Use when the user pastes messy flight details (from airline sites, booking confirmations, emails) and wants them cleaned up, or when adding a new flight to an existing formatted itinerary. Trigger on "format these flights", "clean up this itinerary", or raw pasted flight data needing reformatting.
+description: Use to turn pasted flight details into a clean itinerary or add a flight to one.
 ---
 
 # Format Flights

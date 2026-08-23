@@ -1,6 +1,6 @@
 ---
 name: porkbun
-description: Use when working with the Porkbun API or a Porkbun-registered domain — DNS records, nameservers, URL forwarding, SSL bundles, DNSSEC, domain availability/registration/renewal. Covers auth, request and response shape, the quirks that bite, and safe-write patterns.
+description: Use for Porkbun domains and API work, including DNS, forwarding, SSL, DNSSEC, registration, and renewal.
 ---
 
 # Porkbun API

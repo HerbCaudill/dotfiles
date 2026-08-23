@@ -1,6 +1,6 @@
 ---
 name: read-agent-sessions
-description: Find, search, and read local Claude Code and Codex sessions from their filesystem JSONL logs. Use when Claude needs context from a Codex session, Codex needs context from a Claude session, or the user asks to locate, inspect, compare, recover, continue from, or summarize a past or currently running agent conversation without relying on harness-specific session tools.
+description: Use to find, inspect, compare, recover, continue, or summarize local Claude Code and Codex sessions from their logs.
 ---
 
 # Read agent sessions

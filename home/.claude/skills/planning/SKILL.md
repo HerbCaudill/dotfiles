@@ -1,6 +1,6 @@
 ---
 name: planning
-description: Use when the user asks to write a planning document or otherwise indicates a desire to plan before building. Create the plan and, after approval, translate it into review-sized Beads work units.
+description: Use to plan before building, then convert an approved plan into review-sized Beads tasks.
 ---
 
 # Writing a plan

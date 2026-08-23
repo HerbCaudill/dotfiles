@@ -1,6 +1,6 @@
 ---
 name: publishing-to-npm
-description: Use when publishing or releasing a JavaScript package to the npm registry, including first releases, scoped public packages, prereleases, workspace packages, and new package versions.
+description: Use to publish or release any JavaScript package to npm.
 ---
 
 # Publishing to npm

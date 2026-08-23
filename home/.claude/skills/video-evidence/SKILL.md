@@ -1,6 +1,6 @@
 ---
 name: video-evidence
-description: Record or upload a UI video and embed it in a GitHub pull request or issue. Use when a GitHub review needs video evidence, the user asks for a demo or interaction recording, or a local MP4, MOV, or WebM needs a GitHub inline player.
+description: Use to record or upload a UI video and embed it in a GitHub pull request or issue.
 ---
 
 # Video evidence

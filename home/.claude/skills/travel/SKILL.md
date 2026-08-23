@@ -1,6 +1,6 @@
 ---
 name: travel
-description: Use when helping Herb plan travel, compare itineraries, book flights, choose seats, select fare classes, rent cars, choose lodging, or decide which payment card to use for travel. Apply Herb's preferences for flights, long-haul transatlantic travel, European flights, car rentals, hotels, and travel payment cards.
+description: Use for travel planning and booking decisions; apply Herb's flight, seat, fare, car, hotel, and card preferences.
 ---
 
 # Travel

@@ -1,6 +1,6 @@
 ---
 name: personal-info
-description: Use when a task needs Herb's personal information, including phone numbers, addresses, identity details, government IDs, travel document numbers, or loyalty program numbers.
+description: Use when a task needs Herb's identity, contact, address, document, or loyalty information.
 ---
 
 # Personal info

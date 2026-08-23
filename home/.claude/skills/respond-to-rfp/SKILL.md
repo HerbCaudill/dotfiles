@@ -1,6 +1,6 @@
 ---
 name: respond-to-rfp
-description: Draft professional proposal responses to RFPs, RFIs, RFQs, and similar solicitations, especially when the user provides or references a proposal template, source RFP/RFI document, Drive folder, or asks to preserve exact template formatting. Use when Codex needs to find solicitation documents, duplicate a Google Docs or Drive template, extract requirements, fill placeholders, write compliant response sections, and verify the final proposal draft.
+description: Use to draft a compliant RFP, RFI, or RFQ response from source documents and a supplied template.
 ---
 
 # Respond to RFP

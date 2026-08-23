@@ -1,60 +1,33 @@
 ---
 name: code-style
-description: Use when writing or editing code in Herb's repos — file and folder organization, React component structure, JSDoc and comment conventions, functional style, test conventions, and when to reach for Effect.
+description: Use when writing or editing code in Herb’s repositories. Covers file organization, React, functional style, formatting, comments, tests, and Effect.
 ---
 
 # Code style
 
-## File organization
+Follow repository conventions when they conflict with this default.
 
-- Every shared function/class/component should be in its own file. The file should have the name of the function/class/component, and in most cases that file should export only that function/class/component.
-- Use named exports. Only use default exports where the framework (like Next.js) requires them.
-- Types, constants and helpers that are only used by one function/class/component should live in the same file as the caller.
-- Put tests and stories in `tests/` and `stories/` subdirectories alongside the source files they refer to:
-- Shared types go in a `types.ts` file; shared constants go in a `constants.ts` file.
+## Files
 
-```
-components/
-- tests/
-  - Foo.test.ts
-  - Bar.test.ts
-- stories/
-  - Foo.stories.ts
-  - Bar.stories.ts
-- Foo.tsx
-- Bar.tsx
-lib/
-- tests/
-  - toLowerCase.test.ts
-- toLowerCase.ts
-```
+Give each shared function, class, or component its own same-named file and usually its own named export. Use default exports only when a framework requires them.
 
-Within a file, follow this order:
+Keep private helpers, constants, and types with their caller. Put shared types in `types.ts` and shared constants in `constants.ts`. Place tests and stories in sibling `tests/` and `stories/` directories.
 
-1. Imports
-2. Main function/class/component
-3. Local helper functions
-4. Local constants
-5. Local types
+Order file contents as imports, main export, local helpers, local constants, then local types.
 
-## React components
+## React
 
-- React components should always have a `Props` type, listed at the end of the file.
-- When building lists of Tailwind class names programmatically, use `cx` (called `cn` in some repos) rather than string interpolation.
+Define a `Props` type for every component and put it at the end of the file. Build conditional Tailwind class lists with the repository’s `cx` or `cn` helper, not string interpolation.
 
 ## Functional style
 
-- Prefer pure functions over functions with side effects.
-- Prefer immutable data; avoid mutating objects and arrays.
-- Use `map`/`filter`/`reduce` for simple transforms; use loops when clearer or faster.
-- Prefer function composition over class hierarchies.
-- Keep side effects (I/O, state changes) at the edges of the system.
+Prefer pure functions, immutable data, composition, and side effects at system boundaries. Use `map`, `filter`, and `reduce` for clear transforms; use loops when they are clearer or faster.
 
 ## Formatting
 
-Use [`assets/.oxfmtrc.json`](assets/.oxfmtrc.json) as the default oxfmt configuration for new JavaScript and TypeScript repositories. Preserve existing repository configuration; do not replace intentional deviations unless the user asks.
+Use [the default oxfmt configuration](assets/.oxfmtrc.json) in new JavaScript and TypeScript repositories. Preserve existing repository settings unless Herb asks to replace them.
 
-When an `if` statement controls a single-line statement, put it on the same line without braces:
+Put a single controlled statement on the same line without braces:
 
 ```ts
 if (!body) return null
@@ -62,105 +35,30 @@ if (!body) return null
 
 ## Comments
 
-Comments within the code should generally use `// ...`.
+Use `//` comments to explain why code exists, not to restate what it does. Use `/* ... */` for a long introductory comment.
 
-Don't be stingy with comments, but use them to explain why something is done, not what is done. Avoid comments that restate the code.
-
-> ❌ Wrong
->
-> This comment restates the code, and should use `//` instead of `/* */`:
->
-> ```ts
-> /* Calculate the next iteration state. */
-> const nextState = getNextIterationState(currentState)
-> ```
-
-Use `/* ... */` for long introductory comments.
-
-```ts
-/*
-I wish this class wasn't necessary, but the current implementation of the API requires it. 
-The API is not well-documented, and the only way to figure out how to use it is to read the 
-source code. This class wraps the API and provides a more convenient interface for our use 
-case.   
-*/
-```
-
-Every function, class, property, parameter, and method should be preceded by a JSDoc block comment starting with `/**`. Document function parameters independently, not using JSDoc `@param` syntax.
-
-Keep JSDoc to a single line where possible:
+Add a `/** ... */` JSDoc comment to every function, class, property, parameter, and method. Keep it on one line when possible. Document parameters beside their declarations instead of using `@param`.
 
 ```ts
 /** Get the current terminal size with sensible defaults. */
 export function getTerminalSize(
-  /** The stdout object from Ink's useStdout hook */
-  stdout: any,
+  /** Output from Ink’s useStdout hook. */
+  stdout: NodeJS.WriteStream | undefined,
 ) {
-  return {
-    columns: stdout?.columns ?? 80,
-    rows: stdout?.rows ?? 24,
-  }
+  return { columns: stdout?.columns ?? 80, rows: stdout?.rows ?? 24 }
 }
 ```
 
-For multiline JSDoc comments, put the opening `/**` and closing `*/` on their own lines:
-
-```ts
-/**
- * Check if there's a recent saved iteration state that can be restored.
- * This is called on reconnection to determine whether to auto-resume.
- */
-export async function checkForSavedIterationState(
-  /**
-   * The iteration instance. If no instance ID is provided, the active instance ID
-   * from the app store will be used.
-   */
-  instanceId?: string,
-): Promise<IterationState | null> {
-  const targetInstanceId = instanceId ?? useAppStore.getState().activeInstanceId
-  return getIterationState(targetInstanceId)
-}
-```
-
-In a file with lots of local helpers, constants, types, etc., use a single section all-caps heading for each category, and separate the sections with a blank line.
-
-```ts
-// CONSTANTS
-
-const PIZZA = "🍕"
-// etc...
-
-// TYPES
-
-type Foo = {
-  bar: string
-  baz: number
-}
-// etc...
-```
-
-> ❌ Wrong
->
-> Never wrap section headings in ASCII borders or banner boxes.
->
-> ```ts
-> /*
->    ==========================
->               TYPES
->    ==========================
-> */
-> ```
+In files with many helpers, constants, or types, separate categories with one plain all-caps line such as `// TYPES`. Do not use decorative banners.
 
 ## Tests
 
-Tests should assert behavior users or callers care about, not implementation details — avoid tests that check CSS class names, DOM nesting, or component internals.
+Assert behavior that users or callers care about, not CSS classes, DOM nesting, or other implementation details. When removing behavior, remove its tests rather than adding tests that assert its absence.
 
-When you remove functionality, remove the corresponding tests. Don't leave tests that assert that the functionality is gone.
-
-Playwright selectors should be based on what users actually see and interact with: visible text, accessible roles, labels, and placeholders. When that's not possible, use domain data attributes like `data-player="name"` and `data-cell="row-col"`.
+In Playwright, prefer visible text, accessible roles, labels, and placeholders. If those are insufficient, use domain-specific attributes such as `data-player="name"`.
 
 ## Effect
 
-Reach for [Effect](https://effect.website) when a problem has real structural complexity — typed/recoverable errors, dependency injection, concurrency, resource lifecycle (acquire/release), retries and timeouts, or pipelines where failures need to compose. Use Effect Schema for parsing, validation, and encode/decode at system boundaries.
+Use Effect when typed recoverable errors, dependency injection, concurrency, resource lifecycles, retries, timeouts, or composable failure pipelines justify its overhead. Use Effect Schema for validation and encoding at system boundaries.
 
-Don't use Effect by default. Plain async/await and pure functions are better for simple scripts, one-off transforms, and small components — Effect's overhead (learning curve, syntax, bundle size) only pays off once the failure/dependency/concurrency story is genuinely hard. When in doubt, start plain and adopt Effect at the layer where the complexity actually lives. The `effect-ts` and `effect-schema` skills have the details.
+Prefer plain async/await and pure functions for small components, simple scripts, and one-off transforms. Start plain when uncertain and introduce Effect where the structural complexity lives. See the `effect-ts` and `effect-schema` skills for details.

@@ -1,6 +1,6 @@
 ---
 name: do-code-review
-description: Use when asked to review code changes — a diff, branch, PR, or uncommitted working-tree changes. Runs a fixed multi-angle review procedure with a verification pass and reports verified findings as markdown. Report-only; does not apply fixes.
+description: Use for report-only review of a diff, branch, PR, or working tree. Verifies findings and does not apply fixes.
 ---
 
 # Code review

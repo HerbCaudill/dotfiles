@@ -1,6 +1,6 @@
 ---
 name: mockup-browser
-description: Use when presenting UI or design direction options to Herb — early-stage explorations, competing layouts, visual directions for a new tool or feature. Produces a single self-contained HTML file with tabbed navigation where each option is a complete standalone mockup of the same fictional scenario, with why/tradeoff notes per option.
+description: Use to present competing UI directions as complete, tabbed HTML mockups with tradeoff notes.
 ---
 
 # Mockup browser

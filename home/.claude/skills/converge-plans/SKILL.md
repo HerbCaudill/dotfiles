@@ -1,6 +1,6 @@
 ---
 name: converge-plans
-description: Use when Claude and Codex should independently plan the same work, cross-review numbered drafts through a shared plan directory, and stop after semantic convergence or five review rounds so the user can choose the final plan.
+description: Use when Claude and Codex must independently draft and cross-review a plan until convergence or five rounds.
 ---
 
 # Converge plans
