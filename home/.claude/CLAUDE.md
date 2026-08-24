@@ -63,6 +63,7 @@ Do not use Claude Code's per-project memory directory at `~/.claude/projects/...
 ## Local resources
 
 - Obsidian vault: `~/Code/herbcaudill/notes`; daily notes are in `daily/` and meeting transcripts in `meetings/`.
+- DevResults wiki: `~/Code/DevResults/DevResults.wiki`.
 - Google Drive [macOS only]: `~/Library/CloudStorage/GoogleDrive-herb@devresults.com/My Drive`. Google Docs, Sheets, and Slides are cloud-only stubs. Use `gws-*` skills only when Google's first-party tools cannot do the work.
 
 ## DevResults repository [macOS only]
