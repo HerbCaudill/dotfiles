@@ -37,7 +37,7 @@ if (!body) return null
 
 Use `//` comments to explain why code exists, not to restate what it does. Use `/* ... */` for a long introductory comment.
 
-Add a `/** ... */` JSDoc comment to every function, class, property, parameter, and method. Keep it on one line when possible. Document parameters beside their declarations instead of using `@param`.
+Add a `/** ... */` JSDoc comment to every function, class, property, parameter, and method. Keep the comment itself to a single line when possible, but always put it on its own line directly above the declaration – never on the same line as the code it documents, even for a parameter. Document parameters this way instead of using `@param`.
 
 ```ts
 /** Get the current terminal size with sensible defaults. */
