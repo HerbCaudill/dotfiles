@@ -3,43 +3,39 @@ name: effect-schema
 description: Use when working with Effect Schema — type-safe data validation, parsing, transformation, and encoding/decoding in TypeScript.
 ---
 
-# Effect Schema Reference
+# Effect Schema Reference (Effect v4)
 
-## The Schema Type
+This covers the Effect v4 API (verified against `effect@4.0.0-rc.111`). v4 renamed much of the v3 surface; the table at the end maps old names to new ones. If a project pins `effect@3.x`, the v3 names still apply there.
+
+## The Codec type
 
 ```typescript
-Schema<Type, Encoded, Requirements>
+Schema.Codec<Type, Encoded = Type, DecodingServices = never, EncodingServices = never>
 ```
 
-- **Type (A)**: The decoded output type
-- **Encoded (I)**: The input/encoded type (defaults to Type)
-- **Requirements (R)**: Contextual dependencies (defaults to `never`)
+- **Type**: the decoded, in-memory type
+- **Encoded**: the wire/input type
+- **DecodingServices / EncodingServices**: Effect services each direction needs (usually `never`)
+
+`Schema.Schema<T>` is the type-only view (no encoded side). Most function signatures accept `Schema.Constraint` – use it as the generic bound when writing helpers that take any schema:
+
+```typescript
+function nullable<const S extends Schema.Constraint>(schema: S) { ... }
+```
+
+There is no `Schema.Schema.AnyNoContext`. For "any bidirectional codec with no services" write `Schema.Codec<unknown, unknown, never, never>`.
 
 ## Setup
 
 ```typescript
-import { Schema } from "effect"
+import { Schema, SchemaGetter, Result } from "effect"
 ```
-
-Requires TypeScript 5.4+ with `strict: true`. Optionally enable `exactOptionalPropertyTypes: true`.
 
 ## Primitives
 
-```typescript
-Schema.String
-Schema.Number
-Schema.Boolean
-Schema.BigIntFromSelf
-Schema.SymbolFromSelf
-Schema.Object
-Schema.Undefined
-Schema.Void
-Schema.Any
-Schema.Unknown
-Schema.Never
-```
+`Schema.String`, `Number`, `Finite`, `Int`, `Boolean`, `BigInt`, `Symbol`, `Undefined`, `Null`, `Void`, `Any`, `Unknown`, `Never`, `NonEmptyString`, `Trim` (trims on decode), `Json`, `Date`, `URL`, `Uint8Array`.
 
-## Defining Schemas
+## Defining schemas
 
 ### Structs
 
@@ -48,204 +44,166 @@ const Person = Schema.Struct({
   name: Schema.String,
   age: Schema.Number,
 })
+
+type Person = typeof Person.Type
+type PersonEncoded = typeof Person.Encoded
 ```
 
-### Type Extraction
+Types come off the schema as `.Type` and `.Encoded` properties. Struct types are readonly.
+
+`Person.fields` exposes the field map; `Person.mapFields(f)` derives a new struct; `Schema.fieldsAssign({ extra })` adds fields (works across union members with `mapMembers`).
+
+### Literals, unions, enums
 
 ```typescript
-// Utility types
-type PersonType = Schema.Type<typeof Person>
-type PersonEncoded = Schema.Encoded<typeof Person>
-
-// Interface style (better perf and readability)
-interface Person extends Schema.Type<typeof Person> {}
+Schema.Literal("active")
+Schema.Literals(["active", "inactive", "pending"])
+Schema.Union([Schema.String, Schema.Number]) // note the array
+Schema.Union([A, B], { mode: "oneOf" }) // exactly one member must match
+Schema.Enum(MyEnum)
+Schema.TaggedStruct("Circle", { radius: Schema.Number })
+Schema.TaggedUnion({ Circle: { radius: Schema.Number }, Square: { side: Schema.Number } })
 ```
 
-Schemas produce **readonly types** by default.
-
-### Literals and Unions
+### Optional and nullable fields
 
 ```typescript
-const Status = Schema.Literal("active", "inactive", "pending")
-const Flexible = Schema.Union(Schema.String, Schema.Number)
+Schema.optionalKey(Schema.Number) // key may be absent: { age?: number }
+Schema.optional(Schema.Number) // absent or undefined: { age?: number | undefined }
+Schema.NullOr(Schema.Number) // number | null
+Schema.UndefinedOr(Schema.Number)
+Schema.NullishOr(Schema.Number)
 ```
 
-Union members are evaluated in definition order. Discriminated unions (tagged by a literal field) report errors only for the matching member.
+`optional` is `optionalKey(UndefinedOr(S))`. Prefer `optionalKey` for exact-optional semantics.
 
-### Optional Fields
+Defaults take an `Effect`:
 
 ```typescript
-const Product = Schema.Struct({
-  name: Schema.String,
-  quantity: Schema.optional(Schema.Number),
-})
-// Type: { readonly name: string; readonly quantity?: number | undefined }
+// Default during decoding, expressed in Encoded terms
+Schema.String.pipe(Schema.optional, Schema.withDecodingDefault(Effect.succeed("anonymous")))
 
-// Optional with a default
-const WithDefault = Schema.Struct({
-  name: Schema.String,
-  role: Schema.optional(Schema.String).pipe(Schema.withDefault(() => "user")),
-})
+// Default during `make`, not during decoding
+Schema.String.pipe(Schema.optionalKey, Schema.withConstructorDefault(Effect.succeed("anonymous")))
 ```
 
-### Tuples
+### Tuples, arrays, records
 
 ```typescript
-const Pair = Schema.Tuple(Schema.String, Schema.Number)
-// readonly [string, number]
-
-// With rest elements
-Schema.Tuple(Schema.String).pipe(Schema.rest(Schema.Number))
-// readonly [string, ...number[]]
+Schema.Tuple([Schema.String, Schema.Number]) // readonly [string, number]
+Schema.TupleWithRest(Schema.Tuple([Schema.String]), [Schema.Number])
+Schema.Array(Schema.String)
+Schema.NonEmptyArray(Schema.Number)
+Schema.UniqueArray(Schema.String)
+Schema.Record(Schema.String, Schema.Number) // positional args, not { key, value }
+Schema.StructWithRest(Schema.Struct({ id: Schema.Number }), [
+  Schema.Record(Schema.String, Schema.Unknown),
+])
 ```
 
-### Arrays and Records
+## Decoding and encoding
 
 ```typescript
-Schema.Array(Schema.String) // readonly string[]
-Schema.NonEmptyArray(Schema.Number) // readonly [number, ...number[]]
+Schema.decodeUnknownSync(schema)(input) // throws SchemaError
+Schema.decodeUnknownResult(schema)(input) // Result<A, SchemaError>
+Schema.decodeUnknownEffect(schema)(input) // Effect<A, SchemaError, R>
+Schema.decodeUnknownPromise(schema)(input)
+Schema.decodeUnknownOption(schema)(input)
+Schema.decodeUnknownExit(schema)(input)
 
-Schema.Record({
-  key: Schema.String,
-  value: Schema.Number,
-})
-// { readonly [x: string]: number }
-```
-
-## Decoding and Encoding
-
-### Decoding (parse external data)
-
-```typescript
-// Throws on error
-Schema.decodeUnknownSync(schema)(input)
-
-// Returns Either<A, ParseError>
-Schema.decodeUnknownEither(schema)(input)
-
-// Returns Effect<A, ParseError>
-await Schema.decodeUnknown(schema)(input)
-```
-
-### Encoding (serialize to external format)
-
-```typescript
 Schema.encodeSync(schema)(value)
-Schema.encodeEither(schema)(value)
-await Schema.encode(schema)(value)
+Schema.encodeUnknownResult(schema)(value)
+Schema.encodeEffect(schema)(value)
 ```
 
-### Parse Options
+The `decode*`/`encode*` variants (without `Unknown`) take a typed input. `Schema.is(schema)(u)` is a type guard; `Schema.asserts(schema, u)` asserts.
+
+Handling a `Result`:
 
 ```typescript
-Schema.decodeUnknownEither(schema, {
-  errors: "all", // collect all errors (default: "first")
-  onExcessProperty: "error", // reject extra properties (default: "ignore")
-})(input)
+const result = Schema.decodeUnknownResult(Person)(input)
+if (Result.isFailure(result)) return result.failure // SchemaError
+result.success // Person
 ```
+
+Parse options are the second argument: `Schema.decodeUnknownResult(schema, { errors: "all", onExcessProperty: "error" })`.
+
+### Errors
+
+`Schema.SchemaError` has one field, `issue: SchemaIssue.Issue`, and a readable `message`. Issue tags: `InvalidType`, `InvalidValue`, `MissingKey`, `UnexpectedKey`, `Forbidden`, `Filter`, `Encoding`, `Pointer` (path wrapper), `Composite`, `AnyOf`, `OneOf`. `SchemaIssue.makeFormatterDefault()` builds a string formatter for issues. There is no `ParseResult` module and no `TreeFormatter`/`ArrayFormatter`.
 
 ## Transformations
 
-### Guaranteed-success transform
+Transformations attach a pair of **getters** (`SchemaGetter`) to `decodeTo` / `encodeTo`:
 
 ```typescript
-const StringToNumber = Schema.transform(
-  Schema.String, // from
-  Schema.Number, // to
-  {
-    decode: s => parseFloat(s),
-    encode: n => String(n),
-  },
-)
-```
+import { Schema, SchemaGetter } from "effect"
 
-### Fallible transform
-
-```typescript
-import { ParseResult } from "effect"
-
-const SafeStringToNumber = Schema.transformOrFail(Schema.String, Schema.Number, {
-  decode: s => {
-    const n = parseFloat(s)
-    return isNaN(n)
-      ? ParseResult.fail(new ParseResult.Type(Schema.Number.ast, s))
-      : ParseResult.succeed(n)
-  },
-  encode: n => ParseResult.succeed(String(n)),
-})
-```
-
-### Built-in Transforms
-
-**String**: `trim`, `lowercase`, `uppercase`, `capitalize`, `split`, `parseJson`
-
-**Number**: `NumberFromString`, `clamp`
-
-**Type conversions**: `BigInt`, `BigIntFromNumber`, `Date`, `BigDecimal`
-
-**Base encoding**: `Base64`, `Base64Url`, `Hex`
-
-## Filters and Refinements
-
-### Custom Filters
-
-```typescript
-const LongString = Schema.String.pipe(
-  Schema.filter(s => s.length >= 10 || "must be at least 10 characters"),
-)
-```
-
-Return values from filter predicates:
-
-| Return                   | Behavior                |
-| ------------------------ | ----------------------- |
-| `true` / `undefined`     | Passes                  |
-| `false`                  | Fails (generic message) |
-| `string`                 | Fails with that message |
-| `ParseResult.ParseIssue` | Detailed error          |
-| `FilterIssue`            | Error with path info    |
-| `Array<FilterIssue>`     | Multiple errors         |
-
-### Filter with Annotations
-
-```typescript
-const LongString = Schema.String.pipe(
-  Schema.filter(s => s.length >= 10 || "must be at least 10 characters", {
-    identifier: "LongString",
-    jsonSchema: { minLength: 10 },
-    description: "A string at least 10 characters long",
+const NumberFromString = Schema.String.pipe(
+  Schema.decodeTo(Schema.Number, {
+    decode: SchemaGetter.transform(s => Number(s)),
+    encode: SchemaGetter.transform(n => String(n)),
   }),
 )
 ```
 
-### Error Path for Structs
+Getters: `transform(f)`, `transformOrFail(f => Effect<T, SchemaIssue.Issue>)`, `transformOptional(Option => Option)` (sees absence), `passthrough()`, `succeed(v)`, `fail(...)`, `omit()`, `withDefault(Effect)`, `required()`, plus string helpers (`trim`, `toLowerCase`, `parseJson`, `stringifyJson`, `split`, base64/hex codecs).
+
+`Schema.decodeTo(to)` with no options composes two schemas whose types line up. `Schema.flip(schema)` swaps the directions. `Schema.toType(schema)` / `Schema.toEncoded(schema)` project a codec to one side only – useful when composing a wrapper around an existing codec:
 
 ```typescript
-const PasswordForm = Schema.Struct({
-  password: Schema.String,
-  confirm: Schema.String,
-}).pipe(
-  Schema.filter(input => {
-    if (input.password !== input.confirm) {
-      return { path: ["confirm"], message: "Passwords do not match" }
-    }
-  }),
+// Accept null or absence on the wire; decode to an absent key
+const optionalNullable = <const S extends Schema.Constraint>(schema: S) =>
+  Schema.optional(Schema.NullOr(Schema.toEncoded(schema))).pipe(
+    Schema.decodeTo(Schema.optionalKey(schema), {
+      decode: SchemaGetter.transformOptional(o => Option.filter(o, v => v != null)),
+      encode: SchemaGetter.passthrough({ strict: false }),
+    }),
+  )
+```
+
+Built-in codecs: `NumberFromString`, `BigIntFromString`, `DateFromString`, `DateFromMillis`, `DateTimeUtcFromString`, `DurationFromMillis`, `StringFromBase64`, `Uint8ArrayFromHex`, `URLFromString`, `fromJsonString(schema)`.
+
+### Renaming keys
+
+```typescript
+Person.pipe(Schema.encodeKeys({ name: "full_name" }))
+// Decodes { full_name, age } → { name, age }; encodes back
+```
+
+### JSON serialization boundary
+
+`Schema.toCodecJson(schema)` derives a codec whose Encoded side is guaranteed plain JSON. Use it at persistence boundaries (localStorage, IndexedDB) so values a looser schema admits (e.g. `bigint` under `Schema.Unknown`) are rejected instead of corrupting storage.
+
+## Filters and refinements
+
+Checks attach via `Schema.check(...)`; built-ins are prefixed `is*`:
+
+```typescript
+const Age = Schema.Finite.pipe(
+  Schema.check(Schema.isGreaterThanOrEqualTo(0), Schema.isLessThanOrEqualTo(120)),
+)
+const Slug = Schema.String.pipe(Schema.check(Schema.isPattern(/^[a-z-]+$/), Schema.isMaxLength(40)))
+```
+
+**String**: `isMinLength`, `isMaxLength`, `isLengthBetween`, `isNonEmpty`, `isPattern`, `isStartsWith`, `isEndsWith`, `isIncludes`, `isTrimmed`, `isLowercased`, `isUppercased`, `isUUID`, `isULID`, `isGUID`, `isBase64`
+**Number**: `isGreaterThan`, `isGreaterThanOrEqualTo`, `isLessThan`, `isLessThanOrEqualTo`, `isBetween({ minimum, maximum })`, `isInt`, `isInt32`, `isFinite`, `isMultipleOf`
+**Collections**: `isMinSize`, `isMaxSize`, `isSizeBetween`, `isUnique`, `isMinProperties`, `isMaxProperties`
+**Date / BigInt / BigDecimal**: `isGreaterThanDate`, `isBetweenBigInt`, etc.
+
+Custom checks use `makeFilter`. The predicate returns `true`/`undefined` to pass, or `false`, a `string` message, a `SchemaIssue.Issue`, `{ path, issue }`, or an array of those:
+
+```typescript
+const PasswordForm = Schema.Struct({ password: Schema.String, confirm: Schema.String }).pipe(
+  Schema.check(
+    Schema.makeFilter(o =>
+      o.password === o.confirm ? true : { path: ["confirm"], issue: "Passwords do not match" },
+    ),
+  ),
 )
 ```
 
-### Built-in Filters
-
-**String**: `maxLength(n)`, `minLength(n)`, `nonEmptyString()`, `length(n)`, `length({ min, max })`, `pattern(regex)`, `startsWith(s)`, `endsWith(s)`, `includes(s)`, `trimmed()`, `lowercased()`, `uppercased()`
-
-**Number**: `greaterThan(n)`, `greaterThanOrEqualTo(n)`, `lessThan(n)`, `lessThanOrEqualTo(n)`, `between(min, max)`, `int()`, `nonNaN()`, `finite()`, `positive()`, `nonNegative()`, `negative()`, `nonPositive()`, `multipleOf(n)`
-
-**Number shorthands**: `Schema.Int`, `Schema.Positive`, `Schema.NonNegative`, `Schema.Uint8`
-
-**Array**: `maxItems(n)`, `minItems(n)`, `itemsCount(n)`
-
-**Date**: `validDate()`, `greaterThanDate(d)`, `lessThanDate(d)`, `betweenDate(min, max)`
-
-**BigInt**: `greaterThanBigInt(n)`, `lessThanBigInt(n)`, `betweenBigInt(min, max)`, `positiveBigInt()`, `nonNegativeBigInt()`
+`Schema.refine(guard)` narrows the type with a type predicate. `Schema.String.pipe(Schema.check(Schema.isNonEmpty({ message: "Name is required" })))` sets a custom message.
 
 ## Classes
 
@@ -259,269 +217,124 @@ class Person extends Schema.Class<Person>("Person")({
   }
 }
 
-// Constructor validates automatically
-const p = new Person({ id: 1, name: "Alice" })
-p.upperName // "ALICE"
+new Person({ id: 1, name: "Alice" }) // validates; throws on bad input
 
-new Person({ id: 1, name: "" }) // throws ParseError
+class Employee extends Person.extend<Employee>("Employee")({ department: Schema.String }) {}
 ```
 
-Classes automatically implement `Equal` and `Hash` traits for value-based equality.
-
-### Extending Classes
-
-```typescript
-class Employee extends Schema.Class<Employee>("Employee")({
-  ...Person.fields,
-  department: Schema.String,
-}) {}
-```
+The identifier is required and stable – it's used for diagnostics and survives HMR where `instanceof` fails. `Schema.TaggedClass` adds a `_tag`; `Schema.TaggedError` makes a yieldable error class.
 
 ## Brands
 
 ```typescript
 const UserId = Schema.String.pipe(Schema.brand("UserId"))
-type UserId = Schema.Type<typeof UserId>
-// string & Brand<"UserId">
+type UserId = typeof UserId.Type // string & Brand<"UserId">
 
-// Create branded value (validates)
-const id = UserId.make("abc123")
-
-// Using with existing branded types
-type Email = string & Brand.Brand<"Email">
-const Email = Brand.nominal<Email>()
-const EmailSchema = Schema.String.pipe(Schema.pattern(/^[^@]+@[^@]+$/), Schema.fromBrand(Email))
+// Reuse an existing Brand constructor's checks
+Schema.String.pipe(Schema.fromBrand("Email", Email))
 ```
 
-## Property Signatures
+`brand` narrows the type only; put runtime checks in a `check` before it.
 
-### Rename Fields (fromKey)
-
-```typescript
-const User = Schema.Struct({
-  name: Schema.propertySignature(Schema.String).pipe(Schema.fromKey("user_name")),
-})
-// Decodes { user_name: "Alice" } → { name: "Alice" }
-// Encodes { name: "Alice" } → { user_name: "Alice" }
-```
-
-### Rename on Existing Schemas
+## Recursive schemas
 
 ```typescript
-const Renamed = Original.pipe(Schema.rename({ oldKey: "newKey" }))
-```
-
-## Extending Schemas
-
-```typescript
-// Spread fields
-const Extended = Schema.Struct({
-  ...Base.fields,
-  extra: Schema.String,
-})
-
-// extend function
-const Extended = Base.pipe(Schema.extend(Schema.Struct({ extra: Schema.String })))
-```
-
-## Recursive Schemas
-
-```typescript
-interface Category {
-  readonly name: string
-  readonly children: ReadonlyArray<Category>
+interface Tree {
+  readonly value: number
+  readonly children: ReadonlyArray<Tree>
 }
 
-const Category: Schema.Schema<Category> = Schema.suspend(() =>
-  Schema.Struct({
-    name: Schema.String,
-    children: Schema.Array(Category),
-  }),
-)
-```
-
-## Error Formatting
-
-### TreeFormatter (default)
-
-```typescript
-import { ParseResult } from "effect"
-
-const result = Schema.decodeUnknownEither(Person)({})
-if (Either.isLeft(result)) {
-  console.log(ParseResult.TreeFormatter.formatErrorSync(result.left))
-}
-// Person
-// └─ ["name"]
-//    └─ is missing
-```
-
-### ArrayFormatter
-
-```typescript
-ParseResult.ArrayFormatter.formatErrorSync(error)
-// [
-//   { _tag: "Missing", path: ["name"], message: "is missing" },
-//   { _tag: "Missing", path: ["age"], message: "is missing" }
-// ]
-```
-
-### Custom Error Messages
-
-```typescript
-const Name = Schema.String.pipe(Schema.nonEmptyString({ message: () => "Name is required" }))
+const Tree = Schema.Struct({
+  value: Schema.Number,
+  children: Schema.Array(Schema.suspend((): Schema.Codec<Tree> => Tree)),
+})
 ```
 
 ## Annotations
 
 ```typescript
-const User = Schema.Struct({
-  email: Schema.String.annotations({
+Schema.String.pipe(
+  Schema.annotate({
     identifier: "Email",
     title: "Email address",
-    description: "A valid email address",
-    examples: ["user@example.com"],
-    message: () => "Please enter a valid email",
+    description: "...",
+    examples: ["a@b.c"],
   }),
+)
+```
+
+`Schema.annotate` replaces the v3 `.annotations()` method. `annotateKey` targets a struct key (`messageMissingKey`, `messageUnexpectedKey`); `annotateEncoded` targets the encoded side.
+
+## Declaring custom types
+
+```typescript
+const FileFromSelf = Schema.declare((u: unknown): u is File => u instanceof File, {
+  identifier: "File",
 })
 ```
 
-Key annotations: `identifier`, `title`, `description`, `documentation`, `examples`, `message`, `default`, `jsonSchema`, `arbitrary`, `decodingFallback`.
+## Effect data types
 
-### Concurrency Annotation
+`Schema.Option(A)`, `OptionFromNullOr(A)`, `OptionFromUndefinedOr(A)`, `OptionFromOptionalKey(A)`, `Schema.Result(success, failure)` (replaces `Schema.Either`), `Schema.Exit`, `Schema.Cause`, `ReadonlySet(A)`, `ReadonlyMap(K, V)` (positional), `HashSet`, `HashMap`, `Chunk`, `Duration`, `DateTimeUtc`, `Redacted(A)`.
 
-For schemas validating arrays/structs, control parallel validation:
+## Derived tooling
 
 ```typescript
-Schema.Array(Schema.String).annotations({ concurrency: "unbounded" })
+Schema.toJsonSchemaDocument(schema) // draft 2020-12 document
+Schema.toStandardSchemaV1(schema) // Standard Schema adapter (form libraries etc.)
+Schema.toArbitrary(schema)(FastCheck) // fast-check arbitrary; memoized
+Schema.toEquivalence(schema)
+Schema.toFormatter(schema) // human-readable string formatter for values
 ```
 
-### Decoding Fallback
+## Common patterns
+
+### API response at a boundary
 
 ```typescript
-Schema.String.annotations({
-  decodingFallback: () => Effect.succeed("default"),
-})
-```
-
-## Effect Data Types
-
-```typescript
-// Option
-Schema.Option(Schema.String)
-// Decodes { _tag: "None" } | { _tag: "Some", value: string }
-
-Schema.OptionFromNullOr(Schema.String)
-// Decodes null → Option.none(), string → Option.some(string)
-
-Schema.OptionFromUndefinedOr(Schema.String)
-
-// Either
-Schema.Either({ left: Schema.String, right: Schema.Number })
-// Decodes { _tag: "Left", left: string } | { _tag: "Right", right: number }
-
-// ReadonlySet and ReadonlyMap
-Schema.ReadonlySet(Schema.Number) // Array ↔ ReadonlySet
-Schema.ReadonlyMap({
-  key: Schema.String,
-  value: Schema.Number,
-})
-
-// Duration
-Schema.Duration // Encodes as millis
-Schema.DurationFromMillis // number → Duration
-Schema.DurationFromNanos // bigint → Duration
-
-// Data (value equality)
-Schema.Data(Schema.Struct({ name: Schema.String }))
-```
-
-## JSON Schema Generation
-
-```typescript
-import { JSONSchema } from "effect"
-
-const jsonSchema = JSONSchema.make(Person)
-```
-
-Traverses from innermost component outward. **Stops at the first transformation** — refinements before transforms are preserved, but downstream transforms are not represented in output.
-
-## Arbitrary (Test Data Generation)
-
-```typescript
-import { Arbitrary } from "effect"
-import * as fc from "fast-check"
-
-const arb = Arbitrary.make(Person)
-fc.sample(arb, 5) // 5 random Person values
-
-// Custom arbitrary via annotation
-const Name = Schema.NonEmptyString.annotations({
-  arbitrary: () => fc => fc.constantFrom("Alice", "Bob", "Charlie"),
-})
-```
-
-Use `Schema.pattern(regex)` over custom filters for string patterns — it leverages `fc.stringMatching(regexp)` for better generation.
-
-## Common Patterns
-
-### API Response Validation
-
-```typescript
-const ApiResponse = Schema.Struct({
-  data: Schema.Array(User),
-  total: Schema.Number,
-  page: Schema.Number,
-})
-
+const ApiResponse = Schema.Struct({ data: Schema.Array(User), total: Schema.Number })
 const parse = Schema.decodeUnknownSync(ApiResponse)
-
 const response = parse(await fetch("/api/users").then(r => r.json()))
 ```
 
-### Form Validation (React Hook Form)
+### Partial decoding of a collection (keep good items, collect failures)
 
 ```typescript
-// @hookform/resolvers has an Effect Schema adapter
-const FormData = Schema.Struct({
-  email: Schema.String.pipe(
-    Schema.nonEmptyString({ message: () => "Email is required" }),
-    Schema.pattern(/^[^@]+@[^@]+$/, { message: () => "Invalid email" }),
-  ),
-  password: Schema.String.pipe(Schema.minLength(8, { message: () => "At least 8 characters" })),
-})
+const entries = items.map(item => Schema.decodeUnknownResult(Item)(item))
+const data = entries.filter(Result.isSuccess).map(e => e.success)
+const causes = entries.filter(Result.isFailure).map(e => e.failure)
 ```
 
-### Encoding/Decoding Roundtrip
+## v3 → v4 rename table
 
-The golden rule: `encode(decode(input))` should produce the original `input`.
+| v3                                        | v4                                                  |
+| ----------------------------------------- | --------------------------------------------------- |
+| `Schema.Schema<A, I, R>`                  | `Schema.Codec<A, I, RD, RE>`                        |
+| `Schema.Schema.AnyNoContext`              | `Schema.Codec<unknown, unknown, never, never>`      |
+| `Schema.Type<typeof S>` / `Encoded`       | `typeof S.Type` / `typeof S.Encoded`                |
+| `decodeUnknown` (Effect)                  | `decodeUnknownEffect`                               |
+| `decodeUnknownEither` / `encodeEither`    | `decodeUnknownResult` / `encodeUnknownResult`       |
+| `Either.isLeft` / `.left` / `.right`      | `Result.isFailure` / `.failure` / `.success`        |
+| `ParseResult.ParseError`                  | `Schema.SchemaError` (`.issue: SchemaIssue.Issue`)  |
+| `ParseResult.TreeFormatter`               | `SchemaIssue.makeFormatterDefault()`                |
+| `Schema.Record({ key, value })`           | `Schema.Record(key, value)`                         |
+| `Schema.ReadonlyMap({ key, value })`      | `Schema.ReadonlyMap(key, value)`                    |
+| `Schema.Union(A, B)` / `Tuple(A, B)`      | `Schema.Union([A, B])` / `Tuple([A, B])`            |
+| `Schema.Literal("a", "b")`                | `Schema.Literals(["a", "b"])`                       |
+| `transform` / `transformOrFail`           | `decodeTo(to, { decode, encode })` + `SchemaGetter` |
+| `Schema.filter(pred)`                     | `Schema.check(Schema.makeFilter(pred))`             |
+| `Schema.minLength(n)` etc.                | `Schema.check(Schema.isMinLength(n))` etc.          |
+| `.annotations({...})`                     | `Schema.annotate({...})`                            |
+| `propertySignature(S).pipe(fromKey(...))` | `Schema.encodeKeys({ decodedKey: "encodedKey" })`   |
+| `Schema.withDefault(() => v)`             | `Schema.withDecodingDefault(Effect.succeed(v))`     |
+| `Schema.Either({ left, right })`          | `Schema.Result(success, failure)`                   |
+| `JSONSchema.make(S)`                      | `Schema.toJsonSchemaDocument(S)`                    |
+| `Arbitrary.make(S)`                       | `Schema.toArbitrary(S)(FastCheck)`                  |
+| `Schema.extend`                           | `Schema.fieldsAssign` / `Struct.mapFields`          |
 
-```typescript
-const DateFromString = Schema.Date
-// Decodes: string → Date
-// Encodes: Date → string
+## Key principles
 
-const decoded = Schema.decodeUnknownSync(DateFromString)("2024-01-01T00:00:00Z")
-// Date object
-
-const encoded = Schema.encodeSync(DateFromString)(decoded)
-// "2024-01-01T00:00:00.000Z"
-```
-
-### Declaring Custom Types
-
-```typescript
-const FileFromSelf = Schema.declare((input: unknown): input is File => input instanceof File, {
-  identifier: "FileFromSelf",
-  description: "A browser File object",
-})
-```
-
-## Key Principles
-
-- **Schemas are immutable values**: Every operation returns a new schema
-- **Schemas are blueprints**: They describe structure; compilers interpret them
-- **Bidirectional**: Every schema supports both decoding and encoding
-- **Composable**: Build complex schemas from simple ones
-- **Encoded ≠ Type**: The wire format can differ from the in-memory type
-- **Validate at boundaries**: Decode external data at system edges
+- **Schemas are immutable values**: every combinator returns a new schema
+- **Bidirectional**: every codec decodes and encodes; keep `encode(decode(x)) === x`
+- **Encoded ≠ Type**: the wire format can differ from the in-memory type
+- **Validate at boundaries**: decode external data at system edges; use `toCodecJson` at storage edges

@@ -5,6 +5,8 @@ description: Use when working with the Effect TS library — typed functional ef
 
 # Effect TS Reference
 
+Covers Effect v4 (verified against `effect@4.0.0-rc.111`). Notable v4 renames: `Either` → `Result` (`Effect.either` → `Effect.result`, `isLeft/isRight` → `isFailure/isSuccess`, `.left/.right` → `.failure/.success`), `Context.Tag` → `Context.Service`, `Cause.isInterruptedOnly` → `Cause.hasInterruptsOnly`. For Schema see the `effect-schema` skill.
+
 ## The Effect Type
 
 ```typescript
@@ -134,12 +136,18 @@ Effect.match(effect, {
 ### Define a Service
 
 ```typescript
-class Database extends Context.Tag("Database")<
+class Database extends Context.Service<
   Database,
   {
     readonly query: (sql: string) => Effect.Effect<unknown[]>
   }
->() {}
+>()("Database") {}
+```
+
+The string key is the runtime identity. `Context.Service.Shape<typeof Database>` names the service's shape type. (v3 used `Context.Tag("Database")<Database, Shape>()`.)
+
+```typescript
+
 ```
 
 ### Use a Service
@@ -373,11 +381,11 @@ pipe(
 
 ```typescript
 // Define services
-class Config extends Context.Tag("Config")<Config, { readonly apiUrl: string }>() {}
-class Http extends Context.Tag("Http")<
+class Config extends Context.Service<Config, { readonly apiUrl: string }>()("Config") {}
+class Http extends Context.Service<
   Http,
   { readonly get: (url: string) => Effect.Effect<string> }
->() {}
+>()("Http") {}
 
 // Build layers
 const ConfigLive = Layer.succeed(Config, { apiUrl: "https://api.example.com" })
