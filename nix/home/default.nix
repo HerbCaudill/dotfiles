@@ -1,6 +1,7 @@
 { username, ... }:
 {
   imports = [
+    ./codex.nix
     ./files.nix
     ./git.nix
     ./packages.nix
