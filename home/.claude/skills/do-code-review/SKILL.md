@@ -1,51 +1,51 @@
 ---
 name: do-code-review
-description: Use for report-only review of a diff, branch, PR, or working tree. Finds correctness problems, regressions, structural inconsistencies, and unnecessary complexity; verifies findings and does not apply fixes.
+description: Use for report-only review of a diff, branch, PR, or working tree. Checks correctness, regressions, structural drift, and duplication; verifies findings and does not apply fixes.
 ---
 
 # Code review
 
-Review for **precision**: every finding you surface should be one a maintainer would act on. Run the whole procedure inline in this context, sequentially — do not spawn subagents, so results are consistent across harnesses.
+Report only findings a maintainer would act on. Run the passes sequentially in this context; do not spawn subagents.
 
 ## Phase 0 — gather the diff
 
-Run `git diff @{upstream}...HEAD` (or `git diff main...HEAD` / `git diff HEAD~1` if there's no upstream). If there are uncommitted changes, or the range diff is empty, also run `git diff HEAD` and include working-tree changes — review often runs before the commit. If a PR number, branch, or file path was given, review that instead. This diff is the review scope.
+Review the requested PR, branch, path, or diff. Otherwise use `git diff @{upstream}...HEAD`, falling back to `main...HEAD` or `HEAD~1`. Include `git diff HEAD` when the tree is dirty or the range is empty.
 
 ## Phase 1 — find candidates (7 angles, up to 6 each)
 
-Run each angle as a separate pass over the diff. Don't let one angle's conclusions suppress another's. Each candidate records `file:line`, a one-line summary, and either a concrete failure scenario or a concrete maintenance consequence.
+Run each pass independently. Record `file:line`, a summary, and a concrete failure or maintenance impact for each candidate.
 
-**A — line-by-line scan.** Read every hunk, then the enclosing function — bugs on unchanged lines of a touched function are in scope. For every line ask: what input, state, timing, or platform makes this wrong? Inverted conditions, off-by-one, null/undefined deref, missing `await`, falsy-zero checks, wrong-variable copy-paste, errors swallowed in catch, unescaped regex metachars.
+**A — line scan.** Read every hunk and enclosing function. Find the input, state, timing, or platform that makes a line fail: inverted conditions, boundary errors, null access, missing `await`, falsy-zero checks, copy-paste mistakes, swallowed errors, or unsafe regexes.
 
-**B — removed-behavior audit.** For every line the diff deletes or replaces, name the invariant it enforced, then find where the new code re-establishes it. If you can't, that's a candidate: a removed guard, dropped error path, narrowed validation, deleted test covering a real case.
+**B — removed behavior.** For each deletion or replacement, identify its invariant and where the new code restores it. Missing guards, error paths, validation, or useful tests are candidates.
 
-**C — cross-file tracer.** For each changed function, grep for its callers and check whether the change breaks any call site: new precondition, changed return shape, new exception, ordering dependency. Check callees too — does a parallel change in the same diff make a call unsafe?
+**C — cross-file trace.** Check each changed function's callers and callees for new preconditions, return shapes, exceptions, or ordering dependencies.
 
-**D — language pitfalls.** Scan for the classic pitfalls of the diff's language: JS/TS falsy-zero, `==` coercion, closure-captured loop vars, floating promises; Python mutable default args, late-binding closures; SQL injection; timezone/DST drift; float equality.
+**D — language pitfalls.** Check relevant hazards such as JS/TS coercion and floating promises, Python mutable defaults and late binding, SQL injection, timezone drift, and float equality.
 
-**E — conventions.** Find the instruction files governing the changed code: the user-level global instructions (`~/.claude/CLAUDE.md` / `AGENTS.md`), the repo-root CLAUDE.md/AGENTS.md, and any in ancestor directories of changed files. Flag only clear violations where you can quote both the rule and the offending line — no style preferences or "spirit of the doc" inferences.
+**E — conventions.** Read the governing global, repository, and directory instruction files. Flag only violations supported by a quoted rule and offending line.
 
-**F — sibling-design comparison.** For each changed route, page, component, hook, service, form, or data adapter, find the nearest existing sibling that performs the same job, even when it is outside the diff. Compare naming and file ownership; component and data-layer boundaries; identity validation; loading, error, and empty states; permissions; query and mutation wiring; cache updates; navigation; and shared page chrome or copy. Create a candidate when equivalent concepts follow different structures without a domain reason, or when the same responsibility appears in multiple layers. Cite both locations and name the likely drift: inconsistent behavior, duplicated fixes, or domain logic hidden by plumbing. Unchanged sibling code is evidence, not review scope; anchor the finding to the changed code.
+**F — sibling design.** Find the nearest sibling for each changed route, page, component, hook, service, form, or adapter, even outside the diff. Compare ownership, naming, layers, guards and states, permissions, data and cache flow, navigation, and UI patterns. Flag unexplained divergence or duplicated responsibility with a concrete drift risk; cite both locations and anchor the finding to changed code.
 
-**G — economy and reuse.** For each new abstraction, wrapper, helper, dependency, configuration option, or repeated block, ask in order: does it need to exist; does the codebase already solve it; does the language, platform, or an installed dependency solve it; can the existing structure absorb it? Flag speculative flexibility, one-implementation interfaces, wrappers that only rename another API, hand-rolled substitutes, and repeated plumbing whose differences are data rather than behavior. At the second concrete use, duplicated structure becomes a candidate for a shared primitive. Require a bounded deletion, reuse, or consolidation that preserves behavior. Do not optimize for line count or trade away clarity, validation, error handling, security, accessibility, testability, or the repository's architecture.
+**G — economy and reuse.** Ask whether new machinery is needed, already exists, or belongs in the language, platform, an installed dependency, or an existing abstraction. Flag speculative abstractions, thin wrappers, hand-rolled substitutes, and repeated plumbing; the second concrete use is the signal to extract. Require a bounded, behavior-preserving simplification. Never trade away clarity, validation, error handling, security, accessibility, or tests for fewer lines.
 
-Pass every candidate with a nameable failure scenario or maintenance consequence into Phase 2 — silently dropping half-believed candidates bypasses verification and is the dominant cause of misses.
+Send every candidate with a concrete impact to verification.
 
 ## Phase 2 — verify
 
-Dedup candidates pointing at the same line and mechanism, keeping the most concrete. Then take a second pass as a skeptic: for each candidate, actively try to refute it by re-reading the actual code, and assign exactly one verdict:
+Deduplicate candidates, then try to refute each one from the code. Assign one verdict:
 
-- **CONFIRMED** — for a behavior finding, you can name the inputs or state that trigger it and the wrong output or crash. For a structural finding, you can point to the exact duplication or divergence, its sibling or governing convention, a concrete drift or maintenance consequence, and a bounded correction. Quote the relevant lines.
+- **CONFIRMED** — a behavior finding has a trigger and wrong result; a structural finding has exact duplication or divergence, concrete impact, and a bounded correction. Quote the evidence.
 - **PLAUSIBLE** — the mechanism is real but its trigger or consequence is uncertain. State what would confirm it.
-- **REFUTED** — factually wrong or guarded elsewhere. Quote the line that proves it, then drop it.
+- **REFUTED** — wrong or guarded elsewhere. Record the disproof, then drop it.
 
-Refute structural candidates that amount only to taste, demand an abstraction at first use, optimize for fewer lines without reducing conceptual weight, or propose a broad redesign without a bounded correction.
+Refute matters of taste, first-use abstractions, line-count arguments, and broad redesigns without a bounded correction.
 
 ## Output
 
-Report at most 8 findings as markdown in chat, ranked most severe first; correctness and data safety outrank structural maintainability, which outranks conventions. For each:
+Report at most 8 findings, ranked by correctness and data safety, then maintainability, then conventions:
 
 > **N. `file:line` — one-line summary** (VERDICT)
-> Impact: what input/state produces what wrong behavior, or what concrete duplication/divergence will cause drift or repeated maintenance. For structural findings, cite the sibling location. For conventions findings, name the instruction file and quote the rule instead.
+> Impact: the failing case or concrete maintenance cost. Cite sibling locations or governing rules when relevant.
 
-If nothing survives verification, say so plainly. Report only — do not fix anything, propose patches, or offer to apply fixes; fixing is a separate request.
+If nothing survives, say so. Do not apply or offer fixes.
