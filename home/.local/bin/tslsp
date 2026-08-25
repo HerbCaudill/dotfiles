@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Type-aware TypeScript code intelligence CLI (@0xdeafcafe/tslsp-mcp, drives tsgo).
+# Installed with npm into a dedicated prefix because tslsp resolves its bundled
+# tsgo relative to its own package directory, which pnpm's global layout breaks.
+# update-agent-harnesses keeps the install current.
+set -euo pipefail
+
+prefix="$HOME/.local/share/tslsp"
+bin="$prefix/bin/tslsp"
+
+if [[ ! -x "$bin" ]]; then
+  echo "tslsp: installing @0xdeafcafe/tslsp-mcp into $prefix..." >&2
+  npm install -g --prefix "$prefix" @0xdeafcafe/tslsp-mcp >&2
+fi
+
+exec "$bin" "$@"

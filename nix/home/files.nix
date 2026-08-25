@@ -36,6 +36,7 @@ in {
     ".local/bin/update-agent-harnesses".source = mkRepoSymlink "home/.local/bin/update-agent-harnesses";
     ".local/bin/serena".source = mkRepoSymlink "home/.local/bin/serena";
     ".local/bin/serena-mcp-server".source = mkRepoSymlink "home/.local/bin/serena-mcp-server";
+    ".local/bin/tslsp".source = mkRepoSymlink "home/.local/bin/tslsp";
     ".local/bin/wt".source = mkRepoSymlink "home/.local/bin/wt";
     ".local/bin/wtcd".source = mkRepoSymlink "home/.local/bin/wtcd";
     ".local/bin/wtclean".source = mkRepoSymlink "home/.local/bin/wtclean";

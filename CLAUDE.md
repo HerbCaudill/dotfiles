@@ -65,6 +65,7 @@ These are installed into `~/.local/bin` by Home Manager rather than a custom sym
 | `serena`                 | Invoke Serena CLI                                                                                                                | Python   |
 | `serena-mcp-server`      | Start the Serena MCP server                                                                                                      | Python   |
 | `index-project`          | Invoke Serena's project indexing                                                                                                 | Python   |
+| `tslsp`                  | Type-aware TypeScript code intelligence via tsgo; self-installs into `~/.local/share/tslsp` with npm (pnpm's global layout breaks its tsgo lookup) | Bash     |
 
 ## Windows Parallels Claude setup
 
