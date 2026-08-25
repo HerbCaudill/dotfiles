@@ -11,7 +11,7 @@ Follow repository conventions when they conflict with this default.
 
 Give each shared function, class, or component its own same-named file and usually its own named export. Use default exports only when a framework requires them.
 
-Keep private helpers, constants, and types with their caller. Put shared types in `types.ts` and shared constants in `constants.ts`. Place test files beside the code they cover by default; do not create a `tests/` directory unless the repository requires one. Place stories in a sibling `stories/` directory.
+Keep private helpers, constants, and types with their caller. Put shared types in `types.ts` and shared constants in `constants.ts`. Place tests and stories in sibling `tests/` and `stories/` directories.
 
 Order file contents as imports, main export, local helpers, local constants, then local types.
 
