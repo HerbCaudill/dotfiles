@@ -51,6 +51,8 @@ type PersonEncoded = typeof Person.Encoded
 
 Types come off the schema as `.Type` and `.Encoded` properties. Struct types are readonly.
 
+Give the schema and its type the same name (`const Person` / `type Person`), as above. Do not add a `Schema` suffix to the const or an `I`/`Type` prefix to the type; TypeScript keeps values and types in separate namespaces, so one name serves both.
+
 `Person.fields` exposes the field map; `Person.mapFields(f)` derives a new struct; `Schema.fieldsAssign({ extra })` adds fields (works across union members with `mapMembers`).
 
 ### Literals, unions, enums
