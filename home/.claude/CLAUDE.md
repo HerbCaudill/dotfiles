@@ -30,8 +30,6 @@ Diagnose bugs before fixing them. Establish the intended behavior and likely cau
 
 End plans with unresolved questions, if any. Use hard cutovers unless Herb asks for backward compatibility.
 
-Estimate the wall-clock time for fast, continuous agent work, including useful parallelism. Do not use human business-day estimates.
-
 When assigning work to another agent, use the shortest instruction that uniquely identifies it. If the authoritative task already has the requirements, give only the action and ID, such as `Complete ee-0sey.` Add context only when the agent cannot discover it or the assignment changes the task, workflow, or coordination rules.
 
 ## Browser use \[macOS only\]
