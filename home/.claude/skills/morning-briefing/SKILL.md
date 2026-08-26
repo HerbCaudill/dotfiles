@@ -22,7 +22,7 @@ gws tasks tasks list --params '{"tasklist":"<id>","showCompleted":false}'
 
 Skip orphaned legacy tasks: anything with a numeric-style id (`…:0:12345`), a `position` of `2147483647`, or an `updated` date more than a year old. These are pre-2019 migration ghosts that Google's UI no longer shows.
 
-**Email** (subagent, Gmail MCP): inbox only — every query includes `in:inbox`. (The account has no tabbed categories, so `category:primary` matches nothing — don't use it.) Archived mail is out of scope; a separate scheduled task covers it. Gather: (1) threads from the last ~3 days where Herb was asked something and hasn't replied — open the thread and check; if his reply is the latest, it's resolved; (2) important-looking issues with context; (3) what Herb sent yesterday (`from:me`). Skip newsletters, receipts, and automated notices unless genuinely important (a security alert qualifies; a renewal reminder doesn't).
+**Email** (subagent, Gmail MCP): primary inbox only — every query includes `in:inbox category:primary`. The account does use tabbed categories (Promotions, Social, Updates, Forums), and those tabs are out of scope even for security alerts — a separate scheduled task covers them, as does archived mail. Zero results from a correctly scoped query means an empty primary inbox, not a broken query; don't widen the scope to compensate. Gather: (1) threads from the last ~3 days where Herb was asked something and hasn't replied — open the thread and check; if his reply is the latest, it's resolved; (2) important-looking issues with context; (3) what Herb sent yesterday (`from:me`). Skip newsletters, receipts, and automated notices unless genuinely important (a security alert qualifies; a renewal reminder doesn't).
 
 **Slack** (subagent, Slack MCP): last ~3 days. Gather: (1) mentions and DMs Herb hasn't answered — a reaction without a reply counts as unanswered for a direct question, resolved for an FYI; (2) significant issues in channels (outages, escalations, blocked work, pending decisions) with enough prior-day context to summarize; (3) what Herb posted yesterday.
 
@@ -33,6 +33,8 @@ Skip orphaned legacy tasks: anything with a numeric-style id (`…:0:12345`), a 
 ## Write
 
 Follow the `writing` skill.
+
+The briefing is written to Herb: refer to him in the second person ("Brent requested changes on your PR", "Leslie hasn't answered your question"), never as "Herb".
 
 The register is dry and factual. Headings are plain labels. No editorial framing ("the big story", "also brewing", "brewing", "the part that needs you"), no color commentary, no enthusiasm, no scolding. State facts; a factual observation about the day's shape ("the morning is free until 15:00") is fine. Distinguish what happened from what is inferred. Use sentence case and a spaced en dash for asides. Every item links to its source where a link exists: Gmail threads as `https://mail.google.com/mail/#all/{threadId}`, Slack permalinks, task `webViewLink`s, calendar event `htmlLink`s, GitHub URLs.
 
