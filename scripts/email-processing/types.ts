@@ -54,6 +54,20 @@ export type DelegatedCustomerFacts = {
   requiresHerbAction: boolean
 }
 
+/** Sanitized prior promotion correction supplied as inert classifier evidence. */
+export type PromotionCorrectionEvidence = {
+  /** Timestamp of the observed manual correction. */
+  timestamp: string
+  /** Direction of the manual promotion correction. */
+  correction: "promotion-reversed" | "promotion-missed"
+  /** Exact sender from the corrected message. */
+  sender: NormalizedMailbox
+  /** Sanitized subject from the corrected message. */
+  subject: string
+  /** Whether the correction sender exactly matches the current candidate sender. */
+  exactSender: boolean
+}
+
 /** Normalized candidate supplied to the isolated classifier. */
 export type ClassifierCandidate = {
   /** Gmail message ID used as the opaque decision key. */
@@ -76,6 +90,8 @@ export type ClassifierCandidate = {
   archiveProtections: ArchiveProtections
   /** Facts used only for the delegated-customer exception. */
   delegatedCustomer: DelegatedCustomerFacts
+  /** Recent sanitized promotion corrections for specific-example evidence. */
+  promotionCorrections: PromotionCorrectionEvidence[]
 }
 
 /** Strict input contract supplied to the classifier. */

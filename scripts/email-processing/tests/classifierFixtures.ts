@@ -33,6 +33,7 @@ export const validClassifierInput = {
         otherDevResultsRecipient: false,
         requiresHerbAction: false,
       },
+      promotionCorrections: [],
     },
   ],
 }

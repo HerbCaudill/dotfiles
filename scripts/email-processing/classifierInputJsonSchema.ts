@@ -25,6 +25,7 @@ export const classifierInputJsonSchema = {
           "category",
           "archiveProtections",
           "delegatedCustomer",
+          "promotionCorrections",
         ],
         properties: {
           messageId: { type: "string", minLength: 1, maxLength: 256 },
@@ -75,6 +76,11 @@ export const classifierInputJsonSchema = {
               requiresHerbAction: { type: "boolean" },
             },
           },
+          promotionCorrections: {
+            type: "array",
+            maxItems: 20,
+            items: { $ref: "#/$defs/promotionCorrection" },
+          },
         },
       },
     },
@@ -102,6 +108,18 @@ export const classifierInputJsonSchema = {
         },
         subject: { type: "string", maxLength: 2_000 },
         body: { type: "string", maxLength: 100_000 },
+      },
+    },
+    promotionCorrection: {
+      type: "object",
+      additionalProperties: false,
+      required: ["timestamp", "correction", "sender", "subject", "exactSender"],
+      properties: {
+        timestamp: { type: "string", maxLength: 100 },
+        correction: { enum: ["promotion-reversed", "promotion-missed"] },
+        sender: { $ref: "#/$defs/mailbox" },
+        subject: { type: "string", maxLength: 2_000 },
+        exactSender: { type: "boolean" },
       },
     },
   },

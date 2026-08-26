@@ -38,6 +38,25 @@ describe("parseClassifierInput", () => {
     ).toThrow("$.candidates[0].archiveProtections.priorReply")
   })
 
+  it("validates normalized mailbox addresses in promotion correction evidence", () => {
+    const candidate = {
+      ...validClassifierInput.candidates[0],
+      promotionCorrections: [
+        {
+          timestamp: "2026-08-26T12:00:00.000Z",
+          correction: "promotion-missed",
+          sender: { name: "Person", address: "PERSON@example.com" },
+          subject: "Approval needed",
+          exactSender: true,
+        },
+      ],
+    }
+
+    expect(() =>
+      parseClassifierInput({ ...validClassifierInput, candidates: [candidate] }),
+    ).toThrow("$.candidates[0].promotionCorrections[0].sender.address")
+  })
+
   it("rejects duplicate candidate IDs", () => {
     expect(() =>
       parseClassifierInput({

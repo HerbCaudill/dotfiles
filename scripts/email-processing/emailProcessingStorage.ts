@@ -1,4 +1,4 @@
-import { appendFile, chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises"
+import { appendFile, chmod, mkdir, readFile, rename, truncate, writeFile } from "node:fs/promises"
 import { homedir } from "node:os"
 import { dirname, join } from "node:path"
 import { randomUUID } from "node:crypto"
@@ -69,11 +69,35 @@ export async function appendEmailDecision(
   path = defaultDecisionLogPath(),
 ): Promise<void> {
   await mkdir(dirname(path), { recursive: true, mode: 0o700 })
+  await repairJsonlTail(path)
   await appendFile(path, `${JSON.stringify(sanitizeDecisionLogEntry(entry))}\n`, {
     encoding: "utf8",
     mode: 0o600,
   })
   await chmod(path, 0o600)
+}
+
+/** Remove only an incomplete final JSONL fragment before the next append. */
+async function repairJsonlTail(
+  /** Decision-log path. */
+  path: string,
+): Promise<void> {
+  let contents: string
+  try {
+    contents = await readFile(path, "utf8")
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return
+    throw error
+  }
+  if (!contents || contents.endsWith("\n")) return
+
+  const tailStart = contents.lastIndexOf("\n") + 1
+  try {
+    parseDecisionLogEntry(JSON.parse(contents.slice(tailStart)) as unknown)
+    await appendFile(path, "\n", { encoding: "utf8", mode: 0o600 })
+  } catch {
+    await truncate(path, tailStart)
+  }
 }
 
 /** Normalize persisted state without retaining unknown fields. */
@@ -83,15 +107,24 @@ function normalizeState(
 ): EmailProcessingState {
   if (!isRecord(value)) return emptyState()
   const retryMessageIds = stringArray(value.retryMessageIds)
+  const retryOriginalLabelIds = stringArrayRecord(value.retryOriginalLabelIds)
   const archiveReversalSenders = stringArray(value.archiveReversalSenders).map(address =>
     address.toLowerCase(),
   )
-  return {
+  const state: EmailProcessingState = {
     lastHistoryId: nullableString(value.lastHistoryId),
     lastCompletedAt: nullableString(value.lastCompletedAt),
     retryMessageIds: [...new Set(retryMessageIds)],
     archiveReversalSenders: [...new Set(archiveReversalSenders)].sort(),
   }
+  const retainedRetryLabels = Object.fromEntries(
+    Object.entries(retryOriginalLabelIds).filter(([messageId]) =>
+      state.retryMessageIds.includes(messageId),
+    ),
+  )
+  return Object.keys(retainedRetryLabels).length > 0
+    ? { ...state, retryOriginalLabelIds: retainedRetryLabels }
+    : state
 }
 
 /** Parse a complete decision record without admitting body-like unknown fields. */
@@ -164,6 +197,20 @@ function stringArray(
   value: unknown,
 ): string[] {
   return Array.isArray(value) ? value.filter(item => typeof item === "string") : []
+}
+
+/** Keep string-array entries from an unknown record. */
+function stringArrayRecord(
+  /** Unknown decoded value. */
+  value: unknown,
+): Record<string, string[]> {
+  if (!isRecord(value)) return {}
+  return Object.fromEntries(
+    Object.entries(value).flatMap(([key, item]) => {
+      const strings = stringArray(item)
+      return strings.length > 0 ? [[key, [...new Set(strings)]]] : []
+    }),
+  )
 }
 
 /** Check whether a decoded value is a non-array object. */

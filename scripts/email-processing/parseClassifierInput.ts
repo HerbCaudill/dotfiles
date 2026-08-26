@@ -30,6 +30,12 @@ export function parseClassifierInput(
         ),
       )
     })
+    candidate.promotionCorrections.forEach((correction, correctionIndex) =>
+      validateMailbox(
+        correction.sender,
+        `$.candidates[${index}].promotionCorrections[${correctionIndex}].sender`,
+      ),
+    )
   }
 
   return input

@@ -8,6 +8,8 @@ export type EmailProcessingState = {
   lastCompletedAt: string | null
   /** Message IDs that need another processing attempt. */
   retryMessageIds: string[]
+  /** Original labels needed to replay a partially completed retry idempotently. */
+  retryOriginalLabelIds?: Record<string, string[]>
   /** Exact sender addresses protected after archive reversals. */
   archiveReversalSenders: string[]
 }

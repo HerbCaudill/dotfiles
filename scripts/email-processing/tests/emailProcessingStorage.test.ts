@@ -37,6 +37,10 @@ describe("email processing storage", () => {
       lastHistoryId: "105",
       lastCompletedAt: "2026-08-26T12:00:00.000Z",
       retryMessageIds: ["message-1", "message-1", "message-2"],
+      retryOriginalLabelIds: {
+        "message-1": ["INBOX", "CATEGORY_PROMOTIONS"],
+        orphan: ["INBOX"],
+      },
       archiveReversalSenders: ["PERSON@example.com", "person@example.com"],
     }
 
@@ -46,6 +50,9 @@ describe("email processing storage", () => {
       lastHistoryId: "105",
       lastCompletedAt: "2026-08-26T12:00:00.000Z",
       retryMessageIds: ["message-1", "message-2"],
+      retryOriginalLabelIds: {
+        "message-1": ["INBOX", "CATEGORY_PROMOTIONS"],
+      },
       archiveReversalSenders: ["person@example.com"],
     })
     expect((await stat(path)).mode & 0o777).toBe(0o600)
@@ -78,6 +85,16 @@ describe("email processing storage", () => {
         reason: "Secret token [REDACTED]",
         policySignals: ["account-[REDACTED]"],
       },
+    ])
+    await appendEmailDecision({ ...decision, messageId: "message-2" }, path)
+    await expect(loadEmailDecisionLog(path)).resolves.toEqual([
+      {
+        ...decision,
+        subject: "Login code [REDACTED]",
+        reason: "Secret token [REDACTED]",
+        policySignals: ["account-[REDACTED]"],
+      },
+      { ...decision, messageId: "message-2" },
     ])
     expect((await stat(path)).mode & 0o777).toBe(0o600)
   })
@@ -123,6 +140,49 @@ describe("email processing storage", () => {
     expect(contents).not.toContain("private snippet")
     expect(contents).not.toContain("private access token")
     await expect(loadEmailDecisionLog(path)).resolves.toEqual([createDecision()])
+  })
+
+  it("redacts medical details, grouped financial numbers, and alphanumeric authentication codes", async () => {
+    const directory = await createTemporaryDirectory()
+    const path = join(directory, "decisions.jsonl")
+
+    await appendEmailDecision(
+      {
+        ...createDecision(),
+        classification: "medical-action",
+        subject: "Your result is Stage II positive",
+        reason: "The result requires follow-up next week.",
+      },
+      path,
+    )
+    await appendEmailDecision(
+      {
+        ...createDecision(),
+        messageId: "message-2",
+        subject: "Account number 123 456 789 changed",
+        reason: "Verification code AB12-CD34 expires soon.",
+      },
+      path,
+    )
+    await appendEmailDecision(
+      {
+        ...createDecision(),
+        messageId: "message-3",
+        classification: "promote-error",
+        subject: "Your A1C is 7.2",
+        reason: "Gmail mutation failed",
+        policySignals: ["medical-action", "retry"],
+      },
+      path,
+    )
+
+    const contents = await readFile(path, "utf8")
+    expect(contents).not.toContain("Stage II positive")
+    expect(contents).not.toContain("follow-up next week")
+    expect(contents).not.toContain("123 456 789")
+    expect(contents).not.toContain("AB12-CD34")
+    expect(contents).not.toContain("A1C is 7.2")
+    expect(contents.match(/\[REDACTED/g)?.length).toBeGreaterThanOrEqual(5)
   })
 })
 

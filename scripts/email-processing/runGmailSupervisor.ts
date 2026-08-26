@@ -1,6 +1,11 @@
 import { EMAIL_PROCESSING_ACCOUNT } from "./constants.ts"
 import { sanitizeDecisionLogEntry } from "./sanitizeDecisionLogEntry.ts"
-import type { ClassifierCandidate, NormalizedMailbox, NormalizedThreadMessage } from "./types.ts"
+import type {
+  ClassifierCandidate,
+  NormalizedMailbox,
+  NormalizedThreadMessage,
+  PromotionCorrectionEvidence,
+} from "./types.ts"
 import type {
   DecisionLogEntry,
   EmailProcessingState,
@@ -27,6 +32,8 @@ export async function runGmailSupervisor(
   const { discovered, labelChanges } = await discoverWork(now, state, dependencies)
   const result = emptyResult()
   const archiveReversalSenders = new Set(state.archiveReversalSenders)
+  const protectedCorrespondentSenders = getProtectedCorrespondentSenders(priorDecisions)
+  const promotionCorrectionEntries = priorDecisions.filter(isPromotionCorrectionEntry).slice(-20)
   const correctedMessageIds = await recordCorrections(
     timestamp,
     labelChanges,
@@ -35,46 +42,55 @@ export async function runGmailSupervisor(
     dependencies,
   )
   result.corrected = correctedMessageIds.size
-  const processedMessageIds = new Set(priorDecisions.map(entry => entry.messageId))
+  const completedMessageIds = getCompletedMessageIds(priorDecisions)
+  const retryMessageIds = new Set([
+    ...state.retryMessageIds.filter(messageId => !completedMessageIds.has(messageId)),
+    ...getLoggedRetryMessageIds(priorDecisions),
+  ])
   const candidateIds = unique([
     ...discovered.map(message => message.messageId),
-    ...state.retryMessageIds,
-  ]).filter(
-    messageId =>
-      !correctedMessageIds.has(messageId) &&
-      (!processedMessageIds.has(messageId) || state.retryMessageIds.includes(messageId)),
-  )
+    ...retryMessageIds,
+  ]).filter(messageId => !correctedMessageIds.has(messageId) && !completedMessageIds.has(messageId))
   const candidates: ClassifierCandidate[] = []
   const messagesById = new Map<string, GmailMessage>()
   const threadsById = new Map<string, GmailThread>()
-  const retryMessageIds = new Set(state.retryMessageIds)
-  const retryOriginalLabels = getRetryOriginalLabels(priorDecisions, retryMessageIds)
+  const retryOriginalLabels = getRetryOriginalLabels(state, priorDecisions, retryMessageIds)
+  const candidateIdSet = new Set(candidateIds)
+  const plannedThreadIds = new Set<string>()
 
   for (const messageId of candidateIds) {
+    let inspectedMessageId = messageId
     try {
       const message = await dependencies.gmail.getMessage(messageId)
+      if (plannedThreadIds.has(message.threadId)) continue
       if (!isProcessable(message, retryMessageIds.has(messageId))) continue
       const thread = await dependencies.gmail.getThread(message.threadId)
+      const targetMessage = findNewestThreadCandidate(thread, candidateIdSet, retryMessageIds)
+      if (!targetMessage) continue
+      inspectedMessageId = targetMessage.id
+      plannedThreadIds.add(thread.id)
       const candidate = await normalizeCandidate(
-        message,
+        targetMessage,
         thread,
         { ...state, archiveReversalSenders: [...archiveReversalSenders] },
         dependencies,
-        retryOriginalLabels.get(messageId),
+        retryOriginalLabels.get(targetMessage.id),
+        protectedCorrespondentSenders,
+        promotionCorrectionEntries,
       )
       candidates.push(candidate)
       messagesById.set(
-        messageId,
-        retryOriginalLabels.has(messageId)
-          ? { ...message, labelIds: retryOriginalLabels.get(messageId) }
-          : message,
+        targetMessage.id,
+        retryOriginalLabels.has(targetMessage.id)
+          ? { ...targetMessage, labelIds: retryOriginalLabels.get(targetMessage.id) }
+          : targetMessage,
       )
-      threadsById.set(messageId, thread)
+      threadsById.set(targetMessage.id, thread)
     } catch {
-      retryMessageIds.add(messageId)
+      retryMessageIds.add(inspectedMessageId)
       await dependencies.appendDecision(
         sanitizeDecisionLogEntry(
-          createErrorLogEntry(timestamp, messageId, "", "Candidate inspection failed"),
+          createErrorLogEntry(timestamp, inspectedMessageId, "", "Candidate inspection failed"),
         ),
       )
     }
@@ -111,6 +127,17 @@ export async function runGmailSupervisor(
       const message = messagesById.get(decision.messageId)!
       const thread = threadsById.get(decision.messageId)!
       if (decision.mutation) {
+        retryMessageIds.add(decision.messageId)
+        retryOriginalLabels.set(decision.messageId, [...(message.labelIds ?? [])])
+        await dependencies.saveState(
+          createStateSnapshot(
+            state.lastHistoryId,
+            state.lastCompletedAt,
+            retryMessageIds,
+            archiveReversalSenders,
+            retryOriginalLabels,
+          ),
+        )
         try {
           if (!threadHasMutation(thread, decision.mutation)) {
             await dependencies.gmail.modifyThreadLabels(decision.threadId, decision.mutation)
@@ -130,25 +157,86 @@ export async function runGmailSupervisor(
         }
       }
 
-      await dependencies.appendDecision(
-        sanitizeDecisionLogEntry(toDecisionLogEntry(timestamp, message, candidates, decision)),
-      )
+      try {
+        await dependencies.appendDecision(
+          sanitizeDecisionLogEntry(toDecisionLogEntry(timestamp, message, candidates, decision)),
+        )
+      } catch {
+        retryMessageIds.add(decision.messageId)
+        retryOriginalLabels.set(decision.messageId, [...(message.labelIds ?? [])])
+        await dependencies.saveState(
+          createStateSnapshot(
+            state.lastHistoryId,
+            state.lastCompletedAt,
+            retryMessageIds,
+            archiveReversalSenders,
+            retryOriginalLabels,
+          ),
+        )
+        continue
+      }
       retryMessageIds.delete(decision.messageId)
+      retryOriginalLabels.delete(decision.messageId)
       if (decision.decision === "archive") result.archived += 1
       if (decision.decision === "promote") result.promoted += 1
       if (decision.decision === "none") result.unchanged += 1
     }
   }
 
-  const nextState: EmailProcessingState = {
-    lastHistoryId: profile.historyId,
-    lastCompletedAt: timestamp,
-    retryMessageIds: [...retryMessageIds],
-    archiveReversalSenders: [...archiveReversalSenders].sort(),
-  }
+  const nextState = createStateSnapshot(
+    profile.historyId,
+    timestamp,
+    retryMessageIds,
+    archiveReversalSenders,
+    retryOriginalLabels,
+  )
   await dependencies.saveState(nextState)
   result.retried = retryMessageIds.size
   return result
+}
+
+/** Return message IDs whose latest durable record requires another attempt. */
+function getLoggedRetryMessageIds(
+  /** Prior sanitized decisions in append order. */
+  priorDecisions: DecisionLogEntry[],
+): string[] {
+  const latestByMessageId = new Map<string, DecisionLogEntry>()
+  for (const entry of priorDecisions) latestByMessageId.set(entry.messageId, entry)
+  return [...latestByMessageId.values()]
+    .filter(entry => entry.decision === "error")
+    .map(entry => entry.messageId)
+}
+
+/** Return message IDs whose latest durable log entry represents completed processing. */
+function getCompletedMessageIds(
+  /** Prior sanitized decisions in append order. */
+  priorDecisions: DecisionLogEntry[],
+): Set<string> {
+  const latestByMessageId = new Map<string, DecisionLogEntry>()
+  for (const entry of priorDecisions) latestByMessageId.set(entry.messageId, entry)
+  return new Set(
+    [...latestByMessageId.values()]
+      .filter(entry => entry.decision !== "error")
+      .map(entry => entry.messageId),
+  )
+}
+
+/** Select the newest eligible candidate represented in one Gmail thread. */
+function findNewestThreadCandidate(
+  /** Complete Gmail thread in API chronology. */
+  thread: GmailThread,
+  /** Message IDs eligible for this run. */
+  candidateMessageIds: Set<string>,
+  /** Message IDs that remain eligible outside Inbox. */
+  retryMessageIds: Set<string>,
+): GmailMessage | undefined {
+  return [...thread.messages]
+    .reverse()
+    .find(
+      message =>
+        candidateMessageIds.has(message.id) &&
+        isProcessable(message, retryMessageIds.has(message.id)),
+    )
 }
 
 /** Discover new messages and label changes, with an expired-history fallback. */
@@ -287,6 +375,10 @@ async function normalizeCandidate(
   dependencies: GmailSupervisorDependencies,
   /** Original category labels recovered for an idempotent retry. */
   originalLabelIds?: string[],
+  /** Exact senders established as protected correspondents by prior decisions. */
+  protectedCorrespondentSenders = new Set<string>(),
+  /** Recent sanitized promotion-correction log entries. */
+  promotionCorrectionEntries: DecisionLogEntry[] = [],
 ): Promise<ClassifierCandidate> {
   const sender = parseMailbox(getHeader(message, "From"))
   const recipients = parseMailboxes([
@@ -317,7 +409,7 @@ async function normalizeCandidate(
       devResultsSender: sender.address.endsWith("@devresults.com"),
       priorReply,
       archiveReversal: state.archiveReversalSenders.includes(sender.address),
-      protectedCorrespondent: false,
+      protectedCorrespondent: protectedCorrespondentSenders.has(sender.address),
       activeConversation: herbMessages.length > 0,
       requestedWork: herbMessages.some(message => herbRequestedWork(message.body)),
       herbInitiated: normalizedThread[0]?.sender.address === EMAIL_PROCESSING_ACCOUNT,
@@ -331,17 +423,69 @@ async function normalizeCandidate(
       ),
       requiresHerbAction: requiresHerbAction(subject, body),
     },
+    promotionCorrections: promotionCorrectionEntries.map(entry =>
+      toPromotionCorrectionEvidence(entry, sender.address),
+    ),
   }
+}
+
+/** Check whether a log entry carries one supported promotion correction. */
+function isPromotionCorrectionEntry(
+  /** Prior sanitized decision. */
+  entry: DecisionLogEntry,
+): boolean {
+  return (
+    entry.decision === "correction" &&
+    (entry.classification === "promotion-reversed" || entry.classification === "promotion-missed")
+  )
+}
+
+/** Convert a sanitized correction log entry into bounded inert classifier evidence. */
+function toPromotionCorrectionEvidence(
+  /** Prior sanitized promotion correction. */
+  entry: DecisionLogEntry,
+  /** Exact current candidate sender address. */
+  candidateSenderAddress: string,
+): PromotionCorrectionEvidence {
+  const sender = parseMailbox(entry.sender)
+  return {
+    timestamp: entry.timestamp,
+    correction: entry.classification as PromotionCorrectionEvidence["correction"],
+    sender,
+    subject: entry.subject,
+    exactSender: sender.address === candidateSenderAddress,
+  }
+}
+
+/** Derive exact protected correspondents from stable prior personal and medical decisions. */
+function getProtectedCorrespondentSenders(
+  /** Prior sanitized decisions. */
+  priorDecisions: DecisionLogEntry[],
+): Set<string> {
+  return new Set(
+    priorDecisions
+      .filter(
+        entry =>
+          entry.decision === "promote" &&
+          PROTECTED_CORRESPONDENT_CLASSIFICATIONS.has(entry.classification),
+      )
+      .map(entry => extractLoggedAddress(entry.sender))
+      .filter(Boolean),
+  )
 }
 
 /** Recover original labels from the latest logged failure for each retry. */
 function getRetryOriginalLabels(
+  /** Durable state, including write-ahead retry labels when present. */
+  state: EmailProcessingState,
   /** Prior sanitized decisions in append order. */
   priorDecisions: DecisionLogEntry[],
   /** Message IDs in durable retry state. */
   retryMessageIds: Set<string>,
 ): Map<string, string[]> {
-  const labelsByMessageId = new Map<string, string[]>()
+  const labelsByMessageId = new Map<string, string[]>(
+    Object.entries(state.retryOriginalLabelIds ?? {}),
+  )
   for (const entry of priorDecisions) {
     if (
       retryMessageIds.has(entry.messageId) &&
@@ -352,6 +496,33 @@ function getRetryOriginalLabels(
     }
   }
   return labelsByMessageId
+}
+
+/** Build one normalized durable state snapshot without empty optional retry metadata. */
+function createStateSnapshot(
+  /** Gmail history ID safe for this checkpoint. */
+  lastHistoryId: string | null,
+  /** Completion timestamp safe for this checkpoint. */
+  lastCompletedAt: string | null,
+  /** Message IDs requiring another attempt. */
+  retryMessageIds: Set<string>,
+  /** Exact archive-reversal senders. */
+  archiveReversalSenders: Set<string>,
+  /** Original labels needed for idempotent retries. */
+  retryOriginalLabels: Map<string, string[]>,
+): EmailProcessingState {
+  const state: EmailProcessingState = {
+    lastHistoryId,
+    lastCompletedAt,
+    retryMessageIds: [...retryMessageIds],
+    archiveReversalSenders: [...archiveReversalSenders].sort(),
+  }
+  const retainedRetryLabels = Object.fromEntries(
+    [...retryOriginalLabels].filter(([messageId]) => retryMessageIds.has(messageId)),
+  )
+  return Object.keys(retainedRetryLabels).length > 0
+    ? { ...state, retryOriginalLabelIds: retainedRetryLabels }
+    : state
 }
 
 /** Identify an explicit request Herb made in earlier thread context. */
@@ -457,7 +628,7 @@ function toErrorLogEntry(
       candidate,
     ),
     classification: `${decision.decision}-error`,
-    policySignals: [...decision.policySignals, "retry"],
+    policySignals: [decision.classification, ...decision.policySignals, "retry"],
   }
 }
 
@@ -503,7 +674,10 @@ function threadHasMutation(
     thread.messages.length > 0 &&
     thread.messages.every(message => {
       const labels = new Set(message.labelIds ?? [])
+      const retainsInbox =
+        !mutation.addLabelIds.includes("CATEGORY_PERSONAL") || labels.has("INBOX")
       return (
+        retainsInbox &&
         mutation.addLabelIds.every(label => labels.has(label)) &&
         mutation.removeLabelIds.every(label => !labels.has(label))
       )
@@ -664,3 +838,6 @@ const NON_PRIMARY_CATEGORY_LABELS = new Set([
   "CATEGORY_SOCIAL",
   "CATEGORY_FORUMS",
 ])
+
+/** Prior promotion categories that establish an exact protected correspondent. */
+const PROTECTED_CORRESPONDENT_CLASSIFICATIONS = new Set(["personal-message", "medical-action"])
