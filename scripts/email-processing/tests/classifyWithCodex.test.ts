@@ -61,6 +61,7 @@ describe("classifyWithCodex", () => {
     ).resolves.toEqual(validNoneOutput)
 
     expect(requests).toHaveLength(4)
+    expect(requests.slice(0, 3).map(request => request.timeoutMs)).toEqual([30_000, 30_000, 30_000])
     expect(requests[2].args).toContain("email-classifier")
     expect(requests[2].args).toContain("sandbox")
     const classifierRequest = requests[3]
