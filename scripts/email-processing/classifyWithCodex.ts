@@ -4,6 +4,7 @@ import { createServer, type Socket } from "node:net"
 import { homedir, tmpdir } from "node:os"
 import { delimiter, join } from "node:path"
 import { classifierOutputJsonSchema } from "./classifierOutputJsonSchema.ts"
+import { MAX_CLASSIFIER_INPUT_BYTES } from "./constants.ts"
 import { parseClassifierInput } from "./parseClassifierInput.ts"
 import { parseClassifierOutput } from "./parseClassifierOutput.ts"
 import { runBoundedProcess } from "./runBoundedProcess.ts"
@@ -322,7 +323,6 @@ function createIsolatedEnvironment(
 
 const CODEX_PROFILE_NAME = "email-classifier"
 const MINIMUM_CODEX_VERSION = [0, 149, 1] as const
-const MAX_CLASSIFIER_INPUT_BYTES = 1_000_000
 // Codex mirrors stdin to diagnostic output, so this cap includes the bounded input plus its result.
 const MAX_CLASSIFIER_OUTPUT_BYTES = MAX_CLASSIFIER_INPUT_BYTES + 262_144
 const MAX_STARTUP_OUTPUT_BYTES = 16_384

@@ -1,4 +1,8 @@
-import { EMAIL_PROCESSING_ACCOUNT, PROMOTABLE_CATEGORIES } from "./constants.ts"
+import {
+  EMAIL_PROCESSING_ACCOUNT,
+  MAX_CLASSIFIER_CANDIDATES,
+  PROMOTABLE_CATEGORIES,
+} from "./constants.ts"
 import type { JsonSchema } from "./types.ts"
 
 /** Strict JSON Schema for normalized inert classifier input. */
@@ -10,7 +14,7 @@ export const classifierInputJsonSchema = {
     account: { const: EMAIL_PROCESSING_ACCOUNT },
     candidates: {
       type: "array",
-      maxItems: 100,
+      maxItems: MAX_CLASSIFIER_CANDIDATES,
       items: {
         type: "object",
         additionalProperties: false,

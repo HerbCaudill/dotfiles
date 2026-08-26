@@ -82,18 +82,18 @@ async function repairJsonlTail(
   /** Decision-log path. */
   path: string,
 ): Promise<void> {
-  let contents: string
+  let contents: Buffer
   try {
-    contents = await readFile(path, "utf8")
+    contents = await readFile(path)
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return
     throw error
   }
-  if (!contents || contents.endsWith("\n")) return
+  if (contents.length === 0 || contents.at(-1) === NEWLINE_BYTE) return
 
-  const tailStart = contents.lastIndexOf("\n") + 1
+  const tailStart = contents.lastIndexOf(NEWLINE_BYTE) + 1
   try {
-    parseDecisionLogEntry(JSON.parse(contents.slice(tailStart)) as unknown)
+    parseDecisionLogEntry(JSON.parse(contents.subarray(tailStart).toString("utf8")) as unknown)
     await appendFile(path, "\n", { encoding: "utf8", mode: 0o600 })
   } catch {
     await truncate(path, tailStart)
@@ -223,3 +223,6 @@ const DECISIONS = new Set(["archive", "promote", "none", "correction", "error"])
 
 /** Allowed qualitative certainty values. */
 const CONFIDENCE_LEVELS = new Set(["high", "medium", "low"])
+
+/** UTF-8 byte used to delimit JSONL records. */
+const NEWLINE_BYTE = 0x0a

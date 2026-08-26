@@ -1,4 +1,9 @@
-import { EMAIL_PROCESSING_ACCOUNT } from "./constants.ts"
+import {
+  EMAIL_PROCESSING_ACCOUNT,
+  MAX_ACTIONS_PER_RUN,
+  MAX_CLASSIFIER_CANDIDATES,
+  MAX_CLASSIFIER_INPUT_BYTES,
+} from "./constants.ts"
 import { sanitizeDecisionLogEntry } from "./sanitizeDecisionLogEntry.ts"
 import type {
   ClassifierCandidate,
@@ -31,9 +36,8 @@ export async function runGmailSupervisor(
   ])
   const { discovered, labelChanges } = await discoverWork(now, state, dependencies)
   const result = emptyResult()
-  const archiveReversalSenders = new Set(state.archiveReversalSenders)
+  const archiveReversalSenders = getArchiveReversalSenders(state, priorDecisions)
   const protectedCorrespondentSenders = getProtectedCorrespondentSenders(priorDecisions)
-  const promotionCorrectionEntries = priorDecisions.filter(isPromotionCorrectionEntry).slice(-20)
   const correctedMessageIds = await recordCorrections(
     timestamp,
     labelChanges,
@@ -42,10 +46,16 @@ export async function runGmailSupervisor(
     dependencies,
   )
   result.corrected = correctedMessageIds.size
+  const promotionCorrectionEntries = priorDecisions.filter(isPromotionCorrectionEntry).slice(-20)
   const completedMessageIds = getCompletedMessageIds(priorDecisions)
+  const supersededRetryMessageIds = getSupersededRetryMessageIds(priorDecisions)
   const retryMessageIds = new Set([
-    ...state.retryMessageIds.filter(messageId => !completedMessageIds.has(messageId)),
-    ...getLoggedRetryMessageIds(priorDecisions),
+    ...state.retryMessageIds.filter(
+      messageId => !completedMessageIds.has(messageId) && !supersededRetryMessageIds.has(messageId),
+    ),
+    ...getLoggedRetryMessageIds(priorDecisions).filter(
+      messageId => !supersededRetryMessageIds.has(messageId),
+    ),
   ])
   const candidateIds = unique([
     ...discovered.map(message => message.messageId),
@@ -57,6 +67,7 @@ export async function runGmailSupervisor(
   const retryOriginalLabels = getRetryOriginalLabels(state, priorDecisions, retryMessageIds)
   const candidateIdSet = new Set(candidateIds)
   const plannedThreadIds = new Set<string>()
+  const supersededRetriesByMessageId = new Map<string, string[]>()
 
   for (const messageId of candidateIds) {
     let inspectedMessageId = messageId
@@ -69,6 +80,16 @@ export async function runGmailSupervisor(
       if (!targetMessage) continue
       inspectedMessageId = targetMessage.id
       plannedThreadIds.add(thread.id)
+      const targetIndex = thread.messages.findIndex(
+        threadMessage => threadMessage.id === targetMessage.id,
+      )
+      supersededRetriesByMessageId.set(
+        targetMessage.id,
+        thread.messages
+          .slice(0, targetIndex)
+          .map(threadMessage => threadMessage.id)
+          .filter(threadMessageId => retryMessageIds.has(threadMessageId)),
+      )
       const candidate = await normalizeCandidate(
         targetMessage,
         thread,
@@ -98,29 +119,32 @@ export async function runGmailSupervisor(
 
   if (candidates.length > 0) {
     let decisions: ReturnType<typeof validateClassifications> = []
-    try {
-      const output = await dependencies.classify({
-        account: EMAIL_PROCESSING_ACCOUNT,
-        candidates,
-      })
-      decisions = validateClassifications({ account: EMAIL_PROCESSING_ACCOUNT, candidates }, output)
-    } catch {
-      for (const candidate of candidates) {
-        retryMessageIds.add(candidate.messageId)
-        const message = messagesById.get(candidate.messageId)!
-        await dependencies.appendDecision(
-          sanitizeDecisionLogEntry(
-            createErrorLogEntry(
-              timestamp,
-              candidate.messageId,
-              candidate.threadId,
-              "Classifier failed",
-              message,
-              candidate,
-            ),
-          ),
+    for (const batch of createClassifierBatches(candidates)) {
+      try {
+        const input = { account: EMAIL_PROCESSING_ACCOUNT, candidates: batch }
+        const output = await dependencies.classify(input)
+        decisions.push(...validateClassifications(input, output))
+      } catch {
+        await recordClassifierFailures(
+          timestamp,
+          batch,
+          messagesById,
+          retryMessageIds,
+          dependencies,
         )
       }
+    }
+    if (decisions.filter(decision => decision.decision !== "none").length > MAX_ACTIONS_PER_RUN) {
+      await recordClassifierFailures(
+        timestamp,
+        decisions.map(
+          decision => candidates.find(candidate => candidate.messageId === decision.messageId)!,
+        ),
+        messagesById,
+        retryMessageIds,
+        dependencies,
+      )
+      decisions = []
     }
 
     for (const decision of decisions) {
@@ -163,7 +187,11 @@ export async function runGmailSupervisor(
         )
       } catch {
         retryMessageIds.add(decision.messageId)
-        retryOriginalLabels.set(decision.messageId, [...(message.labelIds ?? [])])
+        if (decision.mutation) {
+          retryOriginalLabels.set(decision.messageId, [...(message.labelIds ?? [])])
+        } else {
+          retryOriginalLabels.delete(decision.messageId)
+        }
         await dependencies.saveState(
           createStateSnapshot(
             state.lastHistoryId,
@@ -177,6 +205,11 @@ export async function runGmailSupervisor(
       }
       retryMessageIds.delete(decision.messageId)
       retryOriginalLabels.delete(decision.messageId)
+      for (const supersededMessageId of supersededRetriesByMessageId.get(decision.messageId) ??
+        []) {
+        retryMessageIds.delete(supersededMessageId)
+        retryOriginalLabels.delete(supersededMessageId)
+      }
       if (decision.decision === "archive") result.archived += 1
       if (decision.decision === "promote") result.promoted += 1
       if (decision.decision === "none") result.unchanged += 1
@@ -195,6 +228,87 @@ export async function runGmailSupervisor(
   return result
 }
 
+/** Record classifier failures for one bounded batch without blocking later batches. */
+async function recordClassifierFailures(
+  /** Run timestamp. */
+  timestamp: string,
+  /** Candidates whose classifier call failed validation or execution. */
+  candidates: ClassifierCandidate[],
+  /** Fetched Gmail messages keyed by candidate ID. */
+  messagesById: ReadonlyMap<string, GmailMessage>,
+  /** Mutable retry IDs for this run. */
+  retryMessageIds: Set<string>,
+  /** Supervisor boundaries used for durable logging. */
+  dependencies: GmailSupervisorDependencies,
+): Promise<void> {
+  for (const candidate of candidates) {
+    retryMessageIds.add(candidate.messageId)
+    await dependencies.appendDecision(
+      sanitizeDecisionLogEntry(
+        createErrorLogEntry(
+          timestamp,
+          candidate.messageId,
+          candidate.threadId,
+          "Classifier failed",
+          messagesById.get(candidate.messageId),
+          candidate,
+        ),
+      ),
+    )
+  }
+}
+
+/** Split candidates into schema- and byte-bounded classifier inputs. */
+function createClassifierBatches(
+  /** All candidates normalized for this supervisor run. */
+  candidates: ClassifierCandidate[],
+): ClassifierCandidate[][] {
+  const batches: ClassifierCandidate[][] = []
+  let currentBatch: ClassifierCandidate[] = []
+
+  for (const candidate of candidates.map(fitCandidateToClassifierLimit)) {
+    const nextBatch = [...currentBatch, candidate]
+    if (
+      currentBatch.length > 0 &&
+      (nextBatch.length > MAX_CLASSIFIER_CANDIDATES ||
+        classifierInputBytes(nextBatch) > MAX_CLASSIFIER_INPUT_BYTES)
+    ) {
+      batches.push(currentBatch)
+      currentBatch = [candidate]
+    } else {
+      currentBatch = nextBatch
+    }
+  }
+  if (currentBatch.length > 0) batches.push(currentBatch)
+  return batches
+}
+
+/** Drop only oldest thread context until one candidate fits the classifier byte boundary. */
+function fitCandidateToClassifierLimit(
+  /** Candidate whose current message must remain complete. */
+  candidate: ClassifierCandidate,
+): ClassifierCandidate {
+  let boundedCandidate = candidate
+  while (classifierInputBytes([boundedCandidate]) > MAX_CLASSIFIER_INPUT_BYTES) {
+    if (boundedCandidate.thread.length === 0) {
+      throw new Error(`Classifier candidate exceeds byte limit: ${candidate.messageId}`)
+    }
+    boundedCandidate = { ...boundedCandidate, thread: boundedCandidate.thread.slice(1) }
+  }
+  return boundedCandidate
+}
+
+/** Count UTF-8 bytes for one exact classifier input batch. */
+function classifierInputBytes(
+  /** Candidate batch. */
+  candidates: ClassifierCandidate[],
+): number {
+  return Buffer.byteLength(
+    JSON.stringify({ account: EMAIL_PROCESSING_ACCOUNT, candidates }),
+    "utf8",
+  )
+}
+
 /** Return message IDs whose latest durable record requires another attempt. */
 function getLoggedRetryMessageIds(
   /** Prior sanitized decisions in append order. */
@@ -205,6 +319,25 @@ function getLoggedRetryMessageIds(
   return [...latestByMessageId.values()]
     .filter(entry => entry.decision === "error")
     .map(entry => entry.messageId)
+}
+
+/** Return retry errors superseded by a later completed outcome in the same thread. */
+function getSupersededRetryMessageIds(
+  /** Prior sanitized decisions in append order. */
+  priorDecisions: DecisionLogEntry[],
+): Set<string> {
+  const latestCompletedIndexByThreadId = new Map<string, number>()
+  priorDecisions.forEach((entry, index) => {
+    if (entry.decision !== "error") latestCompletedIndexByThreadId.set(entry.threadId, index)
+  })
+  return new Set(
+    priorDecisions.flatMap((entry, index) =>
+      entry.decision === "error" &&
+      (latestCompletedIndexByThreadId.get(entry.threadId) ?? -1) > index
+        ? [entry.messageId]
+        : [],
+    ),
+  )
 }
 
 /** Return message IDs whose latest durable log entry represents completed processing. */
@@ -304,17 +437,17 @@ async function recordCorrections(
       const senderAddress = extractLoggedAddress(prior.sender)
       if (senderAddress) archiveReversalSenders.add(senderAddress)
     }
-    await dependencies.appendDecision(
-      sanitizeDecisionLogEntry({
-        ...prior,
-        timestamp,
-        decision: "correction",
-        classification,
-        confidence: "high",
-        reason: correctionReason(classification),
-        policySignals: [classification],
-      }),
-    )
+    const correction = sanitizeDecisionLogEntry({
+      ...prior,
+      timestamp,
+      decision: "correction",
+      classification,
+      confidence: "high",
+      reason: correctionReason(classification),
+      policySignals: [classification],
+    })
+    await dependencies.appendDecision(correction)
+    priorDecisions.push(correction)
     recorded.add(change.messageId)
   }
 
@@ -395,6 +528,7 @@ async function normalizeCandidate(
   )
   const subject = getHeader(message, "Subject")
   const body = getMeaningfulBody(message)
+  const requestedWork = herbMessages.some(message => herbRequestedWork(message.body))
 
   return {
     messageId: message.id,
@@ -409,9 +543,12 @@ async function normalizeCandidate(
       devResultsSender: sender.address.endsWith("@devresults.com"),
       priorReply,
       archiveReversal: state.archiveReversalSenders.includes(sender.address),
-      protectedCorrespondent: protectedCorrespondentSenders.has(sender.address),
+      protectedCorrespondent:
+        protectedCorrespondentSenders.has(sender.address) ||
+        requestedWork ||
+        hasProtectedCorrespondentSignals(subject, body),
       activeConversation: herbMessages.length > 0,
-      requestedWork: herbMessages.some(message => herbRequestedWork(message.body)),
+      requestedWork,
       herbInitiated: normalizedThread[0]?.sender.address === EMAIL_PROCESSING_ACCOUNT,
     },
     delegatedCustomer: {
@@ -474,6 +611,24 @@ function getProtectedCorrespondentSenders(
   )
 }
 
+/** Rebuild permanent exact-sender archive reversals from both state and durable corrections. */
+function getArchiveReversalSenders(
+  /** Last successfully persisted state. */
+  state: EmailProcessingState,
+  /** Durable sanitized decision log. */
+  priorDecisions: DecisionLogEntry[],
+): Set<string> {
+  return new Set([
+    ...state.archiveReversalSenders,
+    ...priorDecisions
+      .filter(
+        entry => entry.decision === "correction" && entry.classification === "archive-reversed",
+      )
+      .map(entry => extractLoggedAddress(entry.sender))
+      .filter(Boolean),
+  ])
+}
+
 /** Recover original labels from the latest logged failure for each retry. */
 function getRetryOriginalLabels(
   /** Durable state, including write-ahead retry labels when present. */
@@ -490,12 +645,24 @@ function getRetryOriginalLabels(
     if (
       retryMessageIds.has(entry.messageId) &&
       entry.decision === "error" &&
+      MUTATION_ERROR_CLASSIFICATIONS.has(entry.classification) &&
       entry.originalLabels.length > 0
     ) {
       labelsByMessageId.set(entry.messageId, [...entry.originalLabels])
     }
   }
   return labelsByMessageId
+}
+
+/** Identify explicit current-message evidence of a protected personal or medical relationship. */
+function hasProtectedCorrespondentSignals(
+  /** Message subject. */
+  subject: string,
+  /** Complete meaningful body. */
+  body: string,
+): boolean {
+  const content = `${subject}\n${body}`
+  return PERSONAL_RELATIONSHIP_PATTERN.test(content) || MEDICAL_PROVIDER_PATTERN.test(content)
 }
 
 /** Build one normalized durable state snapshot without empty optional retry metadata. */
@@ -675,7 +842,9 @@ function threadHasMutation(
     thread.messages.every(message => {
       const labels = new Set(message.labelIds ?? [])
       const retainsInbox =
-        !mutation.addLabelIds.includes("CATEGORY_PERSONAL") || labels.has("INBOX")
+        !mutation.addLabelIds.includes("CATEGORY_PERSONAL") ||
+        labels.has("INBOX") ||
+        labels.has("SENT")
       return (
         retainsInbox &&
         mutation.addLabelIds.every(label => labels.has(label)) &&
@@ -841,3 +1010,14 @@ const NON_PRIMARY_CATEGORY_LABELS = new Set([
 
 /** Prior promotion categories that establish an exact protected correspondent. */
 const PROTECTED_CORRESPONDENT_CLASSIFICATIONS = new Set(["personal-message", "medical-action"])
+
+/** Mutation failures whose durable log preserves pre-mutation labels for idempotent replay. */
+const MUTATION_ERROR_CLASSIFICATIONS = new Set(["archive-error", "promote-error"])
+
+/** Explicit relationship terms that conservatively identify personal correspondents. */
+const PERSONAL_RELATIONSHIP_PATTERN =
+  /\b(?:(?:my|your|our)\s+)?(?:family|friend|mother|father|mom|dad|parent|wife|husband|spouse|partner|son|daughter|child|brother|sister|sibling|cousin|aunt|uncle|niece|nephew|grandmother|grandfather|grandparent)\b/i
+
+/** Explicit care-provider terms that conservatively identify medical correspondents. */
+const MEDICAL_PROVIDER_PATTERN =
+  /\b(?:medical provider|doctor|physician|cardiologist|dentist|orthodontist|therapist|psychologist|psychiatrist|clinician|clinic|hospital|pharmacy|pharmacist|laboratory|radiologist|specialist)\b/i

@@ -99,6 +99,23 @@ describe("email processing storage", () => {
     expect((await stat(path)).mode & 0o777).toBe(0o600)
   })
 
+  it("repairs a truncated JSONL tail at a byte boundary after multibyte text", async () => {
+    const directory = await createTemporaryDirectory()
+    const path = join(directory, "decisions.jsonl")
+    const unicodeDecision = { ...createDecision(), subject: "Café ☕" }
+
+    await appendEmailDecision(unicodeDecision, path)
+    await writeFile(path, `${await readFile(path, "utf8")}{"timestamp":"truncated`, {
+      mode: 0o600,
+    })
+    await appendEmailDecision({ ...createDecision(), messageId: "message-2" }, path)
+
+    await expect(loadEmailDecisionLog(path)).resolves.toEqual([
+      unicodeDecision,
+      { ...createDecision(), messageId: "message-2" },
+    ])
+  })
+
   it("preserves an exact sender address while redacting display-name and medical details", async () => {
     const directory = await createTemporaryDirectory()
     const path = join(directory, "decisions.jsonl")
@@ -183,6 +200,39 @@ describe("email processing storage", () => {
     expect(contents).not.toContain("AB12-CD34")
     expect(contents).not.toContain("A1C is 7.2")
     expect(contents.match(/\[REDACTED/g)?.length).toBeGreaterThanOrEqual(5)
+  })
+
+  it("redacts medical policy-signal details and OTP codes introduced by is", async () => {
+    const directory = await createTemporaryDirectory()
+    const path = join(directory, "decisions.jsonl")
+
+    await appendEmailDecision(
+      {
+        ...createDecision(),
+        classification: "medical-action",
+        policySignals: ["medical-action", "A1C result 7.2"],
+      },
+      path,
+    )
+    await appendEmailDecision(
+      {
+        ...createDecision(),
+        messageId: "message-2",
+        reason: "OTP is AB12CD34",
+      },
+      path,
+    )
+
+    const contents = await readFile(path, "utf8")
+    expect(contents).toContain('"medical-action"')
+    expect(contents).not.toContain("A1C result 7.2")
+    expect(contents).not.toContain("AB12CD34")
+    await expect(loadEmailDecisionLog(path)).resolves.toEqual([
+      expect.objectContaining({
+        policySignals: ["medical-action", "[REDACTED MEDICAL DETAIL]"],
+      }),
+      expect.objectContaining({ reason: "OTP is [REDACTED]" }),
+    ])
   })
 })
 

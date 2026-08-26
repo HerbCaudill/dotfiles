@@ -1,3 +1,4 @@
+import { MAX_CLASSIFIER_CANDIDATES } from "./constants.ts"
 import type { JsonSchema } from "./types.ts"
 
 /** Strict JSON Schema for classifier decisions without commands or Gmail labels. */
@@ -8,7 +9,7 @@ export const classifierOutputJsonSchema = {
   properties: {
     decisions: {
       type: "array",
-      maxItems: 100,
+      maxItems: MAX_CLASSIFIER_CANDIDATES,
       items: {
         anyOf: [
           createDecisionSchema(

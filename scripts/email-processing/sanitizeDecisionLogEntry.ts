@@ -20,9 +20,22 @@ export function sanitizeDecisionLogEntry(
     classification: entry.classification,
     confidence: entry.confidence,
     reason: containsMedicalDetails ? "[REDACTED MEDICAL DETAIL]" : sanitizeLogText(entry.reason),
-    policySignals: entry.policySignals.map(value => sanitizeLogText(value, false)),
+    policySignals: entry.policySignals.map(value =>
+      sanitizePolicySignal(value, containsMedicalDetails),
+    ),
     gmailUrl: entry.gmailUrl,
   }
+}
+
+/** Preserve stable labels while redacting free-form medical signal details. */
+function sanitizePolicySignal(
+  /** Untrusted classifier policy signal. */
+  value: string,
+  /** Whether the surrounding decision is medical. */
+  containsMedicalDetails: boolean,
+): string {
+  if (STABLE_POLICY_SIGNAL_PATTERN.test(value)) return sanitizeLogText(value, false)
+  return containsMedicalDetails ? "[REDACTED MEDICAL DETAIL]" : sanitizeLogText(value)
 }
 
 /** Sanitize a display name without changing the exact sender address. */
@@ -76,10 +89,13 @@ const MEDICAL_DETAIL_PATTERN =
 
 /** Authentication-code phrases whose following code must not reach the audit log. */
 const AUTHENTICATION_CODE_PATTERN =
-  /\b((?:(?:verification|authentication|security|login|one[- ]time|otp)\s+)?(?:code|password|token|passcode)\s*[:#-]?\s*)([A-Z0-9][A-Z0-9-]{3,})\b/gi
+  /\b((?:(?:verification|authentication|security|login|one[- ]time)\s+)?(?:code|password|token|passcode|otp)\s*(?:is\s*)?[:#-]?\s*)([A-Z0-9][A-Z0-9-]{3,})\b/gi
 
 /** IBAN-like account identifiers. */
 const IBAN_PATTERN = /\b[A-Z]{2}\d{2}(?:[ -]?[A-Z0-9]){10,30}\b/gi
 
 /** Financial identifiers written as long digit sequences with spaces or hyphens. */
 const GROUPED_FINANCIAL_NUMBER_PATTERN = /\b(?:\d[ -]?){6,}\d\b/g
+
+/** Stable kebab-case policy labels carry no free-form medical details. */
+const STABLE_POLICY_SIGNAL_PATTERN = /^[a-z]+(?:-[a-z]+)*$/
