@@ -1,6 +1,7 @@
 import {
   EMAIL_PROCESSING_ACCOUNT,
   MAX_ACTIONS_PER_RUN,
+  MAX_CANDIDATES_PER_RUN,
   MAX_CLASSIFIER_CANDIDATES,
   MAX_CLASSIFIER_INPUT_BYTES,
 } from "./constants.ts"
@@ -63,6 +64,9 @@ export async function runGmailSupervisor(
     ...discovered.map(message => message.messageId),
     ...retryMessageIds,
   ]).filter(messageId => !correctedMessageIds.has(messageId) && !completedMessageIds.has(messageId))
+  const pendingMessageIds = new Set(candidateIds.slice(MAX_CANDIDATES_PER_RUN))
+  pendingMessageIds.forEach(messageId => retryMessageIds.add(messageId))
+  const selectedCandidateIds = candidateIds.slice(0, MAX_CANDIDATES_PER_RUN)
   const candidates: ClassifierCandidate[] = []
   const messagesById = new Map<string, GmailMessage>()
   const threadsById = new Map<string, GmailThread>()
@@ -71,7 +75,7 @@ export async function runGmailSupervisor(
   const plannedThreadIds = new Set<string>()
   const supersededRetriesByMessageId = new Map<string, string[]>()
 
-  for (const messageId of candidateIds) {
+  for (const messageId of selectedCandidateIds) {
     let inspectedMessageId = messageId
     try {
       const message = await dependencies.gmail.getMessage(messageId)
@@ -81,6 +85,7 @@ export async function runGmailSupervisor(
       const targetMessage = findNewestThreadCandidate(thread, candidateIdSet, retryMessageIds)
       if (!targetMessage) continue
       inspectedMessageId = targetMessage.id
+      pendingMessageIds.delete(targetMessage.id)
       plannedThreadIds.add(thread.id)
       const targetIndex = thread.messages.findIndex(
         threadMessage => threadMessage.id === targetMessage.id,
@@ -246,7 +251,8 @@ export async function runGmailSupervisor(
     retryOriginalLabels,
   )
   await dependencies.saveState(nextState)
-  result.retried = retryMessageIds.size
+  result.pending = [...pendingMessageIds].filter(messageId => retryMessageIds.has(messageId)).length
+  result.retried = retryMessageIds.size - result.pending
   return result
 }
 
@@ -1037,7 +1043,7 @@ function extractLoggedAddress(
 
 /** Create zeroed public result counts. */
 function emptyResult(): GmailSupervisorResult {
-  return { archived: 0, promoted: 0, unchanged: 0, retried: 0, corrected: 0 }
+  return { archived: 0, promoted: 0, unchanged: 0, retried: 0, pending: 0, corrected: 0 }
 }
 
 /** Gmail labels that place a message outside Primary. */

@@ -69,7 +69,7 @@ describe("runEmailProcessingCommand", () => {
       },
     ])
     expect(writeLine).toHaveBeenCalledWith(
-      "archived=1 promoted=0 unchanged=0 retried=0 corrected=0",
+      "archived=1 promoted=0 unchanged=0 retried=0 pending=0 corrected=0",
     )
   })
 
@@ -110,6 +110,7 @@ describe("runEmailProcessingCommand", () => {
       promoted: 1,
       unchanged: 1,
       retried: 0,
+      pending: 0,
       corrected: 0,
     })
     expect(mailbox.mutations).toEqual([
@@ -279,7 +280,7 @@ describe("runEmailProcessingCommand", () => {
     )
   })
 
-  it("stops the entire batch before Gmail writes when the action cap is exceeded", async () => {
+  it("processes only the action-capped prefix and leaves the remainder pending", async () => {
     const directory = await createTestDirectory()
     const messages = Array.from({ length: MAX_ACTIONS_PER_RUN + 1 }, (_, index) =>
       createMessage({
@@ -305,8 +306,12 @@ describe("runEmailProcessingCommand", () => {
       writeLine: vi.fn(),
     })
 
-    expect(result?.retried).toBe(MAX_ACTIONS_PER_RUN + 1)
-    expect(mailbox.mutations).toEqual([])
+    expect(result).toMatchObject({
+      archived: MAX_ACTIONS_PER_RUN,
+      retried: 0,
+      pending: 1,
+    })
+    expect(mailbox.mutations).toHaveLength(MAX_ACTIONS_PER_RUN)
   })
 
   it("reruns idempotently after a completed action", async () => {
@@ -341,6 +346,7 @@ describe("runEmailProcessingCommand", () => {
       promoted: 0,
       unchanged: 0,
       retried: 0,
+      pending: 0,
       corrected: 0,
     })
     expect(classify).toHaveBeenCalledTimes(1)

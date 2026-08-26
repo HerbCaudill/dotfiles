@@ -75,7 +75,7 @@ export function formatEmailProcessingResult(
   /** Completed supervisor counts. */
   result: GmailSupervisorResult,
 ): string {
-  return `archived=${result.archived} promoted=${result.promoted} unchanged=${result.unchanged} retried=${result.retried} corrected=${result.corrected}`
+  return `archived=${result.archived} promoted=${result.promoted} unchanged=${result.unchanged} retried=${result.retried} pending=${result.pending} corrected=${result.corrected}`
 }
 
 /** Runtime boundaries accepted by the command entry point. */

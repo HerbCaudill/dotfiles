@@ -90,6 +90,7 @@ describe("runGmailSupervisor", () => {
       promoted: 0,
       unchanged: 1,
       retried: 0,
+      pending: 0,
       corrected: 0,
     })
   })
@@ -688,6 +689,7 @@ describe("runGmailSupervisor", () => {
       promoted: 0,
       unchanged: 0,
       retried: 1,
+      pending: 0,
       corrected: 0,
     })
     expect(saveState).toHaveBeenCalledWith(
@@ -1108,7 +1110,7 @@ describe("runGmailSupervisor", () => {
     })
   })
 
-  it("rejects a classifier batch above the action cap before any Gmail mutation", async () => {
+  it("rejects classifier output that names an unsupplied pending candidate", async () => {
     const messages = Array.from({ length: MAX_ACTIONS_PER_RUN + 1 }, (_, index) =>
       createMessage({ id: `message-${index}`, threadId: `thread-${index}` }),
     )
@@ -1142,11 +1144,11 @@ describe("runGmailSupervisor", () => {
     })
 
     expect(gmail.modifyThreadLabels).not.toHaveBeenCalled()
-    expect(result.retried).toBe(MAX_ACTIONS_PER_RUN + 1)
-    expect(appendDecision).toHaveBeenCalledTimes(MAX_ACTIONS_PER_RUN + 1)
+    expect(result).toMatchObject({ retried: MAX_ACTIONS_PER_RUN, pending: 1 })
+    expect(appendDecision).toHaveBeenCalledTimes(MAX_ACTIONS_PER_RUN)
   })
 
-  it("classifies a large backlog in model-reliable batches of at most 20", async () => {
+  it("processes at most ten backlog messages and reports untouched work as pending", async () => {
     const messages = Array.from({ length: 101 }, (_, index) =>
       createMessage({ id: `message-${index}`, threadId: `thread-${index}` }),
     )
@@ -1178,10 +1180,8 @@ describe("runGmailSupervisor", () => {
       appendDecision: vi.fn().mockResolvedValue(undefined),
     })
 
-    expect(classify.mock.calls.map(([input]) => input.candidates.length)).toEqual([
-      20, 20, 20, 20, 20, 1,
-    ])
-    expect(result).toMatchObject({ unchanged: 101, retried: 0 })
+    expect(classify.mock.calls.map(([input]) => input.candidates.length)).toEqual([10])
+    expect(result).toMatchObject({ unchanged: 10, retried: 0, pending: 91 })
   })
 
   it("isolates candidates that exceed per-field classifier schema limits", async () => {
@@ -1238,7 +1238,7 @@ describe("runGmailSupervisor", () => {
     expect(result).toMatchObject({ unchanged: 1, retried: 2 })
   })
 
-  it("splits classifier batches before their serialized input reaches one megabyte", async () => {
+  it("keeps the bounded run input below one megabyte", async () => {
     const messages = Array.from({ length: 12 }, (_, index) =>
       createMessage({
         id: `message-${index}`,
@@ -1274,11 +1274,11 @@ describe("runGmailSupervisor", () => {
       appendDecision: vi.fn().mockResolvedValue(undefined),
     })
 
-    expect(classify).toHaveBeenCalledTimes(2)
+    expect(classify).toHaveBeenCalledTimes(1)
     for (const [input] of classify.mock.calls) {
       expect(Buffer.byteLength(JSON.stringify(input), "utf8")).toBeLessThanOrEqual(1_000_000)
     }
-    expect(result).toMatchObject({ unchanged: 12, retried: 0 })
+    expect(result).toMatchObject({ unchanged: 10, retried: 0, pending: 2 })
   })
 
   it("drops only oldest thread context when one candidate exceeds the input byte limit", async () => {
@@ -1321,7 +1321,7 @@ describe("runGmailSupervisor", () => {
     expect(input.candidates[0]?.thread.length).toBeLessThan(priorMessages.length)
   })
 
-  it("enforces the run action cap across multiple classifier batches", async () => {
+  it("never offers the classifier more candidates than the run action cap", async () => {
     const messages = Array.from({ length: 101 }, (_, index) =>
       createMessage({ id: `message-${index}`, threadId: `thread-${index}` }),
     )
@@ -1359,9 +1359,10 @@ describe("runGmailSupervisor", () => {
       appendDecision: vi.fn().mockResolvedValue(undefined),
     })
 
-    expect(classify).toHaveBeenCalledTimes(6)
-    expect(gmail.modifyThreadLabels).not.toHaveBeenCalled()
-    expect(result).toMatchObject({ archived: 0, retried: 101 })
+    expect(classify).toHaveBeenCalledTimes(1)
+    expect(classify.mock.calls[0]?.[0].candidates).toHaveLength(MAX_ACTIONS_PER_RUN)
+    expect(gmail.modifyThreadLabels).toHaveBeenCalledTimes(MAX_ACTIONS_PER_RUN)
+    expect(result).toMatchObject({ archived: 0, retried: 10, pending: 91 })
   })
 })
 

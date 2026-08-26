@@ -4,6 +4,9 @@ export const EMAIL_PROCESSING_ACCOUNT = "herb@devresults.com" as const
 /** Maximum Gmail-changing decisions accepted in one supervisor run. */
 export const MAX_ACTIONS_PER_RUN = 10
 
+/** Maximum messages inspected and classified in one scheduled run. */
+export const MAX_CANDIDATES_PER_RUN = 10
+
 /** Maximum candidates accepted by one classifier invocation. */
 export const MAX_CLASSIFIER_CANDIDATES = 20
 

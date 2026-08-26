@@ -172,6 +172,8 @@ export type GmailSupervisorResult = {
   unchanged: number
   /** Messages saved for another attempt. */
   retried: number
+  /** Untouched backlog messages intentionally left for a later bounded run. */
+  pending: number
   /** Manual corrections learned during the run. */
   corrected: number
 }
