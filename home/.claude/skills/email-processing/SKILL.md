@@ -5,9 +5,9 @@ description: Process Herb's herb@devresults.com Gmail inbox headlessly by archiv
 
 # Email processing
 
-Process `herb@devresults.com` without asking for approval during the run. Invocation of this skill is standing authorization for only the reversible Gmail label changes defined below.
+Run `email-processing` without asking for approval during the run. Invocation of this skill is standing authorization for only the reversible Gmail label changes defined below.
 
-Read [the Gmail skill](../gws-gmail/SKILL.md) and [the shared gws instructions](../gws-shared/SKILL.md) in full before using Gmail. Inspect each Gmail API method with `gws schema` before calling it.
+Do not invoke `gws`, Gmail tools, or another agent directly. The repo-managed command is the sole Gmail boundary and runs one isolated Codex classifier with no Gmail, filesystem, network, tool, or plugin authority.
 
 ## Boundaries
 
@@ -156,4 +156,6 @@ After each successful mutation, fetch the thread metadata to verify the intended
 
 ## Finish
 
-Save the newest safe Gmail history ID and completion time. Report only compact counts for archived, promoted, unchanged, retried, and corrected messages. Do not include email bodies in routine output. Surface individual messages only when Herb asks to review the log or audit decisions.
+The command saves the newest safe Gmail history ID and completion time, then reports only compact counts for archived, promoted, unchanged, retried, and corrected messages. Do not include email bodies in routine output.
+
+When Herb asks to inspect decisions, run `email-processing --review`. This prints the sanitized decision log without email bodies. After any classifier or Gmail failure, rerun `email-processing`; saved retry IDs, idempotent label changes, and post-mutation verification make the rerun safe. Run `email-processing --help` to see the state and decision-log locations.

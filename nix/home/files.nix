@@ -27,6 +27,7 @@ in {
     ".local/bin/create-daily-note".source = mkRepoSymlink "home/.local/bin/create-daily-note";
     ".local/bin/dr".source = mkRepoSymlink "home/.local/bin/dr";
     ".local/bin/drsync".source = mkRepoSymlink "home/.local/bin/drsync";
+    ".local/bin/email-processing".source = mkRepoSymlink "home/.local/bin/email-processing";
     ".local/bin/devresults-vm".source = mkRepoSymlink "home/.local/bin/devresults-vm";
     ".local/bin/gh-sync".source = mkRepoSymlink "home/.local/bin/gh-sync";
     ".local/bin/github-pr-task-sync".source = mkRepoSymlink "home/.local/bin/github-pr-task-sync";

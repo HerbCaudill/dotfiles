@@ -1,0 +1,8 @@
+#!/usr/bin/env -S node --experimental-strip-types
+
+import { runEmailProcessingCommand } from "../../../scripts/email-processing/runEmailProcessing.ts"
+
+runEmailProcessingCommand().catch(error => {
+  console.error(`[email-processing] ${error instanceof Error ? error.message : String(error)}`)
+  process.exitCode = 1
+})
