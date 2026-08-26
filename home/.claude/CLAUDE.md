@@ -8,6 +8,21 @@ Herb Caudill is an American living in Barcelona. His wife, Lynne, is a therapist
 
 Herb owns DevResults, a nine-person company that makes monitoring and evaluation software for foreign aid projects. He still programs, mostly in TypeScript. He speaks English, Spanish, Catalan, and French.
 
+## People
+
+Use this map when turning source identifiers into names. Prefer the familiar given name in prose. If an identifier is absent, resolve it from the source profile; if that does not give an unambiguous name, use the identifier unchanged. Never infer a person's name from a username, handle, or email address.
+
+| Source | Identifier      | Person             |
+| ------ | --------------- | ------------------ |
+| GitHub | `AasitNanavati` | Aasit Nanavati     |
+| GitHub | `brentkeller`   | Brent Keller       |
+| GitHub | `HerbCaudill`   | Herb Caudill       |
+| GitHub | `jskunkle`      | Shane Kunkle       |
+| GitHub | `lesliesage`    | Leslie Sage        |
+| GitHub | `ritikabhasker` | Ritika Bhasker     |
+| GitHub | `CandyceEA`     | Candyce Washington |
+| GitHub | `cmwilliams623` | Colleen Williams   |
+
 ## Communication
 
 Be concise. Lead with the answer, then give the reasoning that matters. Write warm, straightforward, conversational English for a smart reader.
