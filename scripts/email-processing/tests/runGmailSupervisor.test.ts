@@ -34,15 +34,20 @@ const inboxThread: GmailThread = {
   messages: [inboxMessage],
 }
 
-const emptyState: EmailProcessingState = {
+const uninitializedState: EmailProcessingState = {
   lastHistoryId: null,
   lastCompletedAt: null,
   retryMessageIds: [],
   archiveReversalSenders: [],
 }
 
+const emptyState: EmailProcessingState = {
+  ...uninitializedState,
+  lastHistoryId: "100",
+}
+
 describe("runGmailSupervisor", () => {
-  it("discovers the previous seven days on the first run and saves the profile history ID", async () => {
+  it("starts at the current Gmail history position without processing existing mail", async () => {
     const appendDecision = vi.fn<(entry: DecisionLogEntry) => Promise<void>>().mockResolvedValue()
     const saveState = vi.fn<(state: EmailProcessingState) => Promise<void>>().mockResolvedValue()
     const gmail = createGmailClient()
@@ -52,33 +57,17 @@ describe("runGmailSupervisor", () => {
       now: () => new Date("2026-08-26T12:00:00.000Z"),
       gmail,
       classify,
-      loadState: async () => emptyState,
+      loadState: async () => uninitializedState,
       saveState,
       loadDecisionLog: async () => [],
       appendDecision,
     })
 
-    expect(gmail.listRecentInboxMessages).toHaveBeenCalledWith(new Date("2026-08-19T12:00:00.000Z"))
+    expect(gmail.listRecentInboxMessages).not.toHaveBeenCalled()
     expect(gmail.listHistory).not.toHaveBeenCalled()
-    expect(classify).toHaveBeenCalledWith({
-      account: "herb@devresults.com",
-      candidates: [
-        expect.objectContaining({
-          messageId: "message-1",
-          threadId: "thread-1",
-          subject: "A proposal",
-          body: "Would you like to buy our software?",
-          category: "primary",
-        }),
-      ],
-    })
-    expect(appendDecision).toHaveBeenCalledWith(
-      expect.objectContaining({
-        messageId: "message-1",
-        decision: "none",
-        originalLabels: ["INBOX", "CATEGORY_PERSONAL"],
-      }),
-    )
+    expect(gmail.getMessage).not.toHaveBeenCalled()
+    expect(classify).not.toHaveBeenCalled()
+    expect(appendDecision).not.toHaveBeenCalled()
     expect(saveState).toHaveBeenCalledWith({
       lastHistoryId: "105",
       lastCompletedAt: "2026-08-26T12:00:00.000Z",
@@ -88,7 +77,7 @@ describe("runGmailSupervisor", () => {
     expect(result).toEqual({
       archived: 0,
       promoted: 0,
-      unchanged: 1,
+      unchanged: 0,
       retried: 0,
       pending: 0,
       corrected: 0,
@@ -169,7 +158,7 @@ describe("runGmailSupervisor", () => {
     })
   })
 
-  it("falls back from expired history and skips decisions already logged", async () => {
+  it("starts a fresh current checkpoint when Gmail history has expired", async () => {
     const fallbackMessage = createMessage({ id: "message-2", threadId: "thread-2" })
     const gmail = createGmailClient({
       listHistory: vi.fn().mockRejectedValue(new ExpiredGmailHistoryError()),
@@ -193,8 +182,38 @@ describe("runGmailSupervisor", () => {
       appendDecision: vi.fn().mockResolvedValue(undefined),
     })
 
-    expect(gmail.listRecentInboxMessages).toHaveBeenCalledWith(new Date("2026-08-19T12:00:00.000Z"))
-    expect(gmail.getMessage).toHaveBeenCalledWith("message-2")
+    expect(gmail.listRecentInboxMessages).not.toHaveBeenCalled()
+    expect(gmail.getMessage).not.toHaveBeenCalled()
+  })
+
+  it("does not recover logged retries at or before the saved checkpoint", async () => {
+    const gmail = createGmailClient({
+      listHistory: vi.fn().mockResolvedValue({ addedMessages: [], labelChanges: [] }),
+    })
+    const saveState = vi.fn().mockResolvedValue(undefined)
+
+    await runGmailSupervisor({
+      now: () => new Date("2026-08-26T12:00:00.000Z"),
+      gmail,
+      classify: vi.fn().mockResolvedValue(validNoneOutput),
+      loadState: async () => ({
+        ...emptyState,
+        lastHistoryId: "100",
+        lastCompletedAt: "2026-08-26T11:00:00.000Z",
+      }),
+      saveState,
+      loadDecisionLog: async () => [
+        createLogEntry({
+          timestamp: "2026-08-26T10:00:00.000Z",
+          decision: "error",
+          classification: "processing-error",
+        }),
+      ],
+      appendDecision: vi.fn().mockResolvedValue(undefined),
+    })
+
+    expect(gmail.getMessage).not.toHaveBeenCalled()
+    expect(saveState).toHaveBeenLastCalledWith(expect.objectContaining({ retryMessageIds: [] }))
   })
 
   it("recognizes archive, promotion, and missed-promotion corrections", async () => {
@@ -1411,12 +1430,18 @@ function createGmailClient(
   /** Per-test Gmail behavior overrides. */
   overrides: Partial<GmailClient> = {},
 ): GmailClient {
+  const listRecentInboxMessages =
+    overrides.listRecentInboxMessages ??
+    vi.fn().mockResolvedValue([{ messageId: "message-1", threadId: "thread-1" }])
   return {
     getProfile: vi.fn().mockResolvedValue({ historyId: "105" }),
-    listRecentInboxMessages: vi
-      .fn()
-      .mockResolvedValue([{ messageId: "message-1", threadId: "thread-1" }]),
-    listHistory: vi.fn().mockResolvedValue({ addedMessages: [], labelChanges: [] }),
+    listRecentInboxMessages,
+    listHistory:
+      overrides.listHistory ??
+      vi.fn(async () => ({
+        addedMessages: await listRecentInboxMessages(new Date(0)),
+        labelChanges: [],
+      })),
     getMessage: vi.fn().mockResolvedValue(inboxMessage),
     getThread: vi.fn().mockResolvedValue(inboxThread),
     hasPriorReplyTo: vi.fn().mockResolvedValue(false),

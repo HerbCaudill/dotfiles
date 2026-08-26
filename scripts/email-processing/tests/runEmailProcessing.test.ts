@@ -1,4 +1,4 @@
-import { mkdtemp, readFile } from "node:fs/promises"
+import { mkdtemp, readFile, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -10,6 +10,45 @@ import type { GwsCommandRunner } from "../createGwsGmailClient.ts"
 import type { ClassifierInput, ClassifierOutput } from "../types.ts"
 
 describe("runEmailProcessingCommand", () => {
+  it("cuts over at the current Gmail history position and discards existing retries", async () => {
+    const directory = await createTestDirectory()
+    const statePath = join(directory, "state.json")
+    const mailbox = createMailbox([])
+    const classify = vi.fn()
+    const writeLine = vi.fn()
+    await writeFile(
+      statePath,
+      JSON.stringify({
+        lastHistoryId: "100",
+        lastCompletedAt: "2026-08-26T10:00:00.000Z",
+        retryMessageIds: ["old-message"],
+        retryOriginalLabelIds: { "old-message": ["INBOX", "CATEGORY_UPDATES"] },
+        archiveReversalSenders: ["protected@example.com"],
+      }),
+    )
+
+    const result = await runEmailProcessingCommand({
+      args: ["--cutover"],
+      now: () => new Date("2026-08-26T12:00:00.000Z"),
+      runGws: mailbox.run,
+      classify,
+      statePath,
+      decisionLogPath: join(directory, "decisions.jsonl"),
+      writeLine,
+    })
+
+    expect(result).toBeNull()
+    expect(classify).not.toHaveBeenCalled()
+    expect(mailbox.mutations).toEqual([])
+    expect(await readJson(statePath)).toEqual({
+      lastHistoryId: "105",
+      lastCompletedAt: "2026-08-26T12:00:00.000Z",
+      retryMessageIds: [],
+      archiveReversalSenders: ["protected@example.com"],
+    })
+    expect(writeLine).toHaveBeenCalledWith("cutover=ok")
+  })
+
   it("runs a classifier-only preflight without reading or mutating Gmail", async () => {
     const runGws = vi.fn<GwsCommandRunner>()
     const classify = vi.fn(async (input: ClassifierInput): Promise<ClassifierOutput> => {
@@ -41,7 +80,7 @@ describe("runEmailProcessingCommand", () => {
   })
 
   it("runs the complete workflow and prints compact counts", async () => {
-    const directory = await mkdtemp(join(tmpdir(), "email-processing-command-test-"))
+    const directory = await createTestDirectory()
     const mailbox = createMailbox([
       createMessage({
         id: "archive-message",
@@ -403,7 +442,15 @@ function createMailbox(
 ): FakeMailbox {
   const messagesById = new Map(messages.map(message => [message.id, message]))
   const mutations: FakeMailbox["mutations"] = []
-  let history: Record<string, unknown> = { history: [] }
+  let history: Record<string, unknown> = {
+    history: [
+      {
+        messagesAdded: messages.map(message => ({
+          message: { id: message.id, threadId: message.threadId },
+        })),
+      },
+    ],
+  }
   const run: GwsCommandRunner = async args => {
     const firstOption = args.findIndex(argument => argument.startsWith("--"))
     const resource = args.slice(0, firstOption).join(" ")
@@ -464,7 +511,17 @@ function createMailbox(
 
 /** Create one isolated directory for state and decision fixtures. */
 async function createTestDirectory(): Promise<string> {
-  return mkdtemp(join(tmpdir(), "email-processing-command-test-"))
+  const directory = await mkdtemp(join(tmpdir(), "email-processing-command-test-"))
+  await writeFile(
+    join(directory, "state.json"),
+    JSON.stringify({
+      lastHistoryId: "100",
+      lastCompletedAt: null,
+      retryMessageIds: [],
+      archiveReversalSenders: [],
+    }),
+  )
+  return directory
 }
 
 /** Read one JSON object from a fixture file. */

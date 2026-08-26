@@ -37,9 +37,22 @@ export async function runGmailSupervisor(
     dependencies.loadDecisionLog(),
     dependencies.gmail.getProfile(),
   ])
-  const { discovered, labelChanges } = await discoverWork(now, state, dependencies)
   const result = emptyResult()
   const archiveReversalSenders = getArchiveReversalSenders(state, priorDecisions)
+  if (!state.lastHistoryId) {
+    await dependencies.saveState(
+      createStateSnapshot(
+        profile.historyId,
+        timestamp,
+        new Set(),
+        archiveReversalSenders,
+        new Map(),
+      ),
+    )
+    return result
+  }
+
+  const { discovered, labelChanges } = await discoverWork(state, dependencies)
   const protectedCorrespondentSenders = getProtectedCorrespondentSenders(priorDecisions)
   const correctedMessageIds = await recordCorrections(
     timestamp,
@@ -56,7 +69,7 @@ export async function runGmailSupervisor(
     ...state.retryMessageIds.filter(
       messageId => !completedMessageIds.has(messageId) && !supersededRetryMessageIds.has(messageId),
     ),
-    ...getLoggedRetryMessageIds(priorDecisions).filter(
+    ...getLoggedRetryMessageIds(priorDecisions, state.lastCompletedAt).filter(
       messageId => !supersededRetryMessageIds.has(messageId),
     ),
   ])
@@ -374,11 +387,16 @@ function classifierInputBytes(
 function getLoggedRetryMessageIds(
   /** Prior sanitized decisions in append order. */
   priorDecisions: DecisionLogEntry[],
+  /** Last state checkpoint that already accounted for earlier errors. */
+  lastCompletedAt: string | null,
 ): string[] {
   const latestByMessageId = new Map<string, DecisionLogEntry>()
   for (const entry of priorDecisions) latestByMessageId.set(entry.messageId, entry)
   return [...latestByMessageId.values()]
-    .filter(entry => entry.decision === "error")
+    .filter(
+      entry =>
+        entry.decision === "error" && (!lastCompletedAt || entry.timestamp > lastCompletedAt),
+    )
     .map(entry => entry.messageId)
 }
 
@@ -433,10 +451,8 @@ function findNewestThreadCandidate(
     )
 }
 
-/** Discover new messages and label changes, with an expired-history fallback. */
+/** Discover new messages and label changes after the durable Gmail checkpoint. */
 async function discoverWork(
-  /** Run timestamp. */
-  now: Date,
   /** Durable synchronization state. */
   state: EmailProcessingState,
   /** Supervisor dependencies. */
@@ -449,22 +465,12 @@ async function discoverWork(
     ReturnType<GmailSupervisorDependencies["gmail"]["listHistory"]>
   >["labelChanges"]
 }> {
-  if (!state.lastHistoryId) {
-    return {
-      discovered: await dependencies.gmail.listRecentInboxMessages(daysBefore(now, 7)),
-      labelChanges: [],
-    }
-  }
-
   try {
-    const history = await dependencies.gmail.listHistory(state.lastHistoryId)
+    const history = await dependencies.gmail.listHistory(state.lastHistoryId!)
     return { discovered: history.addedMessages, labelChanges: history.labelChanges }
   } catch (error) {
     if (!(error instanceof ExpiredGmailHistoryError)) throw error
-    return {
-      discovered: await dependencies.gmail.listRecentInboxMessages(daysBefore(now, 7)),
-      labelChanges: [],
-    }
+    return { discovered: [], labelChanges: [] }
   }
 }
 
@@ -1056,16 +1062,6 @@ function getCategory(
   if (labelIds.includes("CATEGORY_SOCIAL")) return "social"
   if (labelIds.includes("CATEGORY_FORUMS")) return "forums"
   return "primary"
-}
-
-/** Return a new date a fixed number of UTC days before a timestamp. */
-function daysBefore(
-  /** Source timestamp. */
-  value: Date,
-  /** Whole days to subtract. */
-  days: number,
-): Date {
-  return new Date(value.getTime() - days * 24 * 60 * 60 * 1_000)
 }
 
 /** Deduplicate strings without changing first-seen order. */

@@ -53,9 +53,9 @@ Never include the full body, snippets, attachment contents, authentication codes
 ## Find work
 
 1. Get the Gmail profile and current history ID.
-2. On the first run, find current Inbox messages received in the previous seven days. On later runs, use Gmail history after the saved history ID to find newly added messages and relevant label changes.
-3. If Gmail rejects an expired history ID, fall back to the previous seven days and skip message IDs already present in the decision log.
-4. Include saved retry IDs. Deduplicate by message ID.
+2. On the first run, save the current Gmail history ID as the starting point and take no action. On later runs, use Gmail history after the saved history ID to find newly added messages and relevant label changes.
+3. If Gmail rejects an expired history ID, save the current history ID as a fresh starting point and do not backfill messages from the gap.
+4. Include saved retry IDs and logged errors newer than the last completed state checkpoint. Never rebuild retries from errors at or before that checkpoint. Deduplicate by message ID.
 5. Fetch current metadata for each candidate. Skip messages no longer in Inbox or now in Spam or Trash.
 6. Do not process the same message twice unless it is in the retry list or Herb has manually corrected an earlier decision.
 
@@ -159,3 +159,5 @@ After each successful mutation, fetch the thread metadata to verify the intended
 The command saves the newest safe Gmail history ID and completion time, then reports only compact counts for archived, promoted, unchanged, retried, and corrected messages. Do not include email bodies in routine output.
 
 When Herb asks to inspect decisions, run `email-processing --review`. This prints the sanitized decision log without email bodies. After any classifier or Gmail failure, rerun `email-processing`; saved retry IDs, idempotent label changes, and post-mutation verification make the rerun safe. Run `email-processing --help` to see the state and decision-log locations.
+
+When Herb asks to discard existing work and start from new messages going forward, run `email-processing --cutover`. This clears saved retries, preserves confirmed archive-reversal protections, and records Gmail's current history ID without changing any message labels.

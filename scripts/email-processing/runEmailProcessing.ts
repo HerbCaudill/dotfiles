@@ -30,6 +30,25 @@ export async function runEmailProcessingCommand(
     return null
   }
 
+  const gmail = createGwsGmailClient({ run: options.runGws })
+  if (args.length === 1 && args[0] === "--cutover") {
+    const [state, profile] = await Promise.all([
+      loadEmailProcessingState(options.statePath),
+      gmail.getProfile(),
+    ])
+    await saveEmailProcessingState(
+      {
+        lastHistoryId: profile.historyId,
+        lastCompletedAt: (options.now ?? (() => new Date()))().toISOString(),
+        retryMessageIds: [],
+        archiveReversalSenders: state.archiveReversalSenders,
+      },
+      options.statePath,
+    )
+    writeLine("cutover=ok")
+    return null
+  }
+
   const classify = options.classify ?? classifyWithCodex
   const classifyWithDiagnostics: GmailSupervisorDependencies["classify"] = async input => {
     try {
@@ -59,7 +78,7 @@ export async function runEmailProcessingCommand(
 
   const result = await runGmailSupervisor({
     now: options.now ?? (() => new Date()),
-    gmail: createGwsGmailClient({ run: options.runGws }),
+    gmail,
     classify: classifyWithDiagnostics,
     loadState: () => loadEmailProcessingState(options.statePath),
     saveState: state => saveEmailProcessingState(state, options.statePath),
@@ -99,8 +118,9 @@ export type EmailProcessingCommandOptions = {
 }
 
 const HELP_LINES = [
-  "Usage: email-processing [--preflight|--review|--help]",
+  "Usage: email-processing [--cutover|--preflight|--review|--help]",
   "Run without arguments to process Gmail with the supervised classifier.",
+  "Use --cutover to discard retries and start after Gmail's current history position.",
   "Use --preflight to test only the classifier with synthetic input.",
   "Use --review to print the sanitized decision log.",
   "State: ~/.local/share/email-processing/state.json",
