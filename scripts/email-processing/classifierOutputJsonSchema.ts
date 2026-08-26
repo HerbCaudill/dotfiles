@@ -60,9 +60,9 @@ function createDecisionSchema(
     required: ["messageId", "decision", "classification", "confidence", "reason", "policySignals"],
     properties: {
       messageId: { type: "string", minLength: 1, maxLength: 256 },
-      decision: { const: decision },
-      classification: { enum: classifications },
-      confidence: { enum: confidences },
+      decision: { type: "string", const: decision },
+      classification: { type: "string", enum: classifications },
+      confidence: { type: "string", enum: confidences },
       reason: { type: "string", minLength: 1, maxLength: 500 },
       policySignals: {
         type: "array",
