@@ -16,6 +16,7 @@ export async function runEmailProcessingCommand(
 ): Promise<GmailSupervisorResult | null> {
   const args = options.args ?? process.argv.slice(2)
   const writeLine = options.writeLine ?? console.log
+  const writeError = options.writeError ?? console.error
 
   if (args.length === 1 && args[0] === "--help") {
     HELP_LINES.forEach(line => writeLine(line))
@@ -28,10 +29,21 @@ export async function runEmailProcessingCommand(
   }
   if (args.length > 0) throw new Error(`Unknown argument: ${args.join(" ")}`)
 
+  const classify = options.classify ?? classifyWithCodex
   const result = await runGmailSupervisor({
     now: options.now ?? (() => new Date()),
     gmail: createGwsGmailClient({ run: options.runGws }),
-    classify: options.classify ?? classifyWithCodex,
+    classify: async input => {
+      try {
+        return await classify(input)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        writeError(
+          `[email-processing] Classifier failed: ${message.replaceAll(/\s+/g, " ").slice(0, 500)}`,
+        )
+        throw error
+      }
+    },
     loadState: () => loadEmailProcessingState(options.statePath),
     saveState: state => saveEmailProcessingState(state, options.statePath),
     loadDecisionLog: () => loadEmailDecisionLog(options.decisionLogPath),
@@ -65,6 +77,8 @@ export type EmailProcessingCommandOptions = {
   decisionLogPath?: string
   /** Compact line-oriented output boundary. */
   writeLine?: (line: string) => void
+  /** Sanitized operational diagnostic boundary. */
+  writeError?: (line: string) => void
 }
 
 const HELP_LINES = [

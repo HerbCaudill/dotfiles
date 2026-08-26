@@ -198,6 +198,7 @@ describe("runEmailProcessingCommand", () => {
       }),
     ])
 
+    const writeError = vi.fn()
     const result = await runEmailProcessingCommand({
       args: [],
       runGws: mailbox.run,
@@ -207,11 +208,15 @@ describe("runEmailProcessingCommand", () => {
       statePath,
       decisionLogPath: join(directory, "decisions.jsonl"),
       writeLine: vi.fn(),
+      writeError,
     })
 
     expect(result?.retried).toBe(1)
     expect(mailbox.mutations).toEqual([])
     expect(await readJson(statePath)).toMatchObject({ retryMessageIds: ["retry-message"] })
+    expect(writeError).toHaveBeenCalledWith(
+      "[email-processing] Classifier failed: Classifier unavailable",
+    )
   })
 
   it("logs and retries a Gmail mutation failure without reporting success", async () => {
