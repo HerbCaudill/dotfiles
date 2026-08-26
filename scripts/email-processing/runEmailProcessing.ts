@@ -6,8 +6,10 @@ import {
   loadEmailProcessingState,
   saveEmailProcessingState,
 } from "./emailProcessingStorage.ts"
+import { parseClassifierOutput } from "./parseClassifierOutput.ts"
 import { runGmailSupervisor } from "./runGmailSupervisor.ts"
 import type { GmailSupervisorDependencies, GmailSupervisorResult } from "./supervisorTypes.ts"
+import type { ClassifierInput } from "./types.ts"
 
 /** Run or review the headless email-processing workflow. */
 export async function runEmailProcessingCommand(
@@ -27,23 +29,38 @@ export async function runEmailProcessingCommand(
     decisions.forEach(decision => writeLine(JSON.stringify(decision)))
     return null
   }
-  if (args.length > 0) throw new Error(`Unknown argument: ${args.join(" ")}`)
 
   const classify = options.classify ?? classifyWithCodex
+  const classifyWithDiagnostics: GmailSupervisorDependencies["classify"] = async input => {
+    try {
+      return await classify(input)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      writeError(
+        `[email-processing] Classifier failed: ${message.replaceAll(/\s+/g, " ").slice(0, 500)}`,
+      )
+      throw error
+    }
+  }
+  if (args.length === 1 && args[0] === "--preflight") {
+    const output = parseClassifierOutput(await classifyWithDiagnostics(PREFLIGHT_INPUT))
+    const decision = output.decisions[0]
+    if (
+      output.decisions.length !== 1 ||
+      decision?.messageId !== "preflight-message" ||
+      decision.decision !== "none"
+    ) {
+      throw new Error("Classifier preflight returned an unexpected decision")
+    }
+    writeLine("classifier=ok")
+    return null
+  }
+  if (args.length > 0) throw new Error(`Unknown argument: ${args.join(" ")}`)
+
   const result = await runGmailSupervisor({
     now: options.now ?? (() => new Date()),
     gmail: createGwsGmailClient({ run: options.runGws }),
-    classify: async input => {
-      try {
-        return await classify(input)
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
-        writeError(
-          `[email-processing] Classifier failed: ${message.replaceAll(/\s+/g, " ").slice(0, 500)}`,
-        )
-        throw error
-      }
-    },
+    classify: classifyWithDiagnostics,
     loadState: () => loadEmailProcessingState(options.statePath),
     saveState: state => saveEmailProcessingState(state, options.statePath),
     loadDecisionLog: () => loadEmailDecisionLog(options.decisionLogPath),
@@ -82,10 +99,42 @@ export type EmailProcessingCommandOptions = {
 }
 
 const HELP_LINES = [
-  "Usage: email-processing [--review|--help]",
+  "Usage: email-processing [--preflight|--review|--help]",
   "Run without arguments to process Gmail with the supervised classifier.",
+  "Use --preflight to test only the classifier with synthetic input.",
   "Use --review to print the sanitized decision log.",
   "State: ~/.local/share/email-processing/state.json",
   "Decisions: ~/.local/share/email-processing/decisions.jsonl",
   "After a failure, rerun the same command; saved retries and verified mutations make reruns safe.",
 ]
+
+const PREFLIGHT_INPUT: ClassifierInput = {
+  account: "herb@devresults.com",
+  candidates: [
+    {
+      messageId: "preflight-message",
+      threadId: "preflight-thread",
+      sender: { name: "Routine Service", address: "service@example.com" },
+      recipients: [{ name: "Herb Caudill", address: "herb@devresults.com" }],
+      subject: "Routine confirmation",
+      body: "This is a synthetic classifier preflight. No action is needed.",
+      thread: [],
+      category: "updates",
+      archiveProtections: {
+        devResultsSender: false,
+        priorReply: false,
+        archiveReversal: false,
+        protectedCorrespondent: false,
+        activeConversation: false,
+        requestedWork: false,
+        herbInitiated: false,
+      },
+      delegatedCustomer: {
+        customerInquiry: false,
+        otherDevResultsRecipient: false,
+        requiresHerbAction: false,
+      },
+      promotionCorrections: [],
+    },
+  ],
+}

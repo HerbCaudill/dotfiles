@@ -10,6 +10,36 @@ import type { GwsCommandRunner } from "../createGwsGmailClient.ts"
 import type { ClassifierInput, ClassifierOutput } from "../types.ts"
 
 describe("runEmailProcessingCommand", () => {
+  it("runs a classifier-only preflight without reading or mutating Gmail", async () => {
+    const runGws = vi.fn<GwsCommandRunner>()
+    const classify = vi.fn(async (input: ClassifierInput): Promise<ClassifierOutput> => {
+      expect(input).toMatchObject({
+        account: "herb@devresults.com",
+        candidates: [
+          {
+            messageId: "preflight-message",
+            subject: "Routine confirmation",
+            body: "This is a synthetic classifier preflight. No action is needed.",
+          },
+        ],
+      })
+      return decisionFor(input, "preflight-message", "none")
+    })
+    const writeLine = vi.fn()
+
+    const result = await runEmailProcessingCommand({
+      args: ["--preflight"],
+      runGws,
+      classify,
+      writeLine,
+    })
+
+    expect(result).toBeNull()
+    expect(classify).toHaveBeenCalledOnce()
+    expect(runGws).not.toHaveBeenCalled()
+    expect(writeLine).toHaveBeenCalledWith("classifier=ok")
+  })
+
   it("runs the complete workflow and prints compact counts", async () => {
     const directory = await mkdtemp(join(tmpdir(), "email-processing-command-test-"))
     const mailbox = createMailbox([
@@ -353,6 +383,7 @@ describe("runEmailProcessingCommand", () => {
     expect(reviewOutput[0]).toContain('"decision":"none"')
     expect(reviewOutput[0]).not.toContain("Secret body text")
     expect(helpOutput.join("\n")).toContain("decisions.jsonl")
+    expect(helpOutput.join("\n")).toContain("--preflight")
     expect(helpOutput.join("\n")).toContain("rerun the same command")
     expect(writeHelpLine.mock.calls.every(call => call.length === 1)).toBe(true)
   })
