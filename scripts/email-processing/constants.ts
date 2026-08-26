@@ -5,7 +5,7 @@ export const EMAIL_PROCESSING_ACCOUNT = "herb@devresults.com" as const
 export const MAX_ACTIONS_PER_RUN = 10
 
 /** Maximum candidates accepted by one classifier invocation. */
-export const MAX_CLASSIFIER_CANDIDATES = 100
+export const MAX_CLASSIFIER_CANDIDATES = 20
 
 /** Maximum UTF-8 bytes accepted by one classifier invocation. */
 export const MAX_CLASSIFIER_INPUT_BYTES = 1_000_000

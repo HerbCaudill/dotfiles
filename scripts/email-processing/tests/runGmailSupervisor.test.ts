@@ -1146,7 +1146,7 @@ describe("runGmailSupervisor", () => {
     expect(appendDecision).toHaveBeenCalledTimes(MAX_ACTIONS_PER_RUN + 1)
   })
 
-  it("classifies more than 100 candidates in schema-bounded batches", async () => {
+  it("classifies a large backlog in model-reliable batches of at most 20", async () => {
     const messages = Array.from({ length: 101 }, (_, index) =>
       createMessage({ id: `message-${index}`, threadId: `thread-${index}` }),
     )
@@ -1178,7 +1178,9 @@ describe("runGmailSupervisor", () => {
       appendDecision: vi.fn().mockResolvedValue(undefined),
     })
 
-    expect(classify.mock.calls.map(([input]) => input.candidates.length)).toEqual([100, 1])
+    expect(classify.mock.calls.map(([input]) => input.candidates.length)).toEqual([
+      20, 20, 20, 20, 20, 1,
+    ])
     expect(result).toMatchObject({ unchanged: 101, retried: 0 })
   })
 
@@ -1357,7 +1359,7 @@ describe("runGmailSupervisor", () => {
       appendDecision: vi.fn().mockResolvedValue(undefined),
     })
 
-    expect(classify).toHaveBeenCalledTimes(2)
+    expect(classify).toHaveBeenCalledTimes(6)
     expect(gmail.modifyThreadLabels).not.toHaveBeenCalled()
     expect(result).toMatchObject({ archived: 0, retried: 101 })
   })
