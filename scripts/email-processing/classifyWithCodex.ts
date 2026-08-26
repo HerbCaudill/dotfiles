@@ -125,7 +125,9 @@ async function proveCodexIsolation(
   let foundUnsupportedVersion = false
   let command: readonly string[] | undefined
   for (const candidate of context.commandCandidates) {
-    const version = await context.runProcess(
+    const version = await runStartupProbe(
+      "version",
+      context.runProcess,
       createProbeRequest(context, candidate, [...candidate.slice(1), "--version"]),
     )
     if (version.code !== 0) continue
@@ -142,7 +144,9 @@ async function proveCodexIsolation(
   }
   if (!command) throw new Error("Unable to determine the Codex CLI version")
 
-  const login = await context.runProcess(
+  const login = await runStartupProbe(
+    "login status",
+    context.runProcess,
     createProbeRequest(context, command, [...command.slice(1), "login", "status"]),
   )
   if (login.code !== 0 || !`${login.stdout}\n${login.stderr}`.includes("Logged in using ChatGPT")) {
@@ -156,6 +160,23 @@ async function proveCodexIsolation(
     }
   }
   return command
+}
+
+/** Add the failing stage to bounded startup-process errors. */
+async function runStartupProbe(
+  /** Human-readable startup stage. */
+  stage: string,
+  /** Bounded process runner. */
+  runProcess: ProcessRunner,
+  /** Exact startup request. */
+  request: ProcessRequest,
+): Promise<ProcessResult> {
+  try {
+    return await runProcess(request)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(`Codex ${stage} probe failed: ${message}`, { cause: error })
+  }
 }
 
 /** Attempt forbidden read, write, and network operations under the selected profile. */

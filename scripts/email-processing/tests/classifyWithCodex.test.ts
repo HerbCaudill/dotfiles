@@ -121,6 +121,19 @@ describe("classifyWithCodex", () => {
     expect(requests.at(-1)?.args).toContain("--strict-config")
   })
 
+  it("identifies the startup stage when an external sandbox probe times out", async () => {
+    await expect(
+      classifyWithCodex(classifierInput, {
+        authFilePath: await createAuthFile(),
+        codexCommand: ["codex"],
+        parentEnvironment: { EMAIL_PROCESSING_EXTERNAL_SANDBOX: "cloudflare" },
+        runProcess: async () => {
+          throw new Error("Process timed out after 10000 ms")
+        },
+      }),
+    ).rejects.toThrow("version probe failed: Process timed out after 10000 ms")
+  })
+
   it("rejects input above the configured byte limit before starting Codex", async () => {
     const runProcess = vi.fn()
 
