@@ -10,7 +10,7 @@ import { parseClassifierOutput } from "./parseClassifierOutput.ts"
 import { runBoundedProcess } from "./runBoundedProcess.ts"
 import type { ProcessRequest, ProcessResult, ProcessRunner } from "./runBoundedProcess.ts"
 import type { ClassifierInput, ClassifierOutput } from "./types.ts"
-import { validateClassifications } from "./validateClassifications.ts"
+import { downgradeIneligibleActions, validateClassifications } from "./validateClassifications.ts"
 
 /** Classify normalized candidates through a fail-closed isolated Codex CLI process. */
 export async function classifyWithCodex(
@@ -99,7 +99,7 @@ export async function classifyWithCodex(
       throw new Error(`Codex classifier exited with code ${result.code}`)
     }
 
-    const output = parseCodexJson(result.stdout)
+    const output = downgradeIneligibleActions(input, parseCodexJson(result.stdout))
     validateClassifications(input, output)
     return output
   } finally {

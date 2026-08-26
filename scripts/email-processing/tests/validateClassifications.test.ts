@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { MAX_ACTIONS_PER_RUN } from "../constants.ts"
-import { validateClassifications } from "../validateClassifications.ts"
+import { downgradeIneligibleActions, validateClassifications } from "../validateClassifications.ts"
 import {
   archiveProtectionFields,
   promotableCategories,
@@ -157,6 +157,21 @@ describe("validateClassifications", () => {
     expect(() => validateClassifications(validClassifierInput, validPromoteOutput)).toThrow(
       "Promotion is not eligible",
     )
+  })
+
+  it("downgrades an ineligible action to a deterministic no-action decision", () => {
+    expect(downgradeIneligibleActions(validClassifierInput, validPromoteOutput)).toEqual({
+      decisions: [
+        {
+          messageId: "message-1",
+          decision: "none",
+          classification: "no-action",
+          confidence: "high",
+          reason: "Supervisor rejected an ineligible Gmail action.",
+          policySignals: ["supervisor-veto"],
+        },
+      ],
+    })
   })
 
   it("returns no mutation for a no-action decision", () => {

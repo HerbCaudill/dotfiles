@@ -10,6 +10,7 @@ import type {
   ArchiveProtections,
   ClassifierCandidate,
   ClassifierDecision,
+  ClassifierOutput,
   ValidatedClassification,
 } from "./types.ts"
 import { validateLabelMutation } from "./validateLabelMutation.ts"
@@ -49,6 +50,55 @@ export function validateClassifications(
   return output.decisions.map(decision =>
     validateDecision(decision, candidatesById.get(decision.messageId)!),
   )
+}
+
+/** Convert deterministic policy vetoes into safe no-action decisions. */
+export function downgradeIneligibleActions(
+  /** Normalized candidate input. */
+  inputValue: unknown,
+  /** Structurally valid classifier result. */
+  outputValue: unknown,
+): ClassifierOutput {
+  const input = parseClassifierInput(inputValue)
+  const output = parseClassifierOutput(outputValue)
+  const candidatesById = new Map(
+    input.candidates.map(candidate => [candidate.messageId, candidate]),
+  )
+
+  for (const decision of output.decisions) {
+    if (!candidatesById.has(decision.messageId)) {
+      throw new Error(`Unknown candidate message ID: ${decision.messageId}`)
+    }
+  }
+  for (const candidate of input.candidates) {
+    if (!output.decisions.some(decision => decision.messageId === candidate.messageId)) {
+      throw new Error(`Missing classifier decision for message ID: ${candidate.messageId}`)
+    }
+  }
+
+  const safeOutput: ClassifierOutput = {
+    decisions: output.decisions.map(decision => {
+      const candidate = candidatesById.get(decision.messageId)!
+      try {
+        validateClassifications(
+          { account: input.account, candidates: [candidate] },
+          { decisions: [decision] },
+        )
+        return decision
+      } catch {
+        return {
+          messageId: decision.messageId,
+          decision: "none",
+          classification: "no-action",
+          confidence: "high",
+          reason: "Supervisor rejected an ineligible Gmail action.",
+          policySignals: ["supervisor-veto"],
+        }
+      }
+    }),
+  }
+  validateClassifications(input, safeOutput)
+  return safeOutput
 }
 
 /** Validate one decision against deterministic facts for its offered candidate. */
