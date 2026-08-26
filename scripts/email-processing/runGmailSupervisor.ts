@@ -71,6 +71,11 @@ export async function runGmailSupervisor(
   const messagesById = new Map<string, GmailMessage>()
   const threadsById = new Map<string, GmailThread>()
   const retryOriginalLabels = getRetryOriginalLabels(state, priorDecisions, retryMessageIds)
+  const inboxMutationRetryMessageIds = new Set(
+    [...retryOriginalLabels]
+      .filter(([, labelIds]) => labelIds.includes("INBOX"))
+      .map(([messageId]) => messageId),
+  )
   const candidateIdSet = new Set(candidateIds)
   const plannedThreadIds = new Set<string>()
   const supersededRetriesByMessageId = new Map<string, string[]>()
@@ -80,9 +85,23 @@ export async function runGmailSupervisor(
     try {
       const message = await dependencies.gmail.getMessage(messageId)
       if (plannedThreadIds.has(message.threadId)) continue
-      if (!isProcessable(message, retryMessageIds.has(messageId))) continue
+      if (!isProcessable(message, inboxMutationRetryMessageIds.has(messageId))) {
+        if (retryMessageIds.has(messageId)) {
+          await dependencies.appendDecision(
+            sanitizeDecisionLogEntry(createRetryNoActionLogEntry(timestamp, message)),
+          )
+          retryMessageIds.delete(messageId)
+          retryOriginalLabels.delete(messageId)
+          result.unchanged += 1
+        }
+        continue
+      }
       const thread = await dependencies.gmail.getThread(message.threadId)
-      const targetMessage = findNewestThreadCandidate(thread, candidateIdSet, retryMessageIds)
+      const targetMessage = findNewestThreadCandidate(
+        thread,
+        candidateIdSet,
+        inboxMutationRetryMessageIds,
+      )
       if (!targetMessage) continue
       inspectedMessageId = targetMessage.id
       pendingMessageIds.delete(targetMessage.id)
@@ -402,15 +421,15 @@ function findNewestThreadCandidate(
   thread: GmailThread,
   /** Message IDs eligible for this run. */
   candidateMessageIds: Set<string>,
-  /** Message IDs that remain eligible outside Inbox. */
-  retryMessageIds: Set<string>,
+  /** Mutation retries whose original message was in Inbox. */
+  inboxMutationRetryMessageIds: Set<string>,
 ): GmailMessage | undefined {
   return [...thread.messages]
     .reverse()
     .find(
       message =>
         candidateMessageIds.has(message.id) &&
-        isProcessable(message, retryMessageIds.has(message.id)),
+        isProcessable(message, inboxMutationRetryMessageIds.has(message.id)),
     )
 }
 
@@ -872,6 +891,29 @@ function createErrorLogEntry(
   }
 }
 
+/** Complete a retry safely when its message has left Inbox before any valid mutation. */
+function createRetryNoActionLogEntry(
+  /** Run timestamp. */
+  timestamp: string,
+  /** Current Gmail message. */
+  message: GmailMessage,
+): DecisionLogEntry {
+  return {
+    timestamp,
+    messageId: message.id,
+    threadId: message.threadId,
+    sender: formatMailbox(parseMailbox(getHeader(message, "From"))),
+    subject: getHeader(message, "Subject"),
+    originalLabels: [...(message.labelIds ?? [])],
+    decision: "none",
+    classification: "no-action",
+    confidence: "high",
+    reason: "Message left Inbox before retry; no action taken.",
+    policySignals: ["no-action"],
+    gmailUrl: `https://mail.google.com/mail/#all/${encodeURIComponent(message.threadId)}`,
+  }
+}
+
 /** Check that every message in a thread reflects an exact authorized delta. */
 function threadHasMutation(
   /** Current Gmail thread. */
@@ -904,11 +946,13 @@ function threadHasMutation(
 function isProcessable(
   /** Current Gmail message. */
   message: GmailMessage,
-  /** Whether durable state requires another attempt regardless of Inbox state. */
-  isRetry: boolean,
+  /** Whether a checkpointed mutation began while the message was in Inbox. */
+  isInboxMutationRetry: boolean,
 ): boolean {
   const labels = new Set(message.labelIds ?? [])
-  return (isRetry || labels.has("INBOX")) && !labels.has("SPAM") && !labels.has("TRASH")
+  return (
+    (isInboxMutationRetry || labels.has("INBOX")) && !labels.has("SPAM") && !labels.has("TRASH")
+  )
 }
 
 /** Read one case-insensitive Gmail header. */

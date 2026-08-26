@@ -781,6 +781,46 @@ describe("runGmailSupervisor", () => {
     })
   })
 
+  it("completes a classifier-only retry without action after it leaves Inbox", async () => {
+    const archivedMessage = createMessage({ labelIds: ["IMPORTANT", "CATEGORY_UPDATES"] })
+    const classify = vi.fn().mockResolvedValue(validPromoteOutput)
+    const appendDecision = vi.fn().mockResolvedValue(undefined)
+    const saveState = vi.fn().mockResolvedValue(undefined)
+
+    const result = await runGmailSupervisor({
+      now: () => new Date("2026-08-26T12:00:00.000Z"),
+      gmail: createGmailClient({
+        listRecentInboxMessages: vi.fn().mockResolvedValue([]),
+        getMessage: vi.fn().mockResolvedValue(archivedMessage),
+        getThread: vi.fn().mockResolvedValue({ id: "thread-1", messages: [archivedMessage] }),
+      }),
+      classify,
+      loadState: async () => ({ ...emptyState, retryMessageIds: ["message-1"] }),
+      saveState,
+      loadDecisionLog: async () => [
+        createLogEntry({
+          decision: "error",
+          classification: "processing-error",
+          originalLabels: ["INBOX", "CATEGORY_UPDATES"],
+        }),
+      ],
+      appendDecision,
+    })
+
+    expect(classify).not.toHaveBeenCalled()
+    expect(appendDecision).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messageId: "message-1",
+        originalLabels: ["IMPORTANT", "CATEGORY_UPDATES"],
+        decision: "none",
+        classification: "no-action",
+        reason: "Message left Inbox before retry; no action taken.",
+      }),
+    )
+    expect(saveState).toHaveBeenLastCalledWith(expect.objectContaining({ retryMessageIds: [] }))
+    expect(result).toMatchObject({ unchanged: 1, retried: 0 })
+  })
+
   it("does not checkpoint stale labels when logging a no-action decision fails", async () => {
     let persistedState = emptyState
     const saveState = vi.fn(async (state: EmailProcessingState) => {
