@@ -128,6 +128,31 @@ describe("validateClassifications", () => {
     },
   )
 
+  it.each(promotableCategories)(
+    "rejects misfiled-marketing archive for a message in %s",
+    category => {
+      const candidate = { ...validClassifierInput.candidates[0], category }
+      const output = {
+        decisions: [{ ...validArchiveOutput.decisions[0], classification: "misfiled-marketing" }],
+      }
+
+      expect(() =>
+        validateClassifications({ ...validClassifierInput, candidates: [candidate] }, output),
+      ).toThrow("Misfiled marketing archive is not eligible")
+    },
+  )
+
+  it("allows misfiled-marketing archive for a message in Primary", () => {
+    const output = {
+      decisions: [{ ...validArchiveOutput.decisions[0], classification: "misfiled-marketing" }],
+    }
+
+    expect(validateClassifications(validClassifierInput, output)[0]?.mutation).toEqual({
+      addLabelIds: [],
+      removeLabelIds: ["INBOX"],
+    })
+  })
+
   it("rejects promotion for a message already in Primary", () => {
     expect(() => validateClassifications(validClassifierInput, validPromoteOutput)).toThrow(
       "Promotion is not eligible",
@@ -173,6 +198,37 @@ describe("validateClassifications", () => {
     expect(() =>
       validateClassifications({ ...validClassifierInput, candidates }, validNoneOutput),
     ).toThrow("Missing classifier decision")
+  })
+
+  it.each([
+    ["archive", "promote"],
+    ["archive", "none"],
+    ["promote", "none"],
+  ] as const)("rejects %s and %s decisions for candidates in one thread", (first, second) => {
+    const candidates = [
+      {
+        ...validClassifierInput.candidates[0],
+        category: first === "promote" ? "updates" : "primary",
+      },
+      {
+        ...validClassifierInput.candidates[0],
+        messageId: "message-2",
+        category: second === "promote" ? "updates" : "primary",
+      },
+    ]
+    const decisionByAction = {
+      archive: validArchiveOutput.decisions[0],
+      promote: validPromoteOutput.decisions[0],
+      none: validNoneOutput.decisions[0],
+    }
+    const decisions = [
+      decisionByAction[first],
+      { ...decisionByAction[second], messageId: "message-2" },
+    ]
+
+    expect(() =>
+      validateClassifications({ ...validClassifierInput, candidates }, { decisions }),
+    ).toThrow("Conflicting classifier actions for thread ID: thread-1")
   })
 
   it("rejects a batch above the conservative action limit", () => {

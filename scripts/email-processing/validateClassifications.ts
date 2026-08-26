@@ -39,6 +39,8 @@ export function validateClassifications(
     }
   }
 
+  validateThreadActions(output.decisions, candidatesById)
+
   const actionCount = output.decisions.filter(decision => decision.decision !== "none").length
   if (actionCount > MAX_ACTIONS_PER_RUN) {
     throw new Error(`Action limit of ${MAX_ACTIONS_PER_RUN} exceeded`)
@@ -92,6 +94,12 @@ function validateArchiveDecision(
     throw new Error(`Archive decision is blocked for message ID: ${candidate.messageId}`)
   }
 
+  if (decision.classification === "misfiled-marketing" && candidate.category !== "primary") {
+    throw new Error(
+      `Misfiled marketing archive is not eligible for message ID: ${candidate.messageId}`,
+    )
+  }
+
   if (decision.classification === "delegated-customer") {
     const facts = candidate.delegatedCustomer
     if (!facts.customerInquiry || !facts.otherDevResultsRecipient || facts.requiresHerbAction) {
@@ -120,4 +128,23 @@ function hasArchiveProtection(
   protections: ArchiveProtections,
 ): boolean {
   return Object.values(protections).some(Boolean)
+}
+
+/** Reject different thread-level actions for candidates in the same Gmail thread. */
+function validateThreadActions(
+  /** Complete classifier decisions. */
+  decisions: ClassifierDecision[],
+  /** Offered candidates keyed by message ID. */
+  candidatesById: ReadonlyMap<string, ClassifierCandidate>,
+): void {
+  const actionsByThreadId = new Map<string, ClassifierDecision["decision"]>()
+
+  for (const decision of decisions) {
+    const threadId = candidatesById.get(decision.messageId)!.threadId
+    const priorAction = actionsByThreadId.get(threadId)
+    if (priorAction !== undefined && priorAction !== decision.decision) {
+      throw new Error(`Conflicting classifier actions for thread ID: ${threadId}`)
+    }
+    actionsByThreadId.set(threadId, decision.decision)
+  }
 }
