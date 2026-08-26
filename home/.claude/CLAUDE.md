@@ -55,6 +55,8 @@ Prefer a purpose-built connector, API, or CLI. When browser UI is necessary, use
 
 Repositories with a `.beads` directory use `bd`. Do not use TodoWrite, TaskCreate, or Markdown task lists there. Create issues only when Herb asks or the work benefits from durable tracking, not for a small task you will finish immediately.
 
+Beads IDs are internal. Never include them in branch names, commit messages, GitHub issues or pull requests, release notes, or other external trackers. Use descriptive public names and text instead.
+
 ## Using git and the filesystem
 
 - Clone repositories into `~/Code/{orgname}/{reponame}`.
