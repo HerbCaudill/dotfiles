@@ -35,7 +35,9 @@ function sanitizePolicySignal(
   containsMedicalDetails: boolean,
 ): string {
   if (TRUSTED_POLICY_SIGNALS.has(value)) return sanitizeLogText(value, false)
-  return containsMedicalDetails ? "[REDACTED MEDICAL DETAIL]" : sanitizeLogText(value)
+  return containsMedicalDetails || MEDICAL_DETAIL_PATTERN.test(value)
+    ? "[REDACTED MEDICAL DETAIL]"
+    : "[REDACTED]"
 }
 
 /** Sanitize a display name without changing the exact sender address. */
@@ -97,5 +99,31 @@ const IBAN_PATTERN = /\b[A-Z]{2}\d{2}(?:[ -]?[A-Z0-9]){10,30}\b/gi
 /** Financial identifiers written as long digit sequences with spaces or hyphens. */
 const GROUPED_FINANCIAL_NUMBER_PATTERN = /\b(?:\d[ -]?){6,}\d\b/g
 
-/** Exact detail-free labels allowed through medical-context redaction. */
-const TRUSTED_POLICY_SIGNALS = new Set(["medical-action", "retry", "routine"])
+/** Exact detail-free policy labels permitted in the audit log. */
+const TRUSTED_POLICY_SIGNALS = new Set([
+  "account-security",
+  "action-request",
+  "active-work",
+  "approval-request",
+  "archive-reversed",
+  "cold-investor",
+  "cold-job-inquiry",
+  "cold-vendor",
+  "delegated-customer",
+  "explicit-action",
+  "financial-anomaly",
+  "generic-solicitation",
+  "medical-action",
+  "misfiled-marketing",
+  "no-action",
+  "operational-failure",
+  "personal-message",
+  "promotion-missed",
+  "promotion-reversed",
+  "retry",
+  "routine",
+  "routine-receipt",
+  "scheduling-exception",
+  "service-decision",
+  "unsolicited-sales",
+])

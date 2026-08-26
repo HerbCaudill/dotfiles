@@ -83,7 +83,7 @@ describe("email processing storage", () => {
         ...decision,
         subject: "Login code [REDACTED]",
         reason: "Secret token [REDACTED]",
-        policySignals: ["account-[REDACTED]"],
+        policySignals: ["[REDACTED]"],
       },
     ])
     await appendEmailDecision({ ...decision, messageId: "message-2" }, path)
@@ -92,7 +92,7 @@ describe("email processing storage", () => {
         ...decision,
         subject: "Login code [REDACTED]",
         reason: "Secret token [REDACTED]",
-        policySignals: ["account-[REDACTED]"],
+        policySignals: ["[REDACTED]"],
       },
       { ...decision, messageId: "message-2" },
     ])
@@ -242,7 +242,12 @@ describe("email processing storage", () => {
     await appendEmailDecision(
       {
         ...createDecision(),
-        policySignals: ["diagnosis-cancer-stage-ii", "stage-ii-cancer", "hiv-positive"],
+        policySignals: [
+          "diagnosis-cancer-stage-ii",
+          "stage-ii-cancer",
+          "hiv-positive",
+          "stage-ii-positive",
+        ],
       },
       path,
     )
@@ -253,6 +258,7 @@ describe("email processing storage", () => {
           "[REDACTED MEDICAL DETAIL]",
           "[REDACTED MEDICAL DETAIL]",
           "[REDACTED MEDICAL DETAIL]",
+          "[REDACTED]",
         ],
       }),
     ])
