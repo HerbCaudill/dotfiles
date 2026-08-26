@@ -15,17 +15,17 @@ DevResults is a Windows-native .NET/SQL Server application. Treat the Parallels 
 
 ## Quick Reference
 
-| Need                  | Default approach                                                                                                  |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Work in the repo      | Edit in a separate macOS clone and sync to Windows with `drsync`, or SSH to `devresults-vm` for Windows-only work |
-| Query dev SQL Server  | Use the `sql-server-dev` skill from macOS                                                                         |
-| Run the web app       | Use IIS Express in the Windows VM                                                                                 |
-| Test browser behavior | Open the VM-hosted app URL from macOS when reachable                                                              |
+| Need                       | Default approach                                                                                                      |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Work in the repo           | Edit in a separate macOS clone and sync to Windows with `drsync`, or SSH to `devresults-vm` for Windows-only work     |
+| Query dev SQL Server       | Use the `sql-server-dev` skill from macOS                                                                             |
+| Run the web app            | Use IIS Express in the Windows VM                                                                                     |
+| Test browser behavior      | Open the VM-hosted app URL from macOS when reachable                                                                  |
 | Verify logged-in app state | Use Herb's logged-in Chrome (claude-in-chrome MCP) — don't fight cookie auth with curl/bearer tokens on non-API pages |
-| Edit files            | Prefer a separate macOS clone synced with `drsync`; never edit through the mounted Windows checkout               |
-| Repo instructions     | Read `CLAUDE.md` from the DevResults repo root                                                                    |
-| Repo-specific skills  | Check `.claude/skills` inside the DevResults repo                                                                 |
-| Common repo commands  | Use `drsync <command>` from a macOS clone, or `dr <command>` for Windows-only commands                            |
+| Edit files                 | Prefer a separate macOS clone synced with `drsync`; never edit through the mounted Windows checkout                   |
+| Repo instructions          | Read `CLAUDE.md` from the DevResults repo root                                                                        |
+| Repo-specific skills       | Check `.claude/skills` inside the DevResults repo                                                                     |
+| Common repo commands       | Use `drsync <command>` from a macOS clone, or `dr <command>` for Windows-only commands                                |
 
 ## Hard Rule: Never Use macOS Mounts for Repo Files
 
@@ -203,6 +203,20 @@ powershell -ExecutionPolicy Unrestricted .\ConfigureTls.ps1
 ```
 
 Use the Cloudflare API token from 1Password when prompted. The certificate expires about every 3 months, so this is expected recurring maintenance.
+
+## Concurrent runtime port allocation
+
+Keep the established runtime lanes separate. Do not solve a collision by reusing another lane's server or by setting Playwright's `reuseExistingServer`; each process must prove it owns the server and data it expects.
+
+| Lane                           | Windows HTTPS |            macOS/front-end port | Runtime and data                    |
+| ------------------------------ | ------------: | ------------------------------: | ----------------------------------- |
+| Primary DevResults             |         `443` |          VibeResults dev `9443` | `C:\Code\DevResults`, `dev`         |
+| Legacy e2e                     |         `443` |                   tunnel `8443` | `C:\Code\e2e-runtime`, `e2e`        |
+| VibeResults parity             |         `444` | tunnel `8444`, front end `9444` | `C:\Code\vibe-runtime`, `e2e-vibe`  |
+| VibeResults fixture Playwright |          none |                front end `9445` | local deterministic fixtures        |
+| Report convergence             |       `44400` |                  direct `44400` | `C:\Code\report-runtime`, `dev-inl` |
+
+VibeResults normal development and legacy e2e can share Windows port `443` because they intentionally use the same primary backend; the macOS listeners remain distinct. Override VibeResults development with `APP_HTTPS_PORT`, its fixture suite with `APP_E2E_PORT`, and e2e tunnels with `HTTPS_PORT` plus the matching `DEVRESULTS_HTTPS_PORT`. Report commands use `BASE_URL=https://inl.devlocal.us:44400`. If a default port is occupied, first identify the owner with `lsof -nP -iTCP:<port> -sTCP:LISTEN` on macOS or `Get-NetTCPConnection -LocalPort <port> -State Listen` on Windows.
 
 If renewing over SSH, note that the saved Posh-ACME `pluginargs.json` may fail to decrypt with `Key not valid for use in specified state` because DPAPI state differs from the original interactive Windows session. In that case, prefer the documented elevated PowerShell flow. If a remote workaround is necessary, back up `C:\Users\herbcaudill\AppData\Local\Posh-ACME\LE_PROD\3184500871\devlocal.us\pluginargs.json`, renew with a fresh Cloudflare token, bind the returned thumbprint to `0.0.0.0:443`, then restore the original encrypted `pluginargs.json` so the token is not left on disk in plain form.
 
