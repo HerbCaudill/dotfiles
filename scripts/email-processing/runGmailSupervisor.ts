@@ -4,6 +4,8 @@ import {
   MAX_CLASSIFIER_CANDIDATES,
   MAX_CLASSIFIER_INPUT_BYTES,
 } from "./constants.ts"
+import { parseClassifierInput } from "./parseClassifierInput.ts"
+import { parseClassifierOutput } from "./parseClassifierOutput.ts"
 import { sanitizeDecisionLogEntry } from "./sanitizeDecisionLogEntry.ts"
 import type {
   ClassifierCandidate,
@@ -119,11 +121,31 @@ export async function runGmailSupervisor(
 
   if (candidates.length > 0) {
     let decisions: ReturnType<typeof validateClassifications> = []
-    for (const batch of createClassifierBatches(candidates)) {
+    let requestedActionCount = 0
+    const classifierCandidates: ClassifierCandidate[] = []
+    for (const candidate of candidates) {
+      try {
+        classifierCandidates.push(prepareClassifierCandidate(candidate))
+      } catch {
+        await recordClassifierFailures(
+          timestamp,
+          [candidate],
+          messagesById,
+          retryMessageIds,
+          dependencies,
+          "Candidate validation failed",
+        )
+      }
+    }
+    for (const batch of createClassifierBatches(classifierCandidates)) {
       try {
         const input = { account: EMAIL_PROCESSING_ACCOUNT, candidates: batch }
         const output = await dependencies.classify(input)
-        decisions.push(...validateClassifications(input, output))
+        const parsedOutput = parseClassifierOutput(output)
+        requestedActionCount += parsedOutput.decisions.filter(
+          decision => decision.decision !== "none",
+        ).length
+        decisions.push(...validateClassifications(input, parsedOutput))
       } catch {
         await recordClassifierFailures(
           timestamp,
@@ -134,7 +156,7 @@ export async function runGmailSupervisor(
         )
       }
     }
-    if (decisions.filter(decision => decision.decision !== "none").length > MAX_ACTIONS_PER_RUN) {
+    if (requestedActionCount > MAX_ACTIONS_PER_RUN) {
       await recordClassifierFailures(
         timestamp,
         decisions.map(
@@ -163,11 +185,11 @@ export async function runGmailSupervisor(
           ),
         )
         try {
-          if (!threadHasMutation(thread, decision.mutation)) {
+          if (!threadHasMutation(thread, decision.mutation, decision.messageId)) {
             await dependencies.gmail.modifyThreadLabels(decision.threadId, decision.mutation)
           }
           const verifiedThread = await dependencies.gmail.getThread(decision.threadId)
-          if (!threadHasMutation(verifiedThread, decision.mutation)) {
+          if (!threadHasMutation(verifiedThread, decision.mutation, decision.messageId)) {
             throw new Error("Gmail label verification failed")
           }
         } catch {
@@ -240,6 +262,8 @@ async function recordClassifierFailures(
   retryMessageIds: Set<string>,
   /** Supervisor boundaries used for durable logging. */
   dependencies: GmailSupervisorDependencies,
+  /** Stable audit reason for this failed batch. */
+  reason = "Classifier failed",
 ): Promise<void> {
   for (const candidate of candidates) {
     retryMessageIds.add(candidate.messageId)
@@ -249,7 +273,7 @@ async function recordClassifierFailures(
           timestamp,
           candidate.messageId,
           candidate.threadId,
-          "Classifier failed",
+          reason,
           messagesById.get(candidate.messageId),
           candidate,
         ),
@@ -266,7 +290,7 @@ function createClassifierBatches(
   const batches: ClassifierCandidate[][] = []
   let currentBatch: ClassifierCandidate[] = []
 
-  for (const candidate of candidates.map(fitCandidateToClassifierLimit)) {
+  for (const candidate of candidates) {
     const nextBatch = [...currentBatch, candidate]
     if (
       currentBatch.length > 0 &&
@@ -281,6 +305,18 @@ function createClassifierBatches(
   }
   if (currentBatch.length > 0) batches.push(currentBatch)
   return batches
+}
+
+/** Bound one candidate by bytes and then validate every strict per-field schema limit. */
+function prepareClassifierCandidate(
+  /** Candidate normalized from Gmail. */
+  candidate: ClassifierCandidate,
+): ClassifierCandidate {
+  const boundedCandidate = fitCandidateToClassifierLimit(candidate)
+  return parseClassifierInput({
+    account: EMAIL_PROCESSING_ACCOUNT,
+    candidates: [boundedCandidate],
+  }).candidates[0]!
 }
 
 /** Drop only oldest thread context until one candidate fits the classifier byte boundary. */
@@ -836,17 +872,21 @@ function threadHasMutation(
   thread: GmailThread,
   /** Validated intended label delta. */
   mutation: NonNullable<ReturnType<typeof validateClassifications>[number]["mutation"]>,
+  /** Inbound message whose Inbox retention matters for promotion. */
+  targetMessageId: string,
 ): boolean {
+  const isPromotion = mutation.addLabelIds.includes("CATEGORY_PERSONAL")
+  if (
+    isPromotion &&
+    !thread.messages.find(message => message.id === targetMessageId)?.labelIds?.includes("INBOX")
+  ) {
+    return false
+  }
   return (
     thread.messages.length > 0 &&
     thread.messages.every(message => {
       const labels = new Set(message.labelIds ?? [])
-      const retainsInbox =
-        !mutation.addLabelIds.includes("CATEGORY_PERSONAL") ||
-        labels.has("INBOX") ||
-        labels.has("SENT")
       return (
-        retainsInbox &&
         mutation.addLabelIds.every(label => labels.has(label)) &&
         mutation.removeLabelIds.every(label => !labels.has(label))
       )

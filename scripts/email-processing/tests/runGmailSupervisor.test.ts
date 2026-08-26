@@ -533,6 +533,52 @@ describe("runGmailSupervisor", () => {
     expect(result).toMatchObject({ promoted: 1, retried: 0 })
   })
 
+  it("requires Inbox retention only on the target inbound message during promotion verification", async () => {
+    const promotionsMessage = createMessage({
+      id: "target-message",
+      labelIds: ["INBOX", "CATEGORY_PROMOTIONS"],
+    })
+    const olderReceivedMessage = createMessage({
+      id: "older-message",
+      labelIds: ["CATEGORY_PERSONAL"],
+    })
+    const promotedMessage = createMessage({
+      id: "target-message",
+      labelIds: ["INBOX", "CATEGORY_PERSONAL"],
+    })
+    const gmail = createGmailClient({
+      listRecentInboxMessages: vi
+        .fn()
+        .mockResolvedValue([{ messageId: "target-message", threadId: "thread-1" }]),
+      getMessage: vi.fn().mockResolvedValue(promotionsMessage),
+      getThread: vi
+        .fn()
+        .mockResolvedValueOnce({
+          id: "thread-1",
+          messages: [olderReceivedMessage, promotionsMessage],
+        })
+        .mockResolvedValueOnce({
+          id: "thread-1",
+          messages: [olderReceivedMessage, promotedMessage],
+        }),
+    })
+    const output = {
+      decisions: [{ ...validPromoteOutput.decisions[0], messageId: "target-message" }],
+    }
+
+    const result = await runGmailSupervisor({
+      now: () => new Date("2026-08-26T12:00:00.000Z"),
+      gmail,
+      classify: vi.fn().mockResolvedValue(output),
+      loadState: async () => emptyState,
+      saveState: vi.fn().mockResolvedValue(undefined),
+      loadDecisionLog: async () => [],
+      appendDecision: vi.fn().mockResolvedValue(undefined),
+    })
+
+    expect(result).toMatchObject({ promoted: 1, retried: 0 })
+  })
+
   it("retries a mutation when post-write labels do not match the exact plan", async () => {
     const appendDecision = vi.fn().mockResolvedValue(undefined)
     const saveState = vi.fn().mockResolvedValue(undefined)
@@ -1136,6 +1182,60 @@ describe("runGmailSupervisor", () => {
     expect(result).toMatchObject({ unchanged: 101, retried: 0 })
   })
 
+  it("isolates candidates that exceed per-field classifier schema limits", async () => {
+    const invalidBody = createMessage({
+      id: "invalid-body",
+      threadId: "thread-invalid-body",
+      body: "x".repeat(100_001),
+    })
+    const invalidSubject = createMessage({
+      id: "invalid-subject",
+      threadId: "thread-invalid-subject",
+      subject: "x".repeat(2_001),
+    })
+    const validMessage = createMessage({ id: "valid", threadId: "thread-valid" })
+    const messages = [invalidBody, invalidSubject, validMessage]
+    const classify = vi.fn(async (input: ClassifierInput) => ({
+      decisions: input.candidates.map(candidate => ({
+        ...validNoneOutput.decisions[0],
+        messageId: candidate.messageId,
+      })),
+    }))
+    const appendDecision = vi.fn().mockResolvedValue(undefined)
+
+    const result = await runGmailSupervisor({
+      now: () => new Date("2026-08-26T12:00:00.000Z"),
+      gmail: createGmailClient({
+        listRecentInboxMessages: vi
+          .fn()
+          .mockResolvedValue(
+            messages.map(message => ({ messageId: message.id, threadId: message.threadId })),
+          ),
+        getMessage: vi.fn().mockImplementation(async id => messages.find(item => item.id === id)!),
+        getThread: vi.fn().mockImplementation(async id => ({
+          id,
+          messages: [messages.find(item => item.threadId === id)!],
+        })),
+      }),
+      classify,
+      loadState: async () => emptyState,
+      saveState: vi.fn().mockResolvedValue(undefined),
+      loadDecisionLog: async () => [],
+      appendDecision,
+    })
+
+    expect(classify).toHaveBeenCalledWith({
+      account: "herb@devresults.com",
+      candidates: [expect.objectContaining({ messageId: "valid" })],
+    })
+    expect(appendDecision.mock.calls.map(([entry]) => entry.messageId)).toEqual([
+      "invalid-body",
+      "invalid-subject",
+      "valid",
+    ])
+    expect(result).toMatchObject({ unchanged: 1, retried: 2 })
+  })
+
   it("splits classifier batches before their serialized input reaches one megabyte", async () => {
     const messages = Array.from({ length: 12 }, (_, index) =>
       createMessage({
@@ -1184,7 +1284,7 @@ describe("runGmailSupervisor", () => {
     const priorMessages = Array.from({ length: 12 }, (_, index) =>
       createMessage({
         id: `prior-${index}`,
-        body: `${index}`.repeat(90_000),
+        body: String.fromCharCode("a".charCodeAt(0) + index).repeat(90_000),
       }),
     )
     const classify = vi.fn().mockImplementation(async (input: ClassifierInput) => ({
@@ -1215,7 +1315,7 @@ describe("runGmailSupervisor", () => {
 
     const input = classify.mock.calls[0]?.[0]
     expect(Buffer.byteLength(JSON.stringify(input), "utf8")).toBeLessThanOrEqual(1_000_000)
-    expect(input.candidates[0]?.thread.at(-1)?.body).toBe("11".repeat(90_000))
+    expect(input.candidates[0]?.thread.at(-1)?.body).toBe("l".repeat(90_000))
     expect(input.candidates[0]?.thread.length).toBeLessThan(priorMessages.length)
   })
 
@@ -1227,7 +1327,7 @@ describe("runGmailSupervisor", () => {
       decisions: input.candidates.map(candidate => {
         const index = Number(candidate.messageId.slice("message-".length))
         return {
-          ...(index < 10 || index === 100
+          ...(index < 11 || index === 100
             ? validArchiveOutput.decisions[0]
             : validNoneOutput.decisions[0]),
           messageId: candidate.messageId,

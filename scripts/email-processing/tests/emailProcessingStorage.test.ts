@@ -234,6 +234,29 @@ describe("email processing storage", () => {
       expect.objectContaining({ reason: "OTP is [REDACTED]" }),
     ])
   })
+
+  it("does not trust medical details merely because a policy signal is kebab-case", async () => {
+    const directory = await createTemporaryDirectory()
+    const path = join(directory, "decisions.jsonl")
+
+    await appendEmailDecision(
+      {
+        ...createDecision(),
+        policySignals: ["diagnosis-cancer-stage-ii", "stage-ii-cancer", "hiv-positive"],
+      },
+      path,
+    )
+
+    await expect(loadEmailDecisionLog(path)).resolves.toEqual([
+      expect.objectContaining({
+        policySignals: [
+          "[REDACTED MEDICAL DETAIL]",
+          "[REDACTED MEDICAL DETAIL]",
+          "[REDACTED MEDICAL DETAIL]",
+        ],
+      }),
+    ])
+  })
 })
 
 /** Create and track one isolated test directory. */

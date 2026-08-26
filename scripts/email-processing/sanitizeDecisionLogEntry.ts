@@ -34,7 +34,7 @@ function sanitizePolicySignal(
   /** Whether the surrounding decision is medical. */
   containsMedicalDetails: boolean,
 ): string {
-  if (STABLE_POLICY_SIGNAL_PATTERN.test(value)) return sanitizeLogText(value, false)
+  if (TRUSTED_POLICY_SIGNALS.has(value)) return sanitizeLogText(value, false)
   return containsMedicalDetails ? "[REDACTED MEDICAL DETAIL]" : sanitizeLogText(value)
 }
 
@@ -97,5 +97,5 @@ const IBAN_PATTERN = /\b[A-Z]{2}\d{2}(?:[ -]?[A-Z0-9]){10,30}\b/gi
 /** Financial identifiers written as long digit sequences with spaces or hyphens. */
 const GROUPED_FINANCIAL_NUMBER_PATTERN = /\b(?:\d[ -]?){6,}\d\b/g
 
-/** Stable kebab-case policy labels carry no free-form medical details. */
-const STABLE_POLICY_SIGNAL_PATTERN = /^[a-z]+(?:-[a-z]+)*$/
+/** Exact detail-free labels allowed through medical-context redaction. */
+const TRUSTED_POLICY_SIGNALS = new Set(["medical-action", "retry", "routine"])
