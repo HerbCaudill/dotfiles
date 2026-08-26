@@ -98,6 +98,29 @@ describe("classifyWithCodex", () => {
     expect(classifierRequest.cwd.startsWith(dirname(classifierRequest.env.CODEX_HOME!))).toBe(true)
   })
 
+  it("trusts an explicit outer sandbox without invoking the unsupported nested probe", async () => {
+    const requests: ProcessRequest[] = []
+    const runProcess = vi.fn(async (request: ProcessRequest): Promise<ProcessResult> => {
+      requests.push(request)
+      if (request.args.includes("--version")) return success("codex-cli 0.149.1\n")
+      if (request.args.includes("login")) return success("Logged in using ChatGPT\n")
+      return success(JSON.stringify(validNoneOutput))
+    })
+
+    await expect(
+      classifyWithCodex(classifierInput, {
+        authFilePath: await createAuthFile(),
+        codexCommand: ["codex"],
+        parentEnvironment: { EMAIL_PROCESSING_EXTERNAL_SANDBOX: "cloudflare" },
+        runProcess,
+      }),
+    ).resolves.toEqual(validNoneOutput)
+
+    expect(requests).toHaveLength(3)
+    expect(requests.some(request => request.args.includes("sandbox"))).toBe(false)
+    expect(requests.at(-1)?.args).toContain("--strict-config")
+  })
+
   it("rejects input above the configured byte limit before starting Codex", async () => {
     const runProcess = vi.fn()
 

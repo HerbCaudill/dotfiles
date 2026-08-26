@@ -25,19 +25,19 @@ export async function classifyWithCodex(
     throw new Error(`Classifier input limit of ${maxInputBytes} bytes exceeded`)
   }
   const input = parseClassifierInput(JSON.parse(serializedInput))
+  const parentEnvironment = options.parentEnvironment ?? process.env
+  const externalSandbox =
+    parentEnvironment.EMAIL_PROCESSING_EXTERNAL_SANDBOX === EXTERNAL_SANDBOX_CLOUDFLARE
   const commandCandidates = options.codexCommand
     ? [options.codexCommand]
-    : await findCodexCommands(options.parentEnvironment?.PATH ?? process.env.PATH)
+    : await findCodexCommands(parentEnvironment.PATH)
   if (commandCandidates.some(command => command.length === 0 || !command[0])) {
     throw new Error("Codex command must not be empty")
   }
 
   const authFilePath =
     options.authFilePath ??
-    join(
-      options.parentEnvironment?.CODEX_HOME ?? process.env.CODEX_HOME ?? join(homedir(), ".codex"),
-      "auth.json",
-    )
+    join(parentEnvironment.CODEX_HOME ?? join(homedir(), ".codex"), "auth.json")
   await assertPrivateAuthFile(authFilePath)
 
   const isolatedRoot = await mkdtemp(join(tmpdir(), "email-classifier-"))
@@ -57,16 +57,13 @@ export async function classifyWithCodex(
       mode: 0o600,
     })
 
-    const env = createIsolatedEnvironment(
-      options.parentEnvironment ?? process.env,
-      isolatedHome,
-      isolatedRoot,
-    )
+    const env = createIsolatedEnvironment(parentEnvironment, isolatedHome, isolatedRoot)
     const runProcess = options.runProcess ?? runBoundedProcess
     const command = await proveCodexIsolation({
       authFilePath,
       commandCandidates,
       env,
+      externalSandbox,
       runProcess,
       workspace,
     })
@@ -152,9 +149,11 @@ async function proveCodexIsolation(
     throw new Error("Codex classifier requires ChatGPT authentication")
   }
 
-  const isolation = await runIsolationProbe(context, command)
-  if (isolation.code !== 0) {
-    throw new Error(`Codex isolation probe failed with code ${isolation.code}`)
+  if (!context.externalSandbox) {
+    const isolation = await runIsolationProbe(context, command)
+    if (isolation.code !== 0) {
+      throw new Error(`Codex isolation probe failed with code ${isolation.code}`)
+    }
   }
   return command
 }
@@ -322,6 +321,7 @@ function createIsolatedEnvironment(
 // CONSTANTS
 
 const CODEX_PROFILE_NAME = "email-classifier"
+const EXTERNAL_SANDBOX_CLOUDFLARE = "cloudflare"
 const MINIMUM_CODEX_VERSION = [0, 149, 1] as const
 // Codex mirrors stdin to diagnostic output, so this cap includes the bounded input plus its result.
 const MAX_CLASSIFIER_OUTPUT_BYTES = MAX_CLASSIFIER_INPUT_BYTES + 262_144
@@ -436,6 +436,8 @@ type IsolationProbeContext = {
   commandCandidates: readonly (readonly string[])[]
   /** Complete isolated process environment. */
   env: NodeJS.ProcessEnv
+  /** Whether Cloudflare enforces the outer process and network boundary. */
+  externalSandbox: boolean
   /** Bounded process boundary. */
   runProcess: ProcessRunner
   /** Empty, non-writable model workspace. */
