@@ -1,0 +1,12 @@
+#!/usr/bin/env -S node --experimental-strip-types
+
+import { runDelegatedGws } from "../../../scripts/google-workspace/runDelegatedGws.ts"
+
+runDelegatedGws(process.argv.slice(2))
+  .then(status => {
+    process.exitCode = status
+  })
+  .catch(error => {
+    console.error(error instanceof Error ? error.message : "Delegated gws command failed")
+    process.exitCode = 1
+  })

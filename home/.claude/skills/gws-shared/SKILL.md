@@ -18,7 +18,12 @@ The `gws` binary must be on `$PATH`. See the project README for install options.
 
 ## Authentication
 
+On Herb's Mac, use `gws-delegated` in place of `gws` for API commands. It creates a short-lived service-account token for `herb@devresults.com` using the domain-wide delegation scopes approved by the Workspace administrator. It does not use interactive OAuth or the `gws` credential cache.
+
 ```bash
+# Herb's unattended local authentication
+gws-delegated tasks tasklists list
+
 # Browser-based OAuth (interactive)
 gws auth login
 

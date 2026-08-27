@@ -31,6 +31,7 @@ in {
     ".local/bin/devresults-vm".source = mkRepoSymlink "home/.local/bin/devresults-vm";
     ".local/bin/gh-sync".source = mkRepoSymlink "home/.local/bin/gh-sync";
     ".local/bin/github-pr-task-sync".source = mkRepoSymlink "home/.local/bin/github-pr-task-sync";
+    ".local/bin/gws-delegated".source = mkRepoSymlink "home/.local/bin/gws-delegated";
     ".local/bin/index-project".source = mkRepoSymlink "home/.local/bin/index-project";
     ".local/bin/obsidian-sync".source = mkRepoSymlink "home/.local/bin/obsidian-sync";
     ".local/bin/personal-info-sync".source = mkRepoSymlink "home/.local/bin/personal-info-sync";

@@ -15,11 +15,11 @@ Run gathering in three parallel subagents so raw source data stays out of the ma
 
 **Calendar** (main agent, Google Calendar MCP): today's events on the primary calendar. Note declines, pending invitations, and free stretches.
 
-**Tasks** (main agent, `gws` CLI): the `Today` task list.
+**Tasks** (main agent, delegated `gws` CLI): the `Today` task list.
 
 ```bash
-gws tasks tasklists list                     # find the "Today" list id
-gws tasks tasks list --params '{"tasklist":"<id>","showCompleted":false}'
+gws-delegated tasks tasklists list                     # find the "Today" list id
+gws-delegated tasks tasks list --params '{"tasklist":"<id>","showCompleted":false}'
 ```
 
 Skip orphaned legacy tasks: anything with a numeric-style id (`…:0:12345`), a `position` of `2147483647`, or an `updated` date more than a year old. These are pre-2019 migration ghosts that Google's UI no longer shows.

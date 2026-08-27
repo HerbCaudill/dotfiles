@@ -59,6 +59,7 @@ These are installed into `~/.local/bin` by Home Manager rather than a custom sym
 | `agent-transcripts-sync` | Sync raw local Claude Code, Codex, and Pi transcript stores into `~/Code/HerbCaudill/agent-transcripts` and commit changes there | Node.js  |
 | `drsync`                 | Save the current macOS DevResults clone to a WIP branch, sync the Windows VM checkout, and run a Windows-side command            | Node.js  |
 | `github-pr-task-sync`    | Poll GitHub notifications and create Google Tasks for assigned/review-requested PRs                                              | Node.js  |
+| `gws-delegated`          | Run GWS commands with a short-lived domain-wide delegated token for Herb                                                         | Node.js  |
 | `update-agent-harnesses` | Update Claude Code, Pi, Codex, pnpm, and bd                                                                                      | Zsh      |
 | `beads`                  | Wrapper for `bd`                                                                                                                 | Shell    |
 | `gh-sync`                | Sync `~/Code/HerbCaudill` with all repos on github.com/HerbCaudill                                                               | Bash     |

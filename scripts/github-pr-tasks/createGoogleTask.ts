@@ -9,7 +9,7 @@ export async function createGoogleTask(
   task: GoogleTaskRequest,
 ): Promise<void> {
   const result = spawnSync(
-    "gws",
+    "gws-delegated",
     [
       "tasks",
       "tasks",
@@ -30,5 +30,5 @@ export async function createGoogleTask(
 
   const output =
     result.stderr?.trim() || result.stdout?.trim() || `exit ${result.status ?? "unknown"}`
-  throw new Error(`gws task creation failed: ${output}`)
+  throw new Error(`delegated gws task creation failed: ${output}`)
 }
