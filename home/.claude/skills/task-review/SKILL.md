@@ -81,6 +81,7 @@ Use Herb's Obsidian vault at `/Users/herbcaudill/Code/herbcaudill/notes` for con
 
 - Search the vault for a relevant existing note before creating one. Update the canonical subject note instead of creating a note per task review or agent session.
 - Use a short, descriptive subject title such as `Tesla body repairs`, not the Google Task title or an agent-session title when those are less durable.
+- Do not add a level-one heading that restates the filename. Obsidian already displays the filename as the note title. Begin with the task backlink or the body, and use level-two or lower headings for sections.
 - Follow the vault's existing note organization and style. Do not create a new folder scheme for task reviews.
 - Summarize private messages and email threads. Do not copy full conversations, raw message dumps, credentials, one-time codes, or unrelated personal details into the note.
 - Link to authoritative sources where possible and distinguish verified facts, Herb's decisions, and agent inference.
