@@ -45,6 +45,10 @@ Diagnose bugs before fixing them. Establish the intended behavior and likely cau
 
 End plans with unresolved questions, if any. Use hard cutovers unless Herb asks for backward compatibility.
 
+When scheduling meetings, use Zoom rather than Google Meet.
+
+For involved delegated work, create a standalone Codex task rather than an in-thread subagent. Use subagents for quick, narrow actions.
+
 When assigning work to another agent, use the shortest instruction that uniquely identifies it. If the authoritative task already has the requirements, give only the action and ID, such as `Complete ee-0sey.` Add context only when the agent cannot discover it or the assignment changes the task, workflow, or coordination rules.
 
 ## Browser use \[macOS only\]
