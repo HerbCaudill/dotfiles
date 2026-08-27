@@ -262,7 +262,7 @@ in
       StandardOutPath = "/tmp/github-pr-task-sync.log";
       StandardErrorPath = "/tmp/github-pr-task-sync.log";
       EnvironmentVariables = {
-        PATH = "${launchdPath}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin";
+        PATH = "${userBin}:${launchdPath}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin";
       };
     };
   };
