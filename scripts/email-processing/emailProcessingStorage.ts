@@ -61,7 +61,7 @@ export async function loadEmailDecisionLog(
   }
 }
 
-/** Append one sanitized JSONL outcome with owner-only permissions. */
+/** Append one sanitized outcome or raw error diagnostic with owner-only permissions. */
 export async function appendEmailDecision(
   /** Decision record to sanitize and persist. */
   entry: DecisionLogEntry,
@@ -138,6 +138,7 @@ function parseDecisionLogEntry(
   if (!DECISIONS.has(decision as never) || !CONFIDENCE_LEVELS.has(confidence as never)) {
     throw new Error("Invalid email decision log entry")
   }
+  const exception = decision === "error" ? optionalString(value.exception) : undefined
   return {
     timestamp: requiredString(value.timestamp),
     messageId: requiredString(value.messageId),
@@ -149,9 +150,18 @@ function parseDecisionLogEntry(
     classification: requiredString(value.classification),
     confidence: confidence as DecisionLogEntry["confidence"],
     reason: requiredString(value.reason),
+    ...(exception !== undefined ? { exception } : {}),
     policySignals: stringArray(value.policySignals),
     gmailUrl: requiredString(value.gmailUrl),
   }
+}
+
+/** Read one optional string field. */
+function optionalString(
+  /** Unknown decoded value. */
+  value: unknown,
+): string | undefined {
+  return typeof value === "string" ? value : undefined
 }
 
 /** Return a clean first-run state. */

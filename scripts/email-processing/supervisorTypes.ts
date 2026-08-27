@@ -14,7 +14,7 @@ export type EmailProcessingState = {
   archiveReversalSenders: string[]
 }
 
-/** Sanitized append-only record of one processing outcome. */
+/** Append-only record of one processing outcome. */
 export type DecisionLogEntry = {
   /** RFC 3339 timestamp for the outcome. */
   timestamp: string
@@ -36,6 +36,8 @@ export type DecisionLogEntry = {
   confidence: "high" | "medium" | "low"
   /** Sanitized concise explanation. */
   reason: string
+  /** Raw inspected exception for an error outcome, including stack and custom properties. */
+  exception?: string
   /** Sanitized stable evidence labels. */
   policySignals: string[]
   /** Direct Gmail conversation URL. */

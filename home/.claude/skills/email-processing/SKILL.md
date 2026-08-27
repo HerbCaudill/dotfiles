@@ -43,12 +43,13 @@ Write one JSON object to the decision log for every processed message:
   "classification": "short stable category",
   "confidence": "high | medium | low",
   "reason": "one concise sentence",
+  "exception": "raw inspected exception for error decisions only",
   "policySignals": ["short signal"],
   "gmailUrl": "https://mail.google.com/mail/#all/{threadId}"
 }
 ```
 
-Never include the full body, snippets, attachment contents, authentication codes, financial account numbers, or medical details in the log. Preserve the subject except for secrets such as one-time codes, which must be redacted.
+Never include the full body, snippets, attachment contents, authentication codes, financial account numbers, or medical details in normal decision fields. Preserve the subject except for secrets such as one-time codes, which must be redacted. Error decisions are the sole exception: retain the full raw exception, including its stack, cause chain, and custom properties, because it is needed for debugging and may contain otherwise sensitive diagnostic content.
 
 ## Find work
 
@@ -152,12 +153,12 @@ To promote, keep `INBOX`, add `CATEGORY_PERSONAL`, and remove `CATEGORY_UPDATES`
 
 These two label mutations are pre-authorized when this skill is invoked. No other Gmail write is authorized.
 
-After each successful mutation, fetch the thread metadata to verify the intended labels, then append the decision log entry. For `none`, append the decision without a Gmail mutation. For an error, append a sanitized error entry, add the message ID to the retry list, and continue with other candidates.
+After each successful mutation, fetch the thread metadata to verify the intended labels, then append the decision log entry. For `none`, append the decision without a Gmail mutation. For an error, append the stable stage and full raw exception, add the message ID to the retry list, and continue with other candidates.
 
 ## Finish
 
 The command saves the newest safe Gmail history ID and completion time, then reports only compact counts for archived, promoted, unchanged, retried, and corrected messages. Do not include email bodies in routine output.
 
-When Herb asks to inspect decisions, run `email-processing --review`. This prints the sanitized decision log without email bodies. After any classifier or Gmail failure, rerun `email-processing`; saved retry IDs, idempotent label changes, and post-mutation verification make the rerun safe. Run `email-processing --help` to see the state and decision-log locations.
+When Herb asks to inspect decisions, run `email-processing --review`. This prints the audit log. Normal fields remain sanitized and omit email bodies, but raw exceptions can contain sensitive diagnostic content. After any classifier or Gmail failure, rerun `email-processing`; saved retry IDs, idempotent label changes, and post-mutation verification make the rerun safe. Run `email-processing --help` to see the state and decision-log locations.
 
 When Herb asks to discard existing work and start from new messages going forward, run `email-processing --cutover`. This clears saved retries, preserves confirmed archive-reversal protections, and records Gmail's current history ID without changing any message labels.

@@ -20,6 +20,9 @@ export function sanitizeDecisionLogEntry(
     classification: entry.classification,
     confidence: entry.confidence,
     reason: containsMedicalDetails ? "[REDACTED MEDICAL DETAIL]" : sanitizeLogText(entry.reason),
+    ...(entry.decision === "error" && entry.exception !== undefined
+      ? { exception: entry.exception }
+      : {}),
     policySignals: entry.policySignals.map(value =>
       sanitizePolicySignal(value, containsMedicalDetails),
     ),

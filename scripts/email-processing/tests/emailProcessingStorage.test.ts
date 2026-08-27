@@ -159,6 +159,22 @@ describe("email processing storage", () => {
     await expect(loadEmailDecisionLog(path)).resolves.toEqual([createDecision()])
   })
 
+  it("preserves raw exceptions on error records", async () => {
+    const directory = await createTemporaryDirectory()
+    const path = join(directory, "decisions.jsonl")
+    const errorDecision = {
+      ...createDecision(),
+      decision: "error" as const,
+      classification: "processing-error",
+      reason: "Candidate inspection failed",
+      exception: "Error: private diagnostic 123456\n    at inspectCandidate (supervisor.ts:42:7)",
+    }
+
+    await appendEmailDecision(errorDecision, path)
+
+    await expect(loadEmailDecisionLog(path)).resolves.toEqual([errorDecision])
+  })
+
   it("redacts medical details, grouped financial numbers, and alphanumeric authentication codes", async () => {
     const directory = await createTemporaryDirectory()
     const path = join(directory, "decisions.jsonl")

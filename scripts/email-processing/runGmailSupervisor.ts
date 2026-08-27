@@ -1,3 +1,5 @@
+import { inspect } from "node:util"
+
 import {
   EMAIL_PROCESSING_ACCOUNT,
   MAX_ACTIONS_PER_RUN,
@@ -146,11 +148,19 @@ export async function runGmailSupervisor(
           : targetMessage,
       )
       threadsById.set(targetMessage.id, thread)
-    } catch {
+    } catch (error) {
       retryMessageIds.add(inspectedMessageId)
       await dependencies.appendDecision(
         sanitizeDecisionLogEntry(
-          createErrorLogEntry(timestamp, inspectedMessageId, "", "Candidate inspection failed"),
+          createErrorLogEntry(
+            timestamp,
+            inspectedMessageId,
+            "",
+            "Candidate inspection failed",
+            undefined,
+            undefined,
+            formatException(error),
+          ),
         ),
       )
     }
@@ -163,7 +173,7 @@ export async function runGmailSupervisor(
     for (const candidate of candidates) {
       try {
         classifierCandidates.push(prepareClassifierCandidate(candidate))
-      } catch {
+      } catch (error) {
         await recordClassifierFailures(
           timestamp,
           [candidate],
@@ -171,6 +181,7 @@ export async function runGmailSupervisor(
           retryMessageIds,
           dependencies,
           "Candidate validation failed",
+          formatException(error),
         )
       }
     }
@@ -183,13 +194,15 @@ export async function runGmailSupervisor(
           decision => decision.decision !== "none",
         ).length
         decisions.push(...validateClassifications(input, parsedOutput))
-      } catch {
+      } catch (error) {
         await recordClassifierFailures(
           timestamp,
           batch,
           messagesById,
           retryMessageIds,
           dependencies,
+          "Classifier failed",
+          formatException(error),
         )
       }
     }
@@ -229,11 +242,18 @@ export async function runGmailSupervisor(
           if (!threadHasMutation(verifiedThread, decision.mutation, decision.messageId)) {
             throw new Error("Gmail label verification failed")
           }
-        } catch {
+        } catch (error) {
           retryMessageIds.add(decision.messageId)
           await dependencies.appendDecision(
             sanitizeDecisionLogEntry(
-              toErrorLogEntry(timestamp, message, candidates, decision, "Gmail mutation failed"),
+              toErrorLogEntry(
+                timestamp,
+                message,
+                candidates,
+                decision,
+                "Gmail mutation failed",
+                formatException(error),
+              ),
             ),
           )
           continue
@@ -302,6 +322,8 @@ async function recordClassifierFailures(
   dependencies: GmailSupervisorDependencies,
   /** Stable audit reason for this failed batch. */
   reason = "Classifier failed",
+  /** Raw exception inspection, when a failure was thrown. */
+  exception?: string,
 ): Promise<void> {
   for (const candidate of candidates) {
     retryMessageIds.add(candidate.messageId)
@@ -314,6 +336,7 @@ async function recordClassifierFailures(
           reason,
           messagesById.get(candidate.messageId),
           candidate,
+          exception,
         ),
       ),
     )
@@ -850,6 +873,8 @@ function toErrorLogEntry(
   decision: ReturnType<typeof validateClassifications>[number],
   /** Stable error reason with no external response content. */
   reason: string,
+  /** Raw inspected exception including stack and custom properties. */
+  exception: string,
 ): DecisionLogEntry {
   const candidate = candidates.find(item => item.messageId === decision.messageId)!
   return {
@@ -860,13 +885,14 @@ function toErrorLogEntry(
       reason,
       message,
       candidate,
+      exception,
     ),
     classification: `${decision.decision}-error`,
     policySignals: [decision.classification, ...decision.policySignals, "retry"],
   }
 }
 
-/** Build a sanitized error log with no raw exception text. */
+/** Build an error log with a stable reason and optional raw exception. */
 function createErrorLogEntry(
   /** Run timestamp. */
   timestamp: string,
@@ -880,6 +906,8 @@ function createErrorLogEntry(
   message?: GmailMessage,
   /** Normalized candidate, when available. */
   candidate?: ClassifierCandidate,
+  /** Raw inspected exception including stack and custom properties. */
+  exception?: string,
 ): DecisionLogEntry {
   return {
     timestamp,
@@ -892,9 +920,27 @@ function createErrorLogEntry(
     classification: "processing-error",
     confidence: "low",
     reason,
+    ...(exception !== undefined ? { exception } : {}),
     policySignals: ["retry"],
     gmailUrl: threadId ? `https://mail.google.com/mail/#all/${encodeURIComponent(threadId)}` : "",
   }
+}
+
+/** Inspect a thrown value without truncating its stack, cause chain, or custom properties. */
+function formatException(
+  /** Value caught at a supervisor failure boundary. */
+  error: unknown,
+): string {
+  return inspect(error, {
+    breakLength: 120,
+    compact: false,
+    customInspect: false,
+    depth: null,
+    getters: false,
+    maxArrayLength: null,
+    maxStringLength: null,
+    showHidden: true,
+  })
 }
 
 /** Complete a retry safely when its message has left Inbox before any valid mutation. */

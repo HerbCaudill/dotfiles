@@ -122,7 +122,7 @@ const HELP_LINES = [
   "Run without arguments to process Gmail with the supervised classifier.",
   "Use --cutover to discard retries and start after Gmail's current history position.",
   "Use --preflight to test only the classifier with synthetic input.",
-  "Use --review to print the sanitized decision log.",
+  "Use --review to print the audit log; raw error exceptions can contain sensitive diagnostics.",
   "State: ~/.local/share/email-processing/state.json",
   "Decisions: ~/.local/share/email-processing/decisions.jsonl",
   "After a failure, rerun the same command; saved retries and verified mutations make reruns safe.",

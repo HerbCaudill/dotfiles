@@ -658,7 +658,7 @@ describe("runGmailSupervisor", () => {
     expect(result).toMatchObject({ archived: 0, retried: 1 })
   })
 
-  it("continues after a partial Gmail failure and saves the failed message for retry", async () => {
+  it("continues after a partial Gmail failure and logs its full exception for retry", async () => {
     const secondMessage = createMessage({ id: "message-2", threadId: "thread-2" })
     const getMessage = vi
       .fn()
@@ -721,8 +721,46 @@ describe("runGmailSupervisor", () => {
         reason: "Gmail mutation failed",
       }),
     )
-    expect(JSON.stringify(appendDecision.mock.calls)).not.toContain("123456")
-    expect(JSON.stringify(appendDecision.mock.calls)).not.toContain("secret@example.com")
+    expect(JSON.stringify(appendDecision.mock.calls)).toContain("123456")
+    expect(JSON.stringify(appendDecision.mock.calls)).toContain("secret@example.com")
+  })
+
+  it("persists the full exception when candidate inspection fails", async () => {
+    const rootCause = new Error("socket closed unexpectedly")
+    const inspectionError = Object.assign(
+      new Error("gws Gmail command failed", { cause: rootCause }),
+      {
+        responseText: "raw Gmail diagnostic with request context",
+        status: 1,
+      },
+    )
+    const appendDecision = vi.fn().mockResolvedValue(undefined)
+
+    const result = await runGmailSupervisor({
+      now: () => new Date("2026-08-26T12:00:00.000Z"),
+      gmail: createGmailClient({
+        getMessage: vi.fn().mockRejectedValue(inspectionError),
+      }),
+      classify: vi.fn(),
+      loadState: async () => emptyState,
+      saveState: vi.fn().mockResolvedValue(undefined),
+      loadDecisionLog: async () => [],
+      appendDecision,
+    })
+
+    expect(result).toMatchObject({ retried: 1 })
+    expect(appendDecision).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messageId: "message-1",
+        decision: "error",
+        reason: "Candidate inspection failed",
+        exception: expect.stringContaining("raw Gmail diagnostic with request context"),
+      }),
+    )
+    const exception = appendDecision.mock.calls[0]?.[0].exception
+    expect(exception).toContain("gws Gmail command failed")
+    expect(exception).toContain("socket closed unexpectedly")
+    expect(exception).toContain("status: 1")
   })
 
   it("retries a failed message even when an earlier error is already logged", async () => {
