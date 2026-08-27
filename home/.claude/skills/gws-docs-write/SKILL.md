@@ -20,7 +20,7 @@ Append text to a document
 ## Usage
 
 ```bash
-gws docs +write --document <ID> --text <TEXT>
+gws-delegated docs +write --document <ID> --text <TEXT>
 ```
 
 ## Flags
@@ -33,7 +33,7 @@ gws docs +write --document <ID> --text <TEXT>
 ## Examples
 
 ```bash
-gws docs +write --document DOC_ID --text 'Hello, world!'
+gws-delegated docs +write --document DOC_ID --text 'Hello, world!'
 ```
 
 ## Tips

@@ -20,7 +20,7 @@ Read values from a spreadsheet
 ## Usage
 
 ```bash
-gws sheets +read --spreadsheet <ID> --range <RANGE>
+gws-delegated sheets +read --spreadsheet <ID> --range <RANGE>
 ```
 
 ## Flags
@@ -33,8 +33,8 @@ gws sheets +read --spreadsheet <ID> --range <RANGE>
 ## Examples
 
 ```bash
-gws sheets +read --spreadsheet ID --range "Sheet1!A1:D10"
-gws sheets +read --spreadsheet ID --range Sheet1
+gws-delegated sheets +read --spreadsheet ID --range "Sheet1!A1:D10"
+gws-delegated sheets +read --spreadsheet ID --range Sheet1
 ```
 
 ## Tips

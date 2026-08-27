@@ -20,7 +20,7 @@ Forward a message to new recipients
 ## Usage
 
 ```bash
-gws gmail +forward --message-id <ID> --to <EMAILS>
+gws-delegated gmail +forward --message-id <ID> --to <EMAILS>
 ```
 
 ## Flags
@@ -42,13 +42,13 @@ gws gmail +forward --message-id <ID> --to <EMAILS>
 ## Examples
 
 ```bash
-gws gmail +forward --message-id 18f1a2b3c4d --to dave@example.com
-gws gmail +forward --message-id 18f1a2b3c4d --to dave@example.com --body 'FYI see below'
-gws gmail +forward --message-id 18f1a2b3c4d --to dave@example.com --cc eve@example.com
-gws gmail +forward --message-id 18f1a2b3c4d --to dave@example.com --body '<p>FYI</p>' --html
-gws gmail +forward --message-id 18f1a2b3c4d --to dave@example.com -a notes.pdf
-gws gmail +forward --message-id 18f1a2b3c4d --to dave@example.com --no-original-attachments
-gws gmail +forward --message-id 18f1a2b3c4d --to dave@example.com --draft
+gws-delegated gmail +forward --message-id 18f1a2b3c4d --to dave@example.com
+gws-delegated gmail +forward --message-id 18f1a2b3c4d --to dave@example.com --body 'FYI see below'
+gws-delegated gmail +forward --message-id 18f1a2b3c4d --to dave@example.com --cc eve@example.com
+gws-delegated gmail +forward --message-id 18f1a2b3c4d --to dave@example.com --body '<p>FYI</p>' --html
+gws-delegated gmail +forward --message-id 18f1a2b3c4d --to dave@example.com -a notes.pdf
+gws-delegated gmail +forward --message-id 18f1a2b3c4d --to dave@example.com --no-original-attachments
+gws-delegated gmail +forward --message-id 18f1a2b3c4d --to dave@example.com --draft
 ```
 
 ## Tips

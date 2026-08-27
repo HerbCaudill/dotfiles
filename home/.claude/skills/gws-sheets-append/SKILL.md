@@ -20,7 +20,7 @@ Append a row to a spreadsheet
 ## Usage
 
 ```bash
-gws sheets +append --spreadsheet <ID>
+gws-delegated sheets +append --spreadsheet <ID>
 ```
 
 ## Flags
@@ -35,9 +35,9 @@ gws sheets +append --spreadsheet <ID>
 ## Examples
 
 ```bash
-gws sheets +append --spreadsheet ID --values 'Alice,100,true'
-gws sheets +append --spreadsheet ID --json-values '[["a","b"],["c","d"]]'
-gws sheets +append --spreadsheet ID --range "Sheet2!A1" --values 'Alice,100'
+gws-delegated sheets +append --spreadsheet ID --values 'Alice,100,true'
+gws-delegated sheets +append --spreadsheet ID --json-values '[["a","b"],["c","d"]]'
+gws-delegated sheets +append --spreadsheet ID --range "Sheet2!A1" --values 'Alice,100'
 ```
 
 ## Tips

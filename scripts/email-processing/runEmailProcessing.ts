@@ -103,7 +103,7 @@ export type EmailProcessingCommandOptions = {
   args?: readonly string[]
   /** Stable wall clock for deterministic tests. */
   now?: GmailSupervisorDependencies["now"]
-  /** Fixed-argument gws process boundary. */
+  /** Fixed-argument delegated gws process boundary. */
   runGws?: GwsCommandRunner
   /** Isolated classifier boundary. */
   classify?: GmailSupervisorDependencies["classify"]

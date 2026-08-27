@@ -1,9 +1,32 @@
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+
 import { describe, expect, it, vi } from "vitest"
 
 import { createGwsGmailClient } from "../createGwsGmailClient.ts"
 import { ExpiredGmailHistoryError } from "../supervisorTypes.ts"
 
 describe("createGwsGmailClient", () => {
+  it("uses the delegated GWS command for unattended authentication", async () => {
+    const executableDirectory = mkdtempSync(join(tmpdir(), "delegated-gws-test-"))
+    const executablePath = join(executableDirectory, "gws-delegated")
+    const previousPath = process.env.PATH
+    writeFileSync(
+      executablePath,
+      '#!/bin/sh\nprintf \'%s\' \'{"emailAddress":"herb@devresults.com","historyId":"105"}\'\n',
+    )
+    chmodSync(executablePath, 0o755)
+    process.env.PATH = executableDirectory
+
+    try {
+      await expect(createGwsGmailClient().getProfile()).resolves.toEqual({ historyId: "105" })
+    } finally {
+      process.env.PATH = previousPath
+      rmSync(executableDirectory, { recursive: true, force: true })
+    }
+  })
+
   it("uses fixed argument-array commands for profile, discovery, context, and exact mutations", async () => {
     const responses = [
       { emailAddress: "herb@devresults.com", historyId: "105" },

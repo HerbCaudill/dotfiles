@@ -16,7 +16,7 @@ metadata:
 > **PREREQUISITE:** Read `../gws-shared/SKILL.md` for auth, global flags, and security rules. If missing, run `gws generate-skills` to create it.
 
 ```bash
-gws sheets <resource> <method> [flags]
+gws-delegated sheets <resource> <method> [flags]
 ```
 
 ## Helper Commands

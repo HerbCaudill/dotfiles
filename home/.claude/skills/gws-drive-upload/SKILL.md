@@ -20,7 +20,7 @@ Upload a file with automatic metadata
 ## Usage
 
 ```bash
-gws drive +upload <file>
+gws-delegated drive +upload <file>
 ```
 
 ## Flags
@@ -34,9 +34,9 @@ gws drive +upload <file>
 ## Examples
 
 ```bash
-gws drive +upload ./report.pdf
-gws drive +upload ./report.pdf --parent FOLDER_ID
-gws drive +upload ./data.csv --name 'Sales Data.csv'
+gws-delegated drive +upload ./report.pdf
+gws-delegated drive +upload ./report.pdf --parent FOLDER_ID
+gws-delegated drive +upload ./data.csv --name 'Sales Data.csv'
 ```
 
 ## Tips

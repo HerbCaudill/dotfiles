@@ -7,7 +7,7 @@ description: Process Herb's herb@devresults.com Gmail inbox headlessly by archiv
 
 Run `email-processing` without asking for approval during the run. Invocation of this skill is standing authorization for only the reversible Gmail label changes defined below.
 
-Do not invoke `gws`, Gmail tools, or another agent directly. The repo-managed command is the sole Gmail boundary and runs one isolated Codex classifier with no Gmail, filesystem, network, tool, or plugin authority.
+Do not invoke `gws`, `gws-delegated`, Gmail tools, or another agent directly. The repo-managed command is the sole Gmail boundary and uses delegated authentication internally. It runs one isolated Codex classifier with no Gmail, filesystem, network, tool, or plugin authority.
 
 ## Boundaries
 

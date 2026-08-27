@@ -20,7 +20,7 @@ Show upcoming events across all calendars
 ## Usage
 
 ```bash
-gws calendar +agenda
+gws-delegated calendar +agenda
 ```
 
 ## Flags
@@ -37,11 +37,11 @@ gws calendar +agenda
 ## Examples
 
 ```bash
-gws calendar +agenda
-gws calendar +agenda --today
-gws calendar +agenda --week --format table
-gws calendar +agenda --days 3 --calendar 'Work'
-gws calendar +agenda --today --timezone America/New_York
+gws-delegated calendar +agenda
+gws-delegated calendar +agenda --today
+gws-delegated calendar +agenda --week --format table
+gws-delegated calendar +agenda --days 3 --calendar 'Work'
+gws-delegated calendar +agenda --today --timezone America/New_York
 ```
 
 ## Tips

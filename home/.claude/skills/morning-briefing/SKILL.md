@@ -15,7 +15,7 @@ Run gathering in three parallel subagents so raw source data stays out of the ma
 
 **Calendar** (main agent, Google Calendar MCP): today's events on the primary calendar. Note declines, pending invitations, and free stretches.
 
-**Tasks** (main agent, delegated `gws` CLI): the `Today` task list.
+**Tasks** (main agent, `gws-delegated` CLI): the `Today` task list.
 
 ```bash
 gws-delegated tasks tasklists list                     # find the "Today" list id

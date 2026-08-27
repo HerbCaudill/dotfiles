@@ -79,7 +79,7 @@ Do not use Claude Code's per-project memory directory at `~/.claude/projects/...
 
 - Obsidian vault: `~/Code/herbcaudill/notes`; daily notes are in `daily/` and meeting transcripts in `meetings/`.
 - DevResults wiki: `~/Code/DevResults/DevResults.wiki`.
-- Google Drive [macOS only]: `~/Library/CloudStorage/GoogleDrive-herb@devresults.com/My Drive`. Google Docs, Sheets, and Slides are cloud-only stubs. Use `gws-*` skills only when Google's first-party tools cannot do the work.
+- Google Drive [macOS only]: `~/Library/CloudStorage/GoogleDrive-herb@devresults.com/My Drive`. Google Docs, Sheets, and Slides are cloud-only stubs. Use `gws-*` skills only when Google's first-party tools cannot do the work. For Google Workspace API calls, use `gws-delegated`; use raw `gws` only for authentication diagnostics, schema discovery, help, or skill generation.
 
 ## DevResults repository [macOS only]
 

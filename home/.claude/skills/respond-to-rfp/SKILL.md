@@ -24,7 +24,7 @@ Read the solicitation before drafting:
 
 Preserve the template:
 
-- If the template is a Google Doc, copy it first with Drive copy tooling such as `gws drive files copy` or another available Drive copy action.
+- If the template is a Google Doc, copy it first with Drive copy tooling such as `gws-delegated drive files copy` or another available Drive copy action.
 - Never edit the original template unless the user explicitly asks.
 - Confirm the copied document ID/title before making edits.
 
@@ -45,26 +45,17 @@ Verify before reporting done:
 
 ## Google Workspace CLI
 
-Use `gws` when available for Drive copy operations that app connectors may not expose.
+On Herb's Mac, use `gws-delegated` for Drive copy operations that app connectors may not expose. It uses unattended domain-wide delegation and does not depend on a cached interactive login.
 
 Useful commands:
 
 ```bash
 gws auth status
-gws drive files get --params '{"fileId":"FILE_ID","fields":"id,name,mimeType,parents,webViewLink","supportsAllDrives":true}'
-gws drive files copy --params '{"fileId":"TEMPLATE_ID","fields":"id,name,mimeType,parents,webViewLink","supportsAllDrives":true}' --json '{"name":"NEW_PROPOSAL_TITLE","parents":["PARENT_FOLDER_ID"]}'
+gws-delegated drive files get --params '{"fileId":"FILE_ID","fields":"id,name,mimeType,parents,webViewLink","supportsAllDrives":true}'
+gws-delegated drive files copy --params '{"fileId":"TEMPLATE_ID","fields":"id,name,mimeType,parents,webViewLink","supportsAllDrives":true}' --json '{"name":"NEW_PROPOSAL_TITLE","parents":["PARENT_FOLDER_ID"]}'
 ```
 
-When `gws` is not authenticated, give the user these steps:
-
-1. Run iTerm2.
-2. Enter `gws auth login --services drive,docs`.
-3. Press Enter to accept the scopes it's showing.
-4. Command-click on the URL.
-5. Go through the Google login flow.
-6. Back in iTerm it should show status: `success`.
-
-If the user sees an authorization error caused by broad default scopes, use the narrower command above instead of plain `gws auth login`. For this workflow, Drive and Docs scopes are usually sufficient.
+If `gws-delegated` fails, report the delegated-authentication error. Do not start an interactive OAuth flow unless Herb explicitly asks for authentication diagnostics.
 
 ## Drafting guidance
 

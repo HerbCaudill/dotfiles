@@ -20,6 +20,8 @@ The `gws` binary must be on `$PATH`. See the project README for install options.
 
 On Herb's Mac, use `gws-delegated` in place of `gws` for API commands. It creates a short-lived service-account token for `herb@devresults.com` using the domain-wide delegation scopes approved by the Workspace administrator. It does not use interactive OAuth or the `gws` credential cache.
 
+Use the underlying `gws` binary only for authentication diagnostics, schema discovery, `--help`, and `generate-skills`.
+
 ```bash
 # Herb's unattended local authentication
 gws-delegated tasks tasklists list
@@ -42,7 +44,7 @@ export GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json
 ## CLI Syntax
 
 ```bash
-gws <service> <resource> [sub-resource] <method> [flags]
+gws-delegated <service> <resource> [sub-resource] <method> [flags]
 ```
 
 ### Method Flags
@@ -70,15 +72,15 @@ gws <service> <resource> [sub-resource] <method> [flags]
 
   ```bash
   # WRONG (zsh will mangle the !)
-  gws sheets +read --spreadsheet ID --range 'Sheet1!A1:D10'
+  gws-delegated sheets +read --spreadsheet ID --range 'Sheet1!A1:D10'
 
   # CORRECT
-  gws sheets +read --spreadsheet ID --range "Sheet1!A1:D10"
+  gws-delegated sheets +read --spreadsheet ID --range "Sheet1!A1:D10"
   ```
 
 - **JSON with double quotes:** Wrap `--params` and `--json` values in single quotes so the shell does not interpret the inner double quotes:
   ```bash
-  gws drive files list --params '{"pageSize": 5}'
+  gws-delegated drive files list --params '{"pageSize": 5}'
   ```
 
 ## Community & Feedback Etiquette

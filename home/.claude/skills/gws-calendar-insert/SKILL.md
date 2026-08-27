@@ -20,7 +20,7 @@ create a new event
 ## Usage
 
 ```bash
-gws calendar +insert --summary <TEXT> --start <TIME> --end <TIME>
+gws-delegated calendar +insert --summary <TEXT> --start <TIME> --end <TIME>
 ```
 
 ## Flags
@@ -39,9 +39,9 @@ gws calendar +insert --summary <TEXT> --start <TIME> --end <TIME>
 ## Examples
 
 ```bash
-gws calendar +insert --summary 'Standup' --start '2026-06-17T09:00:00-07:00' --end '2026-06-17T09:30:00-07:00'
-gws calendar +insert --summary 'Review' --start ... --end ... --attendee alice@example.com
-gws calendar +insert --summary 'Meet' --start ... --end ... --meet
+gws-delegated calendar +insert --summary 'Standup' --start '2026-06-17T09:00:00-07:00' --end '2026-06-17T09:30:00-07:00'
+gws-delegated calendar +insert --summary 'Review' --start ... --end ... --attendee alice@example.com
+gws-delegated calendar +insert --summary 'Meet' --start ... --end ... --meet
 ```
 
 ## Tips

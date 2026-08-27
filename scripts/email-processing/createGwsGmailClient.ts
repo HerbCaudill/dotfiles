@@ -209,12 +209,12 @@ async function invoke(
   return JSON.parse(await run(args)) as unknown
 }
 
-/** Execute gws directly without a shell. */
+/** Execute gws with unattended delegated authentication and no shell. */
 async function runGws(
   /** Fixed argument-array invocation. */
   args: readonly string[],
 ): Promise<string> {
-  const result = spawnSync("gws", [...args], {
+  const result = spawnSync("gws-delegated", [...args], {
     encoding: "utf8",
     timeout: GWS_TIMEOUT_MS,
     maxBuffer: GWS_MAX_OUTPUT_BYTES,

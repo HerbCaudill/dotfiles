@@ -20,7 +20,7 @@ Read a message and extract its body or headers
 ## Usage
 
 ```bash
-gws gmail +read --id <ID>
+gws-delegated gmail +read --id <ID>
 ```
 
 ## Flags
@@ -36,9 +36,9 @@ gws gmail +read --id <ID>
 ## Examples
 
 ```bash
-gws gmail +read --id 18f1a2b3c4d
-gws gmail +read --id 18f1a2b3c4d --headers
-gws gmail +read --id 18f1a2b3c4d --format json | jq '.body'
+gws-delegated gmail +read --id 18f1a2b3c4d
+gws-delegated gmail +read --id 18f1a2b3c4d --headers
+gws-delegated gmail +read --id 18f1a2b3c4d --format json | jq '.body'
 ```
 
 ## Tips
