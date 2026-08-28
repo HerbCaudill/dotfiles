@@ -121,7 +121,7 @@ For messages currently in Updates, Promotions, Social, or Forums, promote anythi
 - Direct personal messages and meaningful messages from active correspondents
 - Explicit requests, decisions, approvals, deadlines, or other action required from Herb
 - Declined or cancelled meetings, proposed new times, missing-link requests, delivery failures, or other scheduling exceptions
-- Account-security events, password resets, new devices, authentication changes, risky sign-ins, and fresh one-time codes
+- Account-security events, password resets, new devices, authentication changes, risky sign-ins, and other messages that explicitly report a completed or attempted security-sensitive action
 - Production failures, bounced outgoing mail, failed payments, service interruptions, and other operational failures
 - Medical results, prescriptions, treatment changes, and healthcare actions
 - Financial anomalies, overdrafts, reversals, unexpected account changes, unusual charges, or anything requiring action
@@ -136,6 +136,7 @@ Leave these messages in their existing non-Primary category unless exceptional c
 
 - Routine statements, invoices, successful payment confirmations, purchase receipts, and expected automatic debits, regardless of amount
 - Routine calendar acceptances and ordinary RSVP confirmations
+- One-time passwords, access or verification codes, magic links, sign-in links, and account-registration messages. A code by itself is routine authentication mail, even when unread or unexpected; promote only when the same message or thread explicitly reports a risky sign-in, new device, credential change, account recovery, or other concrete security event.
 - Newsletters, product announcements, recommendations, event marketing, and pricing promotions
 - Routine legal, privacy, terms, and long-horizon service-transition notices
 - Static or zero-change reports and ordinary meeting-recording or meeting-asset notices with no substantive action
