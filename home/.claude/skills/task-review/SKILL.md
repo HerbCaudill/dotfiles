@@ -111,12 +111,6 @@ Resolve Tesla trunk insurance claim
   Call Van Ameyde to resolve the perito requirement
   Get the decision confirmed by email
   Schedule the peritaje
-
-Order Tercel shirts for Shane and Tom
-  Confirm shirt sizes and shipping addresses
-  Approve the vendor and garment
-  Place both orders
-  Verify delivery
 ```
 
 ## Delegation
