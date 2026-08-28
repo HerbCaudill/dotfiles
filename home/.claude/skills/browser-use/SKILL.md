@@ -1,11 +1,22 @@
 ---
-name: browser-optimizer
-description: "Use before repetitive browser work: processing lists, extracting many records, or repeating one action across items. Prefer connectors, exports, APIs, and scripts to manual clicking."
+name: browser-use
+description: "Use for browser work, especially repetitive tasks, authenticated Chrome sessions, connection recovery, and tab cleanup. Prefer connectors, exports, APIs, and scripts to manual clicking."
 ---
 
-# Browser optimizer
+# Browser use
 
-Find the cheapest reliable path before repeating browser actions.
+Find the cheapest reliable path, recover browser access before giving up, and leave the browser clean when finished.
+
+## Chrome connection recovery
+
+When a task depends on the user's authenticated Chrome session and the first connection attempt fails:
+
+1. Follow the Chrome-control troubleshooting guidance and run its supported diagnostics.
+2. If Chrome is not running, launch it when authorized and retry.
+3. If Chrome is running but no live browser route is available, open a fresh window for the selected Chrome profile, wait briefly, and retry.
+4. Report a coverage gap only after the supported recovery attempt also fails. State which checks and recovery steps were attempted.
+
+Do not treat an installed extension or a running Chrome process as proof that browser control is connected. Verify the live route by selecting Chrome and making one lightweight read-only call.
 
 ## Size gate
 
@@ -93,3 +104,9 @@ When a task will recur, record only durable, non-secret facts in an appropriate 
 - rate limits or operational quirks.
 
 Never store session tokens, cookies, or personal data as breadcrumbs.
+
+## Cleanup
+
+Track every browser tab you open. When the browser work is finished, close those tabs unless the user asked to keep one open or the tab is a required deliverable or handoff.
+
+Never close tabs that were already open, including user-owned tabs you claimed temporarily. If a browser disconnection prevents cleanup, report which agent-opened tabs may remain.

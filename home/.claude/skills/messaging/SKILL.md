@@ -62,7 +62,7 @@ For a cross-service attention review:
 7. Analyze extracted text outside the browser or app UI. Avoid repeated screenshots, scrolling, and reopening the same thread.
 8. If a source is inaccessible or signed out, continue with the others and report the specific gap.
 
-For a large or virtualized list, follow the `browser-optimizer` skill: prefer connectors or app state, then DOM extraction, predictable thread URLs, and batched UI work. Never guess private endpoints or copy authentication material out of the active session.
+For a large or virtualized list, follow the `browser-use` skill: prefer connectors or app state, then DOM extraction, predictable thread URLs, and batched UI work. Never guess private endpoints or copy authentication material out of the active session.
 
 ## Attention standard
 
