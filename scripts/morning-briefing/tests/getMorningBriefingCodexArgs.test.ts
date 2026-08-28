@@ -6,11 +6,11 @@ describe("getMorningBriefingCodexArgs", () => {
   test("builds an unattended persisted run using the briefing model and repository", () => {
     const args = getMorningBriefingCodexArgs()
 
+    expect(args.slice(0, 3)).toEqual(["--ask-for-approval", "never", "exec"])
     expect(args).not.toContain("--ephemeral")
     expect(args).toContain("gpt-5.6-sol")
     expect(args).toContain('model_reasoning_effort="medium"')
     expect(args).toContain("danger-full-access")
-    expect(args).toContain("never")
     expect(args).toContain("/Users/herbcaudill/Code/HerbCaudill/briefings")
     expect(args.at(-1)).toContain("morning-briefing skill")
   })

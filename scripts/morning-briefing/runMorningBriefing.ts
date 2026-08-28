@@ -12,6 +12,8 @@ const MORNING_BRIEFING_PROMPT =
 /** Build the Codex CLI arguments for one unattended morning briefing. */
 export function getMorningBriefingCodexArgs(): string[] {
   return [
+    "--ask-for-approval",
+    "never",
     "exec",
     "--model",
     "gpt-5.6-sol",
@@ -19,8 +21,6 @@ export function getMorningBriefingCodexArgs(): string[] {
     'model_reasoning_effort="medium"',
     "--sandbox",
     "danger-full-access",
-    "--ask-for-approval",
-    "never",
     "--cd",
     join(homedir(), "Code/HerbCaudill/briefings"),
     MORNING_BRIEFING_PROMPT,
