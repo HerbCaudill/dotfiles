@@ -13,7 +13,6 @@ const MORNING_BRIEFING_PROMPT =
 export function getMorningBriefingCodexArgs(): string[] {
   return [
     "exec",
-    "--ephemeral",
     "--model",
     "gpt-5.6-sol",
     "--config",

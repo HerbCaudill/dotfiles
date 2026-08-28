@@ -3,10 +3,10 @@ import { describe, expect, test } from "vitest"
 import { getMorningBriefingCodexArgs } from "../runMorningBriefing.ts"
 
 describe("getMorningBriefingCodexArgs", () => {
-  test("builds an unattended ephemeral run using the briefing model and repository", () => {
+  test("builds an unattended persisted run using the briefing model and repository", () => {
     const args = getMorningBriefingCodexArgs()
 
-    expect(args).toContain("--ephemeral")
+    expect(args).not.toContain("--ephemeral")
     expect(args).toContain("gpt-5.6-sol")
     expect(args).toContain('model_reasoning_effort="medium"')
     expect(args).toContain("danger-full-access")
