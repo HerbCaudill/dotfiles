@@ -4,6 +4,7 @@
     ./codex.nix
     ./files.nix
     ./git.nix
+    ./launchd.nix
     ./packages.nix
     ./zsh.nix
   ];

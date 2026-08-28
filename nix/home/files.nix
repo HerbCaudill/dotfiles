@@ -1,7 +1,8 @@
 { config, dotfilesRoot, ... }:
 let
   mkRepoSymlink = path: config.lib.file.mkOutOfStoreSymlink "${dotfilesRoot}/${path}";
-in {
+in
+{
   home.file = {
     ".claude/CLAUDE.md".source = mkRepoSymlink "home/.claude/CLAUDE.md";
     ".claude/agents".source = mkRepoSymlink "home/.claude/agents";
@@ -11,7 +12,8 @@ in {
     ".codex/AGENTS.md".source = mkRepoSymlink "home/.claude/CLAUDE.md";
     ".codex/skills".source = mkRepoSymlink "home/.claude/skills";
     ".config/bd/config.yaml".source = mkRepoSymlink "home/.config/bd/config.yaml";
-    ".oh-my-zsh/custom/themes/herb.zsh-theme".source = mkRepoSymlink "home/.oh-my-zsh/custom/themes/herb.zsh-theme";
+    ".oh-my-zsh/custom/themes/herb.zsh-theme".source =
+      mkRepoSymlink "home/.oh-my-zsh/custom/themes/herb.zsh-theme";
     ".pi/agent/AGENTS.md".source = mkRepoSymlink "home/.claude/CLAUDE.md";
     ".pi/agent/extensions".source = mkRepoSymlink "home/.pi/agent/extensions";
     ".pi/agent/settings.json".source = mkRepoSymlink "home/.pi/agent/settings.json";
@@ -20,7 +22,8 @@ in {
     ".ssh/config".source = mkRepoSymlink "home/.ssh/config";
     ".vscode/extensions/herbcaudill.markdown-preview-tweaks".source =
       mkRepoSymlink "home/.vscode/extensions/markdown-preview-tweaks";
-    "iterm2/com.googlecode.iterm2.plist".source = mkRepoSymlink "home/iterm2/com.googlecode.iterm2.plist";
+    "iterm2/com.googlecode.iterm2.plist".source =
+      mkRepoSymlink "home/iterm2/com.googlecode.iterm2.plist";
 
     ".local/bin/_wt_dir".source = mkRepoSymlink "home/.local/bin/_wt_dir";
     ".local/bin/agent-transcripts-sync".source = mkRepoSymlink "home/.local/bin/agent-transcripts-sync";
@@ -33,8 +36,12 @@ in {
     ".local/bin/github-pr-task-sync".source = mkRepoSymlink "home/.local/bin/github-pr-task-sync";
     ".local/bin/gws-delegated".source = mkRepoSymlink "home/.local/bin/gws-delegated";
     ".local/bin/index-project".source = mkRepoSymlink "home/.local/bin/index-project";
+    ".local/bin/morning-briefing".source =
+      mkRepoSymlink "scripts/morning-briefing/runMorningBriefing.ts";
     ".local/bin/obsidian-sync".source = mkRepoSymlink "home/.local/bin/obsidian-sync";
     ".local/bin/personal-info-sync".source = mkRepoSymlink "home/.local/bin/personal-info-sync";
+    ".local/bin/resurface-tickler-tasks".source =
+      mkRepoSymlink "scripts/google-tasks/resurfaceTicklerTasks.ts";
     ".local/bin/update-agent-harnesses".source = mkRepoSymlink "home/.local/bin/update-agent-harnesses";
     ".local/bin/serena".source = mkRepoSymlink "home/.local/bin/serena";
     ".local/bin/serena-mcp-server".source = mkRepoSymlink "home/.local/bin/serena-mcp-server";

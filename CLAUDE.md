@@ -54,19 +54,21 @@ These are installed into `~/.local/bin` by Home Manager rather than a custom sym
 
 ### Other tools
 
-| Command                  | Description                                                                                                                      | Language |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `agent-transcripts-sync` | Sync raw local Claude Code, Codex, and Pi transcript stores into `~/Code/HerbCaudill/agent-transcripts` and commit changes there | Node.js  |
-| `drsync`                 | Save the current macOS DevResults clone to a WIP branch, sync the Windows VM checkout, and run a Windows-side command            | Node.js  |
-| `github-pr-task-sync`    | Poll GitHub notifications and create Google Tasks for assigned/review-requested PRs                                              | Node.js  |
-| `gws-delegated`          | Run GWS commands with a short-lived domain-wide delegated token for Herb                                                         | Node.js  |
-| `update-agent-harnesses` | Update Claude Code, Pi, Codex, pnpm, and bd                                                                                      | Zsh      |
-| `beads`                  | Wrapper for `bd`                                                                                                                 | Shell    |
-| `gh-sync`                | Sync `~/Code/HerbCaudill` with all repos on github.com/HerbCaudill                                                               | Bash     |
-| `serena`                 | Invoke Serena CLI                                                                                                                | Python   |
-| `serena-mcp-server`      | Start the Serena MCP server                                                                                                      | Python   |
-| `index-project`          | Invoke Serena's project indexing                                                                                                 | Python   |
-| `tslsp`                  | Type-aware TypeScript code intelligence via tsgo; self-installs into `~/.local/share/tslsp` with npm (pnpm's global layout breaks its tsgo lookup) | Bash     |
+| Command                   | Description                                                                                                                                        | Language |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `agent-transcripts-sync`  | Sync raw local Claude Code, Codex, and Pi transcript stores into `~/Code/HerbCaudill/agent-transcripts` and commit changes there                   | Node.js  |
+| `drsync`                  | Save the current macOS DevResults clone to a WIP branch, sync the Windows VM checkout, and run a Windows-side command                              | Node.js  |
+| `github-pr-task-sync`     | Poll GitHub notifications and create Google Tasks for assigned/review-requested PRs                                                                | Node.js  |
+| `gws-delegated`           | Run GWS commands with a short-lived domain-wide delegated token for Herb                                                                           | Node.js  |
+| `update-agent-harnesses`  | Update Claude Code, Pi, Codex, pnpm, and bd                                                                                                        | Zsh      |
+| `beads`                   | Wrapper for `bd`                                                                                                                                   | Shell    |
+| `gh-sync`                 | Sync `~/Code/HerbCaudill` with all repos on github.com/HerbCaudill                                                                                 | Bash     |
+| `serena`                  | Invoke Serena CLI                                                                                                                                  | Python   |
+| `serena-mcp-server`       | Start the Serena MCP server                                                                                                                        | Python   |
+| `index-project`           | Invoke Serena's project indexing                                                                                                                   | Python   |
+| `morning-briefing`        | Run the morning briefing through Codex and save it to the daily note                                                                               | Node.js  |
+| `resurface-tickler-tasks` | Move due Tickler task trees to Today, clear their resurface dates, and verify their hierarchy                                                      | Node.js  |
+| `tslsp`                   | Type-aware TypeScript code intelligence via tsgo; self-installs into `~/.local/share/tslsp` with npm (pnpm's global layout breaks its tsgo lookup) | Bash     |
 
 ## Windows Parallels Claude setup
 
@@ -111,6 +113,15 @@ The dotfiles repo manages automated harness updates with:
 
 - `update-agent-harnesses`, a Zsh script that updates pnpm, Codex, Pi, Claude Code, and bd directly
 - a nix-darwin `launchd` agent in `nix/darwin/default.nix` that runs it at 9:20, 15:20, and 21:20 and logs to `/tmp/update-agent-harnesses.log`
+
+## Morning workflow automation
+
+The dotfiles repo manages two user LaunchAgents through Home Manager in `nix/home/launchd.nix`:
+
+- `resurface-tickler-tasks` runs every day at 06:00, one hour before the briefing. The deterministic TypeScript implementation lives in `scripts/google-tasks/`, uses `gws-delegated`, and logs to `/tmp/resurface-tickler-tasks.log`.
+- `morning-briefing` runs Monday through Friday at 07:00. It invokes `codex exec` ephemerally with GPT-5.6 Sol and the repo-managed `morning-briefing` skill, saves the result to the daily note, and logs its output to `/tmp/morning-briefing.log`.
+
+Home Manager exposes both commands in `~/.local/bin` so either job can also be run manually.
 
 ## Agent transcript archive
 
