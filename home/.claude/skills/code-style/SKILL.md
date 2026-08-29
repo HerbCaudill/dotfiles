@@ -15,6 +15,10 @@ Keep private helpers, constants, and types with their caller. Put shared types i
 
 Order file contents as imports, main export, local helpers, local constants, then local types.
 
+## Agent prompts
+
+Keep every agent prompt in a standalone Markdown file named `<name>.prompt.md`, such as `audit.prompt.md`. Do not embed agent prompts as string literals in application code.
+
 ## React
 
 Define a `Props` type for every component and put it at the end of the file. Build conditional Tailwind class lists with the repository’s `cx` or `cn` helper, not string interpolation.
