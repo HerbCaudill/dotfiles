@@ -11,20 +11,10 @@ in
     config = {
       Label = "com.herbcaudill.morning-briefing";
       ProgramArguments = [ "${userBin}/morning-briefing" ];
-      StartCalendarInterval =
-        map
-          (weekday: {
-            Weekday = weekday;
-            Hour = 7;
-            Minute = 0;
-          })
-          [
-            1
-            2
-            3
-            4
-            5
-          ];
+      StartCalendarInterval = {
+        Hour = 7;
+        Minute = 0;
+      };
       StandardOutPath = "/tmp/morning-briefing.log";
       StandardErrorPath = "/tmp/morning-briefing.log";
       EnvironmentVariables = {
