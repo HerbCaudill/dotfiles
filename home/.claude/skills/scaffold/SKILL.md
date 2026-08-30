@@ -21,6 +21,7 @@ Scaffold a frontend-only PWA with React, TypeScript, Vite, Tailwind v4, shadcn/u
 - **Fonts:** IBM Plex Sans, Mono, Serif (via Google Fonts)
 - **PWA:** Installable + offline-capable
 - **Testing:** Vitest + Playwright
+- **Formatting:** Oxfmt
 - **Package manager:** pnpm
 
 ## Process
@@ -41,13 +42,13 @@ The script handles everything:
 - Initializes shadcn/ui with button component
 - Adds IBM Plex fonts to index.css and index.html
 - Creates App.tsx with "Hello, world"
-- Adds .prettierrc with project settings
+- Adds `.oxfmtrc.json` with project settings
 - Cleans up Vite boilerplate (App.css, SVGs, README)
 - Creates vitest.config.ts (excludes e2e/ to avoid Playwright conflicts) and playwright.config.ts
 - Adds sample unit test (App.test.tsx) and e2e test (e2e/app.spec.ts)
 - Updates package.json with all scripts
 - Installs Playwright Chromium browser
-- Formats everything with Prettier
+- Formats everything with Oxfmt
 - Initializes git and pushes to GitHub
 - Initializes beads issue tracker
 - Runs tests to verify everything works
@@ -76,7 +77,7 @@ The script handles everything:
 ├── tsconfig.json
 ├── tsconfig.app.json
 ├── components.json      # shadcn config
-├── .prettierrc
+├── .oxfmtrc.json
 └── package.json
 ```
 
@@ -92,7 +93,7 @@ The script handles everything:
 | `test:pw:headed` | Run Playwright in headed mode       |
 | `test:all`       | Typecheck + unit tests + Playwright |
 | `typecheck`      | Run TypeScript type checking        |
-| `format`         | Format code with Prettier           |
+| `format`         | Format code with Oxfmt              |
 | `ralph`          | Run Ralph                           |
 
 ## Shared lint setup

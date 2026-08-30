@@ -64,7 +64,7 @@ function main() {
 
   // Install dependencies
   run(
-    "pnpm add -D tailwindcss @tailwindcss/vite vite-plugin-pwa prettier prettier-plugin-tailwindcss vitest @testing-library/react @testing-library/dom @testing-library/jest-dom jsdom @playwright/test @types/node",
+    "pnpm add -D tailwindcss @tailwindcss/vite vite-plugin-pwa oxfmt vitest @testing-library/react @testing-library/dom @testing-library/jest-dom jsdom @playwright/test @types/node",
     projectPath,
   )
   run("pnpm add @tabler/icons-react", projectPath)
@@ -73,7 +73,7 @@ function main() {
   copyTemplate("vite.config.ts", join(projectPath, "vite.config.ts"), vars)
   copyTemplate("vitest.config.ts", join(projectPath, "vitest.config.ts"))
   copyTemplate("playwright.config.ts", join(projectPath, "playwright.config.ts"))
-  copyTemplate(".prettierrc", join(projectPath, ".prettierrc"))
+  copyTemplate(".oxfmtrc.json", join(projectPath, ".oxfmtrc.json"))
 
   // Update tsconfig.json
   const tsconfigPath = join(projectPath, "tsconfig.json")
@@ -172,7 +172,7 @@ function main() {
     "test:pw:headed": "playwright test --headed",
     "test:all": "pnpm typecheck && pnpm test run && pnpm test:pw --max-failures=1",
     typecheck: "tsc --noEmit",
-    format: "prettier --write .",
+    format: "oxfmt .",
     ralph: "npx @herbcaudill/ralph",
   }
   writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + "\n")
