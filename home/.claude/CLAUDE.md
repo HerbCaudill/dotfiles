@@ -33,7 +33,7 @@ Avoid corporate or academic language, generic AI polish, performative enthusiasm
 
 Use sentence case for headings, titles, UI labels, and buttons. Use a spaced en dash (–), not an em dash, for conversational asides. Ask one question at a time.
 
-When giving Herb a long terminal command, copy it to his clipboard as one line with `pbcopy` on macOS or `Set-Clipboard` on Windows. In Markdown files, keep each paragraph on one line without manual wrapping.
+In Markdown files, keep each paragraph on one line without manual wrapping.
 
 ## Technology
 
