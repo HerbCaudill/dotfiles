@@ -119,7 +119,7 @@ The dotfiles repo manages automated harness updates with:
 The dotfiles repo manages two user LaunchAgents through Home Manager in `nix/home/launchd.nix`:
 
 - `resurface-tickler-tasks` runs every day at 06:00, one hour before the briefing. The deterministic TypeScript implementation lives in `scripts/google-tasks/`, uses `gws-delegated`, and logs to `/tmp/resurface-tickler-tasks.log`.
-- `morning-briefing` runs daily at 07:00. It invokes `codex exec` ephemerally with GPT-5.6 Sol and the repo-managed `morning-briefing` skill, saves the result to the daily note, and logs its output to `/tmp/morning-briefing.log`.
+- `morning-briefing` runs daily at 07:00. It runs the repo-managed skill with GPT-5.6 Sol in a persisted goal-backed diagnostic thread, saves and verifies the result in the daily note, archives the diagnostic thread on success, and creates a separate clean thread that presents only the saved briefing. Raw App Server events are retained in `~/.local/state/morning-briefing/YYYY-MM-DD.jsonl`; launcher output remains in `/tmp/morning-briefing.log`. Failed diagnostic threads remain unarchived for investigation.
 
 Home Manager exposes both commands in `~/.local/bin` so either job can also be run manually.
 
