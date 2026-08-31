@@ -41,7 +41,20 @@ Prefer TypeScript, React, Vite, pnpm, oxfmt, Vitest, Playwright, Tabler icons, a
 
 ## Workflow
 
-Diagnose bugs before fixing them. Establish the intended behavior and likely cause, then use TDD when a stable regression test is practical. Investigate exploratory, flaky, environmental, configuration, build, and tooling failures before deciding what to test.
+Diagnose bugs before fixing them. Establish the intended behavior and likely cause before deciding what to test.
+
+For new or modified code that changes executable behavior, use red-green TDD when a stable automated test is practical: write one focused behavioral test, watch it fail for the expected reason, make the smallest change that passes it, then refactor while green. Test public outcomes rather than implementation details.
+
+Do not add or change tests for:
+
+- prose, documentation, comments, plans, or instructions;
+- static content or data edits whose correctness is directly visible in the diff, including copy, rosters, lookup tables, fixtures, and seed data, unless transformation or validation behavior changes;
+- removal of obsolete behavior, data, or UI – remove tests that no longer apply, but do not add tests that assert the absence;
+- renames, moves, formatting, generated files, or mechanical refactors that do not change observable behavior;
+- configuration or metadata changes that the owning tool can validate directly; or
+- exploratory, flaky, environmental, build, or tooling investigations before the failure boundary is understood.
+
+These changes may still warrant direct inspection or a focused existing check. Keep verification proportional to risk, and never broaden the production change merely to make it testable.
 
 End plans with unresolved questions, if any. Use hard cutovers unless Herb asks for backward compatibility.
 
