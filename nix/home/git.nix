@@ -19,7 +19,10 @@
       };
       credential = {
         helper = "osxkeychain";
-        "https://github.com".helper = "!gh auth git-credential";
+        "https://github.com".helper = [
+          ""
+          "!gh auth git-credential"
+        ];
       };
       safe.directory = [
         "/Users/${username}"
