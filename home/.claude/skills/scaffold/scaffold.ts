@@ -173,7 +173,6 @@ function main() {
     "test:all": "pnpm typecheck && pnpm test run && pnpm test:pw --max-failures=1",
     typecheck: "tsc --noEmit",
     format: "oxfmt .",
-    ralph: "npx @herbcaudill/ralph",
   }
   writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + "\n")
 

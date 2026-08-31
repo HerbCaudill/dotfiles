@@ -94,7 +94,6 @@ The script handles everything:
 | `test:all`       | Typecheck + unit tests + Playwright |
 | `typecheck`      | Run TypeScript type checking        |
 | `format`         | Format code with Oxfmt              |
-| `ralph`          | Run Ralph                           |
 
 ## Shared lint setup
 
