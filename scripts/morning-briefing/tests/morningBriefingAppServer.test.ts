@@ -12,6 +12,7 @@ import {
   getMorningBriefingResearchThreadStartRequest,
   getMorningBriefingResearchTurnStartRequest,
   isMorningBriefingResearchReadyToArchive,
+  syncMorningBriefingToObsidian,
 } from "../runMorningBriefing.ts"
 
 describe("morning briefing App Server requests", () => {
@@ -115,5 +116,35 @@ describe("morning briefing App Server requests", () => {
         researchTurnCompleted: true,
       }),
     ).toBe(true)
+  })
+
+  test("resumes Obsidian Sync and waits for the vault to finish syncing", async () => {
+    const commands: string[][] = []
+    const statuses = ["status: syncing", "status: synced"]
+    let obsidianOpened = false
+    let syncStartAttempts = 0
+
+    await syncMorningBriefingToObsidian({
+      maxStatusChecks: 2,
+      openObsidian: async () => {
+        obsidianOpened = true
+      },
+      runObsidian: async arguments_ => {
+        commands.push(arguments_)
+        if (arguments_[1] === "sync" && syncStartAttempts++ === 0) {
+          throw new Error("Obsidian is still opening")
+        }
+        return arguments_[1] === "sync:status" ? (statuses.shift() ?? "") : ""
+      },
+      wait: async () => undefined,
+    })
+
+    expect(obsidianOpened).toBe(true)
+    expect(commands).toEqual([
+      ["vault=notes", "sync", "on"],
+      ["vault=notes", "sync", "on"],
+      ["vault=notes", "sync:status"],
+      ["vault=notes", "sync:status"],
+    ])
   })
 })

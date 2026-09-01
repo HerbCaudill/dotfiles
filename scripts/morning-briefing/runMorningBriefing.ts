@@ -20,6 +20,8 @@ const MORNING_BRIEFING_PRESENTATION_PROMPT =
 const BRIEFINGS_DIRECTORY = join(homedir(), "Code/HerbCaudill/briefings")
 const CODEX_COMMAND = join(homedir(), "Library/pnpm/bin/codex")
 const DIAGNOSTIC_DIRECTORY = join(homedir(), ".local/state/morning-briefing")
+const OBSIDIAN_SYNC_STATUS_CHECKS = 30
+const OBSIDIAN_SYNC_STATUS_DELAY_MS = 1_000
 
 /** Build the environment that classifies persisted threads for Codex Desktop. */
 export function getMorningBriefingAppServerEnvironment(
@@ -154,6 +156,56 @@ export function isMorningBriefingResearchReadyToArchive({
   return phase === "research" && researchGoalComplete && researchTurnCompleted
 }
 
+/** Resume Obsidian Sync and wait until the notes vault reports that it is synced. */
+export async function syncMorningBriefingToObsidian({
+  maxStatusChecks = OBSIDIAN_SYNC_STATUS_CHECKS,
+  openObsidian = openObsidianApp,
+  runObsidian = runObsidianCommand,
+  wait = waitForObsidianSyncStatus,
+}: ObsidianSyncDependencies = {}): Promise<void> {
+  await openObsidian()
+
+  for (let attempt = 0; attempt < maxStatusChecks; attempt += 1) {
+    try {
+      await runObsidian(["vault=notes", "sync", "on"])
+      break
+    } catch (error) {
+      if (attempt === maxStatusChecks - 1) throw error
+      await wait()
+    }
+  }
+
+  for (let check = 0; check < maxStatusChecks; check += 1) {
+    const status = await runObsidian(["vault=notes", "sync:status"])
+    if (status.split("\n").some(line => line.trim() === "status: synced")) return
+    if (check < maxStatusChecks - 1) await wait()
+  }
+
+  throw new Error(`Obsidian Sync did not finish after ${maxStatusChecks} status checks`)
+}
+
+/** Open Obsidian so its CLI and Sync service are available. */
+function openObsidianApp(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn("open", ["-a", "Obsidian"], { stdio: "ignore" })
+    child.on("error", reject)
+    child.on("exit", (code, signal) => {
+      if (code === 0) {
+        resolve()
+        return
+      }
+
+      reject(
+        new Error(
+          signal
+            ? `Opening Obsidian stopped by ${signal}`
+            : `Opening Obsidian exited with status ${code ?? "unknown"}`,
+        ),
+      )
+    })
+  })
+}
+
 /** Run research under a goal, archive its diagnostics, then create a clean briefing thread. */
 export async function runMorningBriefing(): Promise<void> {
   mkdirSync(DIAGNOSTIC_DIRECTORY, { recursive: true })
@@ -170,6 +222,7 @@ export async function runMorningBriefing(): Promise<void> {
     let researchGoalComplete = false
     let researchThreadId = ""
     let presentationThreadId = ""
+    let researchSyncStarted = false
     let researchTurnCompleted = false
     let settled = false
     let shutdownTimer: NodeJS.Timeout | undefined
@@ -186,19 +239,28 @@ export async function runMorningBriefing(): Promise<void> {
       child.stdin.write(`${JSON.stringify(request)}\n`)
     }
 
-    const archiveSuccessfulResearch = () => {
+    const syncAndArchiveSuccessfulResearch = () => {
       if (
         !isMorningBriefingResearchReadyToArchive({
           phase,
           researchGoalComplete,
           researchTurnCompleted,
-        })
+        }) ||
+        researchSyncStarted
       ) {
         return
       }
 
-      phase = "archiving"
-      send(getMorningBriefingArchiveRequest(researchThreadId))
+      researchSyncStarted = true
+      void syncMorningBriefingToObsidian()
+        .then(() => {
+          if (settled) return
+          phase = "archiving"
+          send(getMorningBriefingArchiveRequest(researchThreadId))
+        })
+        .catch(error => {
+          stopWithError(error instanceof Error ? error : new Error(String(error)))
+        })
     }
 
     child.on("error", stopWithError)
@@ -277,7 +339,7 @@ export async function runMorningBriefing(): Promise<void> {
             return
           }
 
-          archiveSuccessfulResearch()
+          syncAndArchiveSuccessfulResearch()
           return
         }
 
@@ -308,7 +370,7 @@ export async function runMorningBriefing(): Promise<void> {
 
           if (phase === "research") {
             researchTurnCompleted = true
-            archiveSuccessfulResearch()
+            syncAndArchiveSuccessfulResearch()
             return
           }
 
@@ -393,6 +455,43 @@ function getMorningBriefingDiagnosticLogPath(now = new Date()): string {
   return join(DIAGNOSTIC_DIRECTORY, `${date}.jsonl`)
 }
 
+/** Run one official Obsidian CLI command and return its standard output. */
+function runObsidianCommand(arguments_: string[]): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const child = spawn("obsidian", arguments_, { stdio: ["ignore", "pipe", "pipe"] })
+    let standardError = ""
+    let standardOutput = ""
+
+    child.stdout.on("data", chunk => {
+      standardOutput += String(chunk)
+    })
+    child.stderr.on("data", chunk => {
+      standardError += String(chunk)
+    })
+    child.on("error", reject)
+    child.on("exit", (code, signal) => {
+      if (code === 0) {
+        resolve(standardOutput)
+        return
+      }
+
+      reject(
+        new Error(
+          standardError.trim() ||
+            (signal
+              ? `Obsidian CLI stopped by ${signal}`
+              : `Obsidian CLI exited with status ${code ?? "unknown"}`),
+        ),
+      )
+    })
+  })
+}
+
+/** Wait before checking Obsidian Sync status again. */
+function waitForObsidianSyncStatus(): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, OBSIDIAN_SYNC_STATUS_DELAY_MS))
+}
+
 type Phase =
   | "initializing"
   | "research"
@@ -405,6 +504,17 @@ type ResearchCompletionState = {
   phase: Phase
   researchGoalComplete: boolean
   researchTurnCompleted: boolean
+}
+
+type ObsidianSyncDependencies = {
+  /** Maximum number of Sync status checks before failing the briefing run. */
+  maxStatusChecks?: number
+  /** Open Obsidian so its CLI and Sync service become available. */
+  openObsidian?: () => Promise<void>
+  /** Run one Obsidian CLI command and return its standard output. */
+  runObsidian?: (arguments_: string[]) => Promise<string>
+  /** Wait before the next Sync status check. */
+  wait?: () => Promise<void>
 }
 
 type AppServerMessage = {
