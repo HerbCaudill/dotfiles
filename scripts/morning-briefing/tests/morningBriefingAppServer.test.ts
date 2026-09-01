@@ -5,12 +5,16 @@ import {
   getMorningBriefingArchiveRequest,
   getMorningBriefingGoalSetRequest,
   getMorningBriefingInitializeRequest,
+  getMorningBriefingPinnedThreadsRequest,
+  getMorningBriefingPinRequest,
   getMorningBriefingPresentationThreadName,
   getMorningBriefingPresentationThreadStartRequest,
   getMorningBriefingPresentationTurnStartRequest,
   getMorningBriefingResearchThreadName,
   getMorningBriefingResearchThreadStartRequest,
   getMorningBriefingResearchTurnStartRequest,
+  getMorningBriefingThreadIdsToUnpin,
+  getMorningBriefingUnpinRequest,
   isMorningBriefingResearchReadyToArchive,
   syncMorningBriefingToObsidian,
 } from "../runMorningBriefing.ts"
@@ -91,6 +95,44 @@ describe("morning briefing App Server requests", () => {
           text: expect.stringContaining("Return only the `## Daily briefing` section"),
         },
       ],
+    })
+  })
+
+  test("pins today's presentation and unpins older briefing presentations", () => {
+    const currentThreadId = "thread-current"
+
+    expect(getMorningBriefingPinRequest(currentThreadId)).toEqual({
+      method: "thread/section/move",
+      id: 9,
+      params: {
+        threadId: currentThreadId,
+        sectionId: "01984de2-8f74-7c91-a3b2-5c5e937cf318",
+      },
+    })
+    expect(getMorningBriefingPinnedThreadsRequest()).toEqual({
+      method: "thread/list",
+      id: 10,
+      params: {
+        limit: 100,
+        sectionId: "01984de2-8f74-7c91-a3b2-5c5e937cf318",
+        useStateDbOnly: true,
+      },
+    })
+    expect(
+      getMorningBriefingThreadIdsToUnpin(
+        [
+          { id: currentThreadId, name: "Morning briefing – September 1, 2026" },
+          { id: "thread-previous", name: "Morning briefing – August 31, 2026" },
+          { id: "thread-diagnostics", name: "Morning briefing diagnostics – August 31, 2026" },
+          { id: "thread-unrelated", name: "Project status" },
+        ],
+        currentThreadId,
+      ),
+    ).toEqual(["thread-previous"])
+    expect(getMorningBriefingUnpinRequest("thread-previous", 11)).toEqual({
+      method: "thread/section/move",
+      id: 11,
+      params: { threadId: "thread-previous", sectionId: null },
     })
   })
 

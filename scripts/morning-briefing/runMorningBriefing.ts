@@ -19,6 +19,7 @@ const MORNING_BRIEFING_PRESENTATION_PROMPT =
 
 const BRIEFINGS_DIRECTORY = join(homedir(), "Code/HerbCaudill/briefings")
 const CODEX_COMMAND = join(homedir(), "Library/pnpm/bin/codex")
+const CODEX_PINNED_SECTION_ID = "01984de2-8f74-7c91-a3b2-5c5e937cf318"
 const DIAGNOSTIC_DIRECTORY = join(homedir(), ".local/state/morning-briefing")
 const OBSIDIAN_SYNC_STATUS_CHECKS = 30
 const OBSIDIAN_SYNC_STATUS_DELAY_MS = 1_000
@@ -147,6 +148,49 @@ export function getMorningBriefingPresentationTurnStartRequest(threadId: string)
   } as const
 }
 
+/** Build the request that pins today's finished briefing in Codex Desktop. */
+export function getMorningBriefingPinRequest(threadId: string) {
+  return {
+    method: "thread/section/move",
+    id: 9,
+    params: { threadId, sectionId: CODEX_PINNED_SECTION_ID },
+  } as const
+}
+
+/** Build the request that lists the currently pinned Codex threads. */
+export function getMorningBriefingPinnedThreadsRequest() {
+  return {
+    method: "thread/list",
+    id: 10,
+    params: {
+      limit: 100,
+      sectionId: CODEX_PINNED_SECTION_ID,
+      useStateDbOnly: true,
+    },
+  } as const
+}
+
+/** Find older morning briefing presentations that should no longer be pinned. */
+export function getMorningBriefingThreadIdsToUnpin(
+  threads: MorningBriefingThreadSummary[],
+  currentThreadId: string,
+): string[] {
+  return threads
+    .filter(
+      thread => thread.name?.startsWith("Morning briefing – ") && thread.id !== currentThreadId,
+    )
+    .map(thread => thread.id)
+}
+
+/** Build a request that removes an older briefing from the pinned section. */
+export function getMorningBriefingUnpinRequest(threadId: string, id: number) {
+  return {
+    method: "thread/section/move",
+    id,
+    params: { threadId, sectionId: null },
+  } as const
+}
+
 /** Decide whether successful research can be archived without interrupting an active turn. */
 export function isMorningBriefingResearchReadyToArchive({
   phase,
@@ -226,6 +270,7 @@ export async function runMorningBriefing(): Promise<void> {
     let researchTurnCompleted = false
     let settled = false
     let shutdownTimer: NodeJS.Timeout | undefined
+    const pendingUnpinRequestIds = new Set<number>()
 
     const stopWithError = (error: Error) => {
       if (settled) return
@@ -237,6 +282,16 @@ export async function runMorningBriefing(): Promise<void> {
 
     const send = (request: unknown) => {
       child.stdin.write(`${JSON.stringify(request)}\n`)
+    }
+
+    const finishSuccessfully = () => {
+      process.stdout.write(`${finalMessage}\n`)
+      phase = "complete"
+      settled = true
+      diagnosticLog.end()
+      shutdownTimer = setTimeout(() => child.kill("SIGTERM"), 5_000)
+      child.stdin.end()
+      resolve()
     }
 
     const syncAndArchiveSuccessfulResearch = () => {
@@ -380,13 +435,8 @@ export async function runMorningBriefing(): Promise<void> {
               return
             }
 
-            process.stdout.write(`${finalMessage}\n`)
-            phase = "complete"
-            settled = true
-            diagnosticLog.end()
-            shutdownTimer = setTimeout(() => child.kill("SIGTERM"), 5_000)
-            child.stdin.end()
-            resolve()
+            phase = "pinning-presentation"
+            send(getMorningBriefingPinRequest(presentationThreadId))
           }
           return
         }
@@ -418,6 +468,42 @@ export async function runMorningBriefing(): Promise<void> {
         if (message.id === 7) {
           phase = "presentation"
           send(getMorningBriefingPresentationTurnStartRequest(presentationThreadId))
+          return
+        }
+
+        if (message.id === 9) {
+          phase = "listing-pinned-briefings"
+          send(getMorningBriefingPinnedThreadsRequest())
+          return
+        }
+
+        if (message.id === 10) {
+          const pinnedThreads = message.result?.data
+          if (!pinnedThreads) {
+            stopWithError(new Error("Codex App Server did not return the pinned threads"))
+            return
+          }
+
+          const threadIdsToUnpin = getMorningBriefingThreadIdsToUnpin(
+            pinnedThreads,
+            presentationThreadId,
+          )
+          if (threadIdsToUnpin.length === 0) {
+            finishSuccessfully()
+            return
+          }
+
+          phase = "unpinning-previous-briefings"
+          threadIdsToUnpin.forEach((threadId, index) => {
+            const requestId = 11 + index
+            pendingUnpinRequestIds.add(requestId)
+            send(getMorningBriefingUnpinRequest(threadId, requestId))
+          })
+          return
+        }
+
+        if (message.id !== undefined && pendingUnpinRequestIds.delete(message.id)) {
+          if (pendingUnpinRequestIds.size === 0) finishSuccessfully()
         }
       } catch (error) {
         stopWithError(error instanceof Error ? error : new Error(String(error)))
@@ -498,6 +584,9 @@ type Phase =
   | "archiving"
   | "starting-presentation"
   | "presentation"
+  | "pinning-presentation"
+  | "listing-pinned-briefings"
+  | "unpinning-previous-briefings"
   | "complete"
 
 type ResearchCompletionState = {
@@ -517,11 +606,17 @@ type ObsidianSyncDependencies = {
   wait?: () => Promise<void>
 }
 
+type MorningBriefingThreadSummary = {
+  id: string
+  name: string | null
+}
+
 type AppServerMessage = {
   id?: number
   method?: string
   error?: { message: string }
   result?: {
+    data?: MorningBriefingThreadSummary[]
     thread?: { id: string }
   }
   params?: {
