@@ -1,4 +1,10 @@
-{ fullName, email, username, ... }:
+{
+  fullName,
+  email,
+  pkgs,
+  username,
+  ...
+}:
 {
   programs.git = {
     enable = true;
@@ -21,7 +27,7 @@
         helper = "osxkeychain";
         "https://github.com".helper = [
           ""
-          "!gh auth git-credential"
+          "!${pkgs.gh}/bin/gh auth git-credential"
         ];
       };
       safe.directory = [
