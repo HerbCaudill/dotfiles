@@ -6,6 +6,24 @@ let
   automationPath = "${userBin}:${homeDirectory}/Library/pnpm/bin:${userProfileBin}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin";
 in
 {
+  # Chrome shows Codex's debugger warning in every tab. Start the first Chrome
+  # process with this flag so Raycast searches and web app launchers reuse it.
+  launchd.agents."chrome-silent-debugging" = {
+    enable = true;
+    config = {
+      Label = "com.herbcaudill.chrome-silent-debugging";
+      ProgramArguments = [
+        "/usr/bin/open"
+        "-gj"
+        "-a"
+        "Google Chrome"
+        "--args"
+        "--silent-debugger-extension-api"
+      ];
+      RunAtLoad = true;
+    };
+  };
+
   launchd.agents."morning-briefing" = {
     enable = true;
     config = {
