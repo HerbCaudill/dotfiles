@@ -9,9 +9,14 @@ export function parseClassifierInput(
 ): ClassifierInput {
   validateJsonSchema(value, classifierInputJsonSchema)
   const input = value as ClassifierInput
+  validateTimestamp(input.evaluatedAt, "$.evaluatedAt")
+  if (!/^sha256:[a-f0-9]{64}$/.test(input.policyVersion)) {
+    throw new Error("$.policyVersion must be a SHA-256 policy version")
+  }
 
   const candidateIds = new Set<string>()
   for (const [index, candidate] of input.candidates.entries()) {
+    validateTimestamp(candidate.receivedAt, `$.candidates[${index}].receivedAt`)
     if (candidateIds.has(candidate.messageId)) {
       throw new Error(`Duplicate candidate message ID: ${candidate.messageId}`)
     }
@@ -22,6 +27,10 @@ export function parseClassifierInput(
       validateMailbox(mailbox, `$.candidates[${index}].recipients[${recipientIndex}]`),
     )
     candidate.thread.forEach((message, messageIndex) => {
+      validateTimestamp(
+        message.receivedAt,
+        `$.candidates[${index}].thread[${messageIndex}].receivedAt`,
+      )
       validateMailbox(message.sender, `$.candidates[${index}].thread[${messageIndex}].sender`)
       message.recipients.forEach((mailbox, recipientIndex) =>
         validateMailbox(
@@ -30,15 +39,29 @@ export function parseClassifierInput(
         ),
       )
     })
-    candidate.promotionCorrections.forEach((correction, correctionIndex) =>
+    candidate.promotionCorrections.forEach((correction, correctionIndex) => {
+      validateTimestamp(
+        correction.timestamp,
+        `$.candidates[${index}].promotionCorrections[${correctionIndex}].timestamp`,
+      )
       validateMailbox(
         correction.sender,
         `$.candidates[${index}].promotionCorrections[${correctionIndex}].sender`,
-      ),
-    )
+      )
+    })
   }
 
   return input
+}
+
+/** Validate one RFC 3339 timestamp used for freshness comparisons. */
+function validateTimestamp(
+  /** Timestamp to validate. */
+  value: string,
+  /** Human-readable JSON path. */
+  path: string,
+): void {
+  if (Number.isNaN(Date.parse(value))) throw new Error(`${path} must be an RFC 3339 timestamp`)
 }
 
 /** Validate one normalized mailbox value beyond JSON Schema structure. */

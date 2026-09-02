@@ -245,6 +245,9 @@ function parseMessage(
   value: unknown,
 ): GmailMessage {
   const message = parseRecord(value)
+  requiredString(message.id, "id")
+  requiredString(message.threadId, "threadId")
+  requiredString(message.internalDate, "internalDate")
   return message as GmailMessage
 }
 
@@ -255,7 +258,11 @@ function parseThread(
 ): GmailThread {
   const thread = parseRecord(value)
   if (!Array.isArray(thread.messages)) throw new Error("Invalid Gmail thread response")
-  return thread as GmailThread
+  return {
+    id: requiredString(thread.id, "id"),
+    ...(typeof thread.historyId === "string" ? { historyId: thread.historyId } : {}),
+    messages: thread.messages.map(parseMessage),
+  }
 }
 
 /** Parse message references from a nullable API list. */

@@ -27,12 +27,13 @@ Keep runtime data outside the dotfiles repository:
 - State: `~/.local/share/email-processing/state.json`
 - Append-only decision log: `~/.local/share/email-processing/decisions.jsonl`
 
-The state file records the last completed Gmail history ID, the last completed run time, retry message IDs, and exact sender addresses protected by confirmed archive reversals. Do not store email bodies.
+The state file records the last completed Gmail history ID, the last completed run time, retry message IDs, and exact sender addresses protected by confirmed archive reversals. Do not store email bodies. The command records the content-derived classifier policy version with each decision.
 
 Write one JSON object to the decision log for every processed message:
 
 ```json
 {
+  "policyVersion": "sha256 hash of the classifier prompt",
   "timestamp": "RFC 3339 timestamp",
   "messageId": "Gmail message ID",
   "threadId": "Gmail thread ID",
@@ -71,78 +72,11 @@ Use Gmail history and the local log to recognize manual corrections. Ignore labe
 - If Herb stars or moves a previously untouched non-Primary message to Primary, record a `correction` decision classified as `promotion-missed`. Treat it as a positive example for similar messages and that sender.
 - Do not infer a broad rule from one correction. Prefer specific sender, message-purpose, and thread-pattern evidence.
 
-## Inspect context
+Promotion correction records preserve the original sanitized classification, reason, and policy signals. Supply only bounded corrections that match the current sender or normalized subject pattern; do not send an unrelated global tail of the decision log to the classifier.
 
-For each candidate, inspect the newest message and the relevant thread context. Extract the sender's exact address, recipients, subject, complete meaningful body, current category, and whether the message explicitly asks Herb to decide, reply, approve, attend, or do something.
+## Classification policy
 
-Before considering an unwanted classification, search Sent mail and the current thread for a prior reply from Herb to that exact sender. Also recognize clearly identical sender addresses within the same conversation. Do not protect an entire external domain because Herb replied to one person there.
-
-Hard protections from the unwanted classifier:
-
-- Any `@devresults.com` sender
-- Any exact sender address Herb has replied to before
-- Any sender address saved after an archive reversal
-- Family, friends, personal correspondents, medical providers, and requested contractors
-- Active conversations, requested work, and messages responding to something Herb initiated
-
-Prior-reply protection blocks classification as unwanted. It does not block the separate delegated-customer rule below.
-
-## Decide
-
-Use an asymmetric standard:
-
-- Archive only with high confidence.
-- Promote with a lower bar because a false promotion is inexpensive.
-- When evidence is ambiguous, take no action.
-- Do not manufacture numeric confidence thresholds. Base the decision on the rules and concrete evidence.
-
-Apply the rules in this order: hard protections, archive rules, promotion rules, then no action.
-
-### Archive
-
-Archive high-confidence unwanted mail, regardless of its current category:
-
-- Unsolicited vendors selling software, services, consulting, recruiting, lead generation, payroll, financial products, or similar offerings
-- Cold job inquiries, resumes, requests for work, and recruiter introductions, unless they belong to an active hiring process, come through a known referral, or someone at DevResults has already engaged
-- Unsolicited investors, private-equity firms, brokers, funding pitches, and acquisition inquiries, unless protected by an existing relationship, prior reply, or known introduction
-- Generic solicitations, repeated cold follow-ups, unsolicited promotional events, pay-to-play awards, and vanity-publication offers
-- Clearly promotional newsletters or marketing that Gmail mistakenly placed in Primary and that contain no personal, operational, financial, medical, security, or time-sensitive information
-
-AI-like writing, personalization, tracking markers, or lack of prior correspondence are supporting evidence, never sufficient reasons by themselves. A specific but strange cold message with no clear unwanted ask stays untouched.
-
-Also archive a legitimate customer inquiry, demo request, or procurement opportunity when another `@devresults.com` person is a recipient and the message does not explicitly require Herb to decide, reply, approve, attend, or act. An explicit request to Herb overrides this delegated-customer rule.
-
-Do not archive merely low-value legitimate mail such as terms changes, privacy notices, service-policy updates, routine account notices, or ordinary messages Herb may have finished processing.
-
-### Promote to Primary
-
-For messages currently in Updates, Promotions, Social, or Forums, promote anything Herb would reasonably want to notice soon:
-
-- Direct personal messages and meaningful messages from active correspondents
-- Explicit requests, decisions, approvals, deadlines, or other action required from Herb
-- Declined or cancelled meetings, proposed new times, missing-link requests, delivery failures, or other scheduling exceptions
-- Account-security events, password resets, new devices, authentication changes, risky sign-ins, and other messages that explicitly report a completed or attempted security-sensitive action
-- Production failures, bounced outgoing mail, failed payments, service interruptions, and other operational failures
-- Medical results, prescriptions, treatment changes, and healthcare actions
-- Financial anomalies, overdrafts, reversals, unexpected account changes, unusual charges, or anything requiring action
-- Subscription or service notices with an approaching cancellation decision, missing payment details, or imminent loss of service
-- Meaningful active-work updates with concrete decisions, problems, or assigned actions
-
-Inspect the full body carefully. A digest with six risky sign-ins must be promoted even if its snippet appears to report zero incidents.
-
-### Leave outside Primary
-
-Leave these messages in their existing non-Primary category unless exceptional content triggers a promotion rule:
-
-- Routine statements, invoices, successful payment confirmations, purchase receipts, and expected automatic debits, regardless of amount
-- Routine calendar acceptances and ordinary RSVP confirmations
-- One-time passwords, access or verification codes, magic links, sign-in links, and account-registration messages. A code by itself is routine authentication mail, even when unread or unexpected; promote only when the same message or thread explicitly reports a risky sign-in, new device, credential change, account recovery, or other concrete security event.
-- Newsletters, product announcements, recommendations, event marketing, and pricing promotions
-- Routine legal, privacy, terms, and long-horizon service-transition notices
-- Static or zero-change reports and ordinary meeting-recording or meeting-asset notices with no substantive action
-- Marketing already in Promotions or Updates that contains no important exception
-
-Being CC'd is a weaker attention signal, not an automatic exclusion. Promote a CC'd message only when it explicitly asks Herb to act or contains a critical security, financial, medical, operational, or scheduling exception.
+The complete semantic policy lives in `scripts/email-processing/classifier.prompt.md` and is loaded directly by the isolated classifier. It covers decision order, archive eligibility and protections, promotion criteria, routine no-action mail, freshness, correction evidence, and output redaction. Do not duplicate or override that policy here.
 
 ## Actions
 
@@ -160,6 +94,6 @@ After each successful mutation, fetch the thread metadata to verify the intended
 
 The command saves the newest safe Gmail history ID and completion time, then reports only compact counts for archived, promoted, unchanged, retried, and corrected messages. Do not include email bodies in routine output.
 
-When Herb asks to inspect decisions, run `email-processing --review`. This prints the audit log. Normal fields remain sanitized and omit email bodies, but raw exceptions can contain sensitive diagnostic content. After any classifier or Gmail failure, rerun `email-processing`; saved retry IDs, idempotent label changes, and post-mutation verification make the rerun safe. Run `email-processing --help` to see the state and decision-log locations.
+When Herb asks to inspect decisions, run `email-processing --review`. This prints the audit log. Normal fields remain sanitized and omit email bodies, but raw exceptions can contain sensitive diagnostic content. When Herb asks to verify classifier policy behavior, run `email-processing --calibrate`; it uses only fictional messages and never reads or changes Gmail. After any classifier or Gmail failure, rerun `email-processing`; saved retry IDs, idempotent label changes, and post-mutation verification make the rerun safe. Run `email-processing --help` to see the state and decision-log locations.
 
 When Herb asks to discard existing work and start from new messages going forward, run `email-processing --cutover`. This clears saved retries, preserves confirmed archive-reversal protections, and records Gmail's current history ID without changing any message labels.

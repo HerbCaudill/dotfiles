@@ -16,6 +16,8 @@ export type NormalizedMailbox = {
 
 /** Normalized prior message kept as inert classifier data. */
 export type NormalizedThreadMessage = {
+  /** Trusted Gmail mailbox receipt time in RFC 3339 format. */
+  receivedAt: string
   /** Sender of the prior message. */
   sender: NormalizedMailbox
   /** Recipients of the prior message. */
@@ -66,6 +68,12 @@ export type PromotionCorrectionEvidence = {
   subject: string
   /** Whether the correction sender exactly matches the current candidate sender. */
   exactSender: boolean
+  /** Stable category assigned before Herb corrected the promotion decision. */
+  priorClassification: string
+  /** Sanitized explanation recorded before Herb corrected the promotion decision. */
+  priorReason: string
+  /** Sanitized evidence labels recorded before Herb corrected the promotion decision. */
+  priorPolicySignals: string[]
 }
 
 /** Normalized candidate supplied to the isolated classifier. */
@@ -74,6 +82,8 @@ export type ClassifierCandidate = {
   messageId: string
   /** Gmail thread ID used by the supervisor after validation. */
   threadId: string
+  /** Trusted Gmail mailbox receipt time in RFC 3339 format. */
+  receivedAt: string
   /** Exact normalized sender. */
   sender: NormalizedMailbox
   /** Exact normalized recipients. */
@@ -96,6 +106,10 @@ export type ClassifierCandidate = {
 
 /** Strict input contract supplied to the classifier. */
 export type ClassifierInput = {
+  /** Stable wall-clock time for freshness comparisons. */
+  evaluatedAt: string
+  /** Content-derived version of the canonical classifier prompt. */
+  policyVersion: string
   /** Fixed supervised Gmail account. */
   account: EmailProcessingAccount
   /** Exact set of candidates the classifier may name. */

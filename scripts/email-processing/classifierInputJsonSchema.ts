@@ -9,8 +9,10 @@ import type { JsonSchema } from "./types.ts"
 export const classifierInputJsonSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["account", "candidates"],
+  required: ["evaluatedAt", "policyVersion", "account", "candidates"],
   properties: {
+    evaluatedAt: { type: "string", minLength: 1, maxLength: 100 },
+    policyVersion: { type: "string", minLength: 8, maxLength: 100 },
     account: { const: EMAIL_PROCESSING_ACCOUNT },
     candidates: {
       type: "array",
@@ -21,6 +23,7 @@ export const classifierInputJsonSchema = {
         required: [
           "messageId",
           "threadId",
+          "receivedAt",
           "sender",
           "recipients",
           "subject",
@@ -34,6 +37,7 @@ export const classifierInputJsonSchema = {
         properties: {
           messageId: { type: "string", minLength: 1, maxLength: 256 },
           threadId: { type: "string", minLength: 1, maxLength: 256 },
+          receivedAt: { type: "string", minLength: 1, maxLength: 100 },
           sender: { $ref: "#/$defs/mailbox" },
           recipients: {
             type: "array",
@@ -102,8 +106,9 @@ export const classifierInputJsonSchema = {
     threadMessage: {
       type: "object",
       additionalProperties: false,
-      required: ["sender", "recipients", "subject", "body"],
+      required: ["receivedAt", "sender", "recipients", "subject", "body"],
       properties: {
+        receivedAt: { type: "string", minLength: 1, maxLength: 100 },
         sender: { $ref: "#/$defs/mailbox" },
         recipients: {
           type: "array",
@@ -117,13 +122,29 @@ export const classifierInputJsonSchema = {
     promotionCorrection: {
       type: "object",
       additionalProperties: false,
-      required: ["timestamp", "correction", "sender", "subject", "exactSender"],
+      required: [
+        "timestamp",
+        "correction",
+        "sender",
+        "subject",
+        "exactSender",
+        "priorClassification",
+        "priorReason",
+        "priorPolicySignals",
+      ],
       properties: {
         timestamp: { type: "string", maxLength: 100 },
         correction: { enum: ["promotion-reversed", "promotion-missed"] },
         sender: { $ref: "#/$defs/mailbox" },
         subject: { type: "string", maxLength: 2_000 },
         exactSender: { type: "boolean" },
+        priorClassification: { type: "string", minLength: 1, maxLength: 200 },
+        priorReason: { type: "string", maxLength: 2_000 },
+        priorPolicySignals: {
+          type: "array",
+          maxItems: 50,
+          items: { type: "string", maxLength: 200 },
+        },
       },
     },
   },

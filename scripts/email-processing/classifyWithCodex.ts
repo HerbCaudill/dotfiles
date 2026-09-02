@@ -1,20 +1,11 @@
 import { constants as fsConstants } from "node:fs"
-import {
-  access,
-  chmod,
-  copyFile,
-  mkdir,
-  mkdtemp,
-  readFile,
-  rm,
-  stat,
-  writeFile,
-} from "node:fs/promises"
+import { access, chmod, copyFile, mkdir, mkdtemp, rm, stat, writeFile } from "node:fs/promises"
 import { createServer, type Socket } from "node:net"
 import { homedir, tmpdir } from "node:os"
 import { delimiter, join } from "node:path"
 import { classifierOutputJsonSchema } from "./classifierOutputJsonSchema.ts"
 import { MAX_CLASSIFIER_INPUT_BYTES } from "./constants.ts"
+import { loadClassifierPolicy } from "./loadClassifierPolicy.ts"
 import { parseClassifierInput } from "./parseClassifierInput.ts"
 import { parseClassifierOutput } from "./parseClassifierOutput.ts"
 import { runBoundedProcess } from "./runBoundedProcess.ts"
@@ -35,7 +26,7 @@ export async function classifyWithCodex(
     throw new Error(`Classifier input limit of ${maxInputBytes} bytes exceeded`)
   }
   const input = parseClassifierInput(JSON.parse(serializedInput))
-  const classifierPrompt = await readFile(CLASSIFIER_PROMPT_PATH, "utf8")
+  const classifierPolicy = await loadClassifierPolicy()
   const parentEnvironment = options.parentEnvironment ?? process.env
   const externalSandbox =
     parentEnvironment.EMAIL_PROCESSING_EXTERNAL_SANDBOX === EXTERNAL_SANDBOX_CLOUDFLARE
@@ -62,7 +53,7 @@ export async function classifyWithCodex(
     await mkdir(workspace, { mode: 0o700 })
     await copyFile(authFilePath, isolatedAuthPath)
     await chmod(isolatedAuthPath, 0o600)
-    await writeFile(configPath, createClassifierConfig(classifierPrompt), {
+    await writeFile(configPath, createClassifierConfig(classifierPolicy.prompt), {
       encoding: "utf8",
       mode: 0o600,
     })
@@ -418,7 +409,6 @@ function createIsolatedEnvironment(
 // CONSTANTS
 
 const CODEX_PROFILE_NAME = "email-classifier"
-const CLASSIFIER_PROMPT_PATH = new URL("./classifier.prompt.md", import.meta.url)
 const EXTERNAL_SANDBOX_CLOUDFLARE = "cloudflare"
 const MINIMUM_CODEX_VERSION = [0, 149, 1] as const
 // Codex mirrors stdin to diagnostic output, so this cap includes the bounded input plus its result.

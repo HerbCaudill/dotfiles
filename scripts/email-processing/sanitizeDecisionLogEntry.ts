@@ -10,6 +10,7 @@ export function sanitizeDecisionLogEntry(
     entry.policySignals.includes("medical-action") ||
     MEDICAL_DETAIL_PATTERN.test(`${entry.subject}\n${entry.reason}`)
   return {
+    policyVersion: entry.policyVersion,
     timestamp: entry.timestamp,
     messageId: entry.messageId,
     threadId: entry.threadId,
@@ -26,6 +27,17 @@ export function sanitizeDecisionLogEntry(
     policySignals: entry.policySignals.map(value =>
       sanitizePolicySignal(value, containsMedicalDetails),
     ),
+    ...(entry.priorClassification !== undefined
+      ? { priorClassification: sanitizeLogText(entry.priorClassification) }
+      : {}),
+    ...(entry.priorReason !== undefined ? { priorReason: sanitizeLogText(entry.priorReason) } : {}),
+    ...(entry.priorPolicySignals !== undefined
+      ? {
+          priorPolicySignals: entry.priorPolicySignals.map(value =>
+            sanitizePolicySignal(value, containsMedicalDetails),
+          ),
+        }
+      : {}),
     gmailUrl: entry.gmailUrl,
   }
 }

@@ -10,8 +10,10 @@ import {
 import { parseClassifierInput } from "./parseClassifierInput.ts"
 import { parseClassifierOutput } from "./parseClassifierOutput.ts"
 import { sanitizeDecisionLogEntry } from "./sanitizeDecisionLogEntry.ts"
+import { loadClassifierPolicy } from "./loadClassifierPolicy.ts"
 import type {
   ClassifierCandidate,
+  ClassifierInput,
   NormalizedMailbox,
   NormalizedThreadMessage,
   PromotionCorrectionEvidence,
@@ -34,11 +36,16 @@ export async function runGmailSupervisor(
 ): Promise<GmailSupervisorResult> {
   const now = dependencies.now()
   const timestamp = now.toISOString()
-  const [state, priorDecisions, profile] = await Promise.all([
+  const [state, priorDecisions, profile, classifierPolicy] = await Promise.all([
     dependencies.loadState(),
     dependencies.loadDecisionLog(),
     dependencies.gmail.getProfile(),
+    loadClassifierPolicy(),
   ])
+  const classifierContext: ClassifierContext = {
+    evaluatedAt: timestamp,
+    policyVersion: classifierPolicy.version,
+  }
   const result = emptyResult()
   const archiveReversalSenders = getArchiveReversalSenders(state, priorDecisions)
   if (!state.lastHistoryId) {
@@ -64,7 +71,6 @@ export async function runGmailSupervisor(
     dependencies,
   )
   result.corrected = correctedMessageIds.size
-  const promotionCorrectionEntries = priorDecisions.filter(isPromotionCorrectionEntry).slice(-20)
   const completedMessageIds = getCompletedMessageIds(priorDecisions)
   const supersededRetryMessageIds = getSupersededRetryMessageIds(priorDecisions)
   const retryMessageIds = new Set([
@@ -103,7 +109,9 @@ export async function runGmailSupervisor(
       if (!isProcessable(message, inboxMutationRetryMessageIds.has(messageId))) {
         if (retryMessageIds.has(messageId)) {
           await dependencies.appendDecision(
-            sanitizeDecisionLogEntry(createRetryNoActionLogEntry(timestamp, message)),
+            sanitizeDecisionLogEntry(
+              createRetryNoActionLogEntry(classifierPolicy.version, timestamp, message),
+            ),
           )
           retryMessageIds.delete(messageId)
           retryOriginalLabels.delete(messageId)
@@ -138,7 +146,7 @@ export async function runGmailSupervisor(
         dependencies,
         retryOriginalLabels.get(targetMessage.id),
         protectedCorrespondentSenders,
-        promotionCorrectionEntries,
+        priorDecisions,
       )
       candidates.push(candidate)
       messagesById.set(
@@ -153,6 +161,7 @@ export async function runGmailSupervisor(
       await dependencies.appendDecision(
         sanitizeDecisionLogEntry(
           createErrorLogEntry(
+            classifierPolicy.version,
             timestamp,
             inspectedMessageId,
             "",
@@ -172,9 +181,10 @@ export async function runGmailSupervisor(
     const classifierCandidates: ClassifierCandidate[] = []
     for (const candidate of candidates) {
       try {
-        classifierCandidates.push(prepareClassifierCandidate(candidate))
+        classifierCandidates.push(prepareClassifierCandidate(candidate, classifierContext))
       } catch (error) {
         await recordClassifierFailures(
+          classifierPolicy.version,
           timestamp,
           [candidate],
           messagesById,
@@ -185,9 +195,13 @@ export async function runGmailSupervisor(
         )
       }
     }
-    for (const batch of createClassifierBatches(classifierCandidates)) {
+    for (const batch of createClassifierBatches(classifierCandidates, classifierContext)) {
       try {
-        const input = { account: EMAIL_PROCESSING_ACCOUNT, candidates: batch }
+        const input: ClassifierInput = {
+          ...classifierContext,
+          account: EMAIL_PROCESSING_ACCOUNT,
+          candidates: batch,
+        }
         const output = await dependencies.classify(input)
         const parsedOutput = parseClassifierOutput(output)
         requestedActionCount += parsedOutput.decisions.filter(
@@ -196,6 +210,7 @@ export async function runGmailSupervisor(
         decisions.push(...validateClassifications(input, parsedOutput))
       } catch (error) {
         await recordClassifierFailures(
+          classifierPolicy.version,
           timestamp,
           batch,
           messagesById,
@@ -208,6 +223,7 @@ export async function runGmailSupervisor(
     }
     if (requestedActionCount > MAX_ACTIONS_PER_RUN) {
       await recordClassifierFailures(
+        classifierPolicy.version,
         timestamp,
         decisions.map(
           decision => candidates.find(candidate => candidate.messageId === decision.messageId)!,
@@ -247,6 +263,7 @@ export async function runGmailSupervisor(
           await dependencies.appendDecision(
             sanitizeDecisionLogEntry(
               toErrorLogEntry(
+                classifierPolicy.version,
                 timestamp,
                 message,
                 candidates,
@@ -262,7 +279,9 @@ export async function runGmailSupervisor(
 
       try {
         await dependencies.appendDecision(
-          sanitizeDecisionLogEntry(toDecisionLogEntry(timestamp, message, candidates, decision)),
+          sanitizeDecisionLogEntry(
+            toDecisionLogEntry(classifierPolicy.version, timestamp, message, candidates, decision),
+          ),
         )
       } catch {
         retryMessageIds.add(decision.messageId)
@@ -310,6 +329,8 @@ export async function runGmailSupervisor(
 
 /** Record classifier failures for one bounded batch without blocking later batches. */
 async function recordClassifierFailures(
+  /** Content-derived classifier prompt version. */
+  policyVersion: string,
   /** Run timestamp. */
   timestamp: string,
   /** Candidates whose classifier call failed validation or execution. */
@@ -330,6 +351,7 @@ async function recordClassifierFailures(
     await dependencies.appendDecision(
       sanitizeDecisionLogEntry(
         createErrorLogEntry(
+          policyVersion,
           timestamp,
           candidate.messageId,
           candidate.threadId,
@@ -347,6 +369,8 @@ async function recordClassifierFailures(
 function createClassifierBatches(
   /** All candidates normalized for this supervisor run. */
   candidates: ClassifierCandidate[],
+  /** Stable input fields shared by every batch. */
+  context: ClassifierContext,
 ): ClassifierCandidate[][] {
   const batches: ClassifierCandidate[][] = []
   let currentBatch: ClassifierCandidate[] = []
@@ -356,7 +380,7 @@ function createClassifierBatches(
     if (
       currentBatch.length > 0 &&
       (nextBatch.length > MAX_CLASSIFIER_CANDIDATES ||
-        classifierInputBytes(nextBatch) > MAX_CLASSIFIER_INPUT_BYTES)
+        classifierInputBytes(nextBatch, context) > MAX_CLASSIFIER_INPUT_BYTES)
     ) {
       batches.push(currentBatch)
       currentBatch = [candidate]
@@ -372,9 +396,12 @@ function createClassifierBatches(
 function prepareClassifierCandidate(
   /** Candidate normalized from Gmail. */
   candidate: ClassifierCandidate,
+  /** Stable input fields shared by every batch. */
+  context: ClassifierContext,
 ): ClassifierCandidate {
-  const boundedCandidate = fitCandidateToClassifierLimit(candidate)
+  const boundedCandidate = fitCandidateToClassifierLimit(candidate, context)
   return parseClassifierInput({
+    ...context,
     account: EMAIL_PROCESSING_ACCOUNT,
     candidates: [boundedCandidate],
   }).candidates[0]!
@@ -384,9 +411,11 @@ function prepareClassifierCandidate(
 function fitCandidateToClassifierLimit(
   /** Candidate whose current message must remain complete. */
   candidate: ClassifierCandidate,
+  /** Stable input fields shared by every batch. */
+  context: ClassifierContext,
 ): ClassifierCandidate {
   let boundedCandidate = candidate
-  while (classifierInputBytes([boundedCandidate]) > MAX_CLASSIFIER_INPUT_BYTES) {
+  while (classifierInputBytes([boundedCandidate], context) > MAX_CLASSIFIER_INPUT_BYTES) {
     if (boundedCandidate.thread.length === 0) {
       throw new Error(`Classifier candidate exceeds byte limit: ${candidate.messageId}`)
     }
@@ -399,9 +428,11 @@ function fitCandidateToClassifierLimit(
 function classifierInputBytes(
   /** Candidate batch. */
   candidates: ClassifierCandidate[],
+  /** Stable input fields shared by every batch. */
+  context: ClassifierContext,
 ): number {
   return Buffer.byteLength(
-    JSON.stringify({ account: EMAIL_PROCESSING_ACCOUNT, candidates }),
+    JSON.stringify({ ...context, account: EMAIL_PROCESSING_ACCOUNT, candidates }),
     "utf8",
   )
 }
@@ -535,6 +566,9 @@ async function recordCorrections(
       confidence: "high",
       reason: correctionReason(classification),
       policySignals: [classification],
+      priorClassification: prior.classification,
+      priorReason: prior.reason,
+      priorPolicySignals: [...prior.policySignals],
     })
     await dependencies.appendDecision(correction)
     priorDecisions.push(correction)
@@ -623,6 +657,7 @@ async function normalizeCandidate(
   return {
     messageId: message.id,
     threadId: message.threadId,
+    receivedAt: toReceivedAt(message),
     sender,
     recipients,
     subject,
@@ -650,9 +685,11 @@ async function normalizeCandidate(
       ),
       requiresHerbAction: requiresHerbAction(subject, body),
     },
-    promotionCorrections: promotionCorrectionEntries.map(entry =>
-      toPromotionCorrectionEvidence(entry, sender.address),
-    ),
+    promotionCorrections: selectPromotionCorrectionEntries(
+      promotionCorrectionEntries,
+      sender.address,
+      subject,
+    ).map(entry => toPromotionCorrectionEvidence(entry, sender.address)),
   }
 }
 
@@ -663,7 +700,11 @@ function isPromotionCorrectionEntry(
 ): boolean {
   return (
     entry.decision === "correction" &&
-    (entry.classification === "promotion-reversed" || entry.classification === "promotion-missed")
+    (entry.classification === "promotion-reversed" ||
+      entry.classification === "promotion-missed") &&
+    entry.priorClassification !== undefined &&
+    entry.priorReason !== undefined &&
+    entry.priorPolicySignals !== undefined
   )
 }
 
@@ -681,7 +722,51 @@ function toPromotionCorrectionEvidence(
     sender,
     subject: entry.subject,
     exactSender: sender.address === candidateSenderAddress,
+    priorClassification: entry.priorClassification!,
+    priorReason: entry.priorReason!,
+    priorPolicySignals: [...entry.priorPolicySignals!],
   }
+}
+
+/** Select bounded corrections that match the current sender or normalized subject pattern. */
+function selectPromotionCorrectionEntries(
+  /** Complete prior decision history. */
+  priorDecisions: DecisionLogEntry[],
+  /** Exact current sender address. */
+  senderAddress: string,
+  /** Current subject text. */
+  subject: string,
+): DecisionLogEntry[] {
+  const subjectPattern = normalizeSubjectPattern(subject)
+  return priorDecisions
+    .filter(isPromotionCorrectionEntry)
+    .filter(entry => {
+      const correctionSender = extractLoggedAddress(entry.sender)
+      return (
+        correctionSender === senderAddress ||
+        normalizeSubjectPattern(entry.subject) === subjectPattern
+      )
+    })
+    .sort((left, right) => {
+      const senderDifference =
+        Number(extractLoggedAddress(right.sender) === senderAddress) -
+        Number(extractLoggedAddress(left.sender) === senderAddress)
+      return senderDifference || right.timestamp.localeCompare(left.timestamp)
+    })
+    .slice(0, MAX_PROMOTION_CORRECTIONS)
+}
+
+/** Normalize one subject into a stable, secret-free matching pattern. */
+function normalizeSubjectPattern(
+  /** Untrusted subject text. */
+  subject: string,
+): string {
+  return subject
+    .toLowerCase()
+    .replace(/^(?:(?:re|fwd?):\s*)+/i, "")
+    .replace(/\b\d{2,}\b/g, "#")
+    .replace(/\s+/g, " ")
+    .trim()
 }
 
 /** Derive exact protected correspondents from stable prior personal and medical decisions. */
@@ -826,6 +911,7 @@ function toNormalizedThreadMessage(
   message: GmailMessage,
 ): NormalizedThreadMessage {
   return {
+    receivedAt: toReceivedAt(message),
     sender: parseMailbox(getHeader(message, "From")),
     recipients: parseMailboxes([getHeader(message, "To"), getHeader(message, "Cc")]),
     subject: getHeader(message, "Subject"),
@@ -833,8 +919,22 @@ function toNormalizedThreadMessage(
   }
 }
 
+/** Convert Gmail's trusted mailbox timestamp to RFC 3339. */
+function toReceivedAt(
+  /** Gmail message with an API-supplied internal date. */
+  message: GmailMessage,
+): string {
+  const milliseconds = Number(message.internalDate)
+  if (!Number.isSafeInteger(milliseconds) || milliseconds < 0) {
+    throw new Error(`Invalid Gmail internal date for message ID: ${message.id}`)
+  }
+  return new Date(milliseconds).toISOString()
+}
+
 /** Build a sanitized decision record without including message content. */
 function toDecisionLogEntry(
+  /** Content-derived classifier prompt version. */
+  policyVersion: string,
   /** Run timestamp. */
   timestamp: string,
   /** Original Gmail message. */
@@ -846,6 +946,7 @@ function toDecisionLogEntry(
 ): DecisionLogEntry {
   const candidate = candidates.find(item => item.messageId === decision.messageId)!
   return {
+    policyVersion,
     timestamp,
     messageId: decision.messageId,
     threadId: decision.threadId,
@@ -863,6 +964,8 @@ function toDecisionLogEntry(
 
 /** Build a sanitized error record from an inspected candidate. */
 function toErrorLogEntry(
+  /** Content-derived classifier prompt version. */
+  policyVersion: string,
   /** Run timestamp. */
   timestamp: string,
   /** Original Gmail message. */
@@ -879,6 +982,7 @@ function toErrorLogEntry(
   const candidate = candidates.find(item => item.messageId === decision.messageId)!
   return {
     ...createErrorLogEntry(
+      policyVersion,
       timestamp,
       decision.messageId,
       decision.threadId,
@@ -894,6 +998,8 @@ function toErrorLogEntry(
 
 /** Build an error log with a stable reason and optional raw exception. */
 function createErrorLogEntry(
+  /** Content-derived classifier prompt version. */
+  policyVersion: string,
   /** Run timestamp. */
   timestamp: string,
   /** Gmail message ID. */
@@ -910,6 +1016,7 @@ function createErrorLogEntry(
   exception?: string,
 ): DecisionLogEntry {
   return {
+    policyVersion,
     timestamp,
     messageId,
     threadId,
@@ -945,12 +1052,15 @@ function formatException(
 
 /** Complete a retry safely when its message has left Inbox before any valid mutation. */
 function createRetryNoActionLogEntry(
+  /** Content-derived classifier prompt version. */
+  policyVersion: string,
   /** Run timestamp. */
   timestamp: string,
   /** Current Gmail message. */
   message: GmailMessage,
 ): DecisionLogEntry {
   return {
+    policyVersion,
     timestamp,
     messageId: message.id,
     threadId: message.threadId,
@@ -1140,6 +1250,9 @@ const NON_PRIMARY_CATEGORY_LABELS = new Set([
   "CATEGORY_FORUMS",
 ])
 
+/** Maximum relevant promotion corrections supplied with one candidate. */
+const MAX_PROMOTION_CORRECTIONS = 20
+
 /** Prior promotion categories that establish an exact protected correspondent. */
 const PROTECTED_CORRESPONDENT_CLASSIFICATIONS = new Set(["personal-message", "medical-action"])
 
@@ -1153,3 +1266,5 @@ const PERSONAL_RELATIONSHIP_PATTERN =
 /** Explicit care-provider terms that conservatively identify medical correspondents. */
 const MEDICAL_PROVIDER_PATTERN =
   /\b(?:medical provider|doctor|physician|cardiologist|dentist|orthodontist|therapist|psychologist|psychiatrist|clinician|clinic|hospital|pharmacy|pharmacist|laboratory|radiologist|specialist)\b/i
+
+type ClassifierContext = Pick<ClassifierInput, "evaluatedAt" | "policyVersion">

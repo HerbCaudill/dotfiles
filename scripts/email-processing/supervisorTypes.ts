@@ -16,6 +16,8 @@ export type EmailProcessingState = {
 
 /** Append-only record of one processing outcome. */
 export type DecisionLogEntry = {
+  /** Content-derived version of the classifier prompt used for the decision. */
+  policyVersion: string
   /** RFC 3339 timestamp for the outcome. */
   timestamp: string
   /** Opaque Gmail message ID. */
@@ -40,6 +42,12 @@ export type DecisionLogEntry = {
   exception?: string
   /** Sanitized stable evidence labels. */
   policySignals: string[]
+  /** Stable category from the decision Herb later corrected. */
+  priorClassification?: string
+  /** Sanitized explanation from the decision Herb later corrected. */
+  priorReason?: string
+  /** Sanitized evidence labels from the decision Herb later corrected. */
+  priorPolicySignals?: string[]
   /** Direct Gmail conversation URL. */
   gmailUrl: string
 }
@@ -112,6 +120,8 @@ export type GmailMessage = {
   id: string
   /** Gmail thread ID. */
   threadId: string
+  /** Gmail mailbox receipt time in milliseconds since the Unix epoch. */
+  internalDate: string
   /** Current Gmail labels. */
   labelIds?: string[]
   /** MIME content and headers. */

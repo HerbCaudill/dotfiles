@@ -16,6 +16,7 @@ import { validArchiveOutput, validNoneOutput, validPromoteOutput } from "./class
 const inboxMessage: GmailMessage = {
   id: "message-1",
   threadId: "thread-1",
+  internalDate: "1787742000000",
   labelIds: ["INBOX", "CATEGORY_PERSONAL"],
   payload: {
     mimeType: "text/plain",
@@ -153,9 +154,57 @@ describe("runGmailSupervisor", () => {
     })
 
     expect(classify).toHaveBeenCalledWith({
+      evaluatedAt: "2026-08-26T12:00:00.000Z",
+      policyVersion: expect.stringMatching(/^sha256:[a-f0-9]{64}$/),
       account: "herb@devresults.com",
-      candidates: [expect.objectContaining({ messageId: "message-2", threadId: "shared-thread" })],
+      candidates: [
+        expect.objectContaining({
+          messageId: "message-2",
+          threadId: "shared-thread",
+          receivedAt: "2026-08-26T11:00:00.000Z",
+        }),
+      ],
     })
+  })
+
+  it("supplies trusted receipt times for the candidate and prior thread messages", async () => {
+    const priorMessage = createMessage({
+      id: "prior-message",
+      internalDate: "1787738400000",
+    })
+    const currentMessage = createMessage({
+      id: "message-1",
+      internalDate: "1787742000000",
+    })
+    const classify = vi.fn().mockResolvedValue(validNoneOutput)
+
+    await runGmailSupervisor({
+      now: () => new Date("2026-08-26T12:00:00.000Z"),
+      gmail: createGmailClient({
+        getMessage: vi.fn().mockResolvedValue(currentMessage),
+        getThread: vi.fn().mockResolvedValue({
+          id: "thread-1",
+          messages: [priorMessage, currentMessage],
+        }),
+      }),
+      classify,
+      loadState: async () => emptyState,
+      saveState: vi.fn().mockResolvedValue(undefined),
+      loadDecisionLog: async () => [],
+      appendDecision: vi.fn().mockResolvedValue(undefined),
+    })
+
+    expect(classify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        evaluatedAt: "2026-08-26T12:00:00.000Z",
+        candidates: [
+          expect.objectContaining({
+            receivedAt: "2026-08-26T11:00:00.000Z",
+            thread: [expect.objectContaining({ receivedAt: "2026-08-26T10:00:00.000Z" })],
+          }),
+        ],
+      }),
+    )
   })
 
   it("starts a fresh current checkpoint when Gmail history has expired", async () => {
@@ -250,7 +299,13 @@ describe("runGmailSupervisor", () => {
           decision: "archive",
           sender: "Vendor <vendor@example.com>",
         }),
-        createLogEntry({ messageId: "promoted", decision: "promote" }),
+        createLogEntry({
+          messageId: "promoted",
+          decision: "promote",
+          classification: "operational-failure",
+          reason: "A newly delivered digest reported a service failure.",
+          policySignals: ["operational-failure"],
+        }),
         createLogEntry({
           messageId: "untouched",
           decision: "none",
@@ -265,6 +320,11 @@ describe("runGmailSupervisor", () => {
       "promotion-reversed",
       "promotion-missed",
     ])
+    expect(appendDecision.mock.calls[1]?.[0]).toMatchObject({
+      priorClassification: "operational-failure",
+      priorReason: "A newly delivered digest reported a service failure.",
+      priorPolicySignals: ["operational-failure"],
+    })
     expect(saveState).toHaveBeenCalledWith(
       expect.objectContaining({ archiveReversalSenders: ["vendor@example.com"] }),
     )
@@ -312,18 +372,25 @@ describe("runGmailSupervisor", () => {
       appendDecision,
     })
 
-    expect(classify).toHaveBeenCalledWith({
-      account: "herb@devresults.com",
-      candidates: [
-        expect.objectContaining({
-          archiveProtections: expect.objectContaining({ archiveReversal: true }),
-        }),
-      ],
-    })
+    expect(classify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        account: "herb@devresults.com",
+        candidates: [
+          expect.objectContaining({
+            archiveProtections: expect.objectContaining({ archiveReversal: true }),
+          }),
+        ],
+      }),
+    )
   })
 
   it("supplies promotion corrections recorded in the current history window", async () => {
-    const currentMessage = createMessage({ id: "message-2", threadId: "thread-2" })
+    const currentMessage = createMessage({
+      id: "message-2",
+      threadId: "thread-2",
+      from: "Colleague <colleague@example.com>",
+      subject: "Approval needed",
+    })
     const classify = vi.fn().mockResolvedValue({
       decisions: [{ ...validNoneOutput.decisions[0], messageId: "message-2" }],
     })
@@ -359,20 +426,22 @@ describe("runGmailSupervisor", () => {
       appendDecision: vi.fn().mockResolvedValue(undefined),
     })
 
-    expect(classify).toHaveBeenCalledWith({
-      account: "herb@devresults.com",
-      candidates: [
-        expect.objectContaining({
-          promotionCorrections: [
-            expect.objectContaining({
-              correction: "promotion-missed",
-              sender: { name: "Colleague", address: "colleague@example.com" },
-              subject: "Approval needed",
-            }),
-          ],
-        }),
-      ],
-    })
+    expect(classify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        account: "herb@devresults.com",
+        candidates: [
+          expect.objectContaining({
+            promotionCorrections: [
+              expect.objectContaining({
+                correction: "promotion-missed",
+                sender: { name: "Colleague", address: "colleague@example.com" },
+                subject: "Approval needed",
+              }),
+            ],
+          }),
+        ],
+      }),
+    )
   })
 
   it("supplies prior promotion corrections as bounded evidence for future classifications", async () => {
@@ -390,6 +459,9 @@ describe("runGmailSupervisor", () => {
           messageId: "reversed-message",
           decision: "correction",
           classification: "promotion-reversed",
+          priorClassification: "operational-failure",
+          priorReason: "A routine vendor digest repeated an old incident.",
+          priorPolicySignals: ["operational-failure"],
           sender: "Vendor Person <vendor@example.com>",
           subject: "Routine vendor update",
         }),
@@ -398,6 +470,9 @@ describe("runGmailSupervisor", () => {
           messageId: "missed-message",
           decision: "correction",
           classification: "promotion-missed",
+          priorClassification: "no-action",
+          priorReason: "No action was initially identified.",
+          priorPolicySignals: ["routine"],
           sender: "Colleague <colleague@example.com>",
           subject: "Approval needed",
         }),
@@ -405,29 +480,27 @@ describe("runGmailSupervisor", () => {
       appendDecision: vi.fn().mockResolvedValue(undefined),
     })
 
-    expect(classify).toHaveBeenCalledWith({
-      account: "herb@devresults.com",
-      candidates: [
-        expect.objectContaining({
-          promotionCorrections: [
-            {
-              timestamp: "2026-08-24T12:00:00.000Z",
-              correction: "promotion-reversed",
-              sender: { name: "Vendor Person", address: "vendor@example.com" },
-              subject: "Routine vendor update",
-              exactSender: true,
-            },
-            {
-              timestamp: "2026-08-25T12:00:00.000Z",
-              correction: "promotion-missed",
-              sender: { name: "Colleague", address: "colleague@example.com" },
-              subject: "Approval needed",
-              exactSender: false,
-            },
-          ],
-        }),
-      ],
-    })
+    expect(classify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        account: "herb@devresults.com",
+        candidates: [
+          expect.objectContaining({
+            promotionCorrections: [
+              {
+                timestamp: "2026-08-24T12:00:00.000Z",
+                correction: "promotion-reversed",
+                sender: { name: "Vendor Person", address: "vendor@example.com" },
+                subject: "Routine vendor update",
+                exactSender: true,
+                priorClassification: "operational-failure",
+                priorReason: "A routine vendor digest repeated an old incident.",
+                priorPolicySignals: ["operational-failure"],
+              },
+            ],
+          }),
+        ],
+      }),
+    )
   })
 
   it("applies and verifies only the exact archive thread mutation", async () => {
@@ -519,7 +592,11 @@ describe("runGmailSupervisor", () => {
 
     expect(result).toMatchObject({ promoted: 0, retried: 1 })
     expect(appendDecision).toHaveBeenCalledWith(
-      expect.objectContaining({ decision: "error", classification: "promote-error" }),
+      expect.objectContaining({
+        policyVersion: expect.stringMatching(/^sha256:[a-f0-9]{64}$/),
+        decision: "error",
+        classification: "promote-error",
+      }),
     )
   })
 
@@ -832,10 +909,12 @@ describe("runGmailSupervisor", () => {
       appendDecision: vi.fn().mockResolvedValue(undefined),
     })
 
-    expect(classify).toHaveBeenCalledWith({
-      account: "herb@devresults.com",
-      candidates: [expect.objectContaining({ category: "promotions" })],
-    })
+    expect(classify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        account: "herb@devresults.com",
+        candidates: [expect.objectContaining({ category: "promotions" })],
+      }),
+    )
   })
 
   it("completes a classifier-only retry without action after it leaves Inbox", async () => {
@@ -909,10 +988,12 @@ describe("runGmailSupervisor", () => {
       appendDecision: vi.fn().mockResolvedValue(undefined),
     })
 
-    expect(classify).toHaveBeenCalledWith({
-      account: "herb@devresults.com",
-      candidates: [expect.objectContaining({ category: "promotions" })],
-    })
+    expect(classify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        account: "herb@devresults.com",
+        candidates: [expect.objectContaining({ category: "promotions" })],
+      }),
+    )
   })
 
   it("does not retain an older thread retry after a newer message completes", async () => {
@@ -986,10 +1067,12 @@ describe("runGmailSupervisor", () => {
       appendDecision: vi.fn().mockResolvedValue(undefined),
     })
 
-    expect(classify).toHaveBeenCalledWith({
-      account: "herb@devresults.com",
-      candidates: [expect.objectContaining({ category: "promotions" })],
-    })
+    expect(classify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        account: "herb@devresults.com",
+        candidates: [expect.objectContaining({ category: "promotions" })],
+      }),
+    )
     expect(gmail.modifyThreadLabels).not.toHaveBeenCalled()
     expect(saveState).toHaveBeenCalledWith(expect.objectContaining({ retryMessageIds: [] }))
     expect(result.promoted).toBe(1)
@@ -1098,31 +1181,33 @@ describe("runGmailSupervisor", () => {
     })
 
     expect(hasPriorReplyTo).toHaveBeenCalledWith("vendor@example.com")
-    expect(classify).toHaveBeenCalledWith({
-      account: "herb@devresults.com",
-      candidates: [
-        expect.objectContaining({
-          body: "We would like a DevResults demo. Herb, please reply with a time.",
-          thread: [
-            expect.objectContaining({
-              sender: { name: "Herb Caudill", address: "herb@devresults.com" },
-              body: "Please send details.",
+    expect(classify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        account: "herb@devresults.com",
+        candidates: [
+          expect.objectContaining({
+            body: "We would like a DevResults demo. Herb, please reply with a time.",
+            thread: [
+              expect.objectContaining({
+                sender: { name: "Herb Caudill", address: "herb@devresults.com" },
+                body: "Please send details.",
+              }),
+            ],
+            archiveProtections: expect.objectContaining({
+              priorReply: true,
+              activeConversation: true,
+              requestedWork: true,
+              herbInitiated: true,
             }),
-          ],
-          archiveProtections: expect.objectContaining({
-            priorReply: true,
-            activeConversation: true,
-            requestedWork: true,
-            herbInitiated: true,
+            delegatedCustomer: {
+              customerInquiry: true,
+              otherDevResultsRecipient: true,
+              requiresHerbAction: true,
+            },
           }),
-          delegatedCustomer: {
-            customerInquiry: true,
-            otherDevResultsRecipient: true,
-            requiresHerbAction: true,
-          },
-        }),
-      ],
-    })
+        ],
+      }),
+    )
     expect(JSON.stringify(classify.mock.calls)).not.toContain("attachment contents")
   })
 
@@ -1146,14 +1231,16 @@ describe("runGmailSupervisor", () => {
       appendDecision: vi.fn().mockResolvedValue(undefined),
     })
 
-    expect(classify).toHaveBeenCalledWith({
-      account: "herb@devresults.com",
-      candidates: [
-        expect.objectContaining({
-          archiveProtections: expect.objectContaining({ protectedCorrespondent: true }),
-        }),
-      ],
-    })
+    expect(classify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        account: "herb@devresults.com",
+        candidates: [
+          expect.objectContaining({
+            archiveProtections: expect.objectContaining({ protectedCorrespondent: true }),
+          }),
+        ],
+      }),
+    )
   })
 
   it.each([
@@ -1197,14 +1284,16 @@ describe("runGmailSupervisor", () => {
       appendDecision: vi.fn().mockResolvedValue(undefined),
     })
 
-    expect(classify).toHaveBeenCalledWith({
-      account: "herb@devresults.com",
-      candidates: [
-        expect.objectContaining({
-          archiveProtections: expect.objectContaining({ protectedCorrespondent: true }),
-        }),
-      ],
-    })
+    expect(classify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        account: "herb@devresults.com",
+        candidates: [
+          expect.objectContaining({
+            archiveProtections: expect.objectContaining({ protectedCorrespondent: true }),
+          }),
+        ],
+      }),
+    )
   })
 
   it("rejects classifier output that names an unsupplied pending candidate", async () => {
@@ -1323,10 +1412,12 @@ describe("runGmailSupervisor", () => {
       appendDecision,
     })
 
-    expect(classify).toHaveBeenCalledWith({
-      account: "herb@devresults.com",
-      candidates: [expect.objectContaining({ messageId: "valid" })],
-    })
+    expect(classify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        account: "herb@devresults.com",
+        candidates: [expect.objectContaining({ messageId: "valid" })],
+      }),
+    )
     expect(appendDecision.mock.calls.map(([entry]) => entry.messageId)).toEqual([
       "invalid-body",
       "invalid-subject",
@@ -1504,12 +1595,15 @@ function createMessage(
     body?: string
     /** From header. */
     from?: string
+    /** Gmail mailbox receipt time in milliseconds since the Unix epoch. */
+    internalDate?: string
   } = {},
 ): GmailMessage {
   return {
     ...inboxMessage,
     id: overrides.id ?? inboxMessage.id,
     threadId: overrides.threadId ?? inboxMessage.threadId,
+    internalDate: overrides.internalDate ?? inboxMessage.internalDate,
     labelIds: overrides.labelIds ?? inboxMessage.labelIds,
     payload: {
       ...inboxMessage.payload,
@@ -1535,6 +1629,7 @@ function createLogEntry(
   overrides: Partial<DecisionLogEntry> = {},
 ): DecisionLogEntry {
   return {
+    policyVersion: "sha256:test-policy",
     timestamp: "2026-08-25T12:00:00.000Z",
     messageId: "message-1",
     threadId: "thread-1",

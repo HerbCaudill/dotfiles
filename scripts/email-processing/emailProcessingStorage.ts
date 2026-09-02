@@ -139,7 +139,13 @@ function parseDecisionLogEntry(
     throw new Error("Invalid email decision log entry")
   }
   const exception = decision === "error" ? optionalString(value.exception) : undefined
+  const priorClassification =
+    decision === "correction" ? requiredString(value.priorClassification) : undefined
+  const priorReason = decision === "correction" ? requiredString(value.priorReason) : undefined
+  const priorPolicySignals =
+    decision === "correction" ? stringArray(value.priorPolicySignals) : undefined
   return {
+    policyVersion: requiredString(value.policyVersion),
     timestamp: requiredString(value.timestamp),
     messageId: requiredString(value.messageId),
     threadId: requiredString(value.threadId),
@@ -152,6 +158,9 @@ function parseDecisionLogEntry(
     reason: requiredString(value.reason),
     ...(exception !== undefined ? { exception } : {}),
     policySignals: stringArray(value.policySignals),
+    ...(priorClassification !== undefined ? { priorClassification } : {}),
+    ...(priorReason !== undefined ? { priorReason } : {}),
+    ...(priorPolicySignals !== undefined ? { priorPolicySignals } : {}),
     gmailUrl: requiredString(value.gmailUrl),
   }
 }

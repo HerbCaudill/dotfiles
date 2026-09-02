@@ -1,10 +1,13 @@
 /** A valid normalized classifier input with one candidate. */
 export const validClassifierInput = {
+  evaluatedAt: "2026-08-26T12:00:00.000Z",
+  policyVersion: `sha256:${"a".repeat(64)}`,
   account: "herb@devresults.com",
   candidates: [
     {
       messageId: "message-1",
       threadId: "thread-1",
+      receivedAt: "2026-08-26T11:00:00.000Z",
       sender: {
         name: "Vendor Person",
         address: "vendor@example.com",

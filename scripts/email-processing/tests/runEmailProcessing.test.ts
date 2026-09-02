@@ -79,6 +79,50 @@ describe("runEmailProcessingCommand", () => {
     expect(writeLine).toHaveBeenCalledWith("classifier=ok")
   })
 
+  it("runs the synthetic policy calibration without reading or mutating Gmail", async () => {
+    const runGws = vi.fn<GwsCommandRunner>()
+    const classify = vi.fn(
+      async (input: ClassifierInput): Promise<ClassifierOutput> => ({
+        decisions: input.candidates.map(candidate => ({
+          messageId: candidate.messageId,
+          decision:
+            candidate.messageId === "delegated-customer"
+              ? "archive"
+              : candidate.messageId.includes("fresh-") ||
+                  candidate.messageId === "different-critical-event-after-reversal" ||
+                  candidate.messageId === "delegated-customer-requires-herb"
+                ? "promote"
+                : "none",
+          classification:
+            candidate.messageId === "delegated-customer"
+              ? "delegated-customer"
+              : candidate.messageId.includes("fresh-") ||
+                  candidate.messageId === "different-critical-event-after-reversal" ||
+                  candidate.messageId === "delegated-customer-requires-herb"
+                ? "explicit-action"
+                : "no-action",
+          confidence: "high",
+          reason: "Synthetic calibration decision.",
+          policySignals: ["routine"],
+        })) as ClassifierOutput["decisions"],
+      }),
+    )
+    const writeLine = vi.fn()
+
+    const result = await runEmailProcessingCommand({
+      args: ["--calibrate"],
+      now: () => new Date("2026-09-02T10:00:00.000Z"),
+      runGws,
+      classify,
+      writeLine,
+    })
+
+    expect(result).toBeNull()
+    expect(classify).toHaveBeenCalledOnce()
+    expect(runGws).not.toHaveBeenCalled()
+    expect(writeLine).toHaveBeenCalledWith("calibration=ok cases=8")
+  })
+
   it("runs the complete workflow and prints compact counts", async () => {
     const directory = await createTestDirectory()
     const mailbox = createMailbox([
@@ -429,6 +473,7 @@ describe("runEmailProcessingCommand", () => {
     expect(reviewOutput[0]).not.toContain("Secret body text")
     expect(helpOutput.join("\n")).toContain("decisions.jsonl")
     expect(helpOutput.join("\n")).toContain("--preflight")
+    expect(helpOutput.join("\n")).toContain("--calibrate")
     expect(helpOutput.join("\n")).toContain("rerun the same command")
     expect(writeHelpLine.mock.calls.every(call => call.length === 1)).toBe(true)
   })
@@ -543,6 +588,7 @@ function createMessage(options: {
   return {
     id: options.id,
     threadId: options.threadId,
+    internalDate: "1787742000000",
     labelIds: [...options.labels],
     payload: {
       mimeType: "text/plain",
@@ -647,6 +693,8 @@ type GmailMessageFixture = {
   id: string
   /** Opaque Gmail thread ID. */
   threadId: string
+  /** Gmail mailbox receipt time in milliseconds since the Unix epoch. */
+  internalDate: string
   /** Mutable labels used to emulate Gmail post-write verification. */
   labelIds: string[]
   /** Minimal full-message payload. */

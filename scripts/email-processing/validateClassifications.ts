@@ -81,7 +81,12 @@ export function downgradeIneligibleActions(
       const candidate = candidatesById.get(decision.messageId)!
       try {
         validateClassifications(
-          { account: input.account, candidates: [candidate] },
+          {
+            evaluatedAt: input.evaluatedAt,
+            policyVersion: input.policyVersion,
+            account: input.account,
+            candidates: [candidate],
+          },
           { decisions: [decision] },
         )
         return decision

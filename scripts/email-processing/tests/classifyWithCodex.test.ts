@@ -79,7 +79,7 @@ describe("classifyWithCodex", () => {
     expect(classifierRequest.stdin).toContain(injectedBody)
     expect(classifierRequest.args.join(" ")).not.toContain(injectedBody)
     expect(classifierConfig).not.toContain(injectedBody)
-    expect(classifierConfig).toContain("You are a deterministic email classifier.")
+    expect(classifierConfig).toContain("You are a deterministic email classifier for")
     expect(classifierConfig).toContain('default_permissions = "email-classifier"')
     expect(classifierConfig).toContain('":minimal" = "read"')
     expect(classifierConfig).toContain("enabled = false")

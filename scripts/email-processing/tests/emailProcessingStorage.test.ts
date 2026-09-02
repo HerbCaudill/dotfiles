@@ -116,6 +116,26 @@ describe("email processing storage", () => {
     ])
   })
 
+  it("round-trips the sanitized evidence retained by a promotion correction", async () => {
+    const directory = await createTemporaryDirectory()
+    const path = join(directory, "decisions.jsonl")
+    const correction: DecisionLogEntry = {
+      ...createDecision(),
+      decision: "correction",
+      classification: "promotion-reversed",
+      confidence: "high",
+      reason: "Herb moved the thread out of Primary.",
+      policySignals: ["promotion-reversed"],
+      priorClassification: "operational-failure",
+      priorReason: "A digest repeated an old service failure.",
+      priorPolicySignals: ["operational-failure"],
+    }
+
+    await appendEmailDecision(correction, path)
+
+    await expect(loadEmailDecisionLog(path)).resolves.toEqual([correction])
+  })
+
   it("preserves an exact sender address while redacting display-name and medical details", async () => {
     const directory = await createTemporaryDirectory()
     const path = join(directory, "decisions.jsonl")
@@ -291,6 +311,7 @@ async function createTemporaryDirectory(): Promise<string> {
 /** Create one complete sanitized decision fixture. */
 function createDecision(): DecisionLogEntry {
   return {
+    policyVersion: "sha256:test-policy",
     timestamp: "2026-08-26T12:00:00.000Z",
     messageId: "message-1",
     threadId: "thread-1",

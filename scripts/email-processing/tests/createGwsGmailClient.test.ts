@@ -31,7 +31,12 @@ describe("createGwsGmailClient", () => {
     const responses = [
       { emailAddress: "herb@devresults.com", historyId: "105" },
       { messages: [{ id: "message-1", threadId: "thread-1" }] },
-      { id: "message-1", threadId: "thread-1", labelIds: ["INBOX"] },
+      {
+        id: "message-1",
+        threadId: "thread-1",
+        internalDate: "1787742000000",
+        labelIds: ["INBOX"],
+      },
       { id: "thread-1", messages: [] },
       {},
     ]
@@ -45,6 +50,7 @@ describe("createGwsGmailClient", () => {
     await expect(gmail.getMessage("message-1")).resolves.toEqual({
       id: "message-1",
       threadId: "thread-1",
+      internalDate: "1787742000000",
       labelIds: ["INBOX"],
     })
     await expect(gmail.getThread("thread-1")).resolves.toEqual({
@@ -113,6 +119,14 @@ describe("createGwsGmailClient", () => {
     })
 
     await expect(gmail.getProfile()).rejects.toThrow("Unexpected Gmail account")
+  })
+
+  it("rejects message data without Gmail's trusted internal receipt time", async () => {
+    const gmail = createGwsGmailClient({
+      run: vi.fn().mockResolvedValue(JSON.stringify({ id: "message-1", threadId: "thread-1" })),
+    })
+
+    await expect(gmail.getMessage("message-1")).rejects.toThrow("internalDate")
   })
 
   it("paginates history and preserves added messages and exact label transitions", async () => {
@@ -191,6 +205,7 @@ describe("createGwsGmailClient", () => {
         JSON.stringify({
           id: "sent-1",
           threadId: "sent-thread",
+          internalDate: "1787742000000",
           payload: {
             headers: [
               { name: "From", value: "Herb Caudill <herb@devresults.com>" },

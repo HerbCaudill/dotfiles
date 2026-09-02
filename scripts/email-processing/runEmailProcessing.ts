@@ -7,6 +7,8 @@ import {
   saveEmailProcessingState,
 } from "./emailProcessingStorage.ts"
 import { parseClassifierOutput } from "./parseClassifierOutput.ts"
+import { loadClassifierPolicy } from "./loadClassifierPolicy.ts"
+import { runClassifierCalibration } from "./runClassifierCalibration.ts"
 import { runGmailSupervisor } from "./runGmailSupervisor.ts"
 import type { GmailSupervisorDependencies, GmailSupervisorResult } from "./supervisorTypes.ts"
 import type { ClassifierInput } from "./types.ts"
@@ -50,6 +52,8 @@ export async function runEmailProcessingCommand(
   }
 
   const classify = options.classify ?? classifyWithCodex
+  const classifierPolicy = await loadClassifierPolicy()
+  const evaluatedAt = (options.now ?? (() => new Date()))().toISOString()
   const classifyWithDiagnostics: GmailSupervisorDependencies["classify"] = async input => {
     try {
       return await classify(input)
@@ -62,7 +66,9 @@ export async function runEmailProcessingCommand(
     }
   }
   if (args.length === 1 && args[0] === "--preflight") {
-    const output = parseClassifierOutput(await classifyWithDiagnostics(PREFLIGHT_INPUT))
+    const output = parseClassifierOutput(
+      await classifyWithDiagnostics(createPreflightInput(evaluatedAt, classifierPolicy.version)),
+    )
     const decision = output.decisions[0]
     if (
       output.decisions.length !== 1 ||
@@ -72,6 +78,14 @@ export async function runEmailProcessingCommand(
       throw new Error("Classifier preflight returned an unexpected decision")
     }
     writeLine("classifier=ok")
+    return null
+  }
+  if (args.length === 1 && args[0] === "--calibrate") {
+    const caseCount = await runClassifierCalibration(classifyWithDiagnostics, {
+      evaluatedAt,
+      policyVersion: classifierPolicy.version,
+    })
+    writeLine(`calibration=ok cases=${caseCount}`)
     return null
   }
   if (args.length > 0) throw new Error(`Unknown argument: ${args.join(" ")}`)
@@ -118,43 +132,55 @@ export type EmailProcessingCommandOptions = {
 }
 
 const HELP_LINES = [
-  "Usage: email-processing [--cutover|--preflight|--review|--help]",
+  "Usage: email-processing [--calibrate|--cutover|--preflight|--review|--help]",
   "Run without arguments to process Gmail with the supervised classifier.",
   "Use --cutover to discard retries and start after Gmail's current history position.",
   "Use --preflight to test only the classifier with synthetic input.",
+  "Use --calibrate to check the canonical policy against fictional edge cases without Gmail.",
   "Use --review to print the audit log; raw error exceptions can contain sensitive diagnostics.",
   "State: ~/.local/share/email-processing/state.json",
   "Decisions: ~/.local/share/email-processing/decisions.jsonl",
   "After a failure, rerun the same command; saved retries and verified mutations make reruns safe.",
 ]
 
-const PREFLIGHT_INPUT: ClassifierInput = {
-  account: "herb@devresults.com",
-  candidates: [
-    {
-      messageId: "preflight-message",
-      threadId: "preflight-thread",
-      sender: { name: "Routine Service", address: "service@example.com" },
-      recipients: [{ name: "Herb Caudill", address: "herb@devresults.com" }],
-      subject: "Routine confirmation",
-      body: "This is a synthetic classifier preflight. No action is needed.",
-      thread: [],
-      category: "updates",
-      archiveProtections: {
-        devResultsSender: false,
-        priorReply: false,
-        archiveReversal: false,
-        protectedCorrespondent: false,
-        activeConversation: false,
-        requestedWork: false,
-        herbInitiated: false,
+/** Build the one-case classifier preflight with current policy provenance. */
+function createPreflightInput(
+  /** Stable wall clock for the synthetic message. */
+  evaluatedAt: string,
+  /** Content-derived classifier prompt version. */
+  policyVersion: string,
+): ClassifierInput {
+  return {
+    evaluatedAt,
+    policyVersion,
+    account: "herb@devresults.com",
+    candidates: [
+      {
+        messageId: "preflight-message",
+        threadId: "preflight-thread",
+        receivedAt: evaluatedAt,
+        sender: { name: "Routine Service", address: "service@example.com" },
+        recipients: [{ name: "Herb Caudill", address: "herb@devresults.com" }],
+        subject: "Routine confirmation",
+        body: "This is a synthetic classifier preflight. No action is needed.",
+        thread: [],
+        category: "updates",
+        archiveProtections: {
+          devResultsSender: false,
+          priorReply: false,
+          archiveReversal: false,
+          protectedCorrespondent: false,
+          activeConversation: false,
+          requestedWork: false,
+          herbInitiated: false,
+        },
+        delegatedCustomer: {
+          customerInquiry: false,
+          otherDevResultsRecipient: false,
+          requiresHerbAction: false,
+        },
+        promotionCorrections: [],
       },
-      delegatedCustomer: {
-        customerInquiry: false,
-        otherDevResultsRecipient: false,
-        requiresHerbAction: false,
-      },
-      promotionCorrections: [],
-    },
-  ],
+    ],
+  }
 }
