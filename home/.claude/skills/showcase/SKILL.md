@@ -111,6 +111,16 @@ Never assume that a running site matches the checked-out code. Before asking the
 
 Tell the user before changing a shared local runtime. Do not reuse an unrelated runtime lane, database, or server merely because it is already running.
 
+## Open pages in Chrome
+
+When the goal is simply to show the user a page, launch Chrome directly from the command line with the URL. On macOS, use:
+
+```bash
+open -a "Google Chrome" "https://example.com/path"
+```
+
+Prefer this to opening the page through the browser-control extension. Extension-managed tabs can appear in a separate browser window or a collapsed tab group, which makes the handoff confusing. Use browser control only when the walkthrough also requires the agent to inspect or interact with the page. If both are needed, launch the user-facing page directly first, then attach browser control to that existing tab when practical.
+
 ## Stage 1: Existing behavior and problem
 
 Check out and serve the baseline. Verify the starting state before handing control to the user.
@@ -146,6 +156,8 @@ Wait for the user to confirm that they have finished exercising the new behavior
 ## Stage 3: Code walkthrough
 
 Explain the diff between the announced baseline and target. Keep the observed behavior from stages 1 and 2 as the organizing thread.
+
+Link code to the exact local checkout or worktree that contains the target revision. Use Markdown links with full absolute filesystem paths and tight line numbers, for example `[Chart.ts](/Users/name/Code/project/Chart.ts:42)`. Prefer these local links to GitHub URLs or editor-specific URI schemes. Resolve `~` to the full home-directory path in the link target, and verify that each target exists before presenting it. Reuse an existing worktree for the target branch when one is available.
 
 1. Re-state the behavior being explained in one or two sentences.
 2. Start with the apex consumer: the UI, public API, command, or caller the user just exercised.
