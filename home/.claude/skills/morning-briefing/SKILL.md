@@ -1,11 +1,11 @@
 ---
 name: morning-briefing
-description: Generate Herb's morning briefing from primary and shared calendars, tasks, email, messaging, GitHub, meeting transcripts, and local agent sessions; save it in today's Obsidian daily note; and return it inline, ending with a proposed daily standup entry. Use when Herb asks for his morning briefing or invokes /morning-briefing. A question about his day or schedule alone is not a request for the briefing.
+description: Generate Herb's morning briefing.
 ---
 
-Produce the briefing as plain markdown, save it in today's Obsidian daily note, and return the same briefing inline in the chat response. No artifact or HTML.
+Produce the briefing as plain markdown, save it in today's Obsidian daily note, and respond to the user ONLY same briefing inline in the chat response. Do not return any intermediate results, plans, or other commentary. Do not stop working until the briefing is complete and has been displayed in the chat.
 
-Times are Europe/Madrid. "Today" and "yesterday" are calendar days in that timezone. If yesterday was Sunday, "yesterday" for the accomplishments section means the last working day, but still check the weekend for anything that needs attention.
+"Today" and "yesterday" are calendar days in that timezone. If yesterday was Sunday, "yesterday" for the accomplishments section means the last working day, but still check the weekend for anything that needs attention.
 
 ## Gather
 
@@ -90,7 +90,14 @@ Use `- [x] Source` when the required query or review succeeded, including when i
 
 ### Calendar
 
-A table: Time | Event | Notes. Event names link to the calendar event. Notes column carries declines, pending responses, and anything unusual. Below the table, one line on the shape of the day if it's worth saying (free stretches, a freed slot).
+List each timed event in chronological order using this format:
+
+```markdown
+- 14:00 **[DevResults UNITE RFI COTS](https://calendar-event-url)** (1h)
+  You accepted. UNICEF requested a 30–35 minute demonstration covering indicator management, planning, monitoring, reporting, dashboards, AI, multilingual use, and offline work.
+```
+
+Use the Europe/Madrid start time, a bold event name linked to the calendar event, and a compact duration such as `(30m)`, `(1h)`, or `(1h 30m)`. Put declines, pending responses, and anything unusual on the unindented line immediately after the event. Omit that line when there is no useful note. Below the list, add one line on the shape of the day if it's worth saying (free stretches, a freed slot).
 
 ### Other calendars
 
@@ -123,21 +130,21 @@ If the list is empty, say `Everything actionable is already captured in Google T
 End the briefing with a copy-ready Slack post in a fenced `text` block. Do not post it. Match the format and plainspoken voice of Herb's recent `#standup` entries:
 
 ```text
-:white_check_mark: *Yesterday*
-- ...
+✅ *Yesterday*
+- {project}: {task}, {task}
 
-:dart: *Today*
-- ...
+🎯 *Today*
+- {project}: {task}, {task}
 
-:warning: *Blockers*
-None
+⚠️ *Blockers*
+- {project}: {blocker}
 ```
 
-Keep the Yesterday and Today sections to three to five bullets total. Choose team-relevant work from the briefing: completed work and decisions for Yesterday; concrete priorities, meetings, and expected outcomes for Today. Omit personal errands and routine administration unless they affect availability. State a blocker only when one is real; otherwise write `None`. Do not present planned or in-progress work as completed.
+Use the literal emoji characters shown above, not Slack shortcode names such as `:dart:`. Format every bullet as `{project}: {task}, {task}`, grouping multiple tasks for the same project into one comma-separated bullet. Keep the Yesterday and Today sections to three to five bullets total. Choose team-relevant work from the briefing: completed work and decisions for Yesterday; concrete priorities, meetings, and expected outcomes for Today. Omit personal errands and routine administration unless they affect availability. Include the Blockers section only when at least one real blocker exists; omit the heading and section entirely otherwise. Do not present planned or in-progress work as completed.
 
 ## Save
 
-After the briefing is complete, save the same markdown to `~/Code/herbcaudill/notes/daily/YYYY-MM-DD.md`, using today's Europe/Madrid date.
+After the briefing is complete, save the same markdown to `~/Code/herbcaudill/notes/daily/YYYY-MM-DD.md`, using today's local date.
 
 Store it under this exact level-two heading:
 
