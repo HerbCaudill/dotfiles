@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data flows</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&display=swap">
+<style>
+  :root {
+    --paper: #ffffff; --panel: #ffffff; --ink: #1b232c; --ink-2: #4c5866; --ink-3: #7d8895; --rule: #d6dad2;
+    --app: #a9671f; --app-soft: #f5e7d2;
+    --lib: #6b7785; --lib-soft: #e6e9e3;
+    --sdk: #1e6f8c; --sdk-soft: #dcedf3;
+    --srv: #5a3fa8; --srv-soft: #e8e2f6;
+    --warn: #b7431f; --warn-soft: #f7dfd6;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace; --sans: "IBM Plex Sans", system-ui, sans-serif; --cond: "IBM Plex Sans Condensed", "IBM Plex Sans", sans-serif;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --paper: #141a1f; --panel: #1b2229; --ink: #e5e9ec; --ink-2: #aeb8c2; --ink-3: #7c8792; --rule: #2f3941;
+    --app: #e0a45a; --app-soft: #3d2c14; --lib: #98a3ae; --lib-soft: #262f37; --sdk: #6cc0dd; --sdk-soft: #173442; --srv: #b39ef0; --srv-soft: #2c2347; --warn: #f08a6a; --warn-soft: #43211a; } }
+  :root[data-theme="dark"] {
+    --paper: #141a1f; --panel: #1b2229; --ink: #e5e9ec; --ink-2: #aeb8c2; --ink-3: #7c8792; --rule: #2f3941;
+    --app: #e0a45a; --app-soft: #3d2c14; --lib: #98a3ae; --lib-soft: #262f37; --sdk: #6cc0dd; --sdk-soft: #173442; --srv: #b39ef0; --srv-soft: #2c2347; --warn: #f08a6a; --warn-soft: #43211a; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 14px; line-height: 1.45; }
+  code { font-family: var(--mono); font-size: 0.88em; }
+  .page { margin: 0; padding: 0; display: grid; gap: 4px; }
+  .frozen { position: sticky; top: 0; z-index: 3; background: var(--paper); }
+  .top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 20px; padding: 12px 12px 4px; }
+  h1 { font-size: 19px; font-weight: 600; margin: 0; }
+  .tabs { display: flex; gap: 6px; margin-left: auto; }
+  .tabs button { font: inherit; font-size: 14px; padding: 5px 12px; border: 1px solid var(--rule); border-radius: 4px; background: var(--panel); color: var(--ink-2); cursor: pointer; }
+  .tabs button[aria-selected="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .tabs button:focus-visible, .modes button:focus-visible { outline: 2px solid var(--srv); outline-offset: 1px; }
+  .modes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 0 12px 8px; font-size: 13px; }
+  .modes[hidden] { display: none; }
+  .modelabel { color: var(--ink-3); margin-right: 6px; }
+  .modes button { font: inherit; font-size: 13px; padding: 3px 10px; border: 1px solid var(--rule); border-radius: 999px; background: var(--panel); color: var(--ink-2); cursor: pointer; }
+  .modes button[aria-pressed="true"] { background: var(--lib-soft); border-color: var(--lib); color: var(--ink); }
+  .lanehdr { overflow: hidden; }
+  figure { position: relative; margin: 0; }
+  .canvas { overflow-x: auto; padding: 0; position: relative; }
+  .pop { position: absolute; z-index: 2; width: 300px; background: var(--panel); color: var(--ink); border: 1px solid var(--rule); border-radius: 6px; box-shadow: 0 6px 24px rgba(0,0,0,.14); padding: 10px 12px; font-size: 12.5px; display: grid; gap: 4px; }
+  .pop[hidden] { display: none; }
+  .pop .k { color: var(--ink-3); font-family: var(--cond); font-weight: 600; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .pop code { font-size: 11.5px; word-break: break-all; }
+  .pop a { color: var(--sdk); text-decoration: none; }
+  .pop a:hover { text-decoration: underline; }
+  .pop .x { position: absolute; top: 4px; right: 6px; border: 0; background: none; font: inherit; color: var(--ink-3); cursor: pointer; padding: 2px 6px; }
+  svg { display: block; max-width: 100%; height: auto; font-family: var(--sans); }
+  svg text { fill: currentColor; }
+  .laneowner { font-family: var(--cond); font-weight: 600; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; fill: var(--paper); }
+  .lanehead { font-family: var(--cond); font-weight: 600; font-size: 12.5px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .lanesub { font-family: var(--mono); font-size: 11px; fill: var(--ink-3); }
+  .lanerole { font-size: 11.5px; fill: var(--ink-2); }
+  .node { cursor: pointer; }
+  .node rect { stroke-width: 1; }
+  .node.app rect { fill: var(--app-soft); stroke: var(--app); }
+  .node.lib rect { fill: var(--lib-soft); stroke: var(--lib); }
+  .node.sdk rect { fill: var(--sdk-soft); stroke: var(--sdk); }
+  .node.srv rect { fill: var(--srv-soft); stroke: var(--srv); }
+  .node.warn rect { fill: var(--warn-soft); stroke: var(--warn); stroke-dasharray: 3 2; }
+  .node.active rect { stroke-width: 2.5; }
+  .node .t { font-size: 13px; font-weight: 500; }
+  .node .s { font-size: 11px; font-family: var(--mono); fill: var(--ink-2); }
+  .edge { fill: none; stroke: currentColor; stroke-width: 1.1; }
+  .edge.back { stroke-dasharray: 4 3; }
+  .elabel { font-size: 11.5px; fill: var(--ink-2); }
+  .phase { font-family: var(--cond); font-weight: 600; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; fill: var(--ink-3); }
+  .phaseline { stroke: var(--rule); stroke-dasharray: 2 4; }
+  @media (prefers-reduced-motion: no-preference) { .node rect { transition: stroke-width .12s; } }
+</style>
+</head>
+<body>
+<div class="page">
+<div class="frozen">
+  <div class="top">
+    <h1 id="title"></h1>
+    <div class="tabs" role="tablist" id="tabs"></div>
+  </div>
+  <div class="modes" id="modes" hidden></div>
+  <div class="lanehdr" id="lanehdr"></div>
+</div>
+  <figure>
+    <div class="canvas" id="canvas"></div>
+    <div class="pop" id="pop" hidden role="dialog" aria-label="Step details"></div>
+  </figure>
+</div>
+
+<script>
+// ===== MODEL =====
+// Replace everything between the MODEL markers. The renderer below needs no changes.
+//
+// title      Page title.
+// rootFromPage  Relative path from this file's directory to the repository root, e.g. ".." for docs/.
+//            Used to build vscode://file links when the page is opened from disk.
+// lanes      Left to right. kind is one of app | lib | sdk | srv and picks the color.
+//            owner is the strip at the very top; head is the lane name; sub is its path or package;
+//            role is one sentence on what the lane is responsible for.
+// flows      One tab each. A flow has phases + steps, or variants (a labelled switch of
+//            phase/step sets that share the same lanes, such as cold / warm / stale cache).
+// phases     [stepIndex, label]: a dashed rule and heading drawn above that step.
+// steps      [lane, title, sub, file, edgeLabelToNextStep, opts?]
+//            file is shown in the popover; a plain relative path is linked to VS Code.
+//            opts.branch = laneId draws this step as a dashed failure branch off the last
+//            step in that lane instead of continuing the main sequence.
+const model = {
+  title: "Data flows",
+  rootFromPage: "..",
+  lanes: [
+    { id: "ui", owner: "App", head: "Screen", sub: "src/screens", kind: "app", role: "Decides what to request and renders the result." },
+    { id: "client", owner: "App", head: "API client", sub: "src/api", kind: "app", role: "Builds requests and decodes responses." },
+    { id: "cache", owner: "Library", head: "Cache", sub: "in memory", kind: "lib", role: "Serves repeated requests without a round trip." },
+    { id: "api", owner: "Server", head: "API", sub: "/api", kind: "srv", role: "The service that owns the data." },
+  ],
+  flows: [
+    {
+      id: "load", label: "Load a list",
+      variants: {
+        label: "Cache on arrival",
+        options: [
+          { id: "cold", label: "Cold", phases: [[0, "Load"], [4, "Render"]], steps: [
+            ["ui", "ListScreen", "useList()", "src/screens/ListScreen.tsx", "request"],
+            ["client", "getList", "builds GET /api/items", "src/api/getList.ts", "miss"],
+            ["cache", "No entry", "", "", "fetch"],
+            ["api", "GET /api/items", "", "", "JSON"],
+            ["ui", "Render rows", "", "src/screens/ListScreen.tsx", ""],
+          ] },
+          { id: "warm", label: "Warm", phases: [[0, "Load"], [3, "Render"]], steps: [
+            ["ui", "ListScreen", "useList()", "src/screens/ListScreen.tsx", "request"],
+            ["client", "getList", "", "src/api/getList.ts", "hit"],
+            ["cache", "Entry served", "no request made", "", "data"],
+            ["ui", "Render rows", "", "src/screens/ListScreen.tsx", ""],
+          ] },
+        ],
+      },
+    },
+    {
+      id: "save", label: "Save a field",
+      phases: [[0, "Edit"], [3, "Reconcile"]],
+      steps: [
+        ["ui", "Field blur", "save(name, value)", "src/screens/DetailScreen.tsx", "PUT"],
+        ["client", "updateField", "", "src/api/updateField.ts", ""],
+        ["api", "PUT /api/items/{id}", "", "", "ok · error"],
+        ["cache", "Patch entry", "", "", ""],
+        ["ui", "Show error", "field keeps its old value", "src/screens/DetailScreen.tsx", "", { branch: "api" }],
+      ],
+    },
+  ],
+}
+// ===== END MODEL =====
+
+;(() => {
+  const NS = "http://www.w3.org/2000/svg"
+  const el = (t, a = {}, c = []) => { const n = document.createElementNS(NS, t); for (const [k, v] of Object.entries(a)) n.setAttribute(k, v); for (const x of c) n.appendChild(typeof x === "string" ? document.createTextNode(x) : x); return n }
+  const $ = id => document.getElementById(id)
+
+  // VS Code links need an absolute path. When the page is opened from disk, its own URL locates the checkout.
+  const repoRoot = (() => {
+    if (location.protocol !== "file:") return null
+    const dir = decodeURIComponent(location.pathname).replace(/\/[^/]*$/, "")
+    const parts = dir.split("/")
+    for (const seg of (model.rootFromPage || ".").split("/")) { if (seg === "..") parts.pop(); else if (seg && seg !== ".") parts.push(seg) }
+    return parts.join("/")
+  })()
+  const isRepoPath = f => /^[\w.-]+(\/[\w.-]+)+$/.test(f)
+
+  const lanes = model.lanes
+  const laneIndex = Object.fromEntries(lanes.map((l, i) => [l.id, i]))
+  let laneW = 200, nodeW = 186
+  const left = 4, top = 136, gap = 40, phaseBand = 44
+  const laneX = i => left + i * laneW + laneW / 2
+  const wrap = (text, max) => {
+    const out = []; let line = ""
+    const tokens = text.split(" ").flatMap(w => w.length > max ? w.split(/(?=[A-Z])/).map((piece, i) => ({ piece, glue: i > 0 })) : [{ piece: w, glue: false }])
+    for (const { piece, glue } of tokens) {
+      const sep = glue || !line ? "" : " "
+      if (line && (line + sep + piece).length > max) { out.push(line); line = piece } else line = line + sep + piece
+    }
+    if (line) out.push(line)
+    return out
+  }
+
+  let currentFlow
+  function render(flow) {
+    currentFlow = flow
+    const avail = $("canvas").clientWidth - left * 2
+    laneW = Math.max(200, Math.floor(avail / lanes.length)); nodeW = laneW - 14
+    const phaseAt = new Map(flow.phases || [])
+    const nodes = flow.steps.map(s => {
+      const t = wrap(s[1], Math.floor(nodeW / 7.4)), sub = s[2] ? wrap(s[2], Math.floor(nodeW / 6.8)) : []
+      return { t, sub, h: 12 + t.length * 17 + (sub.length ? 4 + sub.length * 15 : 0) + 10 }
+    })
+    let y = top
+    const pos = flow.steps.map((s, i) => {
+      if (phaseAt.has(i)) y += phaseBand
+      const p = { x: laneX(laneIndex[s[0]]), top: y, y: y + nodes[i].h / 2, bottom: y + nodes[i].h, phaseY: phaseAt.has(i) ? y - phaseBand : null }
+      y += nodes[i].h + gap
+      return p
+    })
+    const H = y - gap + 12, W = left * 2 + lanes.length * laneW
+
+    const hdr = el("svg", { viewBox: `0 0 ${W} ${top}`, width: W, height: top, role: "img", "aria-label": "Lane headers" })
+    lanes.forEach((l, i) => {
+      const x = laneX(i)
+      hdr.appendChild(el("rect", { x: x - laneW / 2 + 3, y: 0, width: laneW - 6, height: top, fill: `var(--${l.kind}-soft)`, opacity: 0.35 }))
+      hdr.appendChild(el("rect", { x: x - laneW / 2 + 3, y: 0, width: laneW - 6, height: 22, fill: `var(--${l.kind})`, opacity: 0.85 }))
+      hdr.appendChild(el("text", { x, y: 15, "text-anchor": "middle", class: "laneowner" }, [l.owner || ""]))
+      hdr.appendChild(el("text", { x, y: 46, "text-anchor": "middle", class: "lanehead", fill: `var(--${l.kind})` }, [l.head]))
+      hdr.appendChild(el("text", { x, y: 62, "text-anchor": "middle", class: "lanesub" }, [l.sub || ""]))
+      wrap(l.role || "", Math.floor((laneW - 16) / 6)).forEach((line, k) => hdr.appendChild(el("text", { x, y: 82 + k * 15, "text-anchor": "middle", class: "lanerole" }, [line])))
+    })
+    $("lanehdr").innerHTML = ""; $("lanehdr").appendChild(hdr)
+
+    const svg = el("svg", { viewBox: `0 ${top} ${W} ${H - top}`, width: W, role: "img", "aria-label": `${flow.label} data flow across lanes` })
+    svg.appendChild(el("defs", {}, [el("marker", { id: "a", viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 6, markerHeight: 6, orient: "auto" }, [el("path", { d: "M0 0L10 5L0 10z", fill: "currentColor" })])]))
+    lanes.forEach((l, i) => {
+      const x = laneX(i)
+      svg.appendChild(el("rect", { x: x - laneW / 2 + 3, y: top, width: laneW - 6, height: H - top, fill: `var(--${l.kind}-soft)`, opacity: 0.35 }))
+    })
+    for (const [i, name] of flow.phases || []) {
+      const py = pos[i].phaseY + 12
+      svg.appendChild(el("line", { x1: left + 4, x2: W - left - 4, y1: py, y2: py, class: "phaseline" }))
+      svg.appendChild(el("text", { x: left + 8, y: py + 16, class: "phase" }, [name]))
+    }
+    const isBranch = s => s[5] && s[5].branch
+    flow.steps.forEach((s, i) => {
+      if (isBranch(s)) {
+        const fromIndex = flow.steps.findIndex((x, j) => x[0] === s[5].branch && j < i && !isBranch(x))
+        if (fromIndex < 0) return
+        const from = pos[fromIndex], to = pos[i]
+        svg.appendChild(el("path", { d: `M${from.x + nodeW / 2} ${from.y} L${W - 10} ${from.y} L${W - 10} ${to.y} L${to.x + nodeW / 2} ${to.y}`, class: "edge back", "marker-end": "url(#a)" }))
+        svg.appendChild(el("text", { x: W - 14, y: (from.y + to.y) / 2, class: "elabel", "text-anchor": "middle", transform: `rotate(-90 ${W - 14} ${(from.y + to.y) / 2})` }, [s[5].label || "failure"]))
+        return
+      }
+      const next = flow.steps.slice(i + 1).find(x => !isBranch(x))
+      if (!next) return
+      const a = pos[i], b = pos[flow.steps.indexOf(next)]
+      const mid = a.bottom + (b.top - a.bottom) / 2
+      const d = a.x === b.x
+        ? `M${a.x} ${a.bottom} L${b.x} ${b.top}`
+        : `M${a.x} ${a.bottom} L${a.x} ${mid} L${b.x} ${mid} L${b.x} ${b.top}`
+      svg.appendChild(el("path", { d, class: "edge", "marker-end": "url(#a)" }))
+      if (s[4]) {
+        if (a.x === b.x) svg.appendChild(el("text", { x: a.x + 7, y: mid + 4, class: "elabel", "text-anchor": "start" }, [s[4]]))
+        else svg.appendChild(el("text", { x: (a.x + b.x) / 2, y: mid - 5, class: "elabel", "text-anchor": "middle" }, [s[4]]))
+      }
+    })
+    flow.steps.forEach((s, i) => {
+      const p = pos[i], n = nodes[i], lane = lanes[laneIndex[s[0]]]
+      const g = el("g", { class: `node ${isBranch(s) ? "warn" : lane.kind}`, tabindex: 0, role: "button", "aria-label": s[1] })
+      g.appendChild(el("rect", { x: p.x - nodeW / 2, y: p.top, width: nodeW, height: n.h, rx: 4 }))
+      let ty = p.top + 24
+      for (const line of n.t) { g.appendChild(el("text", { x: p.x, y: ty, "text-anchor": "middle", class: "t" }, [line])); ty += 17 }
+      ty += 2
+      for (const line of n.sub) { g.appendChild(el("text", { x: p.x, y: ty, "text-anchor": "middle", class: "s" }, [line])); ty += 15 }
+      const show = () => {
+        svg.querySelectorAll(".node").forEach(n => n.classList.remove("active")); g.classList.add("active")
+        const pop = $("pop"), c = $("canvas"), file = s[3]
+        const where = file ? `<span class="k">Where</span><code>${isRepoPath(file) && repoRoot ? `<a href="vscode://file${repoRoot}/${file}">${file}</a>` : file}</code>` : ""
+        pop.innerHTML = `<button class="x" aria-label="Close">×</button><span class="k">Step ${i + 1} of ${flow.steps.length} · ${lane.head}</span><span><b>${s[1]}</b>${s[2] ? "<br>" + s[2] : ""}</span>${where}`
+        pop.hidden = false
+        const r = g.getBoundingClientRect(), cr = c.getBoundingClientRect()
+        const x = cr.right - r.right > 320 ? r.right - cr.left + c.scrollLeft + 8 : r.left - cr.left + c.scrollLeft - 308
+        pop.style.left = `${Math.max(4, x)}px`
+        pop.style.top = `${r.top - cr.top + c.scrollTop + 8}px`
+        pop.querySelector(".x").addEventListener("click", hidePop)
+      }
+      g.addEventListener("click", show)
+      g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); show() } })
+      svg.appendChild(g)
+    })
+    $("canvas").innerHTML = ""; $("canvas").appendChild(svg); hidePop()
+  }
+  function hidePop() { $("pop").hidden = true; document.querySelectorAll(".node.active").forEach(n => n.classList.remove("active")) }
+
+  // Tabs and variant switches come from the model.
+  $("title").textContent = model.title; document.title = model.title
+  let tab = model.flows[0], option = null
+  const resolved = () => (tab.variants ? { ...option, label: `${tab.label} · ${option.label}` } : tab)
+  const renderModes = () => {
+    const m = $("modes"); m.innerHTML = ""; m.hidden = !tab.variants
+    if (!tab.variants) return
+    const lab = document.createElement("span"); lab.className = "modelabel"; lab.textContent = tab.variants.label; m.appendChild(lab)
+    for (const o of tab.variants.options) {
+      const b = document.createElement("button"); b.textContent = o.label; b.setAttribute("aria-pressed", o === option)
+      b.addEventListener("click", () => { option = o; renderModes(); render(resolved()) })
+      m.appendChild(b)
+    }
+  }
+  for (const f of model.flows) {
+    const b = document.createElement("button"); b.setAttribute("role", "tab"); b.textContent = f.label; b.setAttribute("aria-selected", f === tab)
+    b.addEventListener("click", () => {
+      tab = f; option = f.variants ? f.variants.options[0] : null
+      $("tabs").querySelectorAll("button").forEach(x => x.setAttribute("aria-selected", x === b))
+      renderModes(); render(resolved())
+    })
+    $("tabs").appendChild(b)
+  }
+  option = tab.variants ? tab.variants.options[0] : null
+  renderModes()
+
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hidePop() })
+  document.addEventListener("click", e => { if (!e.target.closest(".node") && !e.target.closest("#pop")) hidePop() })
+  $("canvas").addEventListener("scroll", e => { $("lanehdr").scrollLeft = e.target.scrollLeft })
+  let resizeTimer
+  window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => render(currentFlow), 120) })
+  render(resolved())
+})()
+</script>
+</body>
+</html>
