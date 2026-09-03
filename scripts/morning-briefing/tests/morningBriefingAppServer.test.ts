@@ -64,8 +64,9 @@ describe("morning briefing App Server requests", () => {
         threadId,
       },
     })
-    expect(getMorningBriefingResearchTurnStartRequest(threadId).params.input[0]).toMatchObject({
-      text: expect.stringContaining("morning-briefing skill"),
+    expect(getMorningBriefingResearchTurnStartRequest(threadId).params.input[0]).toEqual({
+      type: "text",
+      text: "/morning-briefing",
     })
     expect(getMorningBriefingArchiveRequest(threadId)).toEqual({
       method: "thread/archive",

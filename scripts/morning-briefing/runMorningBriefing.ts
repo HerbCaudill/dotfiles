@@ -11,8 +11,7 @@ import { isMainModule } from "../isMainModule.ts"
 const MORNING_BRIEFING_GOAL =
   "Complete today's morning briefing without stopping until every source has either been gathered or diagnosed, the finished briefing has been saved to today's Obsidian daily note under `## Daily briefing`, and the saved section has been verified."
 
-const MORNING_BRIEFING_RESEARCH_PROMPT =
-  "Run my morning briefing using the morning-briefing skill. Follow its current instructions and the active goal. Research, diagnose source failures, write the briefing, save it in today's Obsidian daily note under `## Daily briefing`, and verify the saved section. Keep research and diagnostic activity out of the briefing itself. Read, summarize, diagnose, and save only; do not reply, change tasks, or schedule anything. Mark the active goal complete only after the saved briefing satisfies the skill."
+const MORNING_BRIEFING_RESEARCH_PROMPT = "/morning-briefing"
 
 const MORNING_BRIEFING_PRESENTATION_PROMPT =
   "Read today's Europe/Madrid Obsidian daily note at `~/Code/herbcaudill/notes/daily/YYYY-MM-DD.md`. Return only the `## Daily briefing` section exactly as saved, including that heading. Do not research, summarize, edit files, or add commentary."
