@@ -66,7 +66,7 @@ These are installed into `~/.local/bin` by Home Manager rather than a custom sym
 | `serena`                  | Invoke Serena CLI                                                                                                                                  | Python   |
 | `serena-mcp-server`       | Start the Serena MCP server                                                                                                                        | Python   |
 | `index-project`           | Invoke Serena's project indexing                                                                                                                   | Python   |
-| `morning-briefing`        | Run the morning briefing through Codex and save it to the daily note                                                                               | Node.js  |
+| `morning-briefing`        | Run the repo-owned multi-agent briefing pipeline, save it to the daily note, and create a pinned Codex task                                        | Node.js  |
 | `resurface-tickler-tasks` | Move due Tickler task trees to Today, clear their resurface dates, and verify their hierarchy                                                      | Node.js  |
 | `tslsp`                   | Type-aware TypeScript code intelligence via tsgo; self-installs into `~/.local/share/tslsp` with npm (pnpm's global layout breaks its tsgo lookup) | Bash     |
 
@@ -119,7 +119,7 @@ The dotfiles repo manages automated harness updates with:
 The dotfiles repo manages two user LaunchAgents through Home Manager in `nix/home/launchd.nix`:
 
 - `resurface-tickler-tasks` runs every day at 06:00, one hour before the briefing. The deterministic TypeScript implementation lives in `scripts/google-tasks/`, uses `gws-delegated`, and logs to `/tmp/resurface-tickler-tasks.log`.
-- `morning-briefing` runs daily at 07:00. It runs the repo-managed skill with GPT-5.6 Sol in a persisted goal-backed diagnostic thread, saves and verifies the result in the daily note, archives the diagnostic thread on success, and creates a separate clean thread that presents only the saved briefing. Raw App Server events are retained in `~/.local/state/morning-briefing/YYYY-MM-DD.jsonl`; launcher output remains in `/tmp/morning-briefing.log`. Failed diagnostic threads remain unarchived for investigation.
+- `morning-briefing` runs daily at 07:00. A thin command wrapper invokes the `briefings` repo entrypoint, which runs three source-gathering agents in parallel, persists schema-checked results and JSONL diagnostics in a unique dated directory under `~/.local/state/morning-briefing/`, saves and verifies one canonical briefing in the daily note, waits for Obsidian Sync, and creates a clean pinned Codex task. Launcher output remains in `/tmp/morning-briefing.log`.
 
 Home Manager exposes both commands in `~/.local/bin` so either job can also be run manually.
 
