@@ -24,6 +24,22 @@ in
     };
   };
 
+  launchd.agents."process-inbox" = {
+    enable = true;
+    config = {
+      Label = "com.herbcaudill.process-inbox";
+      ProgramArguments = [ "${userBin}/process-inbox" ];
+      StartInterval = 3600;
+      StandardOutPath = "/tmp/inbox-processing.log";
+      StandardErrorPath = "/tmp/inbox-processing.log";
+      EnvironmentVariables = {
+        HOME = homeDirectory;
+        LANG = "en_US.UTF-8";
+        PATH = automationPath;
+      };
+    };
+  };
+
   launchd.agents."morning-briefing" = {
     enable = true;
     config = {

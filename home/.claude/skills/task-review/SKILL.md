@@ -1,11 +1,11 @@
 ---
 name: task-review
-description: Interview Herb through Google Tasks, starting with Today and then Backlog, to clarify status, context, blockers, priority, next actions, and agent-help opportunities; update notes, subtasks, lists, and delegations as decisions are made. Use when Herb asks to review, process, triage, clean up, or interview through Google Tasks, Today, Backlog, or Tickler.
+description: Interview Herb through an optional ordered list of Google Tasks list names, defaulting to Today then Backlog, to clarify status, context, blockers, priority, next actions, and agent-help opportunities. Use when Herb asks to review, process, triage, clean up, or interview through Google Tasks, Inbox, Today, Backlog, or Tickler.
 ---
 
 # Task review
 
-Review Google Tasks as a conversation, not a batch-cleanup exercise. Start with `Today`, continue with `Backlog`, and handle one task at a time until Herb pauses or every task in scope has been reviewed.
+Review Google Tasks as a conversation, not a batch-cleanup exercise. Accept optional `listNames`, an ordered list of Google Tasks list names. When omitted, use `["Today", "Backlog"]`. When supplied, review only those lists, in that order. For example, the combined morning briefing invokes this skill once with `listNames: ["Inbox", "Today"]`. Handle one task at a time until Herb pauses or every task in scope has been reviewed.
 
 ## Boundaries
 
@@ -19,6 +19,7 @@ Review Google Tasks as a conversation, not a batch-cleanup exercise. Start with 
 
 ## List roles
 
+- `Inbox` contains captured or newly discovered actions awaiting clarification and placement.
 - `Today` contains current commitments and items that need attention now.
 - `Backlog` contains active but unscheduled work.
 - `Tickler` contains deliberately deferred work. Its due date is a resurface date, not a deadline.
@@ -28,14 +29,16 @@ Do not create a missing list or automation without Herb's confirmation. Reuse an
 
 ## Load the review
 
-1. List task lists and resolve exact IDs by title.
-2. Load incomplete tasks from `Today` with assigned tasks included.
+1. Resolve `listNames` or the default `["Today", "Backlog"]`. Remove repeated names while preserving their first occurrence. An explicitly empty list means there is nothing to review. List task lists and resolve exact IDs by title. If a requested name is missing or ambiguous, ask Herb to resolve it; do not silently substitute or create a list.
+2. Load incomplete tasks from the first requested list with assigned tasks included, following every page.
 3. Preserve Google Tasks order by sorting sibling `position` values lexicographically and retaining parent-child structure.
 4. Keep task and list IDs as internal working data. Do not show them to Herb.
-5. Review every Today task before loading or interviewing through Backlog, unless Herb changes the order.
-6. When entering Backlog, reload it so completed, moved, or agent-updated tasks are not reviewed from stale state.
+5. Review every task in the current list before loading or interviewing through the next requested list, unless Herb changes the scope or pauses. Do not broaden the review to other lists without his instruction.
+6. When entering each subsequent list, load it fresh so completed, moved, or agent-updated tasks are not reviewed from stale state. Track tasks already reviewed during this invocation so an item moved from Inbox to Today does not receive the same clarification interview again; revisit it only for a distinct Today decision.
 
 Do not dump the whole list into chat unless Herb asks. State the current task title, include only the existing note or linked context that matters, and ask the next useful question.
+
+For the combined morning session, the briefing is already displayed. Start with the first useful question immediately, without asking whether to begin or reprinting the briefing. Inbox items can include Siri captures, expired reminders, and preliminary research. Read linked Obsidian context before surfacing pending questions or findings. Interpret relative dates against the original capture timestamp; ask whether expired reminders still matter. Research may still be running, so continue reviewing other tasks instead of waiting. Keep unfinished questions in the task's operational notes, with substantial context in Obsidian, so a paused session or tomorrow's review can pick them up.
 
 ## Interview loop
 
@@ -148,7 +151,7 @@ After every write, read back the changed task or destination list and verify sta
 
 At the end of the review:
 
-1. Reload Today, Backlog, Tickler, and any topical lists changed during the run.
+1. Reload the requested lists and any destination lists changed during the run.
 2. Confirm that every in-scope open task was reviewed or explicitly deferred for later review.
 3. Check that completed tasks are complete, delegated tasks remain open when follow-up is required, and Tickler parents retain their subtasks.
 4. Summarize completed, deferred, delegated, and still-blocked work in plain language.

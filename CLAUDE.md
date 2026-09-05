@@ -116,12 +116,13 @@ The dotfiles repo manages automated harness updates with:
 
 ## Morning workflow automation
 
-The dotfiles repo manages two user LaunchAgents through Home Manager in `nix/home/launchd.nix`:
+The dotfiles repo manages three user LaunchAgents through Home Manager in `nix/home/launchd.nix`:
 
 - `resurface-tickler-tasks` runs every day at 06:00, one hour before the briefing. The deterministic TypeScript implementation lives in `scripts/google-tasks/`, uses `gws-delegated`, and logs to `/tmp/resurface-tickler-tasks.log`.
-- `morning-briefing` runs daily at 07:00. A thin command wrapper invokes the `briefings` repo entrypoint, which runs three source-gathering agents in parallel, persists schema-checked results and JSONL diagnostics in a unique dated directory under `~/.local/state/morning-briefing/`, saves and verifies one canonical briefing in the daily note, waits for Obsidian Sync, and creates a clean pinned Codex task. Launcher output remains in `/tmp/morning-briefing.log`.
+- `process-inbox` runs hourly. Its thin wrapper invokes `briefings/scripts/inbox/run.ts`, which transfers timestamped Obsidian captures into Google Tasks Inbox, verifies each destination, and moves the original capture into `Inbox archive`. Transfer journals and the independent research queue live under `~/.local/state/inbox-processing/`. Research writes canonical Obsidian notes and links them from tasks. Logs are `/tmp/inbox-processing.log` and `/tmp/inbox-research.log`.
+- `morning-briefing` runs daily at 07:00. A thin command wrapper invokes the `briefings` repo entrypoint, which first processes inbox captures, runs three source-gathering agents in parallel, persists schema-checked results and JSONL diagnostics in a unique dated directory under `~/.local/state/morning-briefing/`, saves and verifies one canonical briefing in the daily note, waits for Obsidian Sync, and creates a pinned Codex session. After presenting the briefing, that session starts one task-review invocation with `listNames: ["Inbox", "Today"]`. Launcher output remains in `/tmp/morning-briefing.log`.
 
-Home Manager exposes both commands in `~/.local/bin` so either job can also be run manually.
+Home Manager exposes all three commands in `~/.local/bin` so each job can also be run manually.
 
 ## Agent transcript archive
 
