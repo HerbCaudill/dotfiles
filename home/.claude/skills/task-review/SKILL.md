@@ -38,7 +38,7 @@ Do not create a missing list or automation without Herb's confirmation. Reuse an
 
 Do not dump the whole list into chat unless Herb asks. State the current task title, include only the existing note or linked context that matters, and ask the next useful question.
 
-For the combined morning session, the briefing is already displayed. Start with the first useful question immediately, without asking whether to begin or reprinting the briefing. Inbox items can include Siri captures, expired reminders, and preliminary research. Find the canonical Obsidian note by subject or its Google Task backlink before surfacing pending questions or findings. For Siri captures, the private journals under ~/.local/state/inbox-processing/captures and research map task IDs to capture dates and canonical note paths; Inbox archive preserves original dictation and initial follow-ups. Do not expect task notes to contain this metadata. Interpret relative dates against the original capture timestamp; ask whether expired reminders still matter. Research may still be running, so continue reviewing other tasks instead of waiting. Keep unfinished questions and substantial context in Obsidian so a paused session or tomorrow's review can pick them up. Read completed research before using an initial capture question; the research or Herb's new wording may have resolved it.
+For the combined morning session, the briefing is already displayed. Start with the first useful question immediately, without asking whether to begin or reprinting the briefing. Inbox items can include Siri captures, expired reminders, and preliminary research. Follow the Obsidian link in the task notes, or find the canonical note by subject or its Google Task backlink before surfacing pending questions or findings. For Siri captures, the private journals under ~/.local/state/inbox-processing/captures and research map task IDs to capture dates and canonical note paths; Inbox archive preserves original dictation and initial follow-ups. Do not expect task notes to contain this metadata. Interpret relative dates against the original capture timestamp; ask whether expired reminders still matter. Research may still be running, so continue reviewing other tasks instead of waiting. Keep unfinished questions and substantial context in Obsidian so a paused session or tomorrow's review can pick them up. Read completed research before using an initial capture question; the research or Herb's new wording may have resolved it.
 
 ## Interview loop
 
@@ -61,7 +61,7 @@ Before asking factual questions, pursue relevant existing context in Obsidian, G
 - **Abandoned:** Mark it complete when Herb has decided not to pursue it. Record a short note only when the reason will matter later.
 - **Deferred:** Move it to Tickler and set an explicit resurface date. Keep its context and subtasks.
 - **Blocked:** State the blocker in notes and make the unblocking action the first subtask. If the blocker is time-based, use Tickler.
-- **Active, one step:** Keep the parent concise and record the concrete next action in notes or one subtask.
+- **Active, one step:** Keep the parent concise and use one subtask when the parent title does not already express the complete action.
 - **Active, multiple steps:** Keep the parent as the outcome and create ordered, verb-first subtasks.
 - **Delegated:** Keep the parent open until the actual outcome is verified. Record what the agent is doing and make `Review agent findings` the first subtask when a human decision will still be needed.
 
@@ -72,10 +72,10 @@ After learning material context or taking action, update the task notes without 
 ```text
 Status: ...
 Blocker: ...
-Next: ...
+Research: obsidian://open?vault=notes&file=...
 ```
 
-Omit empty labels. Never add questions, capture timestamps or identifiers, research-status boilerplate, or Obsidian links to Google Tasks notes. Keep titles scannable. Phone numbers, email addresses, and other short details needed to perform the next action may stay in the task title or notes.
+Omit empty labels. Link the canonical Obsidian note from the parent notes and express individual next steps as ordered subtasks. Never add questions, capture timestamps or identifiers, or research-status boilerplate to Google Tasks notes. Keep titles scannable. Phone numbers, email addresses, and other short details needed to perform the next action may stay in the task title or notes.
 
 ## Durable context in Obsidian
 
@@ -87,8 +87,8 @@ Use Herb's Obsidian vault at `/Users/herbcaudill/Code/herbcaudill/notes` for con
 - Follow the vault's existing note organization and style. Do not create a new folder scheme for task reviews.
 - Summarize private messages and email threads. Do not copy full conversations, raw message dumps, credentials, one-time codes, or unrelated personal details into the note.
 - Link to authoritative sources where possible and distinguish verified facts, Herb's decisions, and agent inference.
-- Put the Google Task backlink in the Obsidian note. Find the note later by that backlink, its subject, or the private research journal; do not put an Obsidian link in Google Tasks.
-- Keep only the Google Task's useful operational status, blocker, next action, actionable phone numbers, and actionable email addresses. Do not duplicate the durable narrative there.
+- Put the Google Task backlink in the Obsidian note and an Obsidian deep link in the parent task notes. Use `obsidian://open?vault=notes&file=` followed by the URL-encoded vault-relative note path without `.md`. Verify that the path points to the canonical note.
+- Keep the Google Task's useful operational status, blocker, actionable phone numbers and email addresses, and canonical Obsidian link in the parent notes. Put individual next steps in subtasks. Do not duplicate the durable narrative there.
 - When a linked note already exists, update it and preserve the same task link.
 - Do not edit the daily note merely because a task note was created. Daily-note links are a separate request.
 
@@ -96,7 +96,7 @@ Use Herb's Obsidian vault at `/Users/herbcaudill/Code/herbcaudill/notes` for con
 
 Use subtasks to expose execution, not to reproduce every thought:
 
-- Prefer one to four meaningful subtasks.
+- Prefer one to four meaningful subtasks; use more when the work has distinct stages that need separate completion.
 - Start each title with a concrete verb.
 - Put them in execution order.
 - Keep the parent title focused on the outcome.
@@ -122,7 +122,7 @@ Keep the interview moving while delegated work runs.
 - Use a subagent for a quick, narrow action such as marking one task complete, patching notes, moving a task, or adding a small set of confirmed subtasks.
 - Use a standalone Codex task for involved work such as multi-source research, browser interaction, scheduling, account cancellation, repository work, document creation, or a task likely to need follow-up from Herb.
 - Give delegated work the exact task title and internal task/list IDs, the confirmed authority, the desired task-note update, and whether the task should remain open or be completed.
-- In every delegated prompt, state the Obsidian boundary explicitly. If the agent learns durable context, it must create or update the canonical Obsidian note, keep questions and source metadata in that note, and put only useful execution details in Google Tasks. Never add questions, capture timestamps, or Obsidian links to task notes. A quick mutation-only subagent does not need to touch Obsidian when it learns nothing durable.
+- In every delegated prompt, state the Obsidian boundary explicitly. If the agent learns durable context, it must create or update the canonical Obsidian note, keep questions and source metadata in that note, link it from the parent task, and express individual next steps as ordered subtasks. Keep useful execution details in Google Tasks; keep questions and capture timestamps out of task notes. A quick mutation-only subagent does not need to touch Obsidian when it learns nothing durable.
 - For standalone tasks, state external-action boundaries explicitly. Research does not authorize sending, booking, purchasing, cancelling, posting, or contacting someone.
 - Explicitly wait once for initial standalone-task progress, then continue the interview. Do not wait for completion before asking about the next Google Task.
 - If the delegated task updates Google Tasks itself, do not apply a duplicate update in the parent session.
