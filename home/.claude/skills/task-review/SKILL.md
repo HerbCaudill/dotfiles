@@ -7,6 +7,8 @@ description: Interview Herb through an optional ordered list of Google Tasks lis
 
 Review Google Tasks as a conversation, not a batch-cleanup exercise. Accept optional `listNames`, an ordered list of Google Tasks list names. When omitted, use `["Today", "Backlog"]`. When supplied, review only those lists, in that order. For example, the combined morning briefing invokes this skill once with `listNames: ["Inbox", "Today"]`. Handle one task at a time until Herb pauses or every task in scope has been reviewed.
 
+Treat a natural-language invocation such as `$task-review inbox, today` as `listNames: ["Inbox", "Today"]`, preserving the supplied order.
+
 ## Boundaries
 
 - Read `../gws-tasks/SKILL.md` and its `gws-shared` prerequisite before using Google Tasks.
@@ -38,7 +40,9 @@ Do not create a missing list or automation without Herb's confirmation. Reuse an
 
 Do not dump the whole list into chat unless Herb asks. State the current task title, include only the existing note or linked context that matters, and ask the next useful question.
 
-For the combined morning session, the briefing is already displayed. Start with the first useful question immediately, without asking whether to begin or reprinting the briefing. Inbox items can include Siri captures, expired reminders, and preliminary research. Follow the Obsidian link in the task notes, or find the canonical note by subject or its Google Task backlink before surfacing pending questions or findings. For Siri captures, the private journals under ~/.local/state/inbox-processing/captures and research map task IDs to capture dates and canonical note paths; Inbox archive preserves original dictation and initial follow-ups. Do not expect task notes to contain this metadata. Interpret relative dates against the original capture timestamp; ask whether expired reminders still matter. Research may still be running, so continue reviewing other tasks instead of waiting. Keep unfinished questions and substantial context in Obsidian so a paused session or tomorrow's review can pick them up. Read completed research before using an initial capture question; the research or Herb's new wording may have resolved it.
+For the combined morning session, the briefing is already displayed. Continue in that session; do not create another review session. Refresh Google Tasks, then start with the first useful question immediately, without asking whether to begin or reprinting the briefing. If every requested list is empty, say that there are no tasks to review. Inbox items can include Siri captures, actions surfaced by the briefing, expired reminders, and preliminary research. Follow the Obsidian link in the task notes, or find the canonical note by subject or its Google Task backlink before surfacing pending questions or findings. For Siri captures, the private journals under ~/.local/state/inbox-processing/captures and research map task IDs to capture dates and canonical note paths; Inbox archive preserves original dictation and initial follow-ups. Do not expect task notes to contain this metadata. Interpret relative dates against the original capture timestamp; ask whether expired reminders still matter. Research may still be running, so continue reviewing other tasks instead of waiting. Keep unfinished questions and substantial context in Obsidian so a paused session or tomorrow's review can pick them up. Read completed research before using an initial capture question; the research or Herb's new wording may have resolved it.
+
+Herb has authorized the hourly transfer of captures and relevant background research. That standing authorization does not permit the interactive review to complete, move, defer, or execute a task without Herb's decision.
 
 ## Interview loop
 
