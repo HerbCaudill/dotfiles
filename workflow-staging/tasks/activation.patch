@@ -273,9 +273,7 @@ index 649e29c..6268503 100644
 -Do not declare the review finished merely because agent work is still running. The interview is complete when every task in scope has a truthful status, useful context, and a visible next action.
 +Reload the requested scope at the end. Every in-scope unfinished task should have been reviewed or explicitly left for later, with useful context and a visible next action where appropriate. Summarize completed, deferred, delegated and still-blocked work, and link any standalone tasks still running. Do not declare the interview complete merely because delegated work remains active.
 diff --git a/home/.local/bin/github-pr-task-sync b/home/.local/bin/github-pr-task-sync
-old mode 100755
-new mode 100644
-index dc9965c..43aee3e
+index dc9965c..43aee3e 100755
 --- a/home/.local/bin/github-pr-task-sync
 +++ b/home/.local/bin/github-pr-task-sync
 @@ -1,5 +1,17 @@

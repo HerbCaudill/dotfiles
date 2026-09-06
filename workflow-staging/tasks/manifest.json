@@ -3,43 +3,55 @@
   "activation": "inert",
   "sourceBase": "a792294b8e089e81d28d7efec69637a42ec9fca8",
   "requiredFreshness": "converged",
-  "patchSha256": "bc52a891641fae63eda98f51bcc0ee618f68602057c62266684144a6b6a0d5e6",
+  "patchSha256": "de33359e84565fbfeced5092b68800e0a84bc46530f67c915750fc4b69df4e5c",
   "targets": [
     {
       "path": "CLAUDE.md",
       "sourceSha256": "7f2ce1c8f2925a736b2fa74b28ca6c23e816645b9a3b0a0180149510366aac1f",
       "proposedSha256": "cc216623c7e94602812d2623b4bc7e35a2946eb5c0ded2c507ee1fcc6ebee4c4",
-      "proposedPath": "workflow-staging/tasks/proposed/CLAUDE.md"
+      "proposedPath": "workflow-staging/tasks/proposed/CLAUDE.md",
+      "sourceMode": "644",
+      "proposedMode": "644"
     },
     {
       "path": "home/.claude/skills/morning-briefing/SKILL.md",
       "sourceSha256": "2259e945dfa0d178d9bebd3025ba3f773b995a8274900e818a22e4a39756d9bf",
       "proposedSha256": "7db6e013051bec22fc524465f055a208a615545ce92a1320f40f2119469d2387",
-      "proposedPath": "workflow-staging/tasks/proposed/home/.claude/skills/morning-briefing/SKILL.md"
+      "proposedPath": "workflow-staging/tasks/proposed/home/.claude/skills/morning-briefing/SKILL.md",
+      "sourceMode": "644",
+      "proposedMode": "644"
     },
     {
       "path": "home/.claude/skills/task-review/SKILL.md",
       "sourceSha256": "1280db7c8b0818d4c9b7206b95c81a0c7ceb9bd39f1d370a1464b07edf2954cc",
       "proposedSha256": "652a74a5ca7ee1beacddef70ce8af49555943b64642e19f50094b74ba52142d2",
-      "proposedPath": "workflow-staging/tasks/proposed/home/.claude/skills/task-review/SKILL.md"
+      "proposedPath": "workflow-staging/tasks/proposed/home/.claude/skills/task-review/SKILL.md",
+      "sourceMode": "644",
+      "proposedMode": "644"
     },
     {
       "path": "home/.local/bin/github-pr-task-sync",
       "sourceSha256": "23ab2939434d31c787234a5b7151db10d9e761c8be700a25b3c51c906778eff2",
       "proposedSha256": "9f8fcf7d56c5558d68682f7e1ae324aa43b034bf2c659eab27ff69f311137834",
-      "proposedPath": "workflow-staging/tasks/proposed/home/.local/bin/github-pr-task-sync"
+      "proposedPath": "workflow-staging/tasks/proposed/home/.local/bin/github-pr-task-sync",
+      "sourceMode": "755",
+      "proposedMode": "755"
     },
     {
       "path": "nix/darwin/default.nix",
       "sourceSha256": "75300cfa9cd995ac421d4f1f8c0f9bc5ba9d1c2752c8674572caf6ec3c5608a2",
       "proposedSha256": "1dffb85e311e03c5b29225bf4e00ce28b519c362ea54b137d90894b36870db91",
-      "proposedPath": "workflow-staging/tasks/proposed/nix/darwin/default.nix"
+      "proposedPath": "workflow-staging/tasks/proposed/nix/darwin/default.nix",
+      "sourceMode": "644",
+      "proposedMode": "644"
     },
     {
       "path": "nix/home/launchd.nix",
       "sourceSha256": "736dd1bf044b8ee441b9c2affe84c3d13340a4fd0765bb8fbfeb00a587b4c63a",
       "proposedSha256": "2c4c7c6ce288d0543b5d0ef37314dd2645f6d3ab7717c810427df7f754462fe6",
-      "proposedPath": "workflow-staging/tasks/proposed/nix/home/launchd.nix"
+      "proposedPath": "workflow-staging/tasks/proposed/nix/home/launchd.nix",
+      "sourceMode": "644",
+      "proposedMode": "644"
     }
   ]
 }
