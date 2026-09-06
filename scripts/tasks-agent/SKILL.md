@@ -11,7 +11,7 @@ Use `tasks` for board reads and writes. It connects to one local peer and works 
 
 Run `tasks --help` for names and options. `tasks status` reports the actual serving peer and space; `tasks-agent status` reports only the release and launchd job. If unavailable, inspect startup/binding diagnostics and defer. Never create a replacement identity or choose another space to bypass a failure.
 
-Read with `tasks inbox`, `tasks next-steps`, `tasks active`, `tasks get --input target.json`, or the other named views. Use stable task/project IDs. Paginate with the returned continuation and the same query; a changed result set requires refreshing after conflict. Use `--timezone Europe/Madrid` for scheduled work.
+Read with `tasks inbox`, `tasks next-steps`, `tasks active`, `tasks snoozed`, `tasks get --input target.json`, or the other named views. Snoozed contains only task rows, including tasks hidden by their project's date. Completed tasks remain in ordinary views with `status: "done"`; filter them out when selecting unfinished work. Keep them when deduplicating prior actions or reviewing completion history. Use stable task/project IDs. Paginate with the returned continuation and the same query; a changed result set requires refreshing after conflict. Use `--timezone Europe/Madrid` for scheduled work.
 
 Pass JSON through `--input -` or a private UTF-8 file. Keep multiline descriptions and invitation credentials out of shell arguments. For example, once capture is authorized:
 
