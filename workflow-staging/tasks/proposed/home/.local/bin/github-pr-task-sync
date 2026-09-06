@@ -1,0 +1,17 @@
+#!/usr/bin/env -S node --experimental-strip-types
+
+import { runPrSync } from "../../../scripts/tasks-workflows/pr/runPrSync.ts"
+
+const spaceId = process.env.TASKS_SPACE_ID ?? ""
+const freshness = process.env.TASKS_FRESHNESS ?? ""
+if (!spaceId || !["local", "edge-upload", "converged"].includes(freshness)) {
+  console.error("[github-pr-task-sync] Reviewed Tasks space and explicit freshness are required.")
+  process.exitCode = 1
+} else {
+  runPrSync({ spaceId, freshness })
+    .then(result => console.log(`[github-pr-task-sync] checked ${result.checkedCount} notifications, acknowledged ${result.processedCount} events`))
+    .catch(() => {
+      console.error("[github-pr-task-sync] PR sync unfinished; preserve the checkpoint and inspect Tasks receipts and service status.")
+      process.exitCode = 1
+    })
+}
