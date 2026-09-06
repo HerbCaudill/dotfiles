@@ -20,7 +20,7 @@ Preparation archives the exact commit, so uncommitted developer files cannot ent
 
 ## Managed enrollment and startup
 
-These steps remain gated on the runtime proof, code review and explicitly selected space. The Tasks connection-status popover's **Connect Tasks agent** action prepares a single-use, five-minute delegated editor invitation for its selected space. It checks administrator membership, provisions the owner's EDGE agent and enables the space's replication. The displayed public space ID must match the managed binding below. The service has a separate editor identity and uses that existing EDGE agent.
+These steps remain gated on the runtime proof, code review and explicitly selected space. The Tasks connection-status popover's **Connect Tasks agent** action prepares a single-use, five-minute delegated editor invitation for its selected space. It checks owner or administrator membership, provisions the owner's EDGE agent and enables the space's replication. The displayed public space ID must match the managed binding below. The service has a separate editor identity and uses that existing EDGE agent.
 
 After those gates, set `services.tasksAgent.enable = true` and the explicit public `spaceId` in managed Nix source. Leave `autoStart = false` through enrollment. A normal `pnpm nix:rebuild` then installs `tasks`, `tasks-agent` and the launchd definition without starting the process. The root and private `agent/` parent are mode 0700; daemon stdout/stderr logs are inside that private parent. The separate `agent/peer/` child must be empty for initial enrollment. The receipt journal, process lock and socket stay in the parent.
 
