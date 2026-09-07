@@ -9,10 +9,11 @@ Gather trip details, clarify the choices that affect packing, then copy and adap
 
 ## Sources
 
+The authoritative master is [master-list.md](master-list.md), beside this skill's `SKILL.md`. Read and edit it in the repo-managed skill directory. Do not maintain a second master in the vault.
+
 The vault is `~/Code/HerbCaudill/notes`. Paths below are relative to its root:
 
 - Index: `packing.md`
-- Authoritative master: `templates/packing master list.md`
 - Past trips: `documents/packing/`
 - Hiking reference: `documents/packing/hiking master list.md`
 - Diving reference: `documents/Diving checklist.md`
@@ -67,4 +68,4 @@ Read the saved note and index. Check quantities against the trip, remove acciden
 
 Return a brief completion message with a clickable link to the note. Invite corrections when useful without repeating the whole list.
 
-Trip-specific choices change only that trip. Explicit lasting preferences update the master. Herb has permanently removed the toll transmitter, guidebooks, maps, Apple TV, and spare sunglasses; do not reintroduce them from old lists unless he asks. Keep the master authoritative in the vault rather than copying its inventory into this skill.
+Trip-specific choices change only that trip. Explicit lasting preferences update `master-list.md` beside this skill. Herb has permanently removed the toll transmitter, guidebooks, maps, Apple TV, and spare sunglasses; do not reintroduce them from old lists unless he asks. Keep the inventory in that file rather than duplicating it in these instructions or the vault.

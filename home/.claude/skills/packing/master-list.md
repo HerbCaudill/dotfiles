@@ -1,0 +1,110 @@
+- [ ] **Wear**
+  - [ ] shirt
+  - [ ] pants
+  - [ ] shoes
+- [ ] **Clothes**
+  - [ ] boxers
+  - [ ] socks
+  - [ ] swim trunks
+  - [ ] jeans
+  - [ ] shorts
+  - [ ] ss button-down shirts
+  - [ ] ls button-down shirts
+  - [ ] keen sandals
+  - [ ] trail shoes
+  - [ ] sneakers
+  - [ ] flip flops
+- [ ] **Backpack**
+  - [ ] pens, pencils
+  - [ ] USB brick
+  - [ ] external battery
+  - [ ] hat
+  - [ ] cables
+    - [ ] iPhone
+    - [ ] USB-C
+  - [ ] travel converters (US, UK)
+  - [ ] sunglasses
+  - [ ] passport
+  - [ ] currency
+  - [ ] iPad & pencil
+- [ ] **Toiletries**
+  - [ ] toiletries case
+  - [ ] meds
+  - [ ] aleve
+  - [ ] immigran
+  - [ ] bandaids
+  - [ ] antiseptic cream
+  - [ ] shampoo
+  - [ ] hair stuff
+  - [ ] nail clippers
+  - [ ] emery boards
+  - [ ] aquaphor
+- [ ] **Work**
+  - [ ] computer
+  - [ ] wireless mouse
+  - [ ] airpods max
+- [ ] **Car kit**
+  - [ ] lighter-USB adapter
+  - [ ] iPhone cable
+  - [ ] USB cable
+  - [ ] iPhone mount
+- [ ] **Cooking kit**
+  - [ ] olive oil
+  - [ ] vinegar
+  - [ ] pepper grinder
+  - [ ] salt
+  - [ ] cayenne
+  - [ ] pepper flakes
+  - [ ] chef's knife
+  - [ ] bread knife
+  - [ ] paring knife
+  - [ ] garlic press
+  - [ ] knife sharpener
+- [ ] **Hiking**
+  - [ ] ss merino shirt
+  - [ ] ls merino shirt
+  - [ ] hiking backpack
+  - [ ] shorts
+  - [ ] hat
+  - [ ] camelbak bladder
+- [ ] **Snorkeling**
+  - [ ] snorkel bag
+  - [ ] mask & snorkel
+  - [ ] fins
+  - [ ] water socks
+  - [ ] towel
+- [ ] **Scuba**
+  - [ ] dive bag
+  - [ ] BCD & octopus
+  - [ ] flashlight (charged)
+  - [ ] mask & snorkel
+  - [ ] fins
+  - [ ] water shoes
+  - [ ] wetsuit
+  - [ ] PADI card
+  - [ ] towel
+- [ ] **Skiing**
+  - [ ] boots
+  - [ ] socks
+  - [ ] leggings
+  - [ ] bib
+  - [ ] ss layer
+  - [ ] ls layer
+  - [ ] jacket
+  - [ ] balaclava
+  - [ ] helmet
+  - [ ] glove liners
+  - [ ] gloves
+  - [ ] camelback
+  - [ ] spare visors
+  - [ ] toiletries
+  - [ ] 1 fleece
+  - [ ] 1 tshirt
+  - [ ] 1 boxers
+  - [ ] 1 socks
+  - [ ] keys for ski rack
+- [ ] **Cold weather**
+  - [ ] thin fleece
+  - [ ] thick fleece
+  - [ ] gloves
+  - [ ] hat
