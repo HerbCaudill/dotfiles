@@ -56,6 +56,8 @@ The script will:
 
 ## After Running Setup Script
 
+Before triggering a deployment, apply the Beads branch guard below if the repository uses Beads or Dolt. The setup script does not configure this guard.
+
 1. **Trigger a production deployment:**
 
    ```bash
@@ -76,6 +78,26 @@ The script will:
    ```
 
 4. **Check the site** at `https://<project-name>.herbcaudill.com`
+
+## Beads and Dolt metadata branches
+
+Beads projects that sync through Dolt can push a `__dolt_remote_info__` branch containing only `DOLT_REMOTE.md`. Vercel treats that push as an app preview and fails with errors such as `vite: command not found`. Older Beads setups may also use a `beads-sync` branch.
+
+For every Beads/Dolt project, configure Vercel's project-level **Ignored Build Step** before the next sync. Use this inline command:
+
+```sh
+case "$VERCEL_GIT_COMMIT_REF" in __dolt_remote_info__|beads-sync) exit 0 ;; *) exit 1 ;; esac
+```
+
+Vercel interprets exit code `0` as skip and `1` as proceed. This preserves production builds and ordinary feature previews. Add any custom metadata-only sync branch after checking the repository's configuration; do not exclude app branches just because their names contain `beads` or `dolt`.
+
+Set the command in the project's Ignored Build Step settings, or PATCH `/v9/projects/{projectId}?teamId={teamId}` with the `commandForIgnoringBuildStep` field. Read the existing setting first. If it already contains a command, put the metadata-branch check before it and retain its behavior for other branches. Use the authenticated Vercel CLI or API without printing credentials. Read the setting back after updating it.
+
+Keep this guard in the Vercel project settings. A `vercel.json` or script committed only to the app branch is absent from the metadata branch and cannot protect it. Do not edit or delete the Dolt-managed branch to fix deployment failures.
+
+Verify the command returns `0` for each excluded branch and `1` for `main`, a feature branch, and an unset ref (unless an existing ignore rule intentionally changes those outcomes). When a metadata push next occurs, confirm that Vercel cancels/skips the build before dependency installation. Existing failed deployments remain in the history; do not redeploy them as apps.
+
+References: [Vercel Ignored Build Step](https://vercel.com/kb/guide/how-do-i-use-the-ignored-build-step-field-on-vercel), [project settings API](https://vercel.com/docs/rest-api/projects/update-an-existing-project).
 
 ## Troubleshooting
 
