@@ -13,7 +13,7 @@ The three stages are:
 2. Show the new behavior.
 3. Walk through the code changes.
 
-Pause after each stage. Do not continue until the user says they are ready.
+Pause after each stage.
 
 ## Scope
 
@@ -24,8 +24,6 @@ Accept one of these review targets:
 - a single commit, or
 - a commit range.
 
-Do not use this skill for staged or uncommitted changes. Require a clean working tree before starting. If the tree is dirty, stop and ask the user to commit, discard, or otherwise handle those changes themselves. Never stash, reset, clean, or discard their work.
-
 This skill is primarily for UI changes, but it can demonstrate other observable behavior:
 
 - For a web UI, use the local site and browser.
@@ -34,7 +32,7 @@ This skill is primarily for UI changes, but it can demonstrate other observable 
 - For an export or generated file, open the resulting artifact.
 - For an internal refactor, use a focused test or caller to show that public behavior stays the same.
 
-Review behavior and explain code. Do not perform an independent code review, hunt for defects, judge test coverage, suggest fixes, edit code, post review comments, approve, or merge. The user can request those tasks separately.
+Your job is not to perform a code review or perform exhaustive manual testing, but to help the user understand the changes.
 
 ## Follow the project first
 
@@ -57,12 +55,6 @@ Record the starting branch or detached commit so it can be restored later. Then 
 | Single commit | First parent                             | The commit      |
 | Commit range  | Range start                              | Range end       |
 
-Allow the user to override an inferred baseline. If a merge commit has more than one plausible baseline, explain the choice and ask before proceeding.
-
-Gather the intent from the strongest available source: the user's request, PR description, linked issue, specification, commit message, and diff. Prefer authoritative sources over inference. If sources disagree or the intended behavior remains ambiguous, pause and resolve that before demonstrating anything.
-
-Inspect the complete diff enough to identify the affected surfaces and trace the implementation later. This inspection is for explanation and scenario planning, not code review.
-
 ## Setup checkpoint
 
 Before stage 1, give the user a short orientation:
@@ -72,8 +64,6 @@ Before stage 1, give the user a short orientation:
 - the problem and intended outcome,
 - the behavior that would count as success, and
 - the exact baseline and target revisions.
-
-If these points are clear, continue without asking for ceremonial confirmation. Pause only when the target, baseline, or intent needs a decision.
 
 Plan a focused walkthrough rather than exhaustive manual testing. Use:
 
@@ -86,14 +76,7 @@ Use the same logical scenario and equivalent starting state before and after. Me
 
 Prefer existing local example data that already demonstrates the behavior. If configuration or data is missing, guide the user through creating it in the product UI. Handle routine navigation, but let the user perform the meaningful setup action.
 
-Create fixtures automatically only when they are strictly necessary and manual setup would be impractical. Before creating any records:
-
-1. Describe exactly what will be created and why.
-2. Explain whether the UI, an API, or the database will be used.
-3. Give the records a unique searchable tag when the application permits it.
-4. Ask for explicit confirmation.
-
-Use the highest-level supported interface. Prefer the UI, then an API, and use direct database writes only when the applicable project guidance permits them and no practical higher-level path exists. Keep before and after states equivalent, verify each starting state, and do not let actions from stage 1 contaminate stage 2. Reset the state, use paired records, or follow the project's approved data-isolation method.
+Create fixtures automatically only when they are strictly necessary and manual setup would be impractical. Use the highest-level supported interface. Prefer the UI, then an API, and use direct database writes only when the applicable project guidance permits them and no practical higher-level path exists. Keep before and after states equivalent, verify each starting state, and do not let actions from stage 1 contaminate stage 2. Reset the state, use paired records, or follow the project's approved data-isolation method.
 
 ## Manage the checkout and runtime
 
@@ -107,9 +90,7 @@ Use the existing clean checkout sequentially unless project guidance requires an
 6. Build and start the target application.
 7. Restore the starting checkout when the showcase ends or is aborted.
 
-Never assume that a running site matches the checked-out code. Before asking the user to inspect behavior, verify that the application is healthy and serves the intended revision. Follow project guidance to decide whether to rebuild the client, server, generated assets, dependencies, database, or some combination. Rebuild only what is needed, but prefer a known-fresh runtime over a fast stale one.
-
-Tell the user before changing a shared local runtime. Do not reuse an unrelated runtime lane, database, or server merely because it is already running.
+Never assume that a running site matches the checked-out code. Before asking the user to inspect behavior, verify that the application is healthy and serves the intended revision.
 
 ## Open pages in Chrome
 
