@@ -1,6 +1,6 @@
 ---
 name: showcase
-description: "Guide a human through a committed code change in three stages: demonstrate the existing behavior and problem, demonstrate the new behavior, then explain the implementation from the user-facing entry point down. Use when the user wants to see, demo, inspect, understand, or manually walk through a PR, branch, commit, or commit range. This is an interactive walkthrough, not a code review."
+description: "Guide a human through a committed code change"
 ---
 
 # Showcase
