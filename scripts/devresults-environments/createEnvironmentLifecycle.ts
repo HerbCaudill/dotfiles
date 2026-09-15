@@ -10,7 +10,10 @@ import { refreshWindowsDeployment } from "./refreshWindowsDeployment.ts"
 import { runWindowsLifecycle } from "./runWindowsLifecycle.ts"
 import { inventoryEnvironmentResources } from "./inventoryEnvironmentResources.ts"
 import { recoverEnvironmentLock } from "./recoverEnvironmentLock.ts"
-import { removeMacEnvironmentSource } from "./removeMacEnvironmentSource.ts"
+import {
+  removeMacEnvironmentSource,
+  preflightMacEnvironmentSource,
+} from "./removeMacEnvironmentSource.ts"
 import { runDrenvCommand } from "./runDrenvCommand.ts"
 import type { DrenvArgs, EnvironmentManifest, RegistryOptions, ResourceInventory } from "./types.ts"
 
@@ -108,6 +111,8 @@ export function createEnvironmentLifecycle(
             completedStep: "runtime-started",
           })
         }
+        if (args.command === "remove")
+          await (adapters.preflightMac ?? preflightMacEnvironmentSource)(manifest)
         await remote(manifest, "stop")
         manifest = await registry.checkpoint(manifest.id, manifest.ownerToken, { phase: "stopped" })
         if (args.command === "sync") {
@@ -238,6 +243,8 @@ type Adapters = {
     manifest: EnvironmentManifest,
     operation: string,
   ) => Promise<{ status: string; snapshot?: unknown }>
+  /** Read-only local source ownership and cleanliness guard before remote deletion. */
+  preflightMac?: (manifest: EnvironmentManifest) => Promise<unknown>
   /** Verified local source cleanup. */
   removeMac?: (manifest: EnvironmentManifest) => Promise<unknown>
 }

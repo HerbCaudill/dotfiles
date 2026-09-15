@@ -3,8 +3,8 @@ import { dirname } from "node:path"
 import { runDrenvCommand } from "./runDrenvCommand.ts"
 import type { EnvironmentManifest } from "./types.ts"
 
-/** Remove only a clean mapped worktree and its verified personal source claim. */
-export async function removeMacEnvironmentSource(
+/** Verify source ownership and cleanliness without changing local files. */
+export async function preflightMacEnvironmentSource(
   /** Validated environment mapping. */
   manifest: EnvironmentManifest,
 ) {
@@ -61,10 +61,18 @@ export async function removeMacEnvironmentSource(
     })
     if (dirty.stdout.trim())
       throw new Error("Mac source has uncommitted work; preserve it before removal")
+  }
+  return { path, claim, exists }
+}
+
+/** Recheck source ownership and cleanliness immediately before local deletion. */
+export async function removeMacEnvironmentSource(manifest: EnvironmentManifest) {
+  const source = await preflightMacEnvironmentSource(manifest)
+  if (!source) return
+  if (source.exists)
     await runDrenvCommand({
       executable: "git",
-      args: ["-C", path, "worktree", "remove", "--force", "--", path],
+      args: ["-C", source.path, "worktree", "remove", "--force", "--", source.path],
     })
-  }
-  await rm(claim, { recursive: true })
+  await rm(source.claim, { recursive: true })
 }

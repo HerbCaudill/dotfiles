@@ -58,9 +58,46 @@ try {
     $state=Get-State $m
     for($attempt=0;$attempt -lt 40 -and (Test-Supervisor $state);$attempt++){Start-Sleep -Milliseconds 100}
     Check (-not(Test-Supervisor $state)) 'Failed supervisor survived'
-    @{passed=$script:passed;scope='Real Windows kill-on-close job trees, cross-environment survival, scheduled supervisor success/failure and PID reuse refusal'} | ConvertTo-Json -Compress
+    # A disconnected launcher can leave a queued receipt while Task Scheduler owns the launch.
+    $queued=Get-State $m;$queued.pid=0;$queued.status='queued'
+    $delayedSupervisor=Join-Path (Split-Path -Parent $queued.request) 'supervisor.ps1'
+    [IO.File]::WriteAllText($delayedSupervisor,'Start-Sleep -Seconds 60')
+    Write-JsonAtomic (Join-Path (Get-Control $m) 'state.json') $queued
+    Start-ScheduledTask -TaskName "drenv-$($m.id)-$($m.ownerToken)"
+    $queuedRefused=$false
+    try{Stop-OwnedSupervisor $m}catch{$queuedRefused=$_.Exception.Message -like '*queued*'}
+    Check $queuedRefused 'Queued task was reported stopped after launcher disconnect'
+    foreach($complete in @($false,$true)) {
+        $queuedRefused=$false
+        try{Remove-OwnedData $m $complete}catch{$queuedRefused=$_.Exception.Message -like '*queued*'}
+        Check $queuedRefused 'Queued task did not block reset/removal before data inspection'
+    }
+    foreach($guard in @('catalog','runtime','writers','TLS','claim','task','source','reparse','dirty')) {
+      & {
+        function Stop-OwnedSupervisor($Manifest) {}
+        function Assert-Catalog($Manifest) {if($guard -eq 'catalog'){Deny 'guard:catalog'};return $true}
+        function Assert-Runtime($Manifest) {if($guard -eq 'runtime'){Deny 'guard:runtime'}}
+        function Assert-NoDatabaseWriters($Manifest) {if($guard -eq 'writers'){Deny 'guard:writers'}}
+        function Invoke-Sql($Query) {throw 'DATA MUTATION BEFORE PREFLIGHT'}
+        function Assert-SupervisorIdle($Manifest,$State) {if($guard -eq 'task'){Deny 'guard:task'}}
+        function netsh { $global:LASTEXITCODE=0;return 'fixture' }
+        function Assert-TlsBinding($Manifest) {if($guard -eq 'TLS'){Deny 'guard:TLS'}}
+        function Assert-Owner($Owner,$Manifest) {if($guard -eq 'claim'){Deny 'guard:claim'}}
+        function Assert-NoReparse($Path) {if($guard -eq 'reparse'){Deny 'guard:reparse'}}
+        function Assert-OwnedSource($Manifest) {if($guard -eq 'source'){Deny 'guard:source'}}
+        function git {$global:LASTEXITCODE=0;if($guard -eq 'dirty'){return '?? uncommitted.txt'}}
+        [void][IO.Directory]::CreateDirectory($m.paths.runtime)
+        $refused=$false;try{Remove-OwnedData $m $true}catch{if($guard -eq 'dirty'){$refused=$_.Exception.Message -like '*uncommitted*'}else{$refused=$_.Exception.Message -like "*guard:$guard*"}}
+        Check $refused "Removal guard $guard ran after data mutation"
+      }
+    }
+    $result=@{passed=$script:passed;scope='Real Windows job trees and scheduled launch refusal; removal guards with mutation sentinel'}
 } finally {
     if($null -ne $one){$one.Dispose()};if($null -ne $two){$two.Dispose()}
-    if($null -ne $m){$name="drenv-$($m.id)-$($m.ownerToken)";if(Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue){Unregister-ScheduledTask -TaskName $name -Confirm:$false}}
+    if($null -ne $m){$name="drenv-$($m.id)-$($m.ownerToken)";if(Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue){Stop-ScheduledTask -TaskName $name;for($attempt=0;$attempt -lt 50 -and (Get-ScheduledTask -TaskName $name).State -eq 'Running';$attempt++){Start-Sleep -Milliseconds 100};if((Get-ScheduledTask -TaskName $name).State -eq 'Running'){throw 'Fixture task did not stop; retain owned fixture'};Unregister-ScheduledTask -TaskName $name -Confirm:$false}}
+    for($attempt=0;$attempt -lt 100;$attempt++){$fixtureProcesses=@(Get-CimInstance Win32_Process | Where-Object {$_.ProcessId -ne $PID -and $_.CommandLine -and $_.CommandLine.IndexOf($root,[StringComparison]::OrdinalIgnoreCase) -ge 0});if($fixtureProcesses.Count -eq 0){break};Start-Sleep -Milliseconds 100}
+    if($fixtureProcesses.Count){throw 'Fixture process still references owned paths; retain fixture'}
     if(Test-Path -LiteralPath $root){Remove-Item -LiteralPath $root -Recurse -Force}
 }
+
+$result | ConvertTo-Json -Compress

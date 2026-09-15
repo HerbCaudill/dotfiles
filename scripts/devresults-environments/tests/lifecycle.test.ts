@@ -120,3 +120,92 @@ it("explicit recovery refuses a live lock owner and removes only a dead unchange
     await rm(directory, { recursive: true, force: true })
   }
 })
+
+it("refuses dirty Mac source before any Windows removal", async () => {
+  const directory = await realpath(await mkdtemp(join(tmpdir(), "drenv-remove-")))
+  const calls: string[] = []
+  const lifecycle = createEnvironmentLifecycle(
+    {
+      directory,
+      macRoot: join(directory, "mac"),
+      windowsRoot: "C:\\DrenvTest",
+      windowsHost: "devresults-vm",
+    },
+    {
+      inventory: async () => ({ windowsPorts: [], macPorts: [] }),
+      pair: async () => "a".repeat(40),
+      provision: async () => {},
+      windows: async (_m, operation) => {
+        calls.push(operation)
+        return { status: "stopped" }
+      },
+      preflightMac: async () => {
+        throw new Error("Mac source has uncommitted work")
+      },
+      removeMac: async () => {
+        calls.push("removeMac")
+      },
+    },
+  )
+  try {
+    await lifecycle({
+      command: "create",
+      id: "proof",
+      source: "/Users/test/source",
+      snapshot: "/Users/test/snapshot.json",
+    })
+    calls.length = 0
+    await expect(lifecycle({ command: "remove", id: "proof" })).rejects.toThrow("uncommitted")
+    expect(calls).toEqual([])
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+it.each(["stop", "recover", "reset", "remove"] as const)(
+  "%s preserves data when the Windows launch is queued",
+  async command => {
+    const directory = await realpath(await mkdtemp(join(tmpdir(), "drenv-queued-")))
+    let queued = false
+    const mutations: string[] = []
+    const lifecycle = createEnvironmentLifecycle(
+      {
+        directory,
+        macRoot: join(directory, "mac"),
+        windowsRoot: "C:\\DrenvTest",
+        windowsHost: "devresults-vm",
+      },
+      {
+        inventory: async () => ({ windowsPorts: [], macPorts: [] }),
+        pair: async () => "a".repeat(40),
+        preflightMac: async () => {},
+        removeMac: async () => {
+          mutations.push("Mac removal")
+        },
+        provision: async () => {
+          mutations.push("provision")
+        },
+        windows: async () => {
+          if (queued) throw new Error("Owned task is queued")
+          return { status: "stopped" }
+        },
+      },
+    )
+    try {
+      await lifecycle({
+        command: "create",
+        id: "proof",
+        source: "/Users/test/source",
+        snapshot: "/Users/test/snapshot.json",
+      })
+      mutations.length = 0
+      queued = true
+      await expect(lifecycle({ command, id: "proof" })).rejects.toThrow("queued")
+      expect(mutations).toEqual([])
+      const entries = (await lifecycle({ command: "status" })) as { phase: string }[]
+      expect(entries[0].phase).not.toBe("removed")
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  },
+)

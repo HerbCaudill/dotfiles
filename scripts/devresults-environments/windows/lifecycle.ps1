@@ -7,7 +7,10 @@ function Get-Control($Manifest) { return "$($Manifest.paths.windows).drenv-sourc
 function Get-State($Manifest) {
     $path=Join-Path (Get-Control $Manifest) 'state.json'
     if(-not(Test-Path -LiteralPath $path)){return $null}
-    $state=Get-Json $path;Assert-Owner $state $Manifest
+    $stream=[IO.File]::Open($path,[IO.FileMode]::Open,[IO.FileAccess]::Read,([IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete))
+    $reader=[IO.StreamReader]::new($stream)
+    try{$state=$reader.ReadToEnd() | ConvertFrom-Json}finally{$reader.Dispose();$stream.Dispose()}
+    Assert-Owner $state $Manifest
     return $state
 }
 function Test-Supervisor($State) {
@@ -35,8 +38,23 @@ function Assert-Runtime($Manifest) {
     $claim=Get-Json (Join-Path $root "claims\$($Manifest.id).json");Assert-Owner $claim $Manifest
     if($claim.runtime -cne $Manifest.paths.runtime -or $claim.catalog -cne $Manifest.catalog -or (@($claim.ports)-join ',') -cne (@($Manifest.ports.https,$Manifest.ports.http,$Manifest.ports.blob,$Manifest.ports.queue,$Manifest.ports.table)-join ',')){Deny 'Runtime claim differs from manifest'}
 }
+function Get-OwnedTask($Manifest,$State) {
+    $task=Get-ScheduledTask -TaskName "drenv-$($Manifest.id)-$($Manifest.ownerToken)" -ErrorAction SilentlyContinue
+    if($null -eq $task){return $null}
+    if($null -eq $State){Deny 'Scheduled task has no owned supervisor receipt'}
+    $directory=Split-Path -Parent $State.request
+    $expected='-NoProfile -NonInteractive -ExecutionPolicy Bypass -File '+(Quote-Argument (Join-Path $directory 'supervisor.ps1'))+' -RequestPath '+(Quote-Argument $State.request)
+    $executable=Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+    if(@($task.Actions).Count -ne 1 -or $task.Actions[0].Execute -ine $executable -or $task.Actions[0].Arguments -cne $expected -or $task.Actions[0].WorkingDirectory -ine $directory -or @($task.Triggers | Where-Object {$null -ne $_}).Count -ne 0){Deny 'Scheduled task action differs from the exact owned supervisor request'}
+    return $task
+}
+function Assert-SupervisorIdle($Manifest,$State) {
+    $task=Get-OwnedTask $Manifest $State
+    if(($null -ne $State -and $State.status -in @('queued','starting','running')) -or ($null -ne $task -and $task.State -in @('Queued','Running'))){Deny 'An owned task is queued/running or its launch is ambiguous; inspect the exact task and supervisor receipt before retry.'}
+}
 function Stop-OwnedSupervisor($Manifest) {
     $state=Get-State $Manifest
+    [void](Get-OwnedTask $Manifest $state)
     if(Test-Supervisor $state) {
         if($state.mode -ne 'runtime'){Deny 'An owned build is still active; wait for it to complete before changing the environment.'}
         Write-JsonAtomic (Join-Path (Split-Path -Parent $state.request) 'stop.json') @{ownerToken=$Manifest.ownerToken;runId=$state.runId}
@@ -44,6 +62,7 @@ function Stop-OwnedSupervisor($Manifest) {
         for($attempt=0;$attempt -lt 100;$attempt++) {if(-not(Test-Supervisor $state)){$stopped=$true;break};Start-Sleep -Milliseconds 300}
         if(-not $stopped){Deny 'Owned supervisor did not stop within 30 seconds; inspect its exact task and receipt. No global process kill was attempted.'}
     }
+    Assert-SupervisorIdle $Manifest (Get-State $Manifest)
     Assert-NotInUse $Manifest
     $ports=@($Manifest.ports.http,$Manifest.ports.https,$Manifest.ports.blob,$Manifest.ports.queue,$Manifest.ports.table)
     if(@(Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object {$_.LocalPort -in $ports}).Count){Deny 'Reserved ports still have listeners after owned stop; inspect actual ownership before continuing.'}
@@ -78,11 +97,10 @@ function Start-OwnedSupervisor($Manifest,[string]$Mode,$Assets,$Commands=$null) 
     [IO.File]::WriteAllText((Join-Path $directory 'OwnedJob.cs'),$Assets.job)
     $taskName="drenv-$($Manifest.id)-$($Manifest.ownerToken)"
     $requestPath=Join-Path $directory 'request.json'
-    $task=Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+    $task=Get-OwnedTask $Manifest $state
     if($null -ne $task) {
-        if($null -eq $state -or @($task.Actions).Count -ne 1 -or $task.Actions[0].Arguments.IndexOf($state.request,[StringComparison]::OrdinalIgnoreCase) -lt 0){Deny 'Existing scheduled task does not match the owned supervisor receipt'}
         for($attempt=0;$attempt -lt 30 -and $task.State -eq 'Running' -and -not(Test-Supervisor $state);$attempt++){Start-Sleep -Milliseconds 100;$task=Get-ScheduledTask -TaskName $taskName}
-        if($task.State -eq 'Running'){Deny 'Recorded task is still running; inspect its supervisor receipt before retry'}
+        Assert-SupervisorIdle $Manifest $state
         Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
     }
     $request=@{manifest=$Manifest;mode=$Mode;runId=$runId;state=(Join-Path $control 'state.json');stop=(Join-Path $directory 'stop.json');commands=$Commands}
@@ -186,7 +204,10 @@ function Assert-NoDatabaseWriters($Manifest) {
 function Recover-OwnedSnapshot($Manifest) {
     $path=Join-Path $Manifest.paths.runtime 'snapshot-state.json'
     if(-not(Test-Path -LiteralPath $path)){return}
-    $state=Get-Json $path;Assert-Owner $state $Manifest
+    $stream=[IO.File]::Open($path,[IO.FileMode]::Open,[IO.FileAccess]::Read,([IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete))
+    $reader=[IO.StreamReader]::new($stream)
+    try{$state=$reader.ReadToEnd() | ConvertFrom-Json}finally{$reader.Dispose();$stream.Dispose()}
+    Assert-Owner $state $Manifest
     if($state.phase -ne 'capturing'){return}
     $process=Get-Process -Id $state.pid -ErrorAction SilentlyContinue
     if($null -ne $process){Deny 'Recorded snapshot process is still alive or its PID was reused; recovery refused'}
@@ -230,8 +251,33 @@ function Snapshot-OwnedData($Manifest) {
         return $receipt
     } finally {if($readOnly){[void](Invoke-Sql "ALTER DATABASE $catalog SET READ_WRITE WITH NO_WAIT")};Write-JsonAtomic $snapshotState @{environmentId=$Manifest.id;ownerToken=$Manifest.ownerToken;phase='stopped';snapshotRevision=$Manifest.revision;buildRevision=$Manifest.revision;path=$directory}}
 }
+function Assert-RemovalPreflight($Manifest,[bool]$Complete) {
+    $root=Split-Path -Parent (Split-Path -Parent $Manifest.paths.runtime)
+    $runtimeExists=Test-Path -LiteralPath $Manifest.paths.runtime
+    $catalogExists=Assert-Catalog $Manifest
+    if($runtimeExists){Assert-Runtime $Manifest}
+    elseif($catalogExists){Deny 'Catalog exists without the owned runtime directory; inspect interrupted removal'}
+    if($catalogExists){Assert-NoDatabaseWriters $Manifest}
+    foreach($name in @('sql','blobs','cache','temp','mail','output')){Assert-NoReparse (Join-Path $Manifest.paths.runtime $name)}
+    if(-not $Complete){return}
+    $binding=(& netsh http show sslcert "ipport=0.0.0.0:$($Manifest.ports.https)") -join "`n"
+    if($LASTEXITCODE -eq 0){Assert-TlsBinding $Manifest}
+    $claim=Join-Path $root "claims\$($Manifest.id).json"
+    if(Test-Path -LiteralPath $claim){Assert-NoReparse $claim;Assert-Owner (Get-Json $claim) $Manifest}
+    $state=Get-State $Manifest
+    Assert-SupervisorIdle $Manifest $state
+    $sourceClaim="$($Manifest.paths.windows).drenv-source"
+    if(Test-Path -LiteralPath $sourceClaim){Assert-NoReparse $sourceClaim;Assert-Owner (Get-Json (Join-Path $sourceClaim 'owner.json')) $Manifest}
+    if(Test-Path -LiteralPath $Manifest.paths.windows){
+        Assert-NoReparse $Manifest.paths.windows
+        Assert-OwnedSource $Manifest
+        $dirty=(& git -C $Manifest.paths.windows status --porcelain --untracked-files=all) -join ''
+        if($LASTEXITCODE -ne 0 -or $dirty){Deny 'Windows source has uncommitted work; preserve it before removal'}
+    }
+}
 function Remove-OwnedData($Manifest,[bool]$Complete) {
     Stop-OwnedSupervisor $Manifest
+    Assert-RemovalPreflight $Manifest $Complete
     $root=Split-Path -Parent (Split-Path -Parent $Manifest.paths.runtime)
     $runtimeExists=Test-Path -LiteralPath $Manifest.paths.runtime
     $catalogExists=Assert-Catalog $Manifest
@@ -255,8 +301,8 @@ function Remove-OwnedData($Manifest,[bool]$Complete) {
         if(Test-Path -LiteralPath $claim){Assert-Owner (Get-Json $claim) $Manifest;Remove-Item -LiteralPath $claim}
         $state=Get-State $Manifest
         $taskName="drenv-$($Manifest.id)-$($Manifest.ownerToken)"
-        $task=Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
-        if($null -ne $task){if($null -eq $state -or @($task.Actions).Count -ne 1 -or $task.Actions[0].Arguments.IndexOf($state.request,[StringComparison]::OrdinalIgnoreCase) -lt 0){Deny 'Removal refused a foreign scheduled task'};Unregister-ScheduledTask -TaskName $taskName -Confirm:$false}
+        $task=Get-OwnedTask $Manifest $state
+        if($null -ne $task){Assert-SupervisorIdle $Manifest $state;Unregister-ScheduledTask -TaskName $taskName -Confirm:$false}
         $sourceClaim="$($Manifest.paths.windows).drenv-source"
         if(Test-Path -LiteralPath $Manifest.paths.windows) {
             Assert-OwnedSource $Manifest
@@ -286,7 +332,7 @@ try {
     if($Request.operation -notin @('status','stop','build','schema')){$lock=[IO.File]::Open((Join-Path $root 'provision.lock'),[IO.FileMode]::OpenOrCreate,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None)}
     $result=@{ok=$true;environmentId=$m.id;ownerToken=$m.ownerToken;status='stopped'}
     switch($Request.operation) {
-        'status' {$state=Get-State $m;if(Test-Supervisor $state){$result.status=$state.status}else{$result.status='stopped'};$result.supervisor=$state}
+        'status' {$state=Get-State $m;if(Test-Supervisor $state){$result.status=$state.status}else{Assert-SupervisorIdle $m $state;$result.status='stopped'};$result.supervisor=$state}
         'stop' {Stop-OwnedSupervisor $m}
         'build' {Build-OwnedSource $m $Request.assets;$result.status='built'}
         'schema' {Test-OwnedSchema $m $Request.assets;$result.status='schema-verified'}
