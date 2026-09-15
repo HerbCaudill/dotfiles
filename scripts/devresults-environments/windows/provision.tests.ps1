@@ -2,6 +2,7 @@
 $testRoot = Join-Path ([IO.Path]::GetTempPath()) ('drenv-provision-tests-' + [guid]::NewGuid().ToString('N'))
 [void][IO.Directory]::CreateDirectory($testRoot)
 $passed = 0
+$testJunctions = @()
 function Assert-True([bool]$Value, [string]$Message) { if (-not $Value) { throw "Test failed: $Message" } }
 function Expect-Refusal([scriptblock]$Action, [string]$Pattern) {
     $refused = $false
@@ -66,6 +67,32 @@ try {
     Assert-True ($deployment.state -ceq 'ready' -and $deployment.revision -ceq $manifest.revision) 'Interrupted owned copy recovers to verified revision'
     Assert-True ([IO.File]::ReadAllText((Join-Path $manifest.paths.windows 'DevResults\Web.config')).Contains('C:\mail')) 'Deployment overlay leaves source Web.config unchanged'
     $passed += 3
+    $applicationBytes = Get-DeploymentBytes $manifest
+    $dependencyTarget = Join-Path $testRoot 'dependency-store'
+    [void][IO.Directory]::CreateDirectory($dependencyTarget)
+    [IO.File]::WriteAllText((Join-Path $dependencyTarget 'dependency.js'), 'build-only dependency content')
+    $scriptsPath = Join-Path $manifest.paths.windows 'DevResults\Web\Scripts'
+    [void][IO.Directory]::CreateDirectory($scriptsPath)
+    $modulesPath = Join-Path $scriptsPath 'node_modules'
+    [void](New-Item -ItemType Junction -Path $modulesPath -Target $dependencyTarget)
+    $testJunctions += $modulesPath
+    Assert-True ((Get-DeploymentBytes $manifest) -eq $applicationBytes) 'Capacity excludes build-only pnpm junction contents'
+    Copy-OwnedApplication $manifest $settingsTemplate
+    Assert-True (-not [IO.Directory]::Exists((Join-Path $manifest.paths.runtime 'web\Web\Scripts\node_modules'))) 'Deployment omits build-only node_modules junctions'
+    $unsafePath = Join-Path $scriptsPath 'unsafe-runtime-content'
+    [void](New-Item -ItemType Junction -Path $unsafePath -Target $dependencyTarget)
+    $testJunctions += $unsafePath
+    Expect-Refusal { Get-DeploymentBytes $manifest } 'junctions or symlinks'
+    Expect-Refusal { Copy-OwnedApplication $manifest $settingsTemplate } 'junctions or symlinks'
+    $passed += 4
+    $restoreJournal = Join-Path $manifest.paths.runtime 'provision-journal.json'
+    $originalEvidence = '{"environmentId":"test","snapshot":{"sql":{"sha256":"original"}},"pid":123,"processStartTime":"2026-09-01T00:00:00Z","startedAt":"2026-09-01T00:01:00Z"}'
+    [IO.File]::WriteAllText($restoreJournal, $originalEvidence)
+    [void][IO.Directory]::CreateDirectory((Join-Path $manifest.paths.runtime 'sql'))
+    [IO.File]::WriteAllText((Join-Path $manifest.paths.runtime 'sql\0.mdf'), 'interrupted restore data')
+    Expect-Refusal { Start-RestoreJournal $manifest @{ sql = @{ sha256 = 'different' } } $false } 'Interrupted SQL files'
+    Assert-True ([IO.File]::ReadAllText($restoreJournal) -ceq $originalEvidence) 'Interrupted restore preserves original snapshot, PID and timing evidence byte for byte'
+    $passed += 2
     function Get-NetTCPConnection { param($State, $LocalPort, $ErrorAction) return @() }
     function netsh { return '' }
     Assert-NoForeignPorts $manifest @() $false
@@ -78,4 +105,7 @@ try {
     Assert-True ((Get-Json (Join-Path $testRoot 'journal.json')).phase -ceq 'data-ready') 'Journal checkpoints replace atomically'
     $passed++
     @{ passed = $passed; scope = 'Windows helper behavior with temporary files and mocked port inventory; no live provisioning' } | ConvertTo-Json -Compress
-} finally { Remove-Item -LiteralPath $testRoot -Recurse -Force }
+} finally {
+    foreach ($junction in $testJunctions) { if ([IO.Directory]::Exists($junction)) { [IO.Directory]::Delete($junction) } }
+    Remove-Item -LiteralPath $testRoot -Recurse -Force
+}

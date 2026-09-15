@@ -119,7 +119,7 @@ function Assert-OwnedSource($Manifest) {
     if ($LASTEXITCODE -ne 0 -or [IO.Path]::GetFullPath($common) -ine "$($Manifest.paths.windows).drenv-source\repository.git") { Deny 'Windows source Git store has foreign ownership.' }
 
 }
-function Assert-NoReparse([string]$Path) {
+function Assert-NoReparse([string]$Path, [bool]$Recurse = $true) {
     $cursor = $Path
     while ($cursor) {
         if (Test-Path -LiteralPath $cursor) {
@@ -127,7 +127,7 @@ function Assert-NoReparse([string]$Path) {
         }
         $cursor = Split-Path -Parent $cursor
     }
-    if ([IO.Directory]::Exists($Path)) {
+    if ($Recurse -and [IO.Directory]::Exists($Path)) {
         foreach ($entry in @(Get-ChildItem -LiteralPath $Path -Recurse -Force)) {
             if (($entry.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { Deny 'Deployment copies may not contain junctions or symlinks.' }
         }
@@ -140,15 +140,25 @@ function Assert-NotInUse($Manifest) {
         }
     }
 }
+function Get-DeploymentEntries([string]$Directory) {
+    Assert-NoReparse $Directory $false
+    foreach ($entry in @(Get-ChildItem -LiteralPath $Directory -Force)) {
+        if ($entry.Name -in @('node_modules', '.git', '.azurite', '.drenv-deployment.json')) { continue }
+        if (($entry.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { Deny 'Deployment copies may not contain junctions or symlinks.' }
+        $entry
+        if ($entry.PSIsContainer) { Get-DeploymentEntries $entry.FullName }
+    }
+}
 function Get-DeploymentBytes($Manifest) {
     $source = Join-Path $Manifest.paths.windows 'DevResults'
-    Assert-NoReparse $source
     if (-not [IO.File]::Exists((Join-Path $source 'Web.config'))) { Deny 'Paired source application is missing Web.config.' }
     [long]$total = 0
-    foreach ($file in @(Get-ChildItem -LiteralPath $source -Recurse -File -Force)) { $total += $file.Length }
+    foreach ($entry in @(Get-DeploymentEntries $source)) { if (-not $entry.PSIsContainer) { $total += $entry.Length } }
     return $total
 }
 function Copy-OwnedApplication($Manifest, [string]$SettingsTemplate = 'C:\Code\DevResults\DevResults\SecureSettings.config') {
+    $source = Join-Path $Manifest.paths.windows 'DevResults'
+    $entries = @(Get-DeploymentEntries $source)
     $destination = Join-Path $Manifest.paths.runtime 'web'
     $marker = Join-Path $destination '.drenv-deployment.json'
     if ([IO.Directory]::Exists($destination)) {
@@ -159,13 +169,19 @@ function Copy-OwnedApplication($Manifest, [string]$SettingsTemplate = 'C:\Code\D
     }
     [void][IO.Directory]::CreateDirectory($destination)
     Write-JsonAtomic $marker @{ environmentId = $Manifest.id; ownerToken = $Manifest.ownerToken; revision = $Manifest.revision; state = 'copying' }
-    $source = Join-Path $Manifest.paths.windows 'DevResults'
-    foreach ($entry in @(Get-ChildItem -LiteralPath $source -Force)) {
-        if ($entry.Name -in @('.git', '.azurite', '.drenv-deployment.json')) { continue }
-        Copy-Item -LiteralPath $entry.FullName -Destination $destination -Recurse -Force
+    foreach ($entry in $entries) {
+        $target = Join-Path $destination $entry.FullName.Substring($source.Length + 1)
+        if ($entry.PSIsContainer) { [void][IO.Directory]::CreateDirectory($target) }
+        else { Copy-Item -LiteralPath $entry.FullName -Destination $target -Force }
     }
     New-OwnedApplicationConfig $Manifest $SettingsTemplate
     Write-JsonAtomic $marker @{ environmentId = $Manifest.id; ownerToken = $Manifest.ownerToken; revision = $Manifest.revision; state = 'ready' }
+}
+function Start-RestoreJournal($Manifest, $Snapshot, [bool]$DatabaseExists) {
+    $sqlPath = Join-Path $Manifest.paths.runtime 'sql'
+    if (-not $DatabaseExists -and [IO.Directory]::Exists($sqlPath) -and @(Get-ChildItem -LiteralPath $sqlPath -Force).Count -gt 0) { Deny 'Interrupted SQL files exist; recover the exact owned restore before retrying.' }
+    $journalPath = Join-Path $Manifest.paths.runtime 'provision-journal.json'
+    Write-JsonAtomic $journalPath @{ environmentId = $Manifest.id; ownerToken = $Manifest.ownerToken; phase = 'restoring'; revision = $Manifest.revision; snapshot = $Snapshot; pid = $PID; processStartTime = (Get-Process -Id $PID).StartTime.ToUniversalTime().ToString('o'); startedAt = [datetime]::UtcNow.ToString('o') }
 }
 function Assert-CatalogMetadata($Properties, $Files, $Manifest) {
     $owner = @{}; foreach ($row in $Properties) { $owner[$row.name] = $row.value }
@@ -315,7 +331,7 @@ try {
     & icacls (Join-Path $m.paths.runtime 'sql') /grant "$($sqlService.StartName):(OI)(CI)F" | Out-Null
     if ($LASTEXITCODE -ne 0) { Deny 'Could not grant SQL Server access to the owned SQL directory.' }
     $journalPath = Join-Path $m.paths.runtime 'provision-journal.json'
-    Write-JsonAtomic $journalPath @{ environmentId = $m.id; ownerToken = $m.ownerToken; phase = 'restoring'; revision = $m.revision; snapshot = $snapshot; pid = $PID; processStartTime = (Get-Process -Id $PID).StartTime.ToUniversalTime().ToString('o'); startedAt = [datetime]::UtcNow.ToString('o') }
+    Start-RestoreJournal $m $snapshot $databaseExists
     if (-not $databaseExists) {
         $moves = [Collections.Generic.List[string]]::new(); $index = 0
         foreach ($file in $files.Rows) {
