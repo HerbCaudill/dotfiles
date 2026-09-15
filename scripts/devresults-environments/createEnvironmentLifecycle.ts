@@ -111,8 +111,13 @@ export function createEnvironmentLifecycle(
             completedStep: "runtime-started",
           })
         }
-        if (args.command === "remove")
-          await (adapters.preflightMac ?? preflightMacEnvironmentSource)(manifest)
+        if (args.command === "remove") {
+          const source = await (adapters.preflightMac ?? preflightMacEnvironmentSource)(manifest)
+          if (!manifest.revision && source)
+            throw new Error(
+              "Mac source resources exist without a verified source revision; preserve them and inspect interrupted pairing before removal",
+            )
+        }
         await remote(manifest, "stop")
         manifest = await registry.checkpoint(manifest.id, manifest.ownerToken, { phase: "stopped" })
         if (args.command === "sync") {

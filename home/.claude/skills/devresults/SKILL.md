@@ -59,6 +59,25 @@ ssh devresults-vm '$PSVersionTable.PSVersion.ToString(); hostname; whoami; Get-L
 
 The default SSH shell is Windows PowerShell 5.1, so use PowerShell syntax for remote commands.
 
+## Personal isolated environments with `drenv`
+
+Use `drenv` on the Mac when Herb asks for a personal isolated environment. It is installed by Home Manager from `~/Code/HerbCaudill/dotfiles/scripts/devresults-environments/drenv.ts`. The [user guide](../../../../scripts/devresults-environments/USAGE.md) contains commands and prerequisites; [lifecycle details](../../../../scripts/devresults-environments/LIFECYCLE.md) describe the ownership and recovery rules. This personal workflow does not require changes to tracked DevResults scripts, configuration, instructions or team workflows.
+
+```sh
+drenv create example-change --source ~/Code/DevResults/DevResults --snapshot /absolute/path/to/coordinated-snapshot.json
+drenv create inl-change --preset inl --source ~/Code/DevResults/DevResults --snapshot /absolute/path/to/coordinated-inl-snapshot.json
+drenv start example-change
+drenv open example-change
+```
+
+Creation always starts on Mac and freezes an explicit revision (`--revision`, default `HEAD`). The default data source is `dev` / `example`; `--preset inl` selects `dev-inl` / `inl`. Restore into the environment's own catalog. The required initial receipt covers an immutable SQL/blob snapshot captured while all source writers were coordinated and paused. Never implicitly stop, snapshot or mutate a foreign primary/review runtime. If that receipt or disk capacity is missing, report the concrete prerequisite and preserve existing resources.
+
+Edit and commit in `~/Code/DevResults/environments/<id>`, then use `drenv sync <id>` and `drenv start <id>`. Sync targets only the mapped native Windows worktree at `C:\DevResultsEnvironments\source\<id>` and leaves it stopped after rebuilding and schema verification. Existing `dr`/`drsync` retain their primary-checkout behavior; do not use them as the sync destination for a `drenv` worktree.
+
+`start` manages the complete IIS/Azurite process tree. `open` uses normal Chrome with the accepted shared-cookie behavior. Ports are dynamically allocated; do not add fixed lanes or separate browser profiles. `status <id>` inspects live supervisor state, while `status` alone lists stored state. `snapshot <id>` captures only owned stopped data; `reset <id>` restores its original creation snapshot; `remove <id>` removes only verified owned resources. Both reset and removal discard owned data, so use them only within the requested scope.
+
+Use `recover <id>` for a provably abandoned operation, then retry the original command. Never bypass ownership checks by editing receipts or deleting ambiguous locks. Report which real build, schema, startup and cross-environment checks ran. A paired source fixture, a passing helper suite or a printed URL does not prove a working useful-data environment.
+
 ## `dr` Helper
 
 From macOS, use `dr` to run commands from `C:\Code\DevResults` inside the Windows VM:

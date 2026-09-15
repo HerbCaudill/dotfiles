@@ -1,6 +1,6 @@
 # Personal environment lifecycle
 
-The Mac entry point is `node scripts/devresults-environments/drenv.ts`. The public `drenv` installation belongs to the following installer task. All commands select an explicit environment ID. Existing `dr` and `drsync` retain their current behavior.
+Home Manager installs the Mac entry point as `drenv`; the implementation is `scripts/devresults-environments/drenv.ts`. See [the user guide](USAGE.md) for installation and commands. All commands select an explicit environment ID. Existing `dr` and `drsync` retain their current behavior.
 
 | Command                                                         | Result                                                                                                                                                                                                                                    |
 | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -39,6 +39,8 @@ Mac operation locks cover the complete command. Windows uses one named operation
 `recover` never steals a live or ambiguous local lock. It checks that the recorded PID is absent and that the receipt did not change. It first confirms Windows operations are idle; a disconnected SSH client is not evidence that an owned build or restore has stopped. A queued receipt with PID zero still blocks stop, recovery, reset and removal. The runner validates the exact scheduled executable, arguments and working directory, refuses added triggers, and inspects Task Scheduler state before claiming idle. A queued or running Windows task with ambiguous process state remains a concrete inspection prerequisite. No manual JSON edit is needed for ordinary failed command retries or abandoned Mac lock recovery.
 
 An interrupted SQL restore without valid SQL ownership is deliberately refused. Keep its provisioning journal and files intact, confirm the recorded Windows operation has ended, and inspect that exact catalog before explicit SQL recovery. Ownership uncertainty is not permission to adopt or delete a resource. Partial blob copies can be replaced through owned reset once catalog ownership is established. Snapshot state records a transition before making the owned database read-only, allowing `recover` to restore write access after the original process has ended.
+
+A reservation that failed before recording a source revision can be removed only after proving both Mac source/marker and Windows source/store/runtime/claims/catalog/task/process/ports are absent. Any partial pairing resources are preserved for inspection.
 
 Removal first checks Mac source ownership and cleanliness, then completes a read-only Windows preflight for the catalog, runtime, SQL writers, TLS binding, scheduled task, claims, reparse points and Windows source. No catalog or file deletion starts until every preflight guard passes. Local source deletion rechecks its guards. External edits made after preflight can still interrupt the later owned cleanup; preserve the failed receipt and retry after inspection.
 

@@ -1,6 +1,6 @@
 # Personal environment internal contracts
 
-These modules implement the personal environment registry and lifecycle. See `LIFECYCLE.md` for the command entry point, process supervision, schema checks and recovery; command installation is delivered by the installer task. All tooling remains in dotfiles. Existing `dr`, `drsync`, DevResults tracked files, primary worktrees and shared catalogs retain their existing behavior.
+These modules implement the personal environment registry and lifecycle. See `LIFECYCLE.md` for the command entry point, process supervision, schema checks and recovery; Home Manager installs the public `drenv` command. See [the user guide](USAGE.md) for daily use and live prerequisites. All tooling remains in dotfiles. Existing `dr`, `drsync`, DevResults tracked files, primary worktrees and shared catalogs retain their existing behavior.
 
 ## Public command surface
 

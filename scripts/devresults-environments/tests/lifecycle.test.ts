@@ -209,3 +209,50 @@ it.each(["stop", "recover", "reset", "remove"] as const)(
     }
   },
 )
+
+it("preserves partial Mac pairing when removal has no verified revision", async () => {
+  const { mkdir, writeFile, access } = await import("node:fs/promises")
+  const directory = await realpath(await mkdtemp(join(tmpdir(), "drenv-unpaired-")))
+  const calls: string[] = []
+  let claim = ""
+  const lifecycle = createEnvironmentLifecycle(
+    {
+      directory,
+      macRoot: join(directory, "mac"),
+      windowsRoot: "C:\\DrenvTest",
+      windowsHost: "devresults-vm",
+    },
+    {
+      inventory: async () => ({ windowsPorts: [], macPorts: [] }),
+      pair: async manifest => {
+        claim = `${manifest.paths.mac}.drenv-source`
+        await mkdir(claim, { recursive: true })
+        await writeFile(
+          join(claim, "owner.json"),
+          JSON.stringify({
+            environmentId: manifest.id,
+            ownerToken: manifest.ownerToken,
+            path: manifest.paths.mac,
+          }),
+        )
+        throw new Error("interrupted pairing")
+      },
+      windows: async (_manifest, operation) => {
+        calls.push(operation)
+        return { status: "removed" }
+      },
+    },
+  )
+  try {
+    await expect(lifecycle({ command: "create", id: "partial" })).rejects.toThrow(
+      "interrupted pairing",
+    )
+    await expect(lifecycle({ command: "remove", id: "partial" })).rejects.toThrow(
+      "without a verified source revision",
+    )
+    await expect(access(join(claim, "owner.json"))).resolves.toBeUndefined()
+    expect(calls).toEqual([])
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})

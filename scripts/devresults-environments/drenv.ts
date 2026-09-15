@@ -1,3 +1,5 @@
+#!/usr/bin/env -S node --experimental-strip-types
+
 import { createEnvironmentLifecycle } from "./createEnvironmentLifecycle.ts"
 import { getRegistryOptions } from "./getRegistryOptions.ts"
 import { parseDrenvArgs } from "./parseDrenvArgs.ts"

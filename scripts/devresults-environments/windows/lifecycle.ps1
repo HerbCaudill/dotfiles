@@ -329,13 +329,26 @@ function Remove-OwnedData($Manifest,[bool]$Complete) {
     }
 }
 
+function Assert-EmptyReservation($Manifest) {
+    $root=Split-Path -Parent (Split-Path -Parent $Manifest.paths.runtime)
+    foreach($path in @($Manifest.paths.windows,"$($Manifest.paths.windows).drenv-source",$Manifest.paths.runtime,(Join-Path $root "claims\$($Manifest.id).json"))) {
+        if(Test-Path -LiteralPath $path){Deny 'Resources exist without a verified source revision; preserve them and inspect interrupted pairing before removal.'}
+    }
+    $catalog=Invoke-Sql "SELECT name FROM sys.databases WHERE name=$(Sql-Literal $Manifest.catalog)"
+    if($catalog.Rows.Count){Deny 'SQL catalog exists without a verified source revision; no data was removed.'}
+    if($null -ne (Get-OwnedTask $Manifest $null)){Deny 'Scheduled task exists without a verified source revision.'}
+    Assert-NotInUse $Manifest
+    Assert-NoForeignPorts $Manifest @() $false
+}
+
 $lock=$null
 $sourceLock=$null
 $operationMutex=$null
 $ownsMutex=$false
 try {
     $m=$Request.manifest
-    if($m.id -cnotmatch '^[a-z][a-z0-9-]{0,39}$' -or $m.catalog -cnotmatch '^drenv_[a-z0-9_]+$' -or ($Request.operation -notin @('status','stop','recover') -and $m.revision -cnotmatch '^[a-f0-9]{40}$')){Deny 'Invalid lifecycle identity or revision'}
+    $revision=if($m.PSObject.Properties.Name -contains 'revision'){[string]$m.revision}else{''}
+    if($m.id -cnotmatch '^[a-z][a-z0-9-]{0,39}$' -or $m.catalog -cnotmatch '^drenv_[a-z0-9_]+$' -or ($Request.operation -notin @('status','stop','recover','remove') -and $revision -cnotmatch '^[a-f0-9]{40}$') -or ($Request.operation -eq 'remove' -and $revision -and $revision -cnotmatch '^[a-f0-9]{40}$')){Deny 'Invalid lifecycle identity or revision'}
     [void][guid]::Parse($m.ownerToken)
     Assert-NativePath $m.paths.windows;Assert-NativePath $m.paths.runtime
     Assert-NoReparse $m.paths.windows $false;Assert-NoReparse "$($m.paths.windows).drenv-source" $false
@@ -344,6 +357,12 @@ try {
     $operationMutex=[Threading.Mutex]::new($false,"Global\drenv-lifecycle-$($m.ownerToken)")
     try{$ownsMutex=$operationMutex.WaitOne(0)}catch [Threading.AbandonedMutexException]{$ownsMutex=$true}
     if(-not $ownsMutex){Deny 'A Windows lifecycle operation still owns this environment; wait for its receipt before retry'}
+    if($Request.operation -eq 'remove' -and -not $revision) {
+        if(Test-Path -LiteralPath $root){$lock=[IO.File]::Open((Join-Path $root 'provision.lock'),[IO.FileMode]::OpenOrCreate,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None)}
+        Assert-EmptyReservation $m
+        @{ok=$true;environmentId=$m.id;ownerToken=$m.ownerToken;status='removed'} | ConvertTo-Json -Compress
+        return
+    }
     if($Request.operation -notin @('status','stop','build','schema')){$lock=[IO.File]::Open((Join-Path $root 'provision.lock'),[IO.FileMode]::OpenOrCreate,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None)}
     $result=@{ok=$true;environmentId=$m.id;ownerToken=$m.ownerToken;status='stopped'}
     switch($Request.operation) {
