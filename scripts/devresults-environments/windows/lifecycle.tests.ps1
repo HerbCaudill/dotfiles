@@ -58,6 +58,41 @@ try {
     $state=Get-State $m
     for($attempt=0;$attempt -lt 40 -and (Test-Supervisor $state);$attempt++){Start-Sleep -Milliseconds 100}
     Check (-not(Test-Supervisor $state)) 'Failed supervisor survived'
+    # A normal ignored pnpm dependency junction must not block clean worktree removal.
+    & {
+        function Assert-Catalog($Manifest) {return $false}
+        function netsh {$global:LASTEXITCODE=1}
+        $linked=$m.PSObject.Copy()
+        $linked.id='junction-'+[guid]::NewGuid().ToString('N').Substring(0,8)
+        $linked.ownerToken=[guid]::NewGuid().ToString()
+        $linked.paths=[pscustomobject]@{windows=(Join-Path $root "source\$($linked.id)");runtime=(Join-Path $root "runtime\$($linked.id)")}
+        $linkedClaim="$($linked.paths.windows).drenv-source"
+        [void][IO.Directory]::CreateDirectory($linkedClaim)
+        $store=Join-Path $linkedClaim 'repository.git'
+        $old=$ErrorActionPreference;$ErrorActionPreference='Continue'
+        & git clone --bare -- $m.paths.windows $store *> $null
+        if($LASTEXITCODE -ne 0){throw 'Junction fixture clone failed'}
+        & git -C $store worktree add -b junction-proof -- $linked.paths.windows HEAD *> $null
+        if($LASTEXITCODE -ne 0){throw 'Junction fixture worktree failed'}
+        [IO.File]::WriteAllText((Join-Path $linked.paths.windows '.gitignore'),"node_modules/`n")
+        & git -C $linked.paths.windows add .gitignore *> $null
+        & git -C $linked.paths.windows -c user.name=Codex -c user.email=codex@localhost commit -m fixture *> $null
+        if($LASTEXITCODE -ne 0){throw 'Junction fixture commit failed'}
+        $linked.revision=(& git -C $linked.paths.windows rev-parse HEAD)-join ''
+        $ErrorActionPreference=$old
+        Write-JsonAtomic (Join-Path $linkedClaim 'owner.json') @{environmentId=$linked.id;ownerToken=$linked.ownerToken;path=$linked.paths.windows}
+        $target=Join-Path $root 'external-package-target'
+        [void][IO.Directory]::CreateDirectory($target)
+        [IO.File]::WriteAllText((Join-Path $target 'preserve.txt'),'external package data')
+        $modules=Join-Path $linked.paths.windows 'node_modules'
+        [void][IO.Directory]::CreateDirectory($modules)
+        [void](New-Item -ItemType Junction -Path (Join-Path $modules 'package') -Target $target)
+        Assert-RemovalPreflight $linked $true
+        Check $true 'Clean pnpm-style junction passed removal preflight'
+        Remove-OwnedData $linked $true
+        Check (-not(Test-Path -LiteralPath $linked.paths.windows)) 'Owned linked worktree was not removed'
+        Check ([IO.File]::ReadAllText((Join-Path $target 'preserve.txt')) -ceq 'external package data') 'Worktree removal followed junction into external target'
+    }
     # A disconnected launcher can leave a queued receipt while Task Scheduler owns the launch.
     $queued=Get-State $m;$queued.pid=0;$queued.status='queued'
     $delayedSupervisor=Join-Path (Split-Path -Parent $queued.request) 'supervisor.ps1'

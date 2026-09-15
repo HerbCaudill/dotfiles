@@ -42,7 +42,7 @@ An interrupted SQL restore without valid SQL ownership is deliberately refused. 
 
 Removal first checks Mac source ownership and cleanliness, then completes a read-only Windows preflight for the catalog, runtime, SQL writers, TLS binding, scheduled task, claims, reparse points and Windows source. No catalog or file deletion starts until every preflight guard passes. Local source deletion rechecks its guards. External edits made after preflight can still interrupt the later owned cleanup; preserve the failed receipt and retry after inspection.
 
-Reset and removal are explicit destructive operations on this environment's owned state. They refuse active external SQL sessions, foreign catalog files, foreign bindings/tasks and uncommitted source changes. Ignored build output may be removed with the clean owned worktree. A partially completed removal can be retried; completed steps are verified from actual resources before the registry is marked removed.
+Reset and removal are explicit destructive operations on this environment's owned state. They refuse active external SQL sessions, foreign catalog files, foreign bindings/tasks and uncommitted source changes. Ignored build output may be removed with the clean owned worktree. Source preflight checks the root and ancestors for reparse points while allowing normal ignored pnpm links inside the worktree. Before Git cleanup, a traversal of real directories unlinks each source junction or symlink without following it; this preserves targets outside the worktree. A partially completed removal can be retried; completed steps are verified from actual resources before the registry is marked removed.
 
 ## Verification evidence and remaining prerequisites
 
