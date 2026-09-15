@@ -56,8 +56,11 @@ A subsequent read-only inspection showed that the Parallels virtual disk is alre
 | -------------------------------------------------------- | --------------------- | ---------------- |
 | Partition 4, C:                                          | 273,326,014,464 bytes | 254.55 GiB       |
 | Partition 5, active WinRE recovery, immediately after C: | 825,421,184,512 bytes | 768.73 GiB       |
+| Recovery volume size reported by `Get-Volume`            | 825,421,180,928 bytes | 768.73 GiB       |
 | Free space inside the recovery volume                    | 824,600,018,944 bytes | 767.97 GiB       |
-| Used space inside the recovery volume                    | 821,165,568 bytes     | 0.765 GiB        |
+| Used space inside the recovery volume                    | 821,161,984 bytes     | 0.765 GiB        |
+
+The used-volume figure is the `Get-Volume` size minus its free space: 825,421,180,928 − 824,600,018,944 = 821,161,984 bytes. The partition is 3,584 bytes larger than the reported volume.
 
 `Get-PartitionSupportedSize` reports C: `SizeMax` as **273,326,014,464 bytes**, equal to its current size. `reagentc /info` confirms that Windows Recovery Environment is enabled and uses partition 5. The large amount of free space is inside that active recovery partition; it is not adjacent unallocated space available for a simple online C: extension.
 
