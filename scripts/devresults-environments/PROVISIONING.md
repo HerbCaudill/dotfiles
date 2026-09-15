@@ -16,7 +16,7 @@ Generated `web/Core/Db/connections.config` uses integrated SQL authentication to
 
 ## Snapshot receipt
 
-Creation never snapshots, pauses or stops a foreign runtime. Supply an immutable native Windows SQL backup and Azurite directory captured during one externally coordinated writer pause. A receipt is an operator or owned-runtime attestation; it does not itself pause writers or compute application schema compatibility. The SQL backup must contain one full checksummed backup of the selected source catalog. An illustrative receipt follows (replace every placeholder with measured evidence):
+Creation never snapshots, pauses or stops a foreign runtime. Supply an immutable native Windows SQL backup and Azurite directory captured during one externally coordinated writer pause. A receipt is an operator or owned-runtime attestation; it does not itself pause writers or compute application schema compatibility. Its revision records capture provenance and may differ from the current frozen build. Lifecycle startup independently compares the current built provider with restored SQL; reset can therefore reuse an older immutable snapshot when the schema is still compatible. The SQL backup must contain one full checksummed backup of the selected source catalog. An illustrative receipt follows (replace every placeholder with measured evidence):
 
 ```json
 {
@@ -46,7 +46,7 @@ Creation never snapshots, pauses or stops a foreign runtime. Supply an immutable
 
 The directory digest is SHA256 over UTF-8 lines sorted by PowerShell `Sort-Object` on each relative native path. Each line contains the relative path with `/` separators, a tab, decimal file byte length, a tab, lowercase SHA256 of file bytes, and LF. Hidden files are included; empty directories have no lines. Reparse points and tab/newline filenames are refused. The versioned `Get-BlobDigest` helper is authoritative for snapshot producers. SQL allocation is the sum of `RESTORE FILELISTONLY` file sizes. Full SQL/blob hashes are checked before restoration and the copied blob digest is checked again afterward.
 
-Before startup, task 4 must independently compute the built application's actual registered `IVersionStateProvider.Compute()` result in its hosted context and compare it with the restored `dbo._Global` SchemaHash. A receipt's revision/schema fields are not this computed evidence. Keep auto-refresh disabled until that check succeeds; never silently upgrade the source or owned catalog to bypass incompatibility.
+Before startup, the lifecycle runner independently computes the built application's actual registered `IVersionStateProvider.Compute()` result in its hosted context and compares it with the restored `dbo._Global` SchemaHash. A receipt's revision/schema fields are not this computed evidence. Keep auto-refresh disabled until that check succeeds; never silently upgrade the source or owned catalog to bypass incompatibility.
 
 ## Refusal and recovery
 

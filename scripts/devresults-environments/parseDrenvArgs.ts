@@ -53,5 +53,6 @@ const commands: DrenvArgs["command"][] = [
   "snapshot",
   "reset",
   "remove",
+  "recover",
   "help",
 ]

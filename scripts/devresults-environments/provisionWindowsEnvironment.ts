@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises"
 import { runWindowsProvisioning } from "./runWindowsProvisioning.ts"
 import { validateSnapshotReceipt } from "./validateSnapshotReceipt.ts"
-import type { runDrenvCommand } from "./runDrenvCommand.ts"
+import type { runWindowsAssetPayload } from "./runWindowsAssetPayload.ts"
 import type { EnvironmentManifest } from "./types.ts"
 
 /** Restore verified coordinated data and create owned Windows runtime configuration over SSH. */
@@ -33,5 +33,5 @@ export type ProvisionOptions = {
   /** Read-only prerequisite check, or actual provisioning. */
   operation?: "verify" | "provision"
   /** Test transport injection. */
-  run?: typeof runDrenvCommand
+  run?: typeof runWindowsAssetPayload
 }

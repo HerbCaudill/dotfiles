@@ -1,10 +1,10 @@
 # Personal environment internal contracts
 
-These modules implement the identity foundation of the personal `drenv` command. The lifecycle command handlers and installer are delivered by dependent tasks. All tooling remains in dotfiles. Existing `dr`, `drsync`, DevResults tracked files, primary worktrees and shared catalogs retain their existing behavior.
+These modules implement the personal environment registry and lifecycle. See `LIFECYCLE.md` for the command entry point, process supervision, schema checks and recovery; command installation is delivered by the installer task. All tooling remains in dotfiles. Existing `dr`, `drsync`, DevResults tracked files, primary worktrees and shared catalogs retain their existing behavior.
 
 ## Public command surface
 
-`parseDrenvArgs(argv)` accepts `create <id> [--preset default|inl] [--revision <git-ref>] [--database <catalog>] [--instance <name>]`, `sync <id>`, `start <id>`, `status [id]`, `url <id>`, `open <id>`, `stop <id>`, `snapshot <id>`, `reset <id>` and `remove <id>`. Missing commands and `--help` return the help command. Unknown and duplicate options fail before side effects. Creation always starts on Mac. Every mutating operation requires an explicit environment identity; current directories and branch names never select a Windows destination.
+`parseDrenvArgs(argv)` accepts `create <id> [--preset default|inl] [--revision <git-ref>] [--database <catalog>] [--instance <name>]`, `sync <id>`, `start <id>`, `status [id]`, `url <id>`, `open <id>`, `stop <id>`, `snapshot <id>`, `reset <id>`, `remove <id>` and `recover <id>`. Missing commands and `--help` return the help command. Unknown and duplicate options fail before side effects. Creation always starts on Mac. Every mutating operation requires an explicit environment identity; current directories and branch names never select a Windows destination.
 
 `default` selects read-only source `dev` / `example`; `inl` selects `dev-inl` / `inl`. Explicit database and instance arguments override the chosen preset. Create also accepts `--source <native-mac-checkout>` and `--snapshot <coordinated-snapshot-receipt>`; the source and provisioning workers respectively validate these inputs and checkpoint their own receipts. A revision selector defaults to `HEAD` in the explicitly selected source checkout. Source pairing resolves it once into a full commit SHA. Later `sync` transports a freshly verified source commit only to the recorded destination and checkpoints the new SHA.
 

@@ -33,7 +33,7 @@ describe("coordinated snapshot validation", () => {
     { ...receipt, coordination: { ...receipt.coordination, completedAt: "2026-09-14T08:01:00Z" } },
     { ...receipt, sourceDatabase: "dev-inl" },
     { ...receipt, sourceInstance: "inl" },
-    { ...receipt, revision: "d".repeat(40) },
+    { ...receipt, revision: "invalid" },
     { ...receipt, schemaHash: "" },
     { ...receipt, sql: { ...receipt.sql, path: "\\\\Mac\\Home\\backup.bak" } },
     { ...receipt, sql: { ...receipt.sql, allocatedBytes: -1 } },
@@ -66,7 +66,7 @@ it("refuses missing coordinated snapshots before transport", async () => {
   await expect(provisionWindowsEnvironment(manifest, { run })).rejects.toThrow("--snapshot")
   expect(run).not.toHaveBeenCalled()
 })
-it("uses constant encoded transport and verifies the returned ownership", async () => {
+it("keeps executable consumer code separate from private data and verifies returned ownership", async () => {
   const directory = await mkdtemp(join(tmpdir(), "drenv-provision-"))
   temporary.push(directory)
   const path = join(directory, "snapshot.json")
@@ -84,18 +84,10 @@ it("uses constant encoded transport and verifies the returned ownership", async 
   await expect(provisionWindowsEnvironment(manifest, { snapshot: path, run })).rejects.toThrow(
     "does not match",
   )
-  const command = run.mock.calls[0][0]
-  expect(command.args.slice(0, 5)).toEqual([
-    "devresults-vm",
-    "powershell.exe",
-    "-NoProfile",
-    "-NonInteractive",
-    "-EncodedCommand",
-  ])
-  expect(Buffer.from(command.args[5], "base64").toString("utf16le")).not.toContain(
-    manifest.ownerToken,
-  )
-  expect(JSON.parse(command.input).snapshot).toEqual(receipt)
+  const [consumer, request, options] = run.mock.calls[0]
+  expect(consumer).not.toContain(manifest.ownerToken)
+  expect(request.snapshot).toEqual(receipt)
+  expect(options.host).toBe("devresults-vm")
 })
 it("preserves concrete sanitized Windows prerequisites", async () => {
   const directory = await mkdtemp(join(tmpdir(), "drenv-provision-"))
@@ -109,4 +101,9 @@ it("preserves concrete sanitized Windows prerequisites", async () => {
   await expect(provisionWindowsEnvironment(manifest, { snapshot: path, run })).rejects.toThrow(
     "Expand Windows C:",
   )
+})
+
+it("preserves an older snapshot revision as provenance for independently checked current builds", () => {
+  const prior = { ...receipt, revision: "d".repeat(40) }
+  expect(validateSnapshotReceipt(prior, target).revision).toBe(prior.revision)
 })

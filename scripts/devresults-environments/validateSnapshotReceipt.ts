@@ -10,12 +10,8 @@ export function validateSnapshotReceipt(
 ): SnapshotReceipt {
   const value = input as SnapshotReceipt
   if (!value || value.version !== 1) throw new Error("Unsupported coordinated snapshot receipt")
-  if (
-    !manifest.revision ||
-    value.revision !== manifest.revision ||
-    !/^[a-f0-9]{40}$/.test(value.revision)
-  )
-    throw new Error("Snapshot must certify schema compatibility with the frozen source revision")
+  if (!manifest.revision || !/^[a-f0-9]{40}$/.test(value.revision))
+    throw new Error("Snapshot source revision and frozen build revision are required")
   if (
     value.sourceDatabase !== manifest.data.database ||
     value.sourceInstance !== manifest.data.instance
@@ -66,7 +62,7 @@ export type SnapshotReceipt = {
   sourceDatabase: string
   /** Selected instance. */
   sourceInstance: string
-  /** Exact revision whose built schema was verified compatible before snapshotting. */
+  /** Source revision recorded at capture time; current build compatibility is checked independently. */
   revision: string
   /** Actual dbo._Global SchemaHash from the compatible database. */
   schemaHash: string

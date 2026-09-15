@@ -1,6 +1,5 @@
 import { readFile } from "node:fs/promises"
-import { encodeWindowsScript } from "./encodeWindowsScript.ts"
-import { runDrenvCommand } from "./runDrenvCommand.ts"
+import { runWindowsAssetPayload } from "./runWindowsAssetPayload.ts"
 import type { EnvironmentManifest } from "./types.ts"
 import type { SnapshotReceipt } from "./validateSnapshotReceipt.ts"
 
@@ -12,30 +11,15 @@ export async function runWindowsProvisioning(
   options: {
     operation: "verify" | "provision" | "refresh"
     snapshot?: SnapshotReceipt
-    run?: typeof runDrenvCommand
+    run?: typeof runWindowsAssetPayload
   },
 ): Promise<ProvisionResult> {
   const script = await readFile(new URL("./windows/provision.ps1", import.meta.url), "utf8")
-  const command = encodeWindowsScript(`$request = [Console]::In.ReadToEnd() | ConvertFrom-Json; & {
-${script}
-} -Request $request`)
-  const result = await (options.run ?? runDrenvCommand)({
-    executable: "ssh",
-    args: [
-      manifest.windowsHost,
-      "powershell.exe",
-      "-NoProfile",
-      "-NonInteractive",
-      "-EncodedCommand",
-      command,
-    ],
-    input: JSON.stringify({
-      manifest,
-      snapshot: options.snapshot ?? null,
-      operation: options.operation,
-    }),
-    timeoutMs: 3_600_000,
-  })
+  const result = await (options.run ?? runWindowsAssetPayload)(
+    "& ([ScriptBlock]::Create($r.script)) -Request $r",
+    { manifest, snapshot: options.snapshot ?? null, operation: options.operation, script },
+    { host: manifest.windowsHost, timeoutMs: 3_600_000 },
+  )
   let response: ProvisionResult
   try {
     response = JSON.parse(result.stdout.trim())

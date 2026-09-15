@@ -37,7 +37,7 @@ function Get-BlobDigest([string]$Root) {
     return @{ sha256 = $hash; bytes = $bytes }
 }
 function Invoke-Sql([string]$Query, [string]$Catalog = 'master') {
-    $connection = [Data.SqlClient.SqlConnection]::new("Server=.;Integrated Security=true;Initial Catalog=$Catalog;Encrypt=false;Application Name=drenv")
+    $connection = [Data.SqlClient.SqlConnection]::new("Server=.;Integrated Security=true;Initial Catalog=$Catalog;Encrypt=false;Application Name=drenv;Pooling=false")
     try {
         $connection.Open()
         $command = $connection.CreateCommand()
@@ -52,7 +52,7 @@ function Invoke-Sql([string]$Query, [string]$Catalog = 'master') {
 function Sql-Literal([string]$Value) { return "N'$($Value.Replace("'", "''"))'" }
 function Sql-Identifier([string]$Value) { return "[$($Value.Replace(']', ']]'))]" }
 function Assert-Snapshot($Snapshot, $Manifest) {
-    if ($Snapshot.version -ne 1 -or $Snapshot.sourceDatabase -cne $Manifest.data.database -or $Snapshot.sourceInstance -cne $Manifest.data.instance -or $Snapshot.revision -cne $Manifest.revision -or [string]::IsNullOrWhiteSpace($Snapshot.schemaHash)) { Deny 'Snapshot source or verified schema revision does not match.' }
+    if ($Snapshot.version -ne 1 -or $Snapshot.sourceDatabase -cne $Manifest.data.database -or $Snapshot.sourceInstance -cne $Manifest.data.instance -or $Snapshot.revision -cnotmatch '^[a-f0-9]{40}$' -or [string]::IsNullOrWhiteSpace($Snapshot.schemaHash)) { Deny 'Snapshot source or verified schema revision does not match.' }
     if ($Snapshot.coordination.method -cne 'writers-paused' -or [string]::IsNullOrWhiteSpace($Snapshot.coordination.evidence) -or [datetime]$Snapshot.coordination.completedAt -lt [datetime]$Snapshot.coordination.startedAt) { Deny 'A verified coordinated SQL/blob snapshot is required; foreign writers will not be stopped.' }
     Assert-NativePath $Snapshot.sql.path
     Assert-NativePath $Snapshot.blobs.path
@@ -341,6 +341,7 @@ try {
             $moves.Add("MOVE $(Sql-Literal $file.LogicalName) TO $(Sql-Literal $destination)"); $index++
         }
         [void](Invoke-Sql "RESTORE DATABASE $(Sql-Identifier $m.catalog) FROM DISK=$(Sql-Literal $snapshot.sql.path) WITH CHECKSUM, RECOVERY, $($moves -join ', ')")
+        [void](Invoke-Sql "ALTER DATABASE $(Sql-Identifier $m.catalog) SET READ_WRITE WITH NO_WAIT")
         [void](Invoke-Sql "IF EXISTS (SELECT 1 FROM sys.extended_properties WHERE class=0 AND name=N'drenv.environmentId') EXEC sys.sp_updateextendedproperty @name=N'drenv.environmentId', @value=$(Sql-Literal $m.id); ELSE EXEC sys.sp_addextendedproperty @name=N'drenv.environmentId', @value=$(Sql-Literal $m.id); IF EXISTS (SELECT 1 FROM sys.extended_properties WHERE class=0 AND name=N'drenv.ownerToken') EXEC sys.sp_updateextendedproperty @name=N'drenv.ownerToken', @value=$(Sql-Literal $m.ownerToken); ELSE EXEC sys.sp_addextendedproperty @name=N'drenv.ownerToken', @value=$(Sql-Literal $m.ownerToken);" $m.catalog)
     }
     $schema = Invoke-Sql "SELECT _Value FROM dbo._Global WHERE _Key=N'SchemaHash'" $m.catalog
