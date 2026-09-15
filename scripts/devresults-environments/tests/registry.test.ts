@@ -26,6 +26,48 @@ afterEach(async () => {
 })
 
 describe("environment registry", () => {
+  it.each([
+    { data: { database: "DRENV_FEATURE", instance: "example" } },
+    { data: { database: "bad;catalog", instance: "example" } },
+    { data: { database: "dev", instance: "../tenant" } },
+    { data: { database: 123, instance: "example" } },
+    { data: { database: "dev" } },
+    { requestedRevision: "--upload-pack=other" },
+    { requestedRevision: "HEAD\nother" },
+    { requestedRevision: 123 },
+    { revision: "--not-a-sha" },
+    { revision: "abc123" },
+    { revision: null },
+  ])("refuses corrupted source or revision fields on reads: %j", async patch => {
+    const registry = await fixture()
+    const environment = await registry.reserve({
+      id: "feature",
+      inventory: { windowsPorts: [], macPorts: [] },
+    })
+    await writeFile(
+      join(registry.directory, "registry.json"),
+      JSON.stringify({ version: 1, environments: [{ ...environment, ...patch }] }),
+    )
+    await expect(registry.get("feature")).rejects.toThrow()
+    await expect(registry.list()).rejects.toThrow()
+  })
+
+  it("reads a valid persisted full revision and explicit source selection", async () => {
+    const registry = await fixture()
+    const environment = await registry.reserve({
+      id: "feature",
+      database: "dev-inl",
+      instance: "inl",
+      revision: "main~1",
+      inventory: { windowsPorts: [], macPorts: [] },
+    })
+    await registry.checkpoint(environment.id, environment.ownerToken, {
+      phase: "source-ready",
+      revision: "a".repeat(40),
+    })
+    expect((await registry.get(environment.id)).revision).toBe("a".repeat(40))
+  })
+
   it("refuses to alias the source database to the owned destination", async () => {
     const registry = await fixture()
     await expect(

@@ -91,20 +91,8 @@ export function createRegistry(
           database: input.database ?? (preset === "inl" ? "dev-inl" : "dev"),
           instance: input.instance ?? (preset === "inl" ? "inl" : "example"),
         }
-        if (
-          !/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}$/.test(data.database) ||
-          !/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,62}$/.test(data.instance)
-        )
-          throw new Error("Invalid source database or instance")
-        if (data.database.toLowerCase() === `drenv_${input.id.replaceAll("-", "_")}`)
-          throw new Error("Source database cannot be the environment catalog")
         const requestedRevision = input.revision ?? "HEAD"
-        if (
-          !requestedRevision ||
-          requestedRevision.startsWith("-") ||
-          /[\s\x00-\x1f]/.test(requestedRevision)
-        )
-          throw new Error("Invalid revision selector")
+        validateSourceSelection(input.id, data, requestedRevision)
         const existing = environments.find(environment => environment.id === input.id)
         if (existing) {
           if (existing.phase === "removed")
@@ -169,8 +157,7 @@ export function createRegistry(
         if (current.ownerToken !== ownerToken) throw new Error("Ownership mismatch")
         if (current.phase === "removed") throw new Error("Removed environment cannot be changed")
         if (!phases.includes(checkpoint.phase)) throw new Error("Invalid lifecycle phase")
-        if (checkpoint.revision !== undefined && !/^[a-f0-9]{40}$/.test(checkpoint.revision))
-          throw new Error("Checkpoint revision must be a full Git commit SHA")
+        validateFrozenRevision(checkpoint.revision)
         const next: EnvironmentManifest = {
           ...current,
           phase: checkpoint.phase,
@@ -222,6 +209,8 @@ function validateMappings(
       !["default", "inl"].includes(environment.preset)
     )
       throw new Error("Corrupt environment manifest")
+    validateSourceSelection(environment.id, environment.data, environment.requestedRevision)
+    validateFrozenRevision(environment.revision)
     if (
       !isAbsolute(environment.paths.mac) ||
       !/^[A-Za-z]:\\/.test(environment.paths.windows) ||
@@ -267,6 +256,42 @@ function validateMappings(
       ports.add(port)
     }
   }
+}
+
+/** Apply the same source safety rules to creation inputs and untrusted persisted records. */
+function validateSourceSelection(
+  /** Validated destination identity. */
+  id: string,
+  /** Read-only source catalog and instance selection. */
+  data: EnvironmentManifest["data"],
+  /** Original Git revision selector. */
+  requestedRevision: string,
+) {
+  if (
+    typeof data?.database !== "string" ||
+    typeof data?.instance !== "string" ||
+    !/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}$/.test(data.database) ||
+    !/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,62}$/.test(data.instance)
+  )
+    throw new Error("Invalid source database or instance")
+  if (data.database.toLowerCase() === `drenv_${id.replaceAll("-", "_")}`)
+    throw new Error("Source database cannot be the environment catalog")
+  if (
+    typeof requestedRevision !== "string" ||
+    !requestedRevision ||
+    requestedRevision.startsWith("-") ||
+    /[\s\x00-\x1f]/.test(requestedRevision)
+  )
+    throw new Error("Invalid revision selector")
+}
+
+/** Permit an unresolved reservation or a complete verified Git object ID, never a ref or option. */
+function validateFrozenRevision(
+  /** Optional persisted or newly checkpointed object ID. */
+  revision: string | undefined,
+) {
+  if (revision !== undefined && (typeof revision !== "string" || !/^[a-f0-9]{40}$/.test(revision)))
+    throw new Error("Checkpoint revision must be a full Git commit SHA")
 }
 
 /** Require exact environment identity for all reads and changes. */
