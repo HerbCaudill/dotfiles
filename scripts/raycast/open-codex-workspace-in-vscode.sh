@@ -11,6 +11,9 @@
 # @raycast.description Open the active Codex task's working directory in VS Code
 
 osascript <<'APPLESCRIPT'
+use framework "AppKit"
+use scripting additions
+
 set savedClipboard to the clipboard as record
 set marker to "codex-workspace-pending-" & (random number from 100000 to 999999)
 set workspacePath to marker
@@ -20,6 +23,14 @@ try
     set frontProcess to first application process whose frontmost is true
     if bundle identifier of frontProcess is not "com.openai.codex" then error number -128
   end tell
+
+  -- Raycast hotkeys can launch this while their modifier keys are still held.
+  repeat 100 times
+    set modifierFlags to current application's NSEvent's modifierFlags() as integer
+    if (modifierFlags div 131072) mod 16 is 0 then exit repeat
+    delay 0.05
+  end repeat
+  if (modifierFlags div 131072) mod 16 is not 0 then error "Release the shortcut keys and try again."
 
   set the clipboard to marker
 
