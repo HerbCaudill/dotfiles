@@ -46,7 +46,22 @@ A final read-only sizing check measured C: free space at **4,405,739,520 bytes (
 | Default `dev` / `example` | 8,781,951,198 bytes (8.18 GiB)                          | 4.08 GiB                          |
 | INL `dev-inl` / `inl`     | 46,298,099,934 bytes (43.12 GiB)                        | 39.02 GiB                         |
 
-These are lower bounds for one environment. Additional native source copies, package dependencies, build output outside the deployment, and any snapshot artifacts stored on C: need their own space. Three default useful-data environments would require at least approximately 20.54 GiB free for their SQL/app/blob copies and shared remaining 2 GiB headroom, before those additional costs. Expand the VM disk and Windows filesystem, then remeasure before creating the environments. Existing data must not be deleted merely to make room.
+These are lower bounds for one environment. Additional native source copies, package dependencies, build output outside the deployment, and any snapshot artifacts stored on C: need their own space. Three default useful-data environments would require at least approximately 20.54 GiB free for their SQL/app/blob copies and shared remaining 2 GiB headroom, before those additional costs. The partition layout findings below identify the capacity prerequisite. Remeasure C: after approved maintenance and before creating the environments. Existing data must not be deleted merely to make room.
+
+### Partition layout findings
+
+A subsequent read-only inspection showed that the Parallels virtual disk is already **1,099,511,627,776 bytes (1 TiB)**. Windows Disk 0 has the following layout:
+
+| Resource                                                 | Exact size            | Approximate size |
+| -------------------------------------------------------- | --------------------- | ---------------- |
+| Partition 4, C:                                          | 273,326,014,464 bytes | 254.55 GiB       |
+| Partition 5, active WinRE recovery, immediately after C: | 825,421,184,512 bytes | 768.73 GiB       |
+| Free space inside the recovery volume                    | 824,600,018,944 bytes | 767.97 GiB       |
+| Used space inside the recovery volume                    | 821,165,568 bytes     | 0.765 GiB        |
+
+`Get-PartitionSupportedSize` reports C: `SizeMax` as **273,326,014,464 bytes**, equal to its current size. `reagentc /info` confirms that Windows Recovery Environment is enabled and uses partition 5. The large amount of free space is inside that active recovery partition; it is not adjacent unallocated space available for a simple online C: extension.
+
+The next capacity step is **maintenance of the recovery partition layout before extending C:**. It requires a verified backup and explicit approval for the partition changes, including preservation or re-establishment of working WinRE. Increasing the Parallels virtual disk size alone does not resolve this layout. No partition, recovery configuration or disk size was changed during this inspection or documentation update. Useful-data environment creation and live acceptance proof remain blocked on that maintenance and the coordinated snapshot below.
 
 The other prerequisite is an immutable coordinated SQL/blob snapshot with a verified receipt. None was supplied or created during installation. Absence of IIS listeners does not prove that all SQL/blob writers are excluded. Initial source capture still requires explicit coordination; the public `snapshot` command is for an already owned environment.
 
