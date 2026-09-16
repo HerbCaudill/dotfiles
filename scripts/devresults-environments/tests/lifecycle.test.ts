@@ -2,6 +2,7 @@ import { mkdtemp, realpath, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { expect, it } from "vitest"
+import { parseDrenvArgs } from "../parseDrenvArgs.ts"
 import { createEnvironmentLifecycle } from "../createEnvironmentLifecycle.ts"
 
 it("resumes failed creation with durable inputs and stops before syncing/building", async () => {
@@ -256,3 +257,82 @@ it("preserves partial Mac pairing when removal has no verified revision", async 
     await rm(directory, { recursive: true, force: true })
   }
 })
+
+it("runs explicit owned database refresh and leaves the environment stopped", async () => {
+  const directory = await realpath(await mkdtemp(join(tmpdir(), "drenv-refresh-")))
+  const calls: string[] = []
+  const lifecycle = createEnvironmentLifecycle(
+    {
+      directory,
+      macRoot: join(directory, "mac"),
+      windowsRoot: "C:\\DrenvTest",
+      windowsHost: "devresults-vm",
+    },
+    {
+      inventory: async () => ({ windowsPorts: [], macPorts: [] }),
+      pair: async () => "a".repeat(40),
+      provision: async () => {},
+      windows: async (_m, operation) => {
+        calls.push(operation)
+        return { status: operation === "refresh-db" ? "schema-verified" : "stopped" }
+      },
+    },
+  )
+  try {
+    await lifecycle({ command: "create", id: "proof", snapshot: "/snapshot.json" })
+    expect(calls).not.toContain("refresh-db")
+    calls.length = 0
+    await lifecycle(parseDrenvArgs(["refresh-db", "proof"]))
+    expect(calls).toEqual(["stop", "refresh-db"])
+    expect(((await lifecycle({ command: "status" })) as { phase: string }[])[0].phase).toBe(
+      "provisioned",
+    )
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+it.each([
+  ["", false, "schema-verified"],
+  [
+    "Built application schema differs from restored SQL; no runtime was started and no database was upgraded.",
+    true,
+    "schema-verified",
+  ],
+  ["Built application schema differs from restored SQL; mismatch", true, "stopped"],
+  ["Foreign catalog", false, "schema-verified"],
+])(
+  "reconciles only a computed schema mismatch: %s",
+  async (failure, expectedRefresh, refreshStatus) => {
+    const directory = await realpath(await mkdtemp(join(tmpdir(), "drenv-reconcile-")))
+    const calls: string[] = []
+    const lifecycle = createEnvironmentLifecycle(
+      {
+        directory,
+        macRoot: join(directory, "mac"),
+        windowsRoot: "C:\\DrenvTest",
+        windowsHost: "devresults-vm",
+      },
+      {
+        inventory: async () => ({ windowsPorts: [], macPorts: [] }),
+        pair: async () => "a".repeat(40),
+        provision: async () => {},
+        windows: async (_m, operation) => {
+          calls.push(operation)
+          if (operation === "schema" && failure) throw new Error(failure)
+          return { status: operation === "refresh-db" ? refreshStatus : "stopped" }
+        },
+      },
+    )
+    try {
+      const result = lifecycle({ command: "create", id: "proof", snapshot: "/snapshot.json" })
+      if (failure && !expectedRefresh) await expect(result).rejects.toThrow(failure)
+      else if (expectedRefresh && refreshStatus !== "schema-verified")
+        await expect(result).rejects.toThrow("did not verify")
+      else await result
+      expect(calls.includes("refresh-db")).toBe(expectedRefresh)
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  },
+)

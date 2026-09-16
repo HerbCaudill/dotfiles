@@ -140,6 +140,7 @@ export type DrenvArgs = {
     | "reset"
     | "remove"
     | "recover"
+    | "refresh-db"
     | "help"
   /** Required except for status and help. */
   id?: string

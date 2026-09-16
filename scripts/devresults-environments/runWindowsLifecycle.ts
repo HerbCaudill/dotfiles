@@ -10,16 +10,25 @@ export async function runWindowsLifecycle(
   /** One lifecycle action. */
   operation: string,
 ): Promise<{ status: string; snapshot?: unknown }> {
-  const [provision, script, supervisor, job, schema] = await Promise.all(
-    ["provision.ps1", "lifecycle.ps1", "supervisor.ps1", "OwnedJob.cs", "SchemaProbe.cs"].map(
-      name => readFile(new URL(`./windows/${name}`, import.meta.url), "utf8"),
-    ),
+  const [provision, script, supervisor, job, schema, refresh] = await Promise.all(
+    [
+      "provision.ps1",
+      "lifecycle.ps1",
+      "supervisor.ps1",
+      "OwnedJob.cs",
+      "SchemaProbe.cs",
+      "refresh.ps1",
+    ].map(name => readFile(new URL(`./windows/${name}`, import.meta.url), "utf8")),
   )
   const helpers = provision.slice(0, provision.indexOf("if ($null -eq $Request)"))
   const result = await runWindowsAssetPayload(
-    ". ([ScriptBlock]::Create($r.assets.helpers)); & ([ScriptBlock]::Create($r.assets.lifecycle)) -Request $r",
-    { manifest, operation, assets: { supervisor, job, schema, helpers, lifecycle: script } },
-    { host: manifest.windowsHost },
+    ". ([ScriptBlock]::Create($r.assets.helpers)); . ([ScriptBlock]::Create($r.assets.refresh)); & ([ScriptBlock]::Create($r.assets.lifecycle)) -Request $r",
+    {
+      manifest,
+      operation,
+      assets: { supervisor, job, schema, refresh, helpers, lifecycle: script },
+    },
+    { host: manifest.windowsHost, timeoutMs: operation === "refresh-db" ? 4_000_000 : undefined },
   )
   let response
   try {

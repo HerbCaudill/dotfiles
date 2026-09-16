@@ -20,7 +20,7 @@ function Test-Supervisor($State) {
     $live=Get-Process -Id $process.ProcessId -ErrorAction SilentlyContinue
     if($null -eq $live){return $false}
     $start=$live.StartTime.ToUniversalTime().ToString('o')
-    if($start -cne $State.processStartTime -or -not $process.CommandLine -or $process.CommandLine.IndexOf($State.request,[StringComparison]::OrdinalIgnoreCase) -lt 0){if($State.status -in @('stopped','built','failed')){return $false};Deny 'Recorded supervisor PID has been reused or no longer matches its request; no process was killed.'}
+    if($start -cne $State.processStartTime -or -not $process.CommandLine -or $process.CommandLine.IndexOf($State.request,[StringComparison]::OrdinalIgnoreCase) -lt 0){if($State.status -in @('stopped','built','failed','refreshed')){return $false};Deny 'Recorded supervisor PID has been reused or no longer matches its request; no process was killed.'}
     return $true
 }
 function Assert-Catalog($Manifest) {
@@ -56,12 +56,14 @@ function Stop-OwnedSupervisor($Manifest) {
     $state=Get-State $Manifest
     [void](Get-OwnedTask $Manifest $state)
     if(Test-Supervisor $state) {
-        if($state.mode -ne 'runtime'){Deny 'An owned build is still active; wait for it to complete before changing the environment.'}
+        if($state.mode -notin @('runtime','maintenance')){Deny 'An owned build is still active; wait for it to complete before changing the environment.'}
         Write-JsonAtomic (Join-Path (Split-Path -Parent $state.request) 'stop.json') @{ownerToken=$Manifest.ownerToken;runId=$state.runId}
         $stopped=$false
         for($attempt=0;$attempt -lt 100;$attempt++) {if(-not(Test-Supervisor $state)){$stopped=$true;break};Start-Sleep -Milliseconds 300}
         if(-not $stopped){Deny 'Owned supervisor did not stop within 30 seconds; inspect its exact task and receipt. No global process kill was attempted.'}
     }
+    $finalState=Get-State $Manifest
+    if($null -ne $finalState -and $finalState.status -in @('stopped','built','failed','refreshed')){for($attempt=0;$attempt -lt 30;$attempt++){$task=Get-OwnedTask $Manifest $finalState;if($null -eq $task -or $task.State -notin @('Queued','Running')){break};Start-Sleep -Milliseconds 100}}
     Assert-SupervisorIdle $Manifest (Get-State $Manifest)
     Assert-NotInUse $Manifest
     $ports=@($Manifest.ports.http,$Manifest.ports.https,$Manifest.ports.blob,$Manifest.ports.queue,$Manifest.ports.table)
@@ -104,12 +106,14 @@ function Start-OwnedSupervisor($Manifest,[string]$Mode,$Assets,$Commands=$null) 
         Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
     }
     $request=@{manifest=$Manifest;mode=$Mode;runId=$runId;state=(Join-Path $control 'state.json');stop=(Join-Path $directory 'stop.json');commands=$Commands}
-    if($Mode -eq 'runtime') {
+    if($Mode -in @('runtime','maintenance')) {
         $request.node=(Get-Command node.exe).Source
-        $request.azurite=Ensure-Azurite (Split-Path -Parent (Split-Path -Parent $Manifest.paths.runtime))
+        $hostRoot=Split-Path -Parent (Split-Path -Parent $Manifest.paths.runtime)
+        if($Mode -eq 'maintenance'){$dependencyLock=Enter-ProvisionLock $hostRoot;try{$request.azurite=Ensure-Azurite $hostRoot}finally{$dependencyLock.Dispose()}}else{$request.azurite=Ensure-Azurite $hostRoot}
         $request.iis='C:\Program Files\IIS Express\iisexpress.exe'
         if(-not(Test-Path -LiteralPath $request.iis)){Deny 'IIS Express is missing'}
     }
+    if($Mode -eq 'maintenance'){$request.curl=(Get-Command curl.exe).Source;$request.refresh=$Assets.refresh}
     Write-JsonAtomic $requestPath $request
     # Save the exact task action before registration so a crash can be retried without adopting a task.
     Write-JsonAtomic (Join-Path $control 'state.json') @{environmentId=$Manifest.id;ownerToken=$Manifest.ownerToken;revision=$Manifest.revision;runId=$runId;mode=$Mode;status='queued';pid=0;processStartTime='';request=$requestPath;children=@()}
@@ -119,12 +123,13 @@ function Start-OwnedSupervisor($Manifest,[string]$Mode,$Assets,$Commands=$null) 
     $settings=New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([timespan]::Zero) -MultipleInstances IgnoreNew -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
     Register-ScheduledTask -TaskName $taskName -Action $action -Principal $principal -Settings $settings | Out-Null
     Start-ScheduledTask -TaskName $taskName
-    $limit=if($Mode -eq 'build'){7200}else{120}
+    $limit=if($Mode -in @('build','maintenance')){7500}else{120}
     for($attempt=0;$attempt -lt $limit;$attempt++) {
         $current=Get-State $Manifest
         if($current.runId -cne $runId){Deny 'Supervisor run identity changed'}
         if($current.status -eq 'failed'){Deny ('Owned supervisor failed: '+$current.failure)}
         if($Mode -eq 'runtime' -and $current.status -eq 'running' -and (Test-Supervisor $current)){return $current}
+        if($Mode -eq 'maintenance' -and $current.status -eq 'refreshed' -and -not(Test-Supervisor $current)){return $current}
         if($Mode -eq 'build' -and $current.status -eq 'built' -and -not(Test-Supervisor $current)){return $current}
         Start-Sleep -Milliseconds 500
     }
@@ -447,17 +452,18 @@ try {
     try{$ownsMutex=$operationMutex.WaitOne(0)}catch [Threading.AbandonedMutexException]{$ownsMutex=$true}
     if(-not $ownsMutex){Deny 'A Windows lifecycle operation still owns this environment; wait for its receipt before retry'}
     if($Request.operation -eq 'remove' -and -not $revision) {
-        if(Test-Path -LiteralPath $root){$lock=[IO.File]::Open((Join-Path $root 'provision.lock'),[IO.FileMode]::OpenOrCreate,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None)}
+        if(Test-Path -LiteralPath $root){$lock=(Enter-ProvisionLock $root)}
         Assert-EmptyReservation $m
         @{ok=$true;environmentId=$m.id;ownerToken=$m.ownerToken;status='removed'} | ConvertTo-Json -Compress
         return
     }
-    if($Request.operation -notin @('status','stop','build','schema')){$lock=[IO.File]::Open((Join-Path $root 'provision.lock'),[IO.FileMode]::OpenOrCreate,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None)}
+    if($Request.operation -notin @('status','stop','build','schema','refresh-db')){$lock=(Enter-ProvisionLock $root)}
     $result=@{ok=$true;environmentId=$m.id;ownerToken=$m.ownerToken;status='stopped'}
     switch($Request.operation) {
         'status' {$state=Get-State $m;if(Test-Supervisor $state){$result.status=$state.status}else{Assert-SupervisorIdle $m $state;$result.status='stopped'};$result.supervisor=$state}
         'stop' {Stop-OwnedSupervisor $m}
         'build' {Build-OwnedSource $m $Request.assets;$result.status='built'}
+        'refresh-db' {Refresh-OwnedDatabase $m $Request.assets;$result.status='schema-verified'}
         'schema' {Test-OwnedSchema $m $Request.assets;$result.status='schema-verified'}
         'start' {
             $state=Get-State $m

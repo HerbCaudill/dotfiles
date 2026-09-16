@@ -31,13 +31,14 @@ try {
         $head=(& git -C $m.paths.windows rev-parse HEAD) -join ''
         if($LASTEXITCODE -ne 0 -or $head -cne $m.revision){throw 'Source changed during build'}
         $state.status='built'
-    } elseif($request.mode -eq 'runtime') {
+    } elseif($request.mode -in @('runtime','maintenance')) {
         $secret=Get-Content -LiteralPath (Join-Path $m.paths.runtime 'azurite-secret.json') -Raw | ConvertFrom-Json
         $env:AZURITE_ACCOUNTS="$($secret.account):$($secret.key)"
         $env:TEMP=Join-Path $m.paths.runtime 'temp'; $env:TMP=$env:TEMP
         $azurite=$job.Spawn($request.node,(Quote $request.azurite)+' --silent --location '+(Quote (Join-Path $m.paths.runtime 'blobs'))+" --blobHost 127.0.0.1 --queueHost 127.0.0.1 --tableHost 127.0.0.1 --blobPort $($m.ports.blob) --queuePort $($m.ports.queue) --tablePort $($m.ports.table)",$m.paths.runtime)
         Remove-Item Env:AZURITE_ACCOUNTS
-        $iis=$job.Spawn($request.iis,'/config:'+(Quote (Join-Path $m.paths.runtime 'iis\applicationhost.config'))+' /site:DevResults',$m.paths.runtime)
+        $configName=if($request.mode -eq 'maintenance'){'iis\maintenance.config'}else{'iis\applicationhost.config'}
+        $iis=$job.Spawn($request.iis,'/config:'+(Quote (Join-Path $m.paths.runtime $configName))+' /site:DevResults',$m.paths.runtime)
         $state.children=@($azurite,$iis | ForEach-Object {$p=Get-Process -Id $_; @{pid=$p.Id; processStartTime=$p.StartTime.ToUniversalTime().ToString('o'); executable=$p.Path}})
         $ready=$false
         for($attempt=0;$attempt -lt 60;$attempt++) {
@@ -50,6 +51,11 @@ try {
             Start-Sleep -Milliseconds 500
         }
         if(-not $ready){throw 'Owned listeners did not become ready'}
+        if($request.mode -eq 'maintenance') {
+            . ([ScriptBlock]::Create($request.refresh))
+            Invoke-OwnedRefreshTask $m $job $request
+            $state.status='refreshed'
+        } else {
         $healthy=$false
         for($attempt=0;$attempt -lt 30;$attempt++) {
             $response=$null
@@ -73,6 +79,7 @@ try {
             Start-Sleep -Milliseconds 300
         }
         $state.status='stopped'
+        }
     } else { throw 'Unknown supervisor mode' }
 } catch {$state.status='failed';$state.failure=$diagnostic+'. Child trees are stopped.'}
 finally {if($null -ne $job){$job.Dispose()};Save $state}

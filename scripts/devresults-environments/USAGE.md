@@ -39,7 +39,7 @@ drenv create inl-change \
   --snapshot /absolute/path/to/coordinated-inl-snapshot.json
 ```
 
-The INL preset selects `dev-inl` / `inl`. `--database <catalog>` and `--instance <name>` support an explicit source selection. The receipt must describe that source. Each environment gets a separate owned catalog; source catalogs are never shared as writable environment data. A receipt's capture revision may differ from the selected source revision, but the actual built schema must match before startup.
+The INL preset selects `dev-inl` / `inl`. `--database <catalog>` and `--instance <name>` support an explicit source selection. The receipt must describe that source. Each environment gets a separate owned catalog; source catalogs are never shared as writable environment data. A receipt's capture revision is provenance and may differ from the selected source revision. Create, sync and reset compare the actual built schema fingerprint; only a genuine mismatch triggers the application's existing DbRefresh against the owned catalog. A different Git revision alone does not trigger a refresh. The independent schema check must pass afterward before startup.
 
 Creation saves its inputs and checkpoints. If a snapshot was omitted, source pairing can finish before creation reports the missing receipt. Resume with `drenv create <id> --snapshot <receipt.json>` after satisfying the prerequisite. Repeating `create <id>` uses the saved selections. An existing selection cannot silently change.
 
@@ -70,6 +70,7 @@ drenv open example-change
 
 ```sh
 drenv stop example-change
+drenv refresh-db example-change
 drenv snapshot example-change
 drenv reset example-change
 drenv remove example-change
@@ -94,3 +95,13 @@ Windows needs elevated SSH for owned HTTP.sys bindings, the current local `devlo
 ## Verification status
 
 See [the installation evidence](INSTALLATION-EVIDENCE.md) for actual command results, live capacity and the remaining acceptance checks. Helper suites and disposable source fixtures verify particular behaviors; they do not prove a complete useful-data environment. The September 16 live proof created and started three environments, verified two populated dashboards in normal Chrome, demonstrated source/data/process isolation, and preserved the recorded original-resource baseline. The copied primary local blob store lacks legacy example attachments; see the evidence for that inherited limitation and the exact browser coverage.
+
+## Preparing database schemas for showcases
+
+`drenv refresh-db <id>` explicitly runs the built application's refresh task against that environment's owned database, then verifies the resulting schema and leaves the environment stopped. It is also invoked automatically when create, sync or reset finds a schema fingerprint mismatch. Automatic refresh inside normal application startup stays disabled.
+
+Maintenance uses a supervised IIS/Azurite process tree with Windows-loopback-only IIS bindings. It verifies owned source, build, deployment, catalog and connection settings, requires private mail/temp/cache paths, and refuses additional or foreign database connections. Success requires the application task's successful receipt, the matching asynchronous index-completion event and committed index transaction, stopped maintenance processes, and a fresh independent schema comparison. HTTP and index work each have a 30-minute limit. A failed refresh preserves private diagnostics; restore the immutable snapshot before retrying a partially applied migration.
+
+DbRefresh reconciles the selected build's requirements; it is not a full reverse migration. Extra unused tables/columns may remain, and one-time data changes are not undone by switching code. Do not edit the stored schema hash to bypass verification.
+
+Large INL databases need not occupy simultaneous baseline and target catalogs. Use one owned environment sequentially: verify the baseline, commit/check out the target in its paired source and run `sync`, then run `reset` to restore the immutable original snapshot and reconcile it to the now-built target. Only then start and verify the target. This gives each comparison a fresh restore without retaining two 40 GB catalogs. Reset discards baseline edits; save required evidence first. The immutable snapshot remains unchanged.

@@ -26,10 +26,29 @@ export function createEnvironmentLifecycle(
 ) {
   const registry = createRegistry(options)
   const remote = adapters.windows ?? runWindowsLifecycle
+  /** Accept maintenance only after Windows reports its independent post-refresh verification. */
+  const refreshDatabase = async (manifest: EnvironmentManifest) => {
+    const result = await remote(manifest, "refresh-db")
+    if (result.status !== "schema-verified")
+      throw new Error("Database refresh did not verify the resulting schema")
+  }
+  /** Reconcile only the explicit schema mismatch; unrelated failures must remain failures. */
+  const ensureSchema = async (manifest: EnvironmentManifest) => {
+    try {
+      await remote(manifest, "schema")
+    } catch (error) {
+      if (
+        !(error instanceof Error) ||
+        !error.message.startsWith("Built application schema differs from restored SQL;")
+      )
+        throw error
+      await refreshDatabase(manifest)
+    }
+  }
   /** Execute one public command without inferring a destination from the current directory. */
   return async (args: DrenvArgs): Promise<unknown> => {
     if (args.command === "help")
-      return "drenv create <id> [--source <Mac checkout>] [--revision <ref>] [--preset inl] [--snapshot <receipt.json>]\ndrenv sync|start|status|url|open|stop|snapshot|reset|remove|recover <id>\nCommit paired Mac edits before sync. Creation requires a coordinated SQL/blob snapshot. Reset restores the original creation snapshot."
+      return "drenv create <id> [--source <Mac checkout>] [--revision <ref>] [--preset inl] [--snapshot <receipt.json>]\ndrenv sync|start|status|url|open|stop|snapshot|reset|remove|recover|refresh-db <id>\nCommit paired Mac edits before sync. Creation requires a coordinated SQL/blob snapshot. Reset restores the original creation snapshot."
     if (args.command === "status" && !args.id) return registry.list()
     if (!args.id) throw new Error("An environment ID is required")
     if (args.command === "recover") {
@@ -81,7 +100,7 @@ export function createEnvironmentLifecycle(
               await provisionWindowsEnvironment(m, { snapshot })
             })
           )(manifest, intent.snapshot)
-          await remote(manifest, "schema")
+          await ensureSchema(manifest)
           return registry.checkpoint(manifest.id, manifest.ownerToken, {
             phase: "provisioned",
             completedStep: "schema-verified",
@@ -120,6 +139,13 @@ export function createEnvironmentLifecycle(
         }
         await remote(manifest, "stop")
         manifest = await registry.checkpoint(manifest.id, manifest.ownerToken, { phase: "stopped" })
+        if (args.command === "refresh-db") {
+          await refreshDatabase(manifest)
+          return registry.checkpoint(manifest.id, manifest.ownerToken, {
+            phase: "provisioned",
+            completedStep: "schema-verified",
+          })
+        }
         if (args.command === "sync") {
           const revision = await (adapters.sync ?? syncEnvironmentSource)(manifest)
           manifest = await registry.checkpoint(manifest.id, manifest.ownerToken, {
@@ -129,7 +155,7 @@ export function createEnvironmentLifecycle(
           })
           await remote(manifest, "build")
           await (adapters.refresh ?? refreshWindowsDeployment)(manifest)
-          await remote(manifest, "schema")
+          await ensureSchema(manifest)
           return registry.checkpoint(manifest.id, manifest.ownerToken, {
             phase: "provisioned",
             completedStep: "schema-verified",
@@ -166,7 +192,7 @@ export function createEnvironmentLifecycle(
               await provisionWindowsEnvironment(m, { snapshot })
             })
           )(manifest, intent.snapshot)
-          await remote(manifest, "schema")
+          await ensureSchema(manifest)
           return registry.checkpoint(manifest.id, manifest.ownerToken, {
             phase: "provisioned",
             completedStep: "reset",
