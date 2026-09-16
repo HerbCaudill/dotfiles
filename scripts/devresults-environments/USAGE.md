@@ -11,7 +11,7 @@ drenv --help
 drenv status
 ```
 
-The command uses the Node installation already managed by the Mac environment. Windows builds use the existing DevResults build tools and recipes. The runner installs its own pinned Azurite dependency when needed. [Lifecycle details](LIFECYCLE.md) describe supervision, builds and schema verification.
+The command uses the Node installation already managed by the Mac environment. Windows builds use the existing DevResults build tools and recipes, including the native spatial-library recipe on ARM64. The runner installs its own pinned Azurite dependency when needed. [Lifecycle details](LIFECYCLE.md) describe supervision, builds and schema verification.
 
 ## Create an environment
 
@@ -27,7 +27,7 @@ drenv start example-change
 drenv open example-change
 ```
 
-Use the canonical native checkout path; symlink aliases such as macOS `/var` are refused. Creation freezes the selected Git revision and creates native source worktrees on both hosts. It then checks capacity, builds, restores owned data, generates runtime configuration, and independently compares the built schema with the restored database. `start` launches the complete IIS/Azurite runtime and verifies its owned endpoints. `open` uses your normal Chrome profile; cookies remain shared with your existing development browsing.
+Use the canonical native checkout path; symlink aliases such as macOS `/var` are refused. Creation freezes the selected Git revision and creates native source worktrees on both hosts. It then checks capacity, builds, restores owned data, generates runtime configuration, and independently compares the built schema with the restored database. `start` launches the complete IIS/Azurite runtime and verifies its owned endpoints. It creates an owned HTTPS firewall rule restricted to the Mac IP seen by SSH; a changed peer or modified rule is refused for inspection. Complete removal cleans up that verified rule. `open` uses your normal Chrome profile; cookies remain shared with your existing development browsing.
 
 The default data source is `dev` / `example`. For INL work:
 
@@ -93,4 +93,4 @@ Windows needs elevated SSH for owned HTTP.sys bindings, the current local `devlo
 
 ## Verification status
 
-See [the installation evidence](INSTALLATION-EVIDENCE.md) for actual command results, live capacity and the remaining acceptance checks. Helper suites and disposable source fixtures verify particular behaviors; they do not prove a complete useful-data environment. The outstanding proof is to create and start two useful environments, demonstrate their independent data/processes, and create a third through the same public command while the existing primary/review environments remain unaffected.
+See [the installation evidence](INSTALLATION-EVIDENCE.md) for actual command results, live capacity and the remaining acceptance checks. Helper suites and disposable source fixtures verify particular behaviors; they do not prove a complete useful-data environment. The September 16 live proof created and started three environments, verified two populated dashboards in normal Chrome, demonstrated source/data/process isolation, and preserved the recorded original-resource baseline. The copied primary local blob store lacks legacy example attachments; see the evidence for that inherited limitation and the exact browser coverage.
