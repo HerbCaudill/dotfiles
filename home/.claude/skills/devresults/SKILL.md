@@ -27,6 +27,10 @@ DevResults is a Windows-native .NET/SQL Server application. Treat the Parallels 
 | Repo-specific skills       | Check `.claude/skills` inside the DevResults repo                                                                     |
 | Common repo commands       | Use `drsync <command>` from a macOS clone, or `dr <command>` for Windows-only commands                                |
 
+## Editing customer instances through the web UI
+
+To modify a customer instance through the web UI, temporarily enable **DevResults Staff can edit** in the instance's settings. Staff login alone does not grant edit access. Check and record the original setting before changing it, make only the authorized customer changes, and verify that they persisted. Restore the original staff-edit setting when finished and verify that restoration; if it was disabled before the work, leave it disabled afterward.
+
 ## Hard Rule: Never Use macOS Mounts for Repo Files
 
 When working on DevResults from macOS, do not read, edit, patch, format, test, stage, commit, or run git against repo files through `/Volumes/[C] Windows 11/...` or any other Parallels shared-folder path.
