@@ -1,6 +1,6 @@
 # Installation and public-command evidence
 
-Verified on September 15, 2026. The public command is installed and its bounded source/preset/refusal/cleanup checks passed. Complete useful-data environment acceptance remains blocked by the missing coordinated source snapshot and Windows disk capacity.
+Installation was verified on September 15, 2026. The public command is installed and its bounded source/preset/refusal/cleanup checks passed. The Windows partition blocker was repaired on September 16, as recorded below. Complete useful-data environment acceptance still requires the coordinated source snapshot and live application checks.
 
 ## Installation
 
@@ -37,7 +37,7 @@ Read-only inventories bracketed the public fixture work at 17:01 and 17:08 UTC:
 - No `iisexpress.exe` processes or established primary/report/Azurite listeners were present at either inventory. Their absence was independently confirmed before the fixture commands. This run did not stop those applications and does not establish why they were absent. It does not prove survival of running primary/review environments.
 - C: free space changed from 4,604,305,408 to 4,406,026,240 bytes during the interval. The cause of that change was not established. Do not infer source data loss or attribute the change to the fixture solely from these observations.
 
-## Concrete remaining prerequisites
+## September 15 capacity evidence
 
 A final read-only sizing check measured C: free space at **4,405,739,520 bytes (4.10 GiB)**. Source SQL allocation was **6,054,281,216 bytes (5.64 GiB)** for `dev` and **43,570,429,952 bytes (40.58 GiB)** for `dev-inl`. The deployable application copy measured **567,846,866 bytes** after excluding build-only dependencies. Existing source Azurite files totaled **12,339,468 bytes**; measuring live files is not a coordinated snapshot.
 
@@ -46,7 +46,7 @@ A final read-only sizing check measured C: free space at **4,405,739,520 bytes (
 | Default `dev` / `example` | 8,781,951,198 bytes (8.18 GiB)                          | 4.08 GiB                          |
 | INL `dev-inl` / `inl`     | 46,298,099,934 bytes (43.12 GiB)                        | 39.02 GiB                         |
 
-These are lower bounds for one environment. Additional native source copies, package dependencies, build output outside the deployment, and any snapshot artifacts stored on C: need their own space. Three default useful-data environments would require at least approximately 20.54 GiB free for their SQL/app/blob copies and shared remaining 2 GiB headroom, before those additional costs. The partition layout findings below identify the capacity prerequisite. Remeasure C: after approved maintenance and before creating the environments. Existing data must not be deleted merely to make room.
+These are lower bounds for one environment. Additional native source copies, package dependencies, build output outside the deployment, and any snapshot artifacts stored on C: need their own space. Three default useful-data environments would require at least approximately 20.54 GiB free for their SQL/app/blob copies and shared remaining 2 GiB headroom, before those additional costs. These shortfalls describe the September 15 reading, before the repair below. Remeasure available space before creating environments. Existing data must not be deleted merely to make room.
 
 ### Partition layout findings
 
@@ -64,9 +64,29 @@ The used-volume figure is the `Get-Volume` size minus its free space: 825,421,18
 
 `Get-PartitionSupportedSize` reports C: `SizeMax` as **273,326,014,464 bytes**, equal to its current size. `reagentc /info` confirms that Windows Recovery Environment is enabled and uses partition 5. The large amount of free space is inside that active recovery partition; it is not adjacent unallocated space available for a simple online C: extension.
 
-The next capacity step is **maintenance of the recovery partition layout before extending C:**. It requires a verified backup and explicit approval for the partition changes, including preservation or re-establishment of working WinRE. Increasing the Parallels virtual disk size alone does not resolve this layout. No partition, recovery configuration or disk size was changed during this inspection or documentation update. Useful-data environment creation and live acceptance proof remain blocked on that maintenance and the coordinated snapshot below.
+These findings established that the recovery partition had to be replaced before C: could grow. No partitions were changed during the September 15 inspection. Herb authorized the repair on September 16; the outcome follows.
 
-The other prerequisite is an immutable coordinated SQL/blob snapshot with a verified receipt. None was supplied or created during installation. Absence of IIS listeners does not prove that all SQL/blob writers are excluded. Initial source capture still requires explicit coordination; the public `snapshot` command is for an already owned environment.
+### September 16 partition repair
+
+The oversized partition was replaced with a 2 GiB recovery partition at the end of the existing 1 TiB disk, and C: was extended online. The EFI, reserved and earlier small recovery partitions were left unchanged. The repair followed Microsoft's documented disable/recreate/register/enable WinRE procedure. No VM restart was required.
+
+| Resource                                 | Verified result                                                                             |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------- |
+| C: partition size                        | 1,096,598,683,648 bytes, approximately 1,021.29 GiB                                         |
+| C: filesystem size                       | 1,096,598,679,552 bytes                                                                     |
+| Available C: space at final verification | 241,256,775,680 bytes, approximately 224.69 GiB                                             |
+| New recovery partition                   | 2,147,483,648 bytes, at offset 1,097,363,095,552                                            |
+| Recovery configuration                   | WinRE enabled on Disk 0 partition 5; version 10.0.26100.9168                                |
+| Recovery partition identity              | Microsoft recovery GPT type, required/no-default-letter attributes, no temporary R: mapping |
+| Filesystem and services                  | C: healthy and not dirty; SQL Server and SSH running                                        |
+
+The restored `winre.wim` SHA256 matched the original: `4285951B305E7AFA647EF4798D8ADC8D04F2B6837FB2A58543FE7FF14588760C`. WinRE registration and its image were verified; booting into recovery was not tested. The virtual disk capacity is not a promise of physical free space. Parallels Desktop reports available Mac storage to Windows; the host also had approximately 225 GiB free at verification. See [Parallels' release notes](https://kb.parallels.com/en/131014) and [Microsoft's recovery partition procedure](https://support.microsoft.com/en-us/servicing/os/windows/2023/06/kb5028997-instructions-to-manually-resize-your-partition-to-install-the-winre-update).
+
+A rollback snapshot was retained: `Before Windows recovery partition repair 2026-09-16`, ID `8b32f0f4-d0d7-4d0b-afa6-fb5f7f5031f1`. Recovery files, hashes, the prior partition layout and a BCD export were also retained in `C:\ProgramData\drenv-maintenance\2026-09-16-partition` and copied to `~/.local/state/drenv/maintenance/2026-09-16-partition` on the Mac. All four copied recovery files were hash-verified before changing partitions. Reverting the snapshot would also revert later VM work; it is a rollback artifact, not a routine cleanup operation.
+
+## Remaining live prerequisite
+
+The remaining prerequisite is an immutable coordinated SQL/blob snapshot with a verified receipt. None was supplied or created during installation or the partition repair. Absence of IIS listeners does not prove that all SQL/blob writers are excluded. Initial source capture still requires explicit coordination; the public `snapshot` command is for an already owned environment.
 
 ## Tests and acceptance boundary
 
