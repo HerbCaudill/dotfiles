@@ -131,7 +131,7 @@ function Start-OwnedSupervisor($Manifest,[string]$Mode,$Assets,$Commands=$null) 
     Deny 'Supervisor did not reach the requested state; Windows Task Scheduler logon rights or dependency inspection may be required. Its task and receipt were preserved.'
 }
 function Get-BuildArtifacts($Manifest,[string]$Root) {
-    foreach($relative in @('bin\DevResults.dll','bin\DevResults.Core.dll','bin\DevResults.Api.dll','Web\dist\.vite\manifest.json')){if(-not(Test-Path -LiteralPath (Join-Path $Root $relative))){Deny "Build output is missing: $relative"}}
+    foreach($relative in @('bin\DevResults.dll','bin\DevResults.Core.dll','bin\DevResults.Api.dll','Web\dist\scripts\app.js','Web\dist\scripts\admin.js','Web\dist\scripts\prt.js','Web\dist\css\app.css','Web\dist\css\Public.css','Web\dist\css\Bootstrap_Custom.css','Web\dist\css\word.mhtml.css','Web\dist\css\viz.css','Web\dist\css\prt.css')){if(-not(Test-Path -LiteralPath (Join-Path $Root $relative))){Deny "Build output is missing: $relative"}}
     $result=@()
     $files=@(Get-ChildItem -LiteralPath (Join-Path $Root 'bin'),(Join-Path $Root 'Web\dist') -File -Recurse -Force | Where-Object {$_.Name -cne 'Drenv.SchemaProbe.dll'} | Sort-Object FullName)
     foreach($file in $files){if($file.Attributes -band [IO.FileAttributes]::ReparsePoint){Deny 'Build artifacts contain a reparse point'};$result+=@{path=$file.FullName.Substring($Root.Length+1);sha256=(Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()}}

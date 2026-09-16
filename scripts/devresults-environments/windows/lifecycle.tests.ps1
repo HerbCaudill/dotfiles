@@ -35,13 +35,13 @@ try {
     $m.revision=(& git -C $m.paths.windows rev-parse HEAD)-join ''
     $ErrorActionPreference=$old
     $artifactRoot=Join-Path $root 'artifact-web'
-    foreach($relative in @('bin\DevResults.dll','bin\DevResults.Core.dll','bin\DevResults.Api.dll','Web\dist\.vite\manifest.json','Web\dist\app.js')){$file=Join-Path $artifactRoot $relative;[void][IO.Directory]::CreateDirectory((Split-Path -Parent $file));[IO.File]::WriteAllText($file,'fixture')}
+    foreach($relative in @('bin\DevResults.dll','bin\DevResults.Core.dll','bin\DevResults.Api.dll','Web\dist\scripts\app.js','Web\dist\scripts\admin.js','Web\dist\scripts\prt.js','Web\dist\css\app.css','Web\dist\css\Public.css','Web\dist\css\Bootstrap_Custom.css','Web\dist\css\word.mhtml.css','Web\dist\css\viz.css','Web\dist\css\prt.css')){$file=Join-Path $artifactRoot $relative;[void][IO.Directory]::CreateDirectory((Split-Path -Parent $file));[IO.File]::WriteAllText($file,'fixture')}
     $artifacts=Get-BuildArtifacts $m $artifactRoot
-    Check ($artifacts.Count -eq 5) 'Full executable/client artifact inventory differs'
+    Check ($artifacts.Count -eq 12) 'Full executable/client artifact inventory differs'
     [void][IO.Directory]::CreateDirectory((Get-Control $m))
     Write-JsonAtomic (Join-Path (Get-Control $m) 'build.json') @{environmentId=$m.id;ownerToken=$m.ownerToken;revision=$m.revision;artifacts=$artifacts}
     Assert-Build $m $artifactRoot
-    [IO.File]::WriteAllText((Join-Path $artifactRoot 'Web\dist\app.js'),'changed')
+    [IO.File]::WriteAllText((Join-Path $artifactRoot 'Web\dist\scripts\app.js'),'changed')
     $changed=$false;try{Assert-Build $m $artifactRoot}catch{$changed=$_.Exception.Message -like '*artifacts changed*'}
     Check $changed 'Changed client artifact was not refused'
     $result=Start-OwnedSupervisor $m 'build' $Assets @(@{name='fixture';executable=$exe;arguments='-NoProfile -NonInteractive -Command "exit 0"'})
