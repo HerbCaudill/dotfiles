@@ -37,6 +37,23 @@ try {
     Check ((Get-AppBuildRecipe 'ARM64' '') -ceq 'msbuild-app-arm') 'Native ARM64 builds need the spatial-library recipe'
     Check ((Get-AppBuildRecipe 'AMD64' 'ARM64') -ceq 'msbuild-app-arm') 'Emulated shells must use the native ARM64 recipe'
     Check ((Get-AppBuildRecipe 'AMD64' '') -ceq 'msbuild-app') 'Native x64 builds retain the standard recipe'
+    [void][IO.Directory]::CreateDirectory($m.paths.runtime)
+    $firewallName="drenv-$($m.id)-$($m.ownerToken)-https"
+    try {
+        Ensure-OwnedFirewall $m '10.211.55.2'
+        $rule=Get-NetFirewallRule -PolicyStore PersistentStore | Where-Object {$_.Name -ceq $firewallName}
+        Check ($null -ne $rule) 'Owned HTTPS rule is created for Mac access'
+        Check ((($rule|Get-NetFirewallPortFilter).LocalPort -join ',') -ceq [string]$m.ports.https) 'Only owned HTTPS is allowed'
+        Check ((($rule|Get-NetFirewallAddressFilter).RemoteAddress -join ',') -ceq '10.211.55.2') 'HTTPS rule is restricted to the SSH Mac peer'
+        Ensure-OwnedFirewall $m '10.211.55.2'
+        Set-NetFirewallRule -Name $firewallName -PolicyStore PersistentStore -RemoteAddress Any
+        $refused=$false;try{[void](Get-OwnedFirewall $m)}catch{$refused=$_.Exception.Message -like '*firewall*'}
+        Check $refused 'Changed firewall filters are refused before cleanup'
+        Check ($null -ne (Get-NetFirewallRule -Name $firewallName -PolicyStore PersistentStore)) 'Foreign changed rule remains present'
+        Set-NetFirewallRule -Name $firewallName -PolicyStore PersistentStore -RemoteAddress '10.211.55.2'
+        Remove-OwnedFirewall $m
+        Check (@(Get-NetFirewallRule -PolicyStore PersistentStore|Where-Object {$_.Name -ceq $firewallName}).Count -eq 0) 'Verified owned HTTPS rule is removed'
+    } finally {Get-NetFirewallRule -PolicyStore PersistentStore|Where-Object {$_.Name -ceq $firewallName}|Remove-NetFirewallRule}
     $artifactRoot=Join-Path $root 'artifact-web'
     foreach($relative in @('bin\DevResults.dll','bin\DevResults.Core.dll','bin\DevResults.Api.dll','Web\dist\scripts\app.js','Web\dist\scripts\admin.js','Web\dist\scripts\prt.js','Web\dist\css\app.css','Web\dist\css\Public.css','Web\dist\css\Bootstrap_Custom.css','Web\dist\css\word.mhtml.css','Web\dist\css\viz.css','Web\dist\css\prt.css')){$file=Join-Path $artifactRoot $relative;[void][IO.Directory]::CreateDirectory((Split-Path -Parent $file));[IO.File]::WriteAllText($file,'fixture')}
     $artifacts=Get-BuildArtifacts $m $artifactRoot
@@ -110,12 +127,13 @@ try {
         try{Remove-OwnedData $m $complete}catch{$queuedRefused=$_.Exception.Message -like '*queued*'}
         Check $queuedRefused 'Queued task did not block reset/removal before data inspection'
     }
-    foreach($guard in @('catalog','runtime','writers','TLS','claim','task','source','reparse','dirty')) {
+    foreach($guard in @('catalog','runtime','writers','firewall','TLS','claim','task','source','reparse','dirty')) {
       & {
         function Stop-OwnedSupervisor($Manifest) {}
         function Assert-Catalog($Manifest) {if($guard -eq 'catalog'){Deny 'guard:catalog'};return $true}
         function Assert-Runtime($Manifest) {if($guard -eq 'runtime'){Deny 'guard:runtime'}}
         function Assert-NoDatabaseWriters($Manifest) {if($guard -eq 'writers'){Deny 'guard:writers'}}
+        function Get-OwnedFirewall($Manifest) {if($guard -eq 'firewall'){Deny 'guard:firewall'}}
         function Invoke-Sql($Query) {throw 'DATA MUTATION BEFORE PREFLIGHT'}
         function Assert-SupervisorIdle($Manifest,$State) {if($guard -eq 'task'){Deny 'guard:task'}}
         function netsh { $global:LASTEXITCODE=0;return 'fixture' }

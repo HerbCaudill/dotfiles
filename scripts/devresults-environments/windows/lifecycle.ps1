@@ -255,6 +255,50 @@ function Snapshot-OwnedData($Manifest) {
         return $receipt
     } finally {if($readOnly){[void](Invoke-Sql "ALTER DATABASE $catalog SET READ_WRITE WITH NO_WAIT")};Write-JsonAtomic $snapshotState @{environmentId=$Manifest.id;ownerToken=$Manifest.ownerToken;phase='stopped';snapshotRevision=$Manifest.revision;buildRevision=$Manifest.revision;path=$directory}}
 }
+function Get-SshPeer {
+    $fields=@($env:SSH_CONNECTION -split ' ')
+    $address=$null
+    if($fields.Count -ne 4 -or -not [Net.IPAddress]::TryParse($fields[0],[ref]$address)){Deny 'Owned firewall access requires a verified SSH client address'}
+    return $address.ToString()
+}
+function Get-OwnedFirewall($Manifest) {
+    $name="drenv-$($Manifest.id)-$($Manifest.ownerToken)-https"
+    $rules=@(Get-NetFirewallRule -PolicyStore PersistentStore | Where-Object {$_.Name -ceq $name})
+    $receiptPath=Join-Path $Manifest.paths.runtime 'firewall.json'
+    if(-not(Test-Path -LiteralPath $receiptPath)){if($rules.Count){Deny 'Existing firewall rule has no owned receipt'};return $null}
+    Assert-NoReparse $receiptPath
+    $receipt=Get-Json $receiptPath;Assert-Owner $receipt $Manifest
+    $address=$null
+    if($receipt.name -cne $name -or $receipt.port -ne $Manifest.ports.https -or -not [Net.IPAddress]::TryParse($receipt.peer,[ref]$address) -or $address.ToString() -cne $receipt.peer){Deny 'Owned firewall receipt differs from manifest'}
+    if(-not $rules.Count){return $null}
+    if($rules.Count -ne 1){Deny 'Owned firewall rule is ambiguous'}
+    $rule=$rules[0]
+    $port=$rule|Get-NetFirewallPortFilter;$addresses=$rule|Get-NetFirewallAddressFilter
+    $application=$rule|Get-NetFirewallApplicationFilter;$service=$rule|Get-NetFirewallServiceFilter
+    $interface=$rule|Get-NetFirewallInterfaceFilter;$type=$rule|Get-NetFirewallInterfaceTypeFilter
+    $security=$rule|Get-NetFirewallSecurityFilter
+    if($rule.Description -cne "drenv:$($Manifest.id):$($Manifest.ownerToken)" -or $rule.DisplayName -cne "drenv $($Manifest.id) HTTPS" -or $rule.Group -cne 'drenv' -or [int]$rule.Direction -ne 1 -or [int]$rule.Action -ne 2 -or [int]$rule.Enabled -ne 1 -or [int]$rule.Profile -ne 0 -or [int]$rule.EdgeTraversalPolicy -ne 0 -or [int]$rule.PolicyStoreSourceType -ne 1){Deny 'Owned firewall rule identity or policy changed'}
+    if($port.Protocol -cne 'TCP' -or ($port.LocalPort -join ',') -cne [string]$Manifest.ports.https -or ($port.RemotePort -join ',') -cne 'Any' -or ($addresses.LocalAddress -join ',') -cne 'Any' -or ($addresses.RemoteAddress -join ',') -cne $receipt.peer){Deny 'Owned firewall endpoint filters changed'}
+    if($application.Program -cne 'Any' -or $application.Package -or $service.Service -cne 'Any' -or ($interface.InterfaceAlias -join ',') -cne 'Any' -or [int]$type.InterfaceType -ne 0 -or [int]$security.Authentication -ne 0 -or [int]$security.Encryption -ne 0 -or $security.OverrideBlockRules -or $security.LocalUser -cne 'Any' -or $security.RemoteUser -cne 'Any' -or $security.RemoteMachine -cne 'Any'){Deny 'Owned firewall application or security filters changed'}
+    return $rule
+}
+function Ensure-OwnedFirewall($Manifest,[string]$Peer) {
+    $address=$null
+    if(-not [Net.IPAddress]::TryParse($Peer,[ref]$address) -or $address.ToString() -cne $Peer){Deny 'Owned firewall requires a single SSH client IP'}
+    $rule=Get-OwnedFirewall $Manifest
+    $name="drenv-$($Manifest.id)-$($Manifest.ownerToken)-https"
+    $receiptPath=Join-Path $Manifest.paths.runtime 'firewall.json'
+    if(Test-Path -LiteralPath $receiptPath){$receipt=Get-Json $receiptPath;if($receipt.peer -cne $Peer){Deny 'SSH client changed from the owned firewall receipt; inspect the existing rule before changing access'}}
+    else{Write-JsonAtomic $receiptPath @{environmentId=$Manifest.id;ownerToken=$Manifest.ownerToken;name=$name;port=$Manifest.ports.https;peer=$Peer}}
+    if($null -eq $rule){New-NetFirewallRule -Name $name -DisplayName "drenv $($Manifest.id) HTTPS" -Description "drenv:$($Manifest.id):$($Manifest.ownerToken)" -Group drenv -Direction Inbound -Action Allow -Enabled True -Profile Any -Protocol TCP -LocalPort $Manifest.ports.https -RemoteAddress $Peer -EdgeTraversalPolicy Block -PolicyStore PersistentStore | Out-Null}
+    [void](Get-OwnedFirewall $Manifest)
+}
+function Remove-OwnedFirewall($Manifest) {
+    $rule=Get-OwnedFirewall $Manifest
+    if($null -ne $rule){$rule|Remove-NetFirewallRule}
+    $receiptPath=Join-Path $Manifest.paths.runtime 'firewall.json'
+    if(Test-Path -LiteralPath $receiptPath){Remove-Item -LiteralPath $receiptPath}
+}
 function Assert-RemovalPreflight($Manifest,[bool]$Complete) {
     $root=Split-Path -Parent (Split-Path -Parent $Manifest.paths.runtime)
     $runtimeExists=Test-Path -LiteralPath $Manifest.paths.runtime
@@ -264,6 +308,7 @@ function Assert-RemovalPreflight($Manifest,[bool]$Complete) {
     if($catalogExists){Assert-NoDatabaseWriters $Manifest}
     foreach($name in @('sql','blobs','cache','temp','mail','output')){Assert-NoReparse (Join-Path $Manifest.paths.runtime $name)}
     if(-not $Complete){return}
+    [void](Get-OwnedFirewall $Manifest)
     $binding=(& netsh http show sslcert "ipport=0.0.0.0:$($Manifest.ports.https)") -join "`n"
     if($LASTEXITCODE -eq 0){Assert-TlsBinding $Manifest}
     $claim=Join-Path $root "claims\$($Manifest.id).json"
@@ -301,6 +346,7 @@ function Remove-OwnedData($Manifest,[bool]$Complete) {
     $catalogExists=Assert-Catalog $Manifest
     if($runtimeExists){Assert-Runtime $Manifest}
     elseif($catalogExists){Deny 'Catalog exists without the owned runtime directory; inspect interrupted removal'}
+    if($Complete){Remove-OwnedFirewall $Manifest}
     if($catalogExists) {Assert-NoDatabaseWriters $Manifest;[void](Invoke-Sql "DROP DATABASE $(Sql-Identifier $Manifest.catalog)")}
     if($runtimeExists) {
         foreach($name in @('sql','blobs','cache','temp','mail','output')) {
@@ -338,6 +384,7 @@ function Assert-EmptyReservation($Manifest) {
     foreach($path in @($Manifest.paths.windows,"$($Manifest.paths.windows).drenv-source",$Manifest.paths.runtime,(Join-Path $root "claims\$($Manifest.id).json"))) {
         if(Test-Path -LiteralPath $path){Deny 'Resources exist without a verified source revision; preserve them and inspect interrupted pairing before removal.'}
     }
+    [void](Get-OwnedFirewall $Manifest)
     $catalog=Invoke-Sql "SELECT name FROM sys.databases WHERE name=$(Sql-Literal $Manifest.catalog)"
     if($catalog.Rows.Count){Deny 'SQL catalog exists without a verified source revision; no data was removed.'}
     if($null -ne (Get-OwnedTask $Manifest $null)){Deny 'Scheduled task exists without a verified source revision.'}
@@ -376,9 +423,10 @@ try {
         'schema' {Test-OwnedSchema $m $Request.assets;$result.status='schema-verified'}
         'start' {
             $state=Get-State $m
-            if((Test-Supervisor $state) -and $state.mode -eq 'runtime' -and $state.status -eq 'running'){$result.status='running';break}
+            if((Test-Supervisor $state) -and $state.mode -eq 'runtime' -and $state.status -eq 'running'){Assert-Runtime $m;Ensure-OwnedFirewall $m (Get-SshPeer);$result.status='running';break}
             Test-OwnedSchema $m $Request.assets
             Assert-TlsBinding $m
+            Ensure-OwnedFirewall $m (Get-SshPeer)
             $claims=@(Get-ChildItem -LiteralPath (Join-Path $root 'claims') -Filter '*.json' | ForEach-Object {Get-Json $_.FullName})
             Assert-NoForeignPorts $m $claims $true
             $started=Start-OwnedSupervisor $m 'runtime' $Request.assets
