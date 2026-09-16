@@ -54,6 +54,17 @@ try {
         Remove-OwnedFirewall $m
         Check (@(Get-NetFirewallRule -PolicyStore PersistentStore|Where-Object {$_.Name -ceq $firewallName}).Count -eq 0) 'Verified owned HTTPS rule is removed'
     } finally {Get-NetFirewallRule -PolicyStore PersistentStore|Where-Object {$_.Name -ceq $firewallName}|Remove-NetFirewallRule}
+    & {
+        $script:startupFirewallMutation=$false
+        function Assert-TlsBinding($Manifest) {}
+        function Get-SshPeer {return '10.211.55.2'}
+        function Get-ChildItem {return @()}
+        function Assert-NoForeignPorts($Manifest,$Claims,$Owned) {Deny 'Reserved port is occupied'}
+        function Ensure-OwnedFirewall($Manifest,$Peer) {$script:startupFirewallMutation=$true}
+        $refused=$false;try{Initialize-OwnedEndpoints $m}catch{$refused=$_.Exception.Message -like '*port is occupied*'}
+        Check $refused 'Occupied reserved endpoint blocks startup'
+        Check (-not $script:startupFirewallMutation) 'Occupied reserved endpoint is refused before firewall mutation'
+    }
     $artifactRoot=Join-Path $root 'artifact-web'
     foreach($relative in @('bin\DevResults.dll','bin\DevResults.Core.dll','bin\DevResults.Api.dll','Web\dist\scripts\app.js','Web\dist\scripts\admin.js','Web\dist\scripts\prt.js','Web\dist\css\app.css','Web\dist\css\Public.css','Web\dist\css\Bootstrap_Custom.css','Web\dist\css\word.mhtml.css','Web\dist\css\viz.css','Web\dist\css\prt.css')){$file=Join-Path $artifactRoot $relative;[void][IO.Directory]::CreateDirectory((Split-Path -Parent $file));[IO.File]::WriteAllText($file,'fixture')}
     $artifacts=Get-BuildArtifacts $m $artifactRoot

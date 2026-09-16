@@ -255,6 +255,13 @@ function Snapshot-OwnedData($Manifest) {
         return $receipt
     } finally {if($readOnly){[void](Invoke-Sql "ALTER DATABASE $catalog SET READ_WRITE WITH NO_WAIT")};Write-JsonAtomic $snapshotState @{environmentId=$Manifest.id;ownerToken=$Manifest.ownerToken;phase='stopped';snapshotRevision=$Manifest.revision;buildRevision=$Manifest.revision;path=$directory}}
 }
+function Initialize-OwnedEndpoints($Manifest) {
+    $root=Split-Path -Parent (Split-Path -Parent $Manifest.paths.runtime)
+    Assert-TlsBinding $Manifest
+    $claims=@(Get-ChildItem -LiteralPath (Join-Path $root 'claims') -Filter '*.json' | ForEach-Object {Get-Json $_.FullName})
+    Assert-NoForeignPorts $Manifest $claims $true
+    Ensure-OwnedFirewall $Manifest (Get-SshPeer)
+}
 function Get-SshPeer {
     $fields=@($env:SSH_CONNECTION -split ' ')
     $address=$null
@@ -425,10 +432,7 @@ try {
             $state=Get-State $m
             if((Test-Supervisor $state) -and $state.mode -eq 'runtime' -and $state.status -eq 'running'){Assert-Runtime $m;Ensure-OwnedFirewall $m (Get-SshPeer);$result.status='running';break}
             Test-OwnedSchema $m $Request.assets
-            Assert-TlsBinding $m
-            Ensure-OwnedFirewall $m (Get-SshPeer)
-            $claims=@(Get-ChildItem -LiteralPath (Join-Path $root 'claims') -Filter '*.json' | ForEach-Object {Get-Json $_.FullName})
-            Assert-NoForeignPorts $m $claims $true
+            Initialize-OwnedEndpoints $m
             $started=Start-OwnedSupervisor $m 'runtime' $Request.assets
             $result.status=$started.status
         }
