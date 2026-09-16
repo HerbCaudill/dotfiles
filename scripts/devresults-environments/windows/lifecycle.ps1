@@ -131,7 +131,38 @@ function Start-OwnedSupervisor($Manifest,[string]$Mode,$Assets,$Commands=$null) 
     Deny 'Supervisor did not reach the requested state; Windows Task Scheduler logon rights or dependency inspection may be required. Its task and receipt were preserved.'
 }
 function Get-BuildArtifacts($Manifest,[string]$Root) {
-    foreach($relative in @('bin\DevResults.dll','bin\DevResults.Core.dll','bin\DevResults.Api.dll','Web\dist\scripts\app.js','Web\dist\scripts\admin.js','Web\dist\scripts\prt.js','Web\dist\css\app.css','Web\dist\css\Public.css','Web\dist\css\Bootstrap_Custom.css','Web\dist\css\word.mhtml.css','Web\dist\css\viz.css','Web\dist\css\prt.css')){if(-not(Test-Path -LiteralPath (Join-Path $Root $relative))){Deny "Build output is missing: $relative"}}
+    $required=@('bin\DevResults.dll','bin\DevResults.Core.dll','bin\DevResults.Api.dll')
+    $dist=Join-Path $Root 'Web\dist'
+    $manifestPath=Join-Path $dist '.vite\manifest.json'
+    if(Test-Path -LiteralPath $manifestPath) {
+        # Vite can emit distinct keys differing only by case; PowerShell 5 JSON objects cannot.
+        Add-Type -AssemblyName System.Web.Extensions
+        $parser=[Web.Script.Serialization.JavaScriptSerializer]::new()
+        $parser.MaxJsonLength=[int]::MaxValue
+        $entries=$parser.DeserializeObject([IO.File]::ReadAllText($manifestPath))
+        foreach($name in @('app','admin','prt','publicApp','Public','Bootstrap_Custom','word.mhtml','viz')) {
+            $matches=@($entries.GetEnumerator() | Where-Object {$_.Value.ContainsKey('name') -and $_.Value.name -ceq $name -and $_.Value.ContainsKey('isEntry') -and $_.Value.isEntry -eq $true})
+            if($matches.Count -ne 1){Deny "Build manifest is missing a unique entry: $name"}
+            if($name -notin @('admin','publicApp') -and (-not $matches[0].Value.ContainsKey('css') -or @($matches[0].Value.css).Count -eq 0)){Deny "Build manifest entry is missing styles: $name"}
+        }
+        foreach($property in $entries.GetEnumerator()) {
+            $entry=$property.Value
+            if(-not $entry.ContainsKey('file')){Deny 'Build manifest record is missing its output file'}
+            $outputs=@($entry.file)
+            foreach($field in @('css','assets')){if($entry.ContainsKey($field)){$outputs+=@($entry.$field)}}
+            foreach($output in $outputs) {
+                if($output -isnot [string] -or [string]::IsNullOrWhiteSpace($output) -or $output -match '(^[/\\]|:|(^|[/\\])\.\.([/\\]|$))'){Deny 'Build manifest output must be a relative path inside dist'}
+                $required+=Join-Path 'Web\dist' $output
+            }
+            foreach($field in @('imports','dynamicImports')) {
+                if($entry.ContainsKey($field)){foreach($reference in @($entry.$field)){if(-not $entries.ContainsKey($reference)){Deny "Build manifest import is missing: $reference"}}}
+            }
+        }
+        $required+=@('Web\dist\css\word.mhtml.css','Web\dist\css\viz.css')
+    } else {
+        $required+=@('Web\dist\scripts\app.js','Web\dist\scripts\admin.js','Web\dist\scripts\prt.js','Web\dist\css\app.css','Web\dist\css\Public.css','Web\dist\css\Bootstrap_Custom.css','Web\dist\css\word.mhtml.css','Web\dist\css\viz.css','Web\dist\css\prt.css')
+    }
+    foreach($relative in $required){if(-not(Test-Path -LiteralPath (Join-Path $Root $relative) -PathType Leaf)){Deny "Build output is missing: $relative"}}
     $result=@()
     $files=@(Get-ChildItem -LiteralPath (Join-Path $Root 'bin'),(Join-Path $Root 'Web\dist') -File -Recurse -Force | Where-Object {$_.Name -cne 'Drenv.SchemaProbe.dll'} | Sort-Object FullName)
     foreach($file in $files){if($file.Attributes -band [IO.FileAttributes]::ReparsePoint){Deny 'Build artifacts contain a reparse point'};$result+=@{path=$file.FullName.Substring($Root.Length+1);sha256=(Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()}}
