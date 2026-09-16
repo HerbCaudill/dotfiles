@@ -137,6 +137,10 @@ function Get-BuildArtifacts($Manifest,[string]$Root) {
     foreach($file in $files){if($file.Attributes -band [IO.FileAttributes]::ReparsePoint){Deny 'Build artifacts contain a reparse point'};$result+=@{path=$file.FullName.Substring($Root.Length+1);sha256=(Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()}}
     return ,$result
 }
+function Get-AppBuildRecipe([string]$ProcessArchitecture, [string]$NativeArchitecture) {
+    if($ProcessArchitecture -eq 'ARM64' -or $NativeArchitecture -eq 'ARM64'){return 'msbuild-app-arm'}
+    return 'msbuild-app'
+}
 function Build-OwnedSource($Manifest,$Assets) {
     Stop-OwnedSupervisor $Manifest
     Assert-OwnedSource $Manifest
@@ -149,7 +153,7 @@ function Build-OwnedSource($Manifest,$Assets) {
     [IO.File]::WriteAllLines($envFile,$lines)
     $pwsh=(Get-Command pwsh.exe).Source
     $commands=@()
-    foreach($step in @('nuget','packages','msbuild-app','build-client')) {
+    foreach($step in @('nuget','packages',(Get-AppBuildRecipe $env:PROCESSOR_ARCHITECTURE $env:PROCESSOR_ARCHITEW6432),'build-client')) {
         $text=if($step -eq 'packages'){'& pnpm install --frozen-lockfile; exit $LASTEXITCODE'}else{'& just --dotenv-path '+(Quote-Argument $envFile)+' '+$step+'; exit $LASTEXITCODE'}
         $commands+=@{name=$step;executable=$pwsh;arguments='-NoProfile -NonInteractive -EncodedCommand '+[Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($text))}
     }

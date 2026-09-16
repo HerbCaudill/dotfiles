@@ -34,6 +34,9 @@ try {
     & git -C $m.paths.windows -c user.name=Codex -c user.email=codex@localhost commit --allow-empty -m fixture *> $null
     $m.revision=(& git -C $m.paths.windows rev-parse HEAD)-join ''
     $ErrorActionPreference=$old
+    Check ((Get-AppBuildRecipe 'ARM64' '') -ceq 'msbuild-app-arm') 'Native ARM64 builds need the spatial-library recipe'
+    Check ((Get-AppBuildRecipe 'AMD64' 'ARM64') -ceq 'msbuild-app-arm') 'Emulated shells must use the native ARM64 recipe'
+    Check ((Get-AppBuildRecipe 'AMD64' '') -ceq 'msbuild-app') 'Native x64 builds retain the standard recipe'
     $artifactRoot=Join-Path $root 'artifact-web'
     foreach($relative in @('bin\DevResults.dll','bin\DevResults.Core.dll','bin\DevResults.Api.dll','Web\dist\scripts\app.js','Web\dist\scripts\admin.js','Web\dist\scripts\prt.js','Web\dist\css\app.css','Web\dist\css\Public.css','Web\dist\css\Bootstrap_Custom.css','Web\dist\css\word.mhtml.css','Web\dist\css\viz.css','Web\dist\css\prt.css')){$file=Join-Path $artifactRoot $relative;[void][IO.Directory]::CreateDirectory((Split-Path -Parent $file));[IO.File]::WriteAllText($file,'fixture')}
     $artifacts=Get-BuildArtifacts $m $artifactRoot
