@@ -1,13 +1,13 @@
 ---
 name: task-review
-description: Interview Herb through an optional ordered list of Google Tasks list names, defaulting to Today then Backlog, to clarify status, context, blockers, priority, next actions, and agent-help opportunities. Use when Herb asks to review, process, triage, clean up, or interview through Google Tasks, Inbox, Today, Backlog, or Tickler.
+description: Interview Herb through an optional ordered list of Google Tasks list names, defaulting to To do, to clarify status, context, blockers, priority, next actions, and agent-help opportunities. Use when Herb asks to review, process, triage, clean up, or interview through Google Tasks, Inbox, To do, or Tickler.
 ---
 
 # Task review
 
-Review Google Tasks as a conversation, not a batch-cleanup exercise. Accept optional `listNames`, an ordered list of Google Tasks list names. When omitted, use `["Today", "Backlog"]`. When supplied, review only those lists, in that order. For example, the combined morning briefing invokes this skill once with `listNames: ["Inbox", "Today"]`. Handle one task at a time until Herb pauses or every task in scope has been reviewed.
+Review Google Tasks as a conversation, not a batch-cleanup exercise. Accept optional `listNames`, an ordered list of Google Tasks list names. When omitted, use `["To do"]`. When supplied, review only those lists, in that order. For example, the combined morning briefing invokes this skill once with `listNames: ["Inbox", "To do"]`. Handle one task at a time until Herb pauses or every task in scope has been reviewed.
 
-Treat a natural-language invocation such as `$task-review inbox, today` as `listNames: ["Inbox", "Today"]`, preserving the supplied order.
+Treat a natural-language invocation such as `$task-review inbox, to do` as `listNames: ["Inbox", "To do"]`, preserving the supplied order.
 
 ## Boundaries
 
@@ -22,8 +22,7 @@ Treat a natural-language invocation such as `$task-review inbox, today` as `list
 ## List roles
 
 - `Inbox` contains captured or newly discovered actions awaiting clarification and placement.
-- `Today` contains current commitments and items that need attention now.
-- `Backlog` contains active but unscheduled work.
+- `To do` contains current commitments and active work, including unscheduled items.
 - `Tickler` contains deliberately deferred work. Its due date is a resurface date, not a deadline.
 - Topic or location lists such as `Barcelona` contain work whose shared context is more useful than a time-based list.
 
@@ -31,12 +30,12 @@ Do not create a missing list or automation without Herb's confirmation. Reuse an
 
 ## Load the review
 
-1. Resolve `listNames` or the default `["Today", "Backlog"]`. Remove repeated names while preserving their first occurrence. An explicitly empty list means there is nothing to review. List task lists and resolve exact IDs by title. If a requested name is missing or ambiguous, ask Herb to resolve it; do not silently substitute or create a list.
+1. Resolve `listNames` or the default `["To do"]`. Remove repeated names while preserving their first occurrence. An explicitly empty list means there is nothing to review. List task lists and resolve exact IDs by title. If a requested name is missing or ambiguous, ask Herb to resolve it; do not silently substitute or create a list.
 2. Load incomplete tasks from the first requested list with assigned tasks included, following every page.
 3. Preserve Google Tasks order by sorting sibling `position` values lexicographically and retaining parent-child structure.
 4. Keep task and list IDs as internal working data. Do not show them to Herb.
 5. Review every task in the current list before loading or interviewing through the next requested list, unless Herb changes the scope or pauses. Do not broaden the review to other lists without his instruction.
-6. When entering each subsequent list, load it fresh so completed, moved, or agent-updated tasks are not reviewed from stale state. Track tasks already reviewed during this invocation so an item moved from Inbox to Today does not receive the same clarification interview again; revisit it only for a distinct Today decision.
+6. When entering each subsequent list, load it fresh so completed, moved, or agent-updated tasks are not reviewed from stale state. Track tasks already reviewed during this invocation so an item moved from Inbox to To do does not receive the same clarification interview again; revisit it only for a distinct To do decision.
 
 Do not dump the whole list into chat unless Herb asks. State the current task title, include only the existing note or linked context that matters, and ask the next useful question.
 
@@ -52,7 +51,7 @@ For each task, establish only what is needed to make the task truthful and actio
 2. **Status** – Is it done, active, obsolete, delegated, or waiting?
 3. **Next action** – What is the first observable action that moves it forward?
 4. **Blocker** – Is it waiting on a person, information, a decision, a date, access, or an unpleasant action?
-5. **Timing** – Is it for Today, Backlog, a topical list, or Tickler with a resurface date?
+5. **Timing** – Is it for To do, a topical list, or Tickler with a resurface date?
 6. **Agent help** – Can an agent research, inspect, draft, schedule, cancel, organize, or implement a bounded part?
 
 Do not mechanically ask all six questions. Use the task, notes, linked source, and Herb's answers to skip anything already clear.
@@ -137,7 +136,7 @@ When Herb adopts Tickler, use a daily thread heartbeat rather than a standalone 
 
 1. Check incomplete top-level tasks in `Tickler` every morning in `Europe/Madrid`.
 2. Find tasks whose resurface date is today or earlier.
-3. Move each due parent and all descendant subtasks to `Today` while preserving hierarchy.
+3. Move each due parent and all descendant subtasks to `To do` while preserving hierarchy.
 4. Clear the parent's due date after the move because it was a resurface date.
 5. Verify the moved subtree and report what resurfaced.
 6. Make no changes when nothing is due.
