@@ -1,6 +1,6 @@
 # Installation and public-command evidence
 
-Installation was verified on September 15, 2026. The public command is installed and its bounded source/preset/refusal/cleanup checks passed. The Windows partition blocker was repaired on September 16, as recorded below. Complete useful-data environment acceptance still requires the coordinated source snapshot and live application checks.
+Installation was verified on September 15, 2026. The public command is installed and its bounded source/preset/refusal/cleanup checks passed. The Windows partition blocker was repaired on September 16, as recorded below. The coordinated source snapshot was captured later on September 16. Complete useful-data environment acceptance still requires live application checks.
 
 ## Installation
 
@@ -84,9 +84,21 @@ The restored `winre.wim` SHA256 matched the original: `4285951B305E7AFA647EF4798
 
 A rollback snapshot was retained: `Before Windows recovery partition repair 2026-09-16`, ID `8b32f0f4-d0d7-4d0b-afa6-fb5f7f5031f1`. Recovery files, hashes, the prior partition layout and a BCD export were also retained in `C:\ProgramData\drenv-maintenance\2026-09-16-partition` and copied to `~/.local/state/drenv/maintenance/2026-09-16-partition` on the Mac. All four copied recovery files were hash-verified before changing partitions. Reverting the snapshot would also revert later VM work; it is a rollback artifact, not a routine cleanup operation.
 
-## Remaining live prerequisite
+## September 16 coordinated source snapshot
 
-The remaining prerequisite is an immutable coordinated SQL/blob snapshot with a verified receipt. None was supplied or created during installation or the partition repair. Absence of IIS listeners does not prove that all SQL/blob writers are excluded. Initial source capture still requires explicit coordination; the public `snapshot` command is for an already owned environment.
+Herb explicitly authorized the initial database/blob capture and confirmed that no writers were active. Before capture, inspection found no IIS Express or Azurite processes and no SQL user sessions using dev. The capture used a full COPY_ONLY SQL backup with CHECKSUM. RESTORE VERIFYONLY succeeded, and the backup header confirmed one full checksummed backup of dev. No source database mode was changed.
+
+The capture window was 2026-09-16T08:23:01.9978567Z through 2026-09-16T08:24:12.8293310Z. The source blob directory digest matched before and after capture and matched the saved copy. A final SQL check found no other user sessions using dev. The receipt passed the production TypeScript validator.
+
+- Windows SQL backup: `C:\DevResultsEnvironments\snapshots\dev-20260916-082301\database.bak`
+- Windows blobs: `C:\DevResultsEnvironments\snapshots\dev-20260916-082301\blobs`
+- Mac receipt: `/Users/herbcaudill/.local/state/drenv/snapshots/dev-20260916/snapshot.json`
+- Source selection: dev/example, revision `4dfa564ce5128c261bf70a33cb5f90f8becdc50b`
+- SQL restored allocation: 6054281216 bytes; backup SHA256 `bd1c1f45b7430e3606437f0326fa61368ecc1edd31b93303062aca82e61eaa13`
+- Blob files: 12339468 bytes; directory SHA256 `cd7a88aaf1c6815cb1cb0b238fbfb1f4013c46f5b6c89482022ed1340e77d2ee`
+- Source schema hash: `10845b7aa0c21ca16ee2b04c987ab56573374b7d5a40f610a6c0379f208ccb18`
+
+The database and blob snapshot prerequisite is satisfied. This capture does not establish fresh-build schema compatibility or complete useful-data application acceptance.
 
 ## Tests and acceptance boundary
 
