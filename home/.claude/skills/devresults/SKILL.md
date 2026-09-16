@@ -67,6 +67,8 @@ The default SSH shell is Windows PowerShell 5.1, so use PowerShell syntax for re
 
 Use `drenv` on the Mac when Herb asks for a personal isolated environment. It is installed by Home Manager from `~/Code/HerbCaudill/dotfiles/scripts/devresults-environments/drenv.ts`. The [user guide](../../../../scripts/devresults-environments/USAGE.md) contains commands and prerequisites; [lifecycle details](../../../../scripts/devresults-environments/LIFECYCLE.md) describe the ownership and recovery rules. This personal workflow does not require changes to tracked DevResults scripts, configuration, instructions or team workflows.
 
+For a DevResults showcase, choose `drenv` automatically when the demonstration needs private or resettable data, switching revisions could disturb an existing primary or review runtime, or the baseline and target require different database schemas. Herb does not need to request isolation separately. This overrides showcase's default of reusing the existing clean checkout and this skill's primary-checkout `dr`/`drsync` workflow. Reuse an environment already owned by the showcase when suitable; otherwise create one after checking the snapshot and capacity prerequisites below. If a prerequisite is missing, report it rather than falling back to a shared runtime. Use the existing clean checkout only when none of these isolation conditions applies.
+
 ```sh
 drenv create example-change --source ~/Code/DevResults/DevResults --snapshot /absolute/path/to/coordinated-snapshot.json
 drenv create inl-change --preset inl --source ~/Code/DevResults/DevResults --snapshot /absolute/path/to/coordinated-inl-snapshot.json
