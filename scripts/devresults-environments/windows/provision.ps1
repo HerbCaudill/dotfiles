@@ -4,6 +4,21 @@ Set-StrictMode -Version Latest
 
 # Keep refusal messages separate from exception details, which can include configuration secrets.
 function Deny([string]$Message) { throw [System.InvalidOperationException]::new("DRENV: $Message") }
+# Concurrent environments share host resources; wait for a live handle instead of discarding completed work.
+function Enter-ProvisionLock([string]$Root, [int]$TimeoutMilliseconds = 300000) {
+    $timer = [Diagnostics.Stopwatch]::StartNew()
+    while ($true) {
+        try { return [IO.File]::Open((Join-Path $Root 'provision.lock'), [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None) }
+        catch [IO.IOException] {
+            $code = $_.Exception.HResult -band 0xffff
+            if ($code -notin @(32, 33)) { throw }
+            if ($timer.ElapsedMilliseconds -ge $TimeoutMilliseconds) {
+                Deny 'Timed out waiting for another drenv operation to release the Windows provisioning lock. Let that operation finish before retrying; do not delete the lock file.'
+            }
+            Start-Sleep -Milliseconds ([Math]::Min(250, [Math]::Max(1, $TimeoutMilliseconds - $timer.ElapsedMilliseconds)))
+        }
+    }
+}
 function Assert-Owner($Observed, $Manifest) {
     if ($null -eq $Observed -or $Observed.environmentId -cne $Manifest.id -or $Observed.ownerToken -cne $Manifest.ownerToken) { Deny 'Foreign or missing ownership marker; no resource was adopted.' }
 }
@@ -258,7 +273,7 @@ try {
     $hostRoot = Split-Path -Parent $runtimeParent
     if ($m.paths.windows -cne (Join-Path (Join-Path $hostRoot 'source') $m.id)) { Deny 'Source and runtime paths must share the personal environment root.' }
     if (-not [IO.Directory]::Exists($hostRoot)) { Deny 'Paired personal source root is missing.' }
-    $lock = [IO.File]::Open((Join-Path $hostRoot 'provision.lock'), [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
+    $lock = Enter-ProvisionLock $hostRoot
     $markerPath = Join-Path $m.paths.runtime 'owner.json'
     $existing = [IO.Directory]::Exists($m.paths.runtime)
     if ($existing) {

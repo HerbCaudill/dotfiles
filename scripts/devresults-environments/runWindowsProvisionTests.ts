@@ -2,8 +2,7 @@ import { readFile } from "node:fs/promises"
 import { pathToFileURL } from "node:url"
 import { runWindowsProvisioning } from "./runWindowsProvisioning.ts"
 import type { EnvironmentManifest } from "./types.ts"
-import { encodeWindowsScript } from "./encodeWindowsScript.ts"
-import { runDrenvCommand } from "./runDrenvCommand.ts"
+import { runWindowsAssetPayload } from "./runWindowsAssetPayload.ts"
 
 /** Exercise the real PowerShell helper functions using owned Windows temporary files and mocked host inventory. */
 export async function runWindowsProvisionTests() {
@@ -11,24 +10,17 @@ export async function runWindowsProvisionTests() {
     readFile(new URL("./windows/provision.ps1", import.meta.url), "utf8"),
     readFile(new URL("./windows/provision.tests.ps1", import.meta.url), "utf8"),
   ])
-  const command = encodeWindowsScript(`. {
+  const command = `. {
 ${script.slice(0, script.indexOf("if ($null -eq $Request)"))}
 }
 & {
 ${tests}
-}`)
-  const result = await runDrenvCommand({
-    executable: "ssh",
-    args: [
-      "devresults-vm",
-      "powershell.exe",
-      "-NoProfile",
-      "-NonInteractive",
-      "-EncodedCommand",
-      command,
-    ],
-    timeoutMs: 120_000,
-  })
+}`
+  const result = await runWindowsAssetPayload(
+    "& ([ScriptBlock]::Create($r.script))",
+    { script: command },
+    { timeoutMs: 120_000 },
+  )
   const checks = JSON.parse(result.stdout.trim()) as { passed: number; scope: string }
   let refused = false
   try {

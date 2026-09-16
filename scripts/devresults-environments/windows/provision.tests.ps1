@@ -10,6 +10,19 @@ function Expect-Refusal([scriptblock]$Action, [string]$Pattern) {
     Assert-True $refused "Expected refusal: $Pattern"
 }
 try {
+    $lockPath = Join-Path $testRoot 'provision.lock'
+    $held = [IO.File]::Open($lockPath, [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
+    try { Expect-Refusal { Enter-ProvisionLock $testRoot 100 } 'Timed out waiting for another drenv operation' } finally { $held.Dispose() }
+    Add-Type -TypeDefinition 'public class DrenvTestRelease { public static void Later(System.IDisposable resource) { System.Threading.ThreadPool.QueueUserWorkItem(_ => { System.Threading.Thread.Sleep(200); resource.Dispose(); }); } }'
+    $held = [IO.File]::Open($lockPath, [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
+    [DrenvTestRelease]::Later($held)
+    $timer = [Diagnostics.Stopwatch]::StartNew()
+    $acquired = Enter-ProvisionLock $testRoot 3000
+    try { Assert-True ($timer.ElapsedMilliseconds -ge 150) 'Contended lock waits for its owner to release it' } finally { $acquired.Dispose() }
+    $timer.Restart()
+    Expect-Refusal { Enter-ProvisionLock (Join-Path $testRoot 'missing-parent') 3000 } 'Could not find a part'
+    Assert-True ($timer.ElapsedMilliseconds -lt 2000) 'Non-sharing errors fail immediately'
+    $passed += 3
     $manifest = @{ id = 'test'; ownerToken = [guid]::NewGuid().ToString(); paths = @{ windows = 'C:\DevResultsEnvironments\source\test'; runtime = 'C:\DevResultsEnvironments\runtime\test' }; ports = @{ https = 23000; http = 23001; blob = 23002; queue = 23003; table = 23004 } }
     Expect-Refusal { Assert-Owner @{ environmentId = 'foreign'; ownerToken = $manifest.ownerToken } $manifest } 'Foreign'
     Expect-Refusal { Assert-Owner @{ environmentId = 'test'; ownerToken = 'other' } $manifest } 'Foreign'
