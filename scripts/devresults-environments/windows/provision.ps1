@@ -240,7 +240,7 @@ function New-OwnedIisConfig([string]$Template, [string]$Destination, $Manifest) 
         [void]$bindings.AppendChild($binding)
     }
     foreach ($location in @($xml.SelectNodes('/configuration/location'))) {
-        if ($location.GetAttribute('path') -notin @('DevResults', '.')) { [void]$location.ParentNode.RemoveChild($location) }
+        if ($location.GetAttribute('path') -notin @('', 'DevResults', '.')) { [void]$location.ParentNode.RemoveChild($location) }
     }
     $xml.Save($Destination)
 }

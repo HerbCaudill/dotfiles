@@ -28,13 +28,15 @@ try {
     Assert-True ($settings.SelectSingleNode("/appSettings/add[@key='BlobStorageContainer']").value -ceq 'existing-container') 'Container remains compatible with copied blobs'
     $passed += 2
     $template = Join-Path $testRoot 'template.config'; $result = Join-Path $testRoot 'result.config'
-    [IO.File]::WriteAllText($template, '<configuration><system.applicationHost><sites><site name="DevResults"><application path="/"><virtualDirectory path="/" physicalPath="C:\foreign"/></application><bindings><binding protocol="http" bindingInformation="*:8080:"/></bindings></site><site name="Foreign"/></sites></system.applicationHost><location path="Foreign"/></configuration>')
+    [IO.File]::WriteAllText($template, '<configuration><system.applicationHost><sites><site name="DevResults"><application path="/"><virtualDirectory path="/" physicalPath="C:\foreign"/></application><bindings><binding protocol="http" bindingInformation="*:8080:"/></bindings></site><site name="Foreign"/></sites></system.applicationHost><location path="Foreign"/><location overrideMode="Allow"><system.webServer><handlers/><modules/></system.webServer></location></configuration>')
     New-OwnedIisConfig $template $result $manifest
     [xml]$iis = [IO.File]::ReadAllText($result)
     Assert-True ($iis.SelectNodes('/configuration/system.applicationHost/sites/site').Count -eq 1) 'Only the personal site is configured'
     Assert-True ($iis.SelectSingleNode('//virtualDirectory').physicalPath -ceq 'C:\DevResultsEnvironments\runtime\test\web') 'IIS uses owned deployment'
     Assert-True ($iis.SelectSingleNode("//binding[@protocol='https']").bindingInformation -ceq '*:23000:') 'IIS uses reserved HTTPS port'
-    $passed += 3
+    Assert-True ($iis.SelectSingleNode('/configuration/location[not(@path)]/system.webServer/handlers') -ne $null) 'Global template delegation permits application handlers'
+    Assert-True ($iis.SelectSingleNode('/configuration/location[not(@path)]').overrideMode -ceq 'Allow') 'Global template delegation retains its override permission'
+    $passed += 5
     $manifest.paths.runtime = Join-Path $testRoot 'runtime'
     [void][IO.Directory]::CreateDirectory((Join-Path $manifest.paths.runtime 'web\Core\Db'))
     $manifest.catalog = 'drenv_test'
