@@ -158,6 +158,27 @@ try {
         Check $refused "Removal guard $guard ran after data mutation"
       }
     }
+    foreach($scenario in @('transient','persistent','unverified')) {
+      & {
+        $script:referenceChecks=0
+        $script:drainSleeps=0
+        function Get-State($Manifest) {if($scenario -ne 'unverified'){return [pscustomobject]@{status='refreshed';pid=123;mode='maintenance'}}}
+        function Get-OwnedTask($Manifest,$State) {return [pscustomobject]@{State='Ready'}}
+        function Test-Supervisor($State) {return $false}
+        function Assert-SupervisorIdle($Manifest,$State) {}
+        function Start-Sleep {param($Milliseconds);$script:drainSleeps++}
+        function Get-NetTCPConnection {param($State,$ErrorAction);return @()}
+        function Assert-NotInUse($Manifest) {
+            $script:referenceChecks++
+            if($scenario -ne 'transient' -or $script:referenceChecks -lt 3){Deny 'A process still references this environment; stop the verified owned runtime/build before deployment refresh.'}
+        }
+        $refused=$false
+        try{Stop-OwnedSupervisor $m}catch{$refused=$_.Exception.Message -like '*process still references*'}
+        if($scenario -eq 'transient'){Check (-not $refused -and $script:referenceChecks -eq 3) 'Terminal supervisor transient process references did not drain'}
+        elseif($scenario -eq 'persistent'){Check ($refused -and $script:drainSleeps -gt 0 -and $script:drainSleeps -le 30) 'Persistent process references were ignored or wait was unbounded'}
+        else{Check ($refused -and $script:drainSleeps -eq 0) 'Missing supervisor receipt incorrectly authorized a drain wait'}
+      }
+    }
     $result=@{passed=$script:passed;scope='Real Windows job trees and scheduled launch refusal; removal guards with mutation sentinel'}
 } finally {
     if($null -ne $one){$one.Dispose()};if($null -ne $two){$two.Dispose()}

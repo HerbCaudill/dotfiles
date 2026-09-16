@@ -65,7 +65,15 @@ function Stop-OwnedSupervisor($Manifest) {
     $finalState=Get-State $Manifest
     if($null -ne $finalState -and $finalState.status -in @('stopped','built','failed','refreshed')){for($attempt=0;$attempt -lt 30;$attempt++){$task=Get-OwnedTask $Manifest $finalState;if($null -eq $task -or $task.State -notin @('Queued','Running')){break};Start-Sleep -Milliseconds 100}}
     Assert-SupervisorIdle $Manifest (Get-State $Manifest)
-    Assert-NotInUse $Manifest
+    # Closing the owned job starts child termination; Windows may still expose their command lines briefly.
+    $mayDrain=$null -ne $finalState -and [int]$finalState.pid -gt 0 -and $finalState.status -in @('stopped','built','failed','refreshed')
+    for($attempt=0;$true;$attempt++) {
+        try{Assert-NotInUse $Manifest;break}
+        catch {
+            if(-not $mayDrain -or $attempt -ge 30 -or $_.Exception.Message -notlike '*A process still references this environment;*'){throw}
+            Start-Sleep -Milliseconds 100
+        }
+    }
     $ports=@($Manifest.ports.http,$Manifest.ports.https,$Manifest.ports.blob,$Manifest.ports.queue,$Manifest.ports.table)
     if(@(Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object {$_.LocalPort -in $ports}).Count){Deny 'Reserved ports still have listeners after owned stop; inspect actual ownership before continuing.'}
 }
