@@ -8,6 +8,25 @@ $root=Join-Path $env:TEMP ('drenv-lifecycle-'+[guid]::NewGuid().ToString('N'))
 $one=$null;$two=$null
 $m=$null
 try {
+    # Exercise the actual supervisor readiness loop while listeners appear in stages.
+    & {
+        $m=@{ports=@{http=31000;https=31001;blob=31002;queue=31003;table=31004}}
+        $azurite=123;$state=@{children=@(@{pid=123},@{pid=456})}
+        $job=[pscustomobject]@{};$job|Add-Member ScriptMethod IsAlive {param($id) return $true}
+        $script:listenerPoll=0;$script:listenerSleeps=0
+        function Get-NetTCPConnection {
+            param($State,$ErrorAction)
+            $script:listenerPoll++
+            if($script:listenerPoll -eq 1){return @()}
+            if($script:listenerPoll -eq 2){return @([pscustomobject]@{LocalPort=31000;OwningProcess=4},[pscustomobject]@{LocalPort=31001;OwningProcess=4})}
+            return @(31000,31001,31002,31003,31004|ForEach-Object {[pscustomobject]@{LocalPort=$_;OwningProcess=123}})
+        }
+        function Start-Sleep {param($Milliseconds) $script:listenerSleeps++}
+        $begin=$Assets.supervisor.IndexOf('$ready=$false')
+        $end=$Assets.supervisor.IndexOf("if(`$request.mode -eq 'maintenance')",$begin)
+        . ([ScriptBlock]::Create($Assets.supervisor.Substring($begin,$end-$begin)))
+        Check ($ready -and $script:listenerPoll -eq 3 -and $script:listenerSleeps -eq 2) 'Supervisor must wait through empty and partial listener inventories'
+    }
     Add-Type -TypeDefinition $Assets.job
     $one=[DrenvOwnedJob]::new('Local\drenv-test-'+[guid]::NewGuid().ToString('N'))
     $two=[DrenvOwnedJob]::new('Local\drenv-test-'+[guid]::NewGuid().ToString('N'))
@@ -87,6 +106,7 @@ try {
     try{[void](Start-OwnedSupervisor $m 'build' $Assets @(@{name='fixture';executable=$exe;arguments='-NoProfile -NonInteractive -Command "exit 7"'}))}catch{$failed=$_.Exception.Message -like '*supervisor failed*';if(-not $failed){throw ('Unexpected fixture refusal: '+$_.Exception.Message)}}
     Check $failed 'Nonzero child exit was not a failed supervisor'
     $state=Get-State $m
+    Check ($state.failure -match 'Build command fixture exited 7 \(RuntimeException, script line \d+\)') 'Failure receipt must identify its stage, exception type, and script line'
     for($attempt=0;$attempt -lt 40 -and (Test-Supervisor $state);$attempt++){Start-Sleep -Milliseconds 100}
     Check (-not(Test-Supervisor $state)) 'Failed supervisor survived'
     # A normal ignored pnpm dependency junction must not block clean worktree removal.

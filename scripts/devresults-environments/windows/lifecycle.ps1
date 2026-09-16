@@ -495,7 +495,7 @@ try {
     }
     $result | ConvertTo-Json -Compress -Depth 30
 } catch {
-    $message='Windows lifecycle failed; inspect owned receipts and host prerequisites. Raw diagnostics withheld.'
+    $message='Windows lifecycle failed ('+$_.Exception.GetType().Name+', script line '+$_.InvocationInfo.ScriptLineNumber+'); inspect owned receipts and host prerequisites. Raw diagnostics withheld.'
     if($_.Exception.Message.StartsWith('DRENV: ')){$message=$_.Exception.Message.Substring(7)}
     @{ok=$false;prerequisite=$message} | ConvertTo-Json -Compress
 } finally {if($null -ne $sourceLock){$sourceLock.Dispose()};if($null -ne $lock){$lock.Dispose()};if($ownsMutex){$operationMutex.ReleaseMutex()};if($null -ne $operationMutex){$operationMutex.Dispose()}}

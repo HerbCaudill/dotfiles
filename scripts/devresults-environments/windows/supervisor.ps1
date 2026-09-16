@@ -32,6 +32,7 @@ try {
         if($LASTEXITCODE -ne 0 -or $head -cne $m.revision){throw 'Source changed during build'}
         $state.status='built'
     } elseif($request.mode -in @('runtime','maintenance')) {
+        $diagnostic='Owned runtime child launch failed'
         $secret=Get-Content -LiteralPath (Join-Path $m.paths.runtime 'azurite-secret.json') -Raw | ConvertFrom-Json
         $env:AZURITE_ACCOUNTS="$($secret.account):$($secret.key)"
         $env:TEMP=Join-Path $m.paths.runtime 'temp'; $env:TMP=$env:TEMP
@@ -42,16 +43,19 @@ try {
         $state.children=@($azurite,$iis | ForEach-Object {$p=Get-Process -Id $_; @{pid=$p.Id; processStartTime=$p.StartTime.ToUniversalTime().ToString('o'); executable=$p.Path}})
         $ready=$false
         for($attempt=0;$attempt -lt 60;$attempt++) {
+            $diagnostic='Owned child exited while waiting for listeners'
             foreach($child in $state.children){if(-not $job.IsAlive([int]$child.pid)){throw 'Owned child exited during startup'}}
+            $diagnostic='Owned listener readiness inspection failed'
             $ports=@($m.ports.http,$m.ports.https,$m.ports.blob,$m.ports.queue,$m.ports.table)
             $listeners=@(Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object {$_.LocalPort -in $ports})
             $azureListeners=@($listeners | Where-Object {$_.LocalPort -in @($m.ports.blob,$m.ports.queue,$m.ports.table) -and $_.OwningProcess -eq $azurite})
             # HTTP.sys owns IIS listeners as PID 4; IIS identity is verified separately through this job.
-            if(@($listeners.LocalPort | Select-Object -Unique).Count -eq 5 -and @($azureListeners.LocalPort | Select-Object -Unique).Count -eq 3){$ready=$true;break}
+            if(@($listeners | Select-Object -ExpandProperty LocalPort -Unique).Count -eq 5 -and @($azureListeners | Select-Object -ExpandProperty LocalPort -Unique).Count -eq 3){$ready=$true;break}
             Start-Sleep -Milliseconds 500
         }
-        if(-not $ready){throw 'Owned listeners did not become ready'}
+        if(-not $ready){$diagnostic='Owned listeners did not become ready';throw 'Owned listeners did not become ready'}
         if($request.mode -eq 'maintenance') {
+            $diagnostic='Owned database maintenance initialization failed'
             . ([ScriptBlock]::Create($request.refresh))
             Invoke-OwnedRefreshTask $m $job $request
             $state.status='refreshed'
@@ -81,5 +85,5 @@ try {
         $state.status='stopped'
         }
     } else { throw 'Unknown supervisor mode' }
-} catch {$state.status='failed';$state.failure=$diagnostic+'. Child trees are stopped.'}
+} catch {$state.status='failed';$state.failure=$diagnostic+' ('+$_.Exception.GetType().Name+', script line '+$_.InvocationInfo.ScriptLineNumber+'). Child trees are stopped.'}
 finally {if($null -ne $job){$job.Dispose()};Save $state}
