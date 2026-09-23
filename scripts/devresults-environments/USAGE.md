@@ -62,7 +62,7 @@ drenv start example-change
 drenv open example-change
 ```
 
-`sync` stops that environment, sends committed source to its mapped Windows worktree, rebuilds and checks the schema. It leaves the environment stopped. Use `drenv sync <id>` for these paired worktrees; the existing `dr` and `drsync` commands retain their primary-checkout workflow.
+`sync` stops that environment, sends committed source to its mapped Windows worktree, rebuilds and checks the schema. Subsequent source transfers contain only changes since the last verified Windows revision. When the source delta contains only browser assets under `Web/Scripts` or `Web/Css` (including their project Content entries), sync reuses the verified, unchanged backend artifacts and runs only `build-client`. Server, dependency, or build configuration changes still require the full build. Finish any tests running from the environment before syncing; deployment refresh refuses to replace files while a process still references them. It leaves the environment stopped. Use `drenv sync <id>` for these paired worktrees; the existing `dr` and `drsync` commands retain their primary-checkout workflow.
 
 `drenv status` lists persisted state. `drenv status <id>` also inspects the Windows supervisor. `drenv url <id>` prints the reserved URL. Ports are allocated dynamically from actual host inventory; no manual lane configuration or separate Chrome profile is required. A printed URL is not a health check.
 
