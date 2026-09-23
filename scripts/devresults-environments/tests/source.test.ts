@@ -101,3 +101,22 @@ it("rejects a foreign source receipt and a mismatched remote verification", asyn
     syncEnvironmentSource(manifest, { remote: async () => "unexpected" }),
   ).rejects.toThrow("foreign")
 })
+
+it("sync transfers only changes after the last verified Windows revision", async () => {
+  const { source, manifest } = await setup()
+  const first = await pairEnvironmentSource(manifest, source, {
+    remote: async request => request.revision,
+  })
+  await writeFile(join(manifest.paths.mac, "file.txt"), "second")
+  await runDrenvCommand({
+    executable: "git",
+    args: ["-C", manifest.paths.mac, "commit", "-am", "second"],
+  })
+  await syncEnvironmentSource(manifest, {
+    remote: async request => {
+      const header = (await readFile(request.bundle)).subarray(0, 512).toString("utf8")
+      expect(header).toContain(`-${first} `)
+      return request.revision
+    },
+  })
+})

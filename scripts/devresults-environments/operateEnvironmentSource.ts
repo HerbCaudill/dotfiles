@@ -39,6 +39,8 @@ export async function operateEnvironmentSource(
       throw new Error("Refusing foreign source ownership")
     if (!/^[a-f0-9]{40,64}$/.test(receipt.revision))
       throw new Error("Invalid frozen source revision")
+    if (receipt.syncedRevision && !/^[a-f0-9]{40}$/.test(receipt.syncedRevision))
+      throw new Error("Invalid previously verified source revision")
     if (operation === "pair" && (await realpath(source)) !== receipt.source)
       throw new Error("Source checkout differs from frozen pairing receipt")
   } else {
@@ -101,7 +103,9 @@ export async function operateEnvironmentSource(
     "0000000000000000000000000000000000000000",
   ])
   try {
-    await git(manifest.paths.mac, ["bundle", "create", bundle, ref])
+    const previous = receipt.syncedRevision
+    const range = operation === "sync" && previous && previous !== revision ? [`^${previous}`] : []
+    await git(manifest.paths.mac, ["bundle", "create", bundle, ref, ...range])
     const verified = await (options.remote ?? transportEnvironmentSource)({
       manifest,
       revision,
@@ -176,4 +180,6 @@ type Receipt = {
   common: string
   /** Frozen initial revision. */
   revision: string
+  /** Last independently verified destination revision, used as a bundle prerequisite. */
+  syncedRevision?: string
 }

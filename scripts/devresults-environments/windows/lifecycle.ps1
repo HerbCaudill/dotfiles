@@ -185,6 +185,34 @@ function Get-AppBuildRecipe([string]$ProcessArchitecture, [string]$NativeArchite
     if($ProcessArchitecture -eq 'ARM64' -or $NativeArchitecture -eq 'ARM64'){return 'msbuild-app-arm'}
     return 'msbuild-app'
 }
+# Reuse compiled server code only when the complete source delta affects browser assets.
+function Test-ClientOnlyRevision([string]$Source,[string]$Previous,[string]$Current) {
+    if($Previous -notmatch '^[a-f0-9]{40}$' -or $Current -notmatch '^[a-f0-9]{40}$'){return $false}
+    try { & git -C $Source merge-base --is-ancestor $Previous $Current 2>$null } catch {return $false}
+    if($LASTEXITCODE -ne 0){return $false}
+    $changed=@(& git -C $Source diff --name-only $Previous $Current --)
+    if($LASTEXITCODE -ne 0){return $false}
+    foreach($path in $changed) {
+        if($path -cmatch '^DevResults/Web/(Scripts|Css)/.+\.(ts|js|html|scss|css)$'){continue}
+        if($path -cne 'DevResults/DevResults.vbproj'){return $false}
+        $projectForms=@()
+        foreach($revision in @($Previous,$Current)) {
+            $raw=& git -C $Source show "${revision}:DevResults/DevResults.vbproj"
+            if($LASTEXITCODE -ne 0){return $false}
+            try {
+                [xml]$project=$raw -join "`n"
+                foreach($content in @($project.SelectNodes('//*[local-name()="Content"]'))) {
+                    if($content.Include -cnotmatch '^Web[\\/](Scripts|Css)[\\/].+\.(ts|js|html|scss|css)$'){continue}
+                    [void]$content.ParentNode.RemoveChild($content)
+                }
+                foreach($group in @($project.SelectNodes('//*[local-name()="ItemGroup" and not(node())]'))){[void]$group.ParentNode.RemoveChild($group)}
+                $projectForms+=($project.OuterXml -replace '\s+/>','/>')
+            } catch {return $false}
+        }
+        if($projectForms[0] -cne $projectForms[1]){return $false}
+    }
+    return $true
+}
 function Build-OwnedSource($Manifest,$Assets) {
     Stop-OwnedSupervisor $Manifest
     Assert-OwnedSource $Manifest
@@ -197,7 +225,23 @@ function Build-OwnedSource($Manifest,$Assets) {
     [IO.File]::WriteAllLines($envFile,$lines)
     $pwsh=(Get-Command pwsh.exe).Source
     $commands=@()
-    foreach($step in @('nuget','packages',(Get-AppBuildRecipe $env:PROCESSOR_ARCHITECTURE $env:PROCESSOR_ARCHITEW6432),'build-client')) {
+    $steps=@('nuget','packages',(Get-AppBuildRecipe $env:PROCESSOR_ARCHITECTURE $env:PROCESSOR_ARCHITEW6432),'build-client')
+    $previousBuild=Join-Path $control 'build.json'
+    if(Test-Path -LiteralPath $previousBuild) {
+        $receipt=Get-Json $previousBuild;Assert-Owner $receipt $Manifest
+        if(Test-ClientOnlyRevision $Manifest.paths.windows $receipt.revision $Manifest.revision) {
+            $allArtifacts=Get-BuildArtifacts $Manifest (Join-Path $Manifest.paths.windows 'DevResults')
+            $actual=@($allArtifacts | Where-Object {$_.path -clike 'bin\*'})
+            $recorded=@($receipt.artifacts | Where-Object {$_.path -clike 'bin\*'})
+            $unchanged=$actual.Count -gt 0 -and $actual.Count -eq $recorded.Count
+            foreach($artifact in $actual) {
+                $match=@($recorded | Where-Object {$_.path -ceq $artifact.path -and $_.sha256 -ceq $artifact.sha256})
+                if($match.Count -ne 1){$unchanged=$false}
+            }
+            if($unchanged){$steps=@('build-client')}
+        }
+    }
+    foreach($step in $steps) {
         $text=if($step -eq 'packages'){'& pnpm install --frozen-lockfile; exit $LASTEXITCODE'}else{'& just --dotenv-path '+(Quote-Argument $envFile)+' '+$step+'; exit $LASTEXITCODE'}
         $commands+=@{name=$step;executable=$pwsh;arguments='-NoProfile -NonInteractive -EncodedCommand '+[Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($text))}
     }
