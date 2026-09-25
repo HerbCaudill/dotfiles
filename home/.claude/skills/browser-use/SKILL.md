@@ -44,6 +44,20 @@ Use the first viable option:
 
 Prefer the user’s authenticated Chrome session when browser UI is necessary.
 
+## Website sign-in with 1Password
+
+Use the 1Password browser extension for website logins. Reuse an existing signed-in session first. Do not retrieve website passwords with the `op` CLI or another secret-reading tool unless Herb explicitly requests that approach. This preference takes precedence over the general CLI/API preference above for website authentication.
+
+1. Identify the intended website and account from the task context, then inspect the login page in Herb’s normal Chrome profile.
+2. Look for 1Password’s matching saved-login suggestion. If it has not appeared, focus the login field or reload once when doing so will not discard work.
+3. Use the browser tools to activate the matching suggestion when they expose it. An accessibility message such as “1Password Sign in options are available” does not mean those tools expose the actual button.
+4. On macOS, if the browser tools omit the controls, use native Chrome accessibility through the available computer-use tool. In Codex, select Chrome with `cua.getApp("Google Chrome")`, call `getAXState()`, and click the current element identified as the matching 1Password **Sign in** button. Verify the foreground tab’s URL before clicking. Element IDs are temporary; never reuse an ID from an earlier snapshot or hardcode screen coordinates. If the user or another task changes the foreground tab, re-read the state before acting.
+5. Return to the browser tools and verify that the intended site and account are signed in. Do not inspect filled password values, capture login request bodies, or copy credentials into tool output.
+
+Use the native accessibility step only for the 1Password interaction, then resume normal browser automation. Ask Herb to participate when an unlock, biometric prompt, unresolved account choice, or tool restriction prevents completion. Do not ask for login permission again when the current task already authorizes it, unless a higher-priority rule requires confirmation.
+
+Verified on 2026-09-25: Codex’s Chrome tab accessibility tree and screenshot omitted the 1Password sign-in banner on example.devresults.com, while native macOS Chrome accessibility exposed its named button. Clicking that button completed sign-in. Chrome restricts debugger access to another extension’s `chrome-extension://` documents, so do not assume a Playwright frame selector can reach the banner. Do not weaken browser isolation or 1Password protections to make it accessible. If a supported 1Password browser-login integration becomes available to the current agent, prefer it over this UI fallback.
+
 ## Recon
 
 For a large task:
