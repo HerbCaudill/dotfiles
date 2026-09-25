@@ -23,7 +23,7 @@ DevResults is a Windows-native .NET/SQL Server application. Treat the Parallels 
 | Test browser behavior      | Open the VM-hosted app URL from macOS when reachable                                                                  |
 | Verify logged-in app state | Use Herb's logged-in Chrome (claude-in-chrome MCP) — don't fight cookie auth with curl/bearer tokens on non-API pages |
 | Edit files                 | Prefer a separate macOS clone synced with `drsync`; never edit through the mounted Windows checkout                   |
-| Repo instructions          | Read `CLAUDE.md` from the DevResults repo root                                                                        |
+| Repo instructions          | Read `AGENTS.md` from the DevResults repo root                                                                        |
 | Repo-specific skills       | Check `.claude/skills` inside the DevResults repo                                                                     |
 | Common repo commands       | Use `drsync <command>` from a macOS clone, or `dr <command>` for Windows-only commands                                |
 
@@ -177,7 +177,7 @@ Background sync logs are written under `~/.local/state/drsync/`.
 ## Working Pattern
 
 1. Start in a separate macOS DevResults clone, not the mounted `/Volumes/...` path.
-2. Read the repo root `CLAUDE.md` before making changes.
+2. Read the repo root `AGENTS.md` before making changes.
 3. Check the repo's `.claude/skills` directory and use any relevant repo-specific skills.
 4. Edit, inspect, and stage changes in the macOS clone.
 5. Use `drsync <command>` to save, push, sync, and run Windows-side commands.

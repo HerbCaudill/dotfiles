@@ -17,7 +17,7 @@ result-*
 
 home/.claude/*
 !home/.claude/CHATBOT.md
-!home/.claude/CLAUDE.md
+!home/.claude/AGENTS.md
 !home/.claude/agents/
 !home/.claude/agents/**
 !home/.claude/settings.json

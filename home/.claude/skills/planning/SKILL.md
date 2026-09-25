@@ -16,7 +16,7 @@ Creates a structured plan for implementing a feature or change. Outputs:
 
 ### 1\. Gather context, if you haven't already
 
-- Read the project's CLAUDE.md and README
+- Read the project's AGENTS.md and README
 - Explore relevant parts of the codebase
 - Identify existing patterns and conventions
 - Use the `grill-me` skill to clarify the user's thinking
