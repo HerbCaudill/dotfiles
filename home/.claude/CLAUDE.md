@@ -85,7 +85,7 @@ Keep beads out of agent-instructions files. Initialize with `bd init --agents-pr
 ## Using git and the filesystem
 
 - Clone repositories into `~/Code/{orgname}/{reponame}`.
-- In a new repository, keep one canonical agent-instructions file and symlink the other to it. Follow the repository's existing convention.
+- In a new repository, use AGENTS.md as the canonical agent-instructions file. Claude Code reads AGENTS.md when CLAUDE.md is absent, so no CLAUDE.md symlink is needed. Follow the repository's existing convention in existing repositories.
 - Finish work by committing, pushing successfully, and closing its task when applicable.
 - Give commit messages a concise subject and a short paragraph explaining the context and reasoning.
 - For Codex commits, set `GIT_AUTHOR_NAME=Codex` and `GIT_AUTHOR_EMAIL=codex@localhost` on the commit command. Do not change the configured committer identity.
