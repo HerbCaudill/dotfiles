@@ -108,6 +108,20 @@ Use subtasks to expose execution, not to reproduce every thought:
 - Do not invent deadlines, owners, costs, or dependencies.
 - Verify every new child's list and parent relationship after creation.
 
+### Moving task trees between lists
+
+Do not move a parent task to another list while it still has subtasks. The Google Tasks API can move only one child and mark the remaining source children deleted.
+
+For every cross-list move:
+
+1. Read and record the complete subtree, including titles, notes, status, dates, links, parent relationships, and sibling order.
+2. Move descendants to the destination list before their parents, working from the deepest level upward.
+3. Move the top-level parent.
+4. Reattach descendants in the destination list with `parent` and `previous`, preserving the original hierarchy and order.
+5. Read both lists back. Confirm that every original task exists exactly once and that no source task was unexpectedly marked deleted.
+
+Never use a parent task with children as a canary for a cross-list move.
+
 Examples:
 
 ```text

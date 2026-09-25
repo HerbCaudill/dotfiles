@@ -41,6 +41,10 @@ gws-delegated tasks <resource> <method> [flags]
 - `patch` — Updates the specified task. This method supports patch semantics.
 - `update` — Updates the specified task.
 
+## Cross-list moves
+
+Do not call `tasks.move` across lists on a parent that still has children. The API can move only one child and mark the remaining source children deleted. Move descendants first, then move the parent, rebuild the hierarchy with `parent` and `previous`, and verify both lists.
+
 ## Discovering Commands
 
 Before calling any API method, inspect it:
