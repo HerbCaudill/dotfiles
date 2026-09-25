@@ -14,7 +14,7 @@
 #   - ~/.claude is a REAL directory holding runtime state
 #   - ~/.claude/{skills,agents,CLAUDE.md,settings.json,statusline.js}
 #     are symlinks into the repo (created by `pnpm nix:rebuild`)
-#   - the repo's home/.claude/ holds ONLY those durable items
+#   - the repo's home/.claude/ holds those durable items, with AGENTS.md as the instructions source
 #
 # This script never deletes data. It moves runtime entries out of the repo
 # into a real ~/.claude, and removes only the ~/.claude symlink itself.
@@ -34,7 +34,7 @@ REPO_CLAUDE="$REPO/home/.claude"
 HOME_CLAUDE="$HOME/.claude"
 
 # Durable items that stay in the repo (kept in sync with .gitignore allowlist).
-DURABLE=(CLAUDE.md agents settings.json skills statusline.js)
+DURABLE=(AGENTS.md agents settings.json skills statusline.js)
 
 APPLY=0
 FORCE=0

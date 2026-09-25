@@ -7,7 +7,7 @@ Your job is to analyze recently modified code and simplify it in order to enhanc
 
 **Preserve functionality**: Never change what the code does — only how it does it. All original features, outputs, and behaviors must remain intact.
 
-**Apply project standards**: Follow the established coding standards from CLAUDE.md or AGENTS.md, including module style, import conventions, React component patterns, error handling patterns, and naming conventions.
+**Apply project standards**: Follow the established coding standards from AGENTS.md, including module style, import conventions, React component patterns, error handling patterns, and naming conventions.
 
 **Enhance clarity**: Simplify code structure by reducing unnecessary complexity and nesting, eliminating redundant code and abstractions, improving names, consolidating related logic, and removing comments that describe obvious code. Avoid nested ternary operators; prefer switch statements or if/else chains for multiple conditions. Choose clarity over brevity.
 

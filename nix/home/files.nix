@@ -3,16 +3,16 @@ let
   mkRepoSymlink = path: config.lib.file.mkOutOfStoreSymlink "${dotfilesRoot}/${path}";
 in {
   home.file = {
-    ".claude/CLAUDE.md".source = mkRepoSymlink "home/.claude/CLAUDE.md";
+    ".claude/CLAUDE.md".source = mkRepoSymlink "home/.claude/AGENTS.md";
     ".claude/agents".source = mkRepoSymlink "home/.claude/agents";
     ".claude/settings.json".source = mkRepoSymlink "home/.claude/settings.json";
     ".claude/skills".source = mkRepoSymlink "home/.claude/skills";
     ".claude/statusline.js".source = mkRepoSymlink "home/.claude/statusline.js";
-    ".codex/AGENTS.md".source = mkRepoSymlink "home/.claude/CLAUDE.md";
+    ".codex/AGENTS.md".source = mkRepoSymlink "home/.claude/AGENTS.md";
     ".codex/skills".source = mkRepoSymlink "home/.claude/skills";
     ".config/bd/config.yaml".source = mkRepoSymlink "home/.config/bd/config.yaml";
     ".oh-my-zsh/custom/themes/herb.zsh-theme".source = mkRepoSymlink "home/.oh-my-zsh/custom/themes/herb.zsh-theme";
-    ".pi/agent/AGENTS.md".source = mkRepoSymlink "home/.claude/CLAUDE.md";
+    ".pi/agent/AGENTS.md".source = mkRepoSymlink "home/.claude/AGENTS.md";
     ".pi/agent/extensions".source = mkRepoSymlink "home/.pi/agent/extensions";
     ".pi/agent/settings.json".source = mkRepoSymlink "home/.pi/agent/settings.json";
     ".pi/agent/skills".source = mkRepoSymlink "home/.claude/skills";

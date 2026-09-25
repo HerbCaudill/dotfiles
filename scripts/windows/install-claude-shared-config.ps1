@@ -11,7 +11,7 @@ $settingsPath = Join-Path $claudeDirectory "settings.json"
 $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
 
 $items = @(
-  @{ Name = "CLAUDE.md"; Source = Join-Path $RepoRoot "home\.claude\CLAUDE.md" },
+  @{ Name = "CLAUDE.md"; Source = Join-Path $RepoRoot "home\.claude\AGENTS.md" },
   @{ Name = "agents"; Source = Join-Path $RepoRoot "home\.claude\agents" },
   @{ Name = "skills"; Source = Join-Path $RepoRoot "home\.claude\skills" },
   @{ Name = "statusline.js"; Source = Join-Path $RepoRoot "home\.claude\statusline.js" }

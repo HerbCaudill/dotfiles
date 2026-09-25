@@ -56,7 +56,7 @@ Use subtasks for granular steps within one implementation and review unit. Use a
 ## Preserve knowledge
 
 - Keep task-specific context in the issue description, notes, or comments.
-- Put durable repository-wide instructions and facts in the repository's `CLAUDE.md` or normal documentation so they remain visible, reviewable, and portable across agents.
+- Put durable repository-wide instructions and facts in the repository's `AGENTS.md` or normal documentation so they remain visible, reviewable, and portable across agents.
 - Do not use `bd remember` or install `bd prime` hooks unless the user explicitly asks for them.
 
 ## Setting up a new repository

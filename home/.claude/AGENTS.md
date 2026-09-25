@@ -58,7 +58,7 @@ Repositories with a `.beads` directory use `bd`. Do not use TodoWrite, TaskCreat
 ## Using git and the filesystem
 
 - Clone repositories into `~/Code/{orgname}/{reponame}`.
-- In a new repository, keep one canonical agent-instructions file and symlink the other to it. Follow the repository's existing convention.
+- Use AGENTS.md as the canonical repository instructions file. Claude Code reads it when CLAUDE.md is absent; do not create a CLAUDE.md compatibility symlink. Claude still requires ~/.claude/CLAUDE.md for user-wide instructions, so its managed global entry point links to the shared AGENTS.md source.
 - Finish work by committing, pushing successfully, and closing its task when applicable.
 - Give commit messages a concise subject and a short paragraph explaining the context and reasoning.
 - For Codex commits, set `GIT_AUTHOR_NAME=Codex` and `GIT_AUTHOR_EMAIL=codex@localhost` on the commit command. Do not change the configured committer identity.
@@ -71,7 +71,7 @@ Repositories with a `.beads` directory use `bd`. Do not use TodoWrite, TaskCreat
 
 ## Memory
 
-Do not use Claude Code's per-project memory directory at `~/.claude/projects/.../memory/`. Put persistent guidance in the repository's `CLAUDE.md` or this global file so it remains versioned and portable across Claude Code, Codex, and pi.
+Do not use Claude Code's per-project memory directory at `~/.claude/projects/.../memory/`. Put persistent guidance in the repository's `AGENTS.md` or this global file so it remains versioned and portable across Claude Code, Codex, and pi.
 
 ## Local resources
 
@@ -85,4 +85,4 @@ Never use local editing, patch, Git, test, or formatting tools on the mounted Wi
 
 ## Dotfiles [macOS only]
 
-`~/Code/HerbCaudill/dotfiles` manages global configuration with Nix, nix-darwin, and home-manager. Edit managed global files in that repository, not through links under `~/`. Shared instructions live in `home/.claude/CLAUDE.md`; shared skills live in `home/.claude/skills`. Follow the repository's own `CLAUDE.md`.
+`~/Code/HerbCaudill/dotfiles` manages global configuration with Nix, nix-darwin, and home-manager. Edit managed global files in that repository, not through links under `~/`. Shared instructions live in `home/.claude/AGENTS.md`; shared skills live in `home/.claude/skills`. Follow the repository's own `AGENTS.md`.
