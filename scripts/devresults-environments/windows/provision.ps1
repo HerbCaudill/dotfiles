@@ -211,6 +211,7 @@ function New-OwnedApplicationConfig($Manifest, [string]$SettingsTemplate = 'C:\C
     $connectionsPath = Join-Path $Manifest.paths.runtime 'web\Core\Db\connections.config'
     if (-not [IO.File]::Exists($settingsTemplate)) { Deny 'Local SecureSettings.config template is required.' }
     [xml]$settings = [IO.File]::ReadAllText($settingsTemplate)
+    Set-AppSetting $settings 'TestingBannerText' ''
     Set-AppSetting $settings 'AppTempPath' (Join-Path $Manifest.paths.runtime 'temp')
     Set-AppSetting $settings 'DiskCachePath' (Join-Path $Manifest.paths.runtime 'cache')
     Set-AppSetting $settings 'AutoDbRefresh.Enabled' 'false'
