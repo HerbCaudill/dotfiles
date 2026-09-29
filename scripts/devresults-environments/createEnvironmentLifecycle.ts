@@ -15,6 +15,7 @@ import {
   preflightMacEnvironmentSource,
 } from "./removeMacEnvironmentSource.ts"
 import { runDrenvCommand } from "./runDrenvCommand.ts"
+import { watchEnvironmentClient } from "./watchEnvironmentClient.ts"
 import type { DrenvArgs, EnvironmentManifest, RegistryOptions, ResourceInventory } from "./types.ts"
 
 /** Compose the complete identity-explicit command under durable operation locks. */
@@ -48,7 +49,7 @@ export function createEnvironmentLifecycle(
   /** Execute one public command without inferring a destination from the current directory. */
   return async (args: DrenvArgs): Promise<unknown> => {
     if (args.command === "help")
-      return "drenv create <id> [--source <Mac checkout>] [--revision <ref>] [--preset inl] [--snapshot <receipt.json>]\ndrenv sync|start|status|url|open|stop|snapshot|reset|remove|recover|refresh-db <id>\nCommit paired Mac edits before sync. Creation requires a coordinated SQL/blob snapshot. Reset restores the original creation snapshot."
+      return "drenv create <id> [--source <Mac checkout>] [--revision <ref>] [--preset inl] [--snapshot <receipt.json>]\ndrenv sync|watch|start|status|url|open|stop|snapshot|reset|remove|recover|refresh-db <id>\nUse watch for saved frontend edits on a running environment. Commit paired Mac edits before sync. Creation requires a coordinated SQL/blob snapshot. Reset restores the original creation snapshot."
     if (args.command === "status" && !args.id) return registry.list()
     if (!args.id) throw new Error("An environment ID is required")
     if (args.command === "recover") {
@@ -115,6 +116,11 @@ export function createEnvironmentLifecycle(
         }
         if (args.command === "status")
           return { ...manifest, live: await remote(manifest, "status") }
+        if (args.command === "watch") {
+          const live = await remote(manifest, "status")
+          if (live.status !== "running") throw new Error("Start the environment before watch")
+          return (adapters.watch ?? watchEnvironmentClient)(manifest)
+        }
         if (manifest.phase === "removed")
           throw new Error("This environment was removed; choose a new ID")
         if (args.command === "stop") {
@@ -211,7 +217,7 @@ export function createEnvironmentLifecycle(
         if (
           manifest &&
           manifest.phase !== "removed" &&
-          !["status", "url", "open"].includes(args.command)
+          !["status", "url", "open", "watch"].includes(args.command)
         )
           await registry.checkpoint(manifest.id, manifest.ownerToken, {
             phase: "failed",
@@ -259,6 +265,8 @@ type Intent = Pick<DrenvArgs, "snapshot" | "revision" | "preset" | "database" | 
 }
 /** Host boundaries that can be substituted without mocking registry semantics. */
 type Adapters = {
+  /** Foreground frontend watch; never stops or replaces the runtime. */
+  watch?: (manifest: EnvironmentManifest) => Promise<unknown>
   /** Fresh listener and binding inventory. */
   inventory?: (options: RegistryOptions) => Promise<ResourceInventory>
   /** Native source pairing. */

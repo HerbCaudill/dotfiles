@@ -45,6 +45,7 @@ export function parseDrenvArgs(
 const commands: DrenvArgs["command"][] = [
   "create",
   "sync",
+  "watch",
   "start",
   "status",
   "url",

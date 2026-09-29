@@ -43,6 +43,22 @@ The INL preset selects `dev-inl` / `inl`. `--database <catalog>` and `--instance
 
 Creation saves its inputs and checkpoints. If a snapshot was omitted, source pairing can finish before creation reports the missing receipt. Resume with `drenv create <id> --snapshot <receipt.json>` after satisfying the prerequisite. Repeating `create <id>` uses the saved selections. An existing selection cannot silently change.
 
+## Watch frontend edits
+
+For an already running environment, use `drenv watch <id>` while editing its native Mac worktree. For example:
+
+```sh
+drenv watch design-refresh
+```
+
+Saved TypeScript, JavaScript, HTML, CSS and SCSS edits under `DevResults/Web/Scripts` and `DevResults/Web/Css` are sent to a private Windows build workspace. Vite stays in watch mode and publishes successful builds to the running site. Refresh the browser after `Published client` appears. There is no automatic browser reload. You do not need to commit, run sync, or restart IIS between frontend edits.
+
+The watcher uses the environment's deployed revision and existing dependencies. It leaves the paired Windows Git checkout untouched. Failed builds leave the last successful client available; correcting the error triggers another build. Old hashed assets remain available to open pages until the next full deployment.
+
+Ctrl+C stops the watcher and its private workspace, leaving IIS and the last published client running. The remote watcher also stops after a lost connection or 45 seconds without a heartbeat. Only one watch or lifecycle operation can own an environment at a time; stop watch before running sync, start, stop, or tests through the lifecycle command.
+
+Backend, dependency, build configuration and other asset changes require the usual committed-source `drenv sync <id>` and `drenv start <id>` cycle. Commit and push frontend work normally when complete. A watch build is a development overlay, not a new verified deployment revision: before restarting the environment or checking production build artifacts, stop watch and run sync to replace the overlay with a complete committed build.
+
 ## Edit, sync and run
 
 The mapped source and runtime paths are:

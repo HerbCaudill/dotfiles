@@ -336,3 +336,53 @@ it.each([
     }
   },
 )
+
+it("keeps the runtime running when watch stops or fails and never deploys during watch", async () => {
+  const directory = await realpath(await mkdtemp(join(tmpdir(), "drenv-watch-lifecycle-")))
+  const calls: string[] = []
+  let failWatch = false
+  const lifecycle = createEnvironmentLifecycle(
+    {
+      directory,
+      macRoot: join(directory, "mac"),
+      windowsRoot: "C:\\DrenvTest",
+      windowsHost: "devresults-vm",
+    },
+    {
+      inventory: async () => ({ windowsPorts: [], macPorts: [] }),
+      pair: async () => "a".repeat(40),
+      provision: async () => {},
+      refresh: async () => {},
+      windows: async (_m, operation) => {
+        calls.push(operation)
+        return { status: "running" }
+      },
+      watch: async () => {
+        calls.push("watch")
+        if (failWatch) throw new Error("client build failed")
+        return { status: "watch-stopped" }
+      },
+    },
+  )
+  try {
+    await lifecycle({
+      command: "create",
+      id: "proof",
+      source: "/Users/test/source",
+      snapshot: "/Users/test/snapshot.json",
+    })
+    await lifecycle({ command: "start", id: "proof" })
+    calls.length = 0
+    await lifecycle({ command: "watch", id: "proof" })
+    expect(calls).toEqual(["status", "watch"])
+    failWatch = true
+    await expect(lifecycle({ command: "watch", id: "proof" })).rejects.toThrow(
+      "client build failed",
+    )
+    expect(((await lifecycle({ command: "status" })) as { phase: string }[])[0].phase).toBe(
+      "running",
+    )
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})

@@ -174,7 +174,15 @@ With the VS Code Run on Save extension, configure the macOS DevResults clone lik
 
 Background sync logs are written under `~/.local/state/drsync/`.
 
-## Working Pattern
+## Frontend iteration: prefer watch mode
+
+For a paired environment under `~/Code/DevResults/environments/<id>`, start `drenv watch <id>` once the environment is running. Use it throughout frontend iteration instead of repeatedly committing, syncing, rebuilding, and restarting IIS. Saved browser-source edits in the native Mac worktree are transferred to a private Windows Vite watch workspace and successful builds are published to the existing runtime. Wait for `Published client`, then refresh the target page and verify it. The paired Windows Git checkout remains clean at the deployed baseline; the running client includes the saved development overlay.
+
+Stop watch with Ctrl+C before any other environment lifecycle operation. Backend, dependency, build configuration, or non-source asset changes require committed-source `drenv sync <id>` followed by `drenv start <id>`. After final commit and push, stop watch and sync once to establish a verified committed deployment before restart or final artifact checks. Do not apply `drsync` to paired environment worktrees. See [watch usage](../../../../scripts/devresults-environments/USAGE.md#watch-frontend-edits).
+
+For the primary checkout, run Windows `just watch` (the Vite `build --watch` recipe) once and keep it alive while syncing frontend edits with `drsync`. Confirm the existing watcher belongs to the intended checkout before starting another. Prefer the paired-environment workflow when iterating on uncommitted Mac edits. No Vite dev server or hot reload replaces the IIS backend.
+
+## Primary-checkout working pattern
 
 1. Start in a separate macOS DevResults clone, not the mounted `/Volumes/...` path.
 2. Read the repo root `AGENTS.md` before making changes.

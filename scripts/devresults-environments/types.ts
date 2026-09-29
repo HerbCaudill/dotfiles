@@ -131,6 +131,7 @@ export type DrenvArgs = {
   command:
     | "create"
     | "sync"
+    | "watch"
     | "start"
     | "status"
     | "url"
