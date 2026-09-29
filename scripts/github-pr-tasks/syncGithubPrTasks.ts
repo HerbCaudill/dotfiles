@@ -16,13 +16,23 @@ export async function syncGithubPrTasks(
   const notifications = await dependencies.listNotifications(state.lastCheckedAt)
   const pendingTasks = getPendingPullRequestTasks(notifications, state.processedEventKeys)
 
+  const openPullRequestLinks = new Set(
+    pendingTasks.length > 0 ? await dependencies.listOpenPullRequestLinks() : [],
+  )
+  let createdCount = 0
+
   let nextState: GithubPrTaskState = {
     lastCheckedAt: startedAt,
     processedEventKeys: [...state.processedEventKeys],
   }
 
   for (const pendingTask of pendingTasks) {
-    await dependencies.createTask(pendingTask.task)
+    const link = pendingTask.task.notes
+    if (!link || !openPullRequestLinks.has(link)) {
+      await dependencies.createTask(pendingTask.task)
+      if (link) openPullRequestLinks.add(link)
+      createdCount += 1
+    }
 
     nextState = {
       lastCheckedAt: startedAt,
@@ -40,6 +50,6 @@ export async function syncGithubPrTasks(
 
   return {
     checkedCount: notifications.length,
-    createdCount: pendingTasks.length,
+    createdCount,
   }
 }

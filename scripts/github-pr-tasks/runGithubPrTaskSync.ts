@@ -2,6 +2,7 @@ import { pathToFileURL } from "node:url"
 
 import { createGoogleTask } from "./createGoogleTask.ts"
 import { listGithubNotifications } from "./listGithubNotifications.ts"
+import { listOpenPullRequestLinks } from "./listOpenPullRequestLinks.ts"
 import { loadGithubPrTaskState } from "./loadGithubPrTaskState.ts"
 import { saveGithubPrTaskState } from "./saveGithubPrTaskState.ts"
 import { syncGithubPrTasks } from "./syncGithubPrTasks.ts"
@@ -12,6 +13,7 @@ export async function runGithubPrTaskSync(): Promise<void> {
     now: () => new Date().toISOString(),
     loadState: loadGithubPrTaskState,
     listNotifications: listGithubNotifications,
+    listOpenPullRequestLinks,
     createTask: createGoogleTask,
     saveState: saveGithubPrTaskState,
   })

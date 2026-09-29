@@ -49,6 +49,7 @@ describe("syncGithubPrTasks", () => {
         assigneeNotification,
         reviewerNotification,
       ],
+      listOpenPullRequestLinks: async () => [],
       createTask: async task => {
         createdTasks.push(task)
       },
@@ -77,7 +78,7 @@ describe("syncGithubPrTasks", () => {
     })
   })
 
-  test("skips processed notification events but creates a new task when the same thread updates again", async () => {
+  test("creates a task for a new update when no open task remains", async () => {
     const createdTasks: Array<{ title: string; notes: string }> = []
     const saveState = vi.fn()
 
@@ -94,6 +95,7 @@ describe("syncGithubPrTasks", () => {
           updated_at: "2026-04-15T10:30:00Z",
         },
       ],
+      listOpenPullRequestLinks: async () => [],
       createTask: async task => {
         createdTasks.push(task)
       },
@@ -111,5 +113,40 @@ describe("syncGithubPrTasks", () => {
       lastCheckedAt: "2026-04-15T11:00:00Z",
       processedEventKeys: ["1:2026-04-15T10:00:00Z", "1:2026-04-15T10:30:00Z"],
     })
+  })
+  test("reassignment reuses an open task and records the event as processed", async () => {
+    const createTask = vi.fn()
+    const saveState = vi.fn()
+    const result = await syncGithubPrTasks({
+      now: () => "2026-04-15T11:00:00Z",
+      loadState: async () => ({ lastCheckedAt: null, processedEventKeys: [] }),
+      listNotifications: async () => [assigneeNotification],
+      listOpenPullRequestLinks: async () => ["https://github.com/HerbCaudill/tools/pull/55"],
+      createTask,
+      saveState,
+    })
+    expect(createTask).not.toHaveBeenCalled()
+    expect(result.createdCount).toBe(0)
+    expect(saveState).toHaveBeenCalledWith({
+      lastCheckedAt: "2026-04-15T11:00:00Z",
+      processedEventKeys: ["2:2026-04-15T10:05:00Z"],
+    })
+  })
+
+  test("creates only one task for multiple updates to the same PR in one run", async () => {
+    const createTask = vi.fn()
+    const result = await syncGithubPrTasks({
+      now: () => "2026-04-15T11:00:00Z",
+      loadState: async () => ({ lastCheckedAt: null, processedEventKeys: [] }),
+      listNotifications: async () => [
+        assigneeNotification,
+        { ...assigneeNotification, updated_at: "2026-04-15T10:30:00Z" },
+      ],
+      listOpenPullRequestLinks: async () => [],
+      createTask,
+      saveState: vi.fn(),
+    })
+    expect(createTask).toHaveBeenCalledTimes(1)
+    expect(result.createdCount).toBe(1)
   })
 })

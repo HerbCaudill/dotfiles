@@ -54,6 +54,8 @@ export type SyncGithubPrTasksDependencies = {
   loadState: () => Promise<GithubPrTaskState>
   /** Fetch notifications updated since the supplied cursor. */
   listNotifications: (lastCheckedAt: string | null) => Promise<GithubNotification[]>
+  /** Fetch PR links from open tasks across all lists. */
+  listOpenPullRequestLinks: () => Promise<string[]>
   /** Create a Google Task from the supplied request. */
   createTask: (task: GoogleTaskRequest) => Promise<void>
   /** Persist the next sync state. */
