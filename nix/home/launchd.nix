@@ -25,8 +25,7 @@ in
   };
 
   launchd.agents."process-inbox" = {
-    # Briefings still uses the legacy provider; resume after its Tasks integration.
-    enable = false;
+    enable = true;
     config = {
       Label = "com.herbcaudill.process-inbox";
       ProgramArguments = [ "${userBin}/process-inbox" ];
@@ -44,8 +43,7 @@ in
   };
 
   launchd.agents."morning-briefing" = {
-    # Briefings still uses the legacy provider; resume after its Tasks integration.
-    enable = false;
+    enable = true;
     config = {
       Label = "com.herbcaudill.morning-briefing";
       ProgramArguments = [ "${userBin}/morning-briefing" ];

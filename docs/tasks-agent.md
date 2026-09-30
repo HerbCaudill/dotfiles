@@ -2,7 +2,7 @@
 
 The Tasks agent is enabled and enrolled in space `B7CSO2L6KYNN4HZBSBNHP3LC3SA7PYNJO`. UI-to-CLI and CLI-to-UI changes were verified on September 30, including a headless CLI change after a service restart. The shared [Tasks skill](../home/.claude/skills/tasks/SKILL.md) is active. Nix enables login startup and restart after exit.
 
-The PR workflow now targets Tasks. Inbox processing and morning briefings are paused because their implementation in the separate Briefings repository still uses Google Tasks. Their installed wrappers stop with an explicit error. Before resuming, integrate the Tasks provider there, reconcile existing capture/research journals without replaying successful work, update prompts and verify destination readback. Preserve pending captures, journals and old Google data. The Tickler mover is retired because Snoozed resurfaces by date without writes.
+PR capture, hourly inbox processing and the 07:00 morning briefing now target Tasks. Briefings verifies the peer binding, requires converged reads, and persists capture/description intentions before writes. Pending legacy journals resolve exact source provenance and preserve the original record; completed research receipts remain historical and are not replayed. The September 30 cutover found 19 historical captures, no pending research and no pending inbox captures. Live capture, description readback and duplicate detection passed; the test task was deleted. The Tickler mover is retired because Snoozed resurfaces by date without writes.
 
 ## Release preparation
 
@@ -40,4 +40,4 @@ If shutdown fails or the process retains its lock, stop and inspect. Do not remo
 
 The installation gate requires the real managed Node 24 executable, a command with all Tasks browsers closed, restart with the same identity/data/receipts, and an independent browser later receiving actual values. Nix evaluation and `plutil -lint` validate the inert definition; isolated release tests validate exact-commit preparation and ownership-protected promotion. These checks do not replace enrollment and field replication evidence. Scheduled work cannot run while the Mac sleeps or is off.
 
-Keep existing Google copies, private snapshots and journals for historical lookup and the remaining Briefings integration.
+Keep existing Google copies, private snapshots and journals for historical lookup and explicit migration recovery.

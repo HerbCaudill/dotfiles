@@ -27,7 +27,7 @@ Present the task title and only the context needed for the next decision. Establ
 
 Before asking factual questions, inspect relevant existing context in Obsidian, messages, documents, calendars and linked sources. Read referenced Codex tasks before relying on their results. Use the narrowest applicable skill. An unknown preference need not block independent research.
 
-Historical capture and research journals retain original text and timestamps. Their Google targets have not yet been converted to typed Tasks mappings; do not treat them as current board IDs. Interpret relative dates against the original capture timestamp. Read completed research before reusing an initial capture question; later research or Herb's wording may have resolved it. Missing mappings and uncertain old `.done` receipts remain review items. Never infer successful research from a missing task or rewrite a receipt to trigger another run. Pending research need not stop review of other tasks.
+Historical capture and research journals retain original text and timestamps. Pending legacy records resolve their Google targets through exact import provenance before use, retaining the original journal. Completed historical receipts remain unchanged; do not treat old Google IDs as current board IDs. Interpret relative dates against the original capture timestamp. Read completed research before reusing an initial capture question; later research or Herb's wording may have resolved it. Missing mappings and uncertain old `.done` receipts remain review items. Never infer successful research from a missing task or rewrite a receipt to trigger another run. Pending research need not stop review of other tasks.
 
 ## Apply the decision
 

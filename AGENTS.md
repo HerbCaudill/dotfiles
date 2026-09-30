@@ -109,7 +109,7 @@ The dotfiles repo manages automated harness updates with:
 
 Personal task work uses the shared `tasks` skill and managed CLI. The `task-review` skill defaults to Inbox. The peer starts at login and restarts after exit. See [Tasks agent](docs/tasks-agent.md).
 
-The hourly `process-inbox` and 07:00 `morning-briefing` jobs are disabled. Their installed launchers report why: the separate Briefings repository still uses Google Tasks. Resume them only after integrating its Tasks provider, converting existing capture/research journals and updating its prompts to invoke `task-review` with `views: ["inbox"]`. Preserve the private journals and pending Obsidian captures.
+The hourly `process-inbox` and 07:00 `morning-briefing` jobs use the Briefings repository’s Tasks client with the managed space binding and converged freshness. The briefing invokes `task-review` with `views: ["inbox"]`. Capture and description intentions preserve request identities across retries. Pending legacy journals resolve exact import provenance and retain their originals; completed historical research receipts are preserved. See `briefings/docs/tasks-integration.md` for recovery rules.
 
 The old Tickler mover is no longer installed or scheduled. Tasks Snoozed visibility changes with the calendar date without a mutation. Historical Google helper source and tests remain for reference, not as active personal workflows. The `gws-tasks` skill is restricted to explicitly requested legacy access.
 

@@ -1,6 +1,6 @@
 # Historical Tasks workflow cutover preparation
 
-As of September 30, 2026, the Tasks skill, review skill and PR adapter have been activated from this preparation with updated live files. Briefings integration remains pending and its jobs are paused. See `docs/tasks-agent.md` for current status. The proposed files, manifest and activation patch below are historical evidence; do not apply them to the current tree.
+As of September 30, 2026, the Tasks skill, review skill and PR adapter have been activated from this preparation with updated live files. Briefings now uses the Tasks client and its jobs have resumed. See `docs/tasks-agent.md` for current status. The proposed files, manifest and activation patch below are historical evidence; do not apply them to the current tree.
 
 ## Original checkpoint
 
