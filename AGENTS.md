@@ -56,7 +56,7 @@ These are installed into `~/.local/bin` by Home Manager rather than a custom sym
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | `agent-transcripts-sync`  | Sync raw local Claude Code, Codex, and Pi transcript stores into `~/Code/HerbCaudill/agent-transcripts` and commit changes there                   | Node.js  |
 | `drsync`                  | Save the current macOS DevResults clone to a WIP branch, sync the Windows VM checkout, and run a Windows-side command                              | Node.js  |
-| `github-pr-task-sync`     | Poll GitHub notifications and create Google Tasks for assigned/review-requested PRs                                                                | Node.js  |
+| `github-pr-task-sync`     | Poll GitHub notifications and capture assigned/review-requested PRs in Tasks                                                                | Node.js  |
 | `gws-delegated`           | Run GWS commands with a short-lived domain-wide delegated token for Herb                                                                           | Node.js  |
 | `update-agent-harnesses`  | Update Claude Code, Pi, Codex, pnpm, and bd                                                                                                        | Zsh      |
 | `beads`                   | Wrapper for `bd`                                                                                                                                   | Shell    |
@@ -65,7 +65,6 @@ These are installed into `~/.local/bin` by Home Manager rather than a custom sym
 | `serena-mcp-server`       | Start the Serena MCP server                                                                                                                        | Python   |
 | `index-project`           | Invoke Serena's project indexing                                                                                                                   | Python   |
 | `morning-briefing`        | Run the repo-owned multi-agent briefing pipeline, save it to the daily note, and create a pinned Codex task                                        | Node.js  |
-| `resurface-tickler-tasks` | Move due Tickler task trees to Today, clear their resurface dates, and verify their hierarchy                                                      | Node.js  |
 | `tslsp`                   | Type-aware TypeScript code intelligence via tsgo; self-installs into `~/.local/share/tslsp` with npm (pnpm's global layout breaks its tsgo lookup) | Bash     |
 
 ## Windows Parallels Claude setup
@@ -97,13 +96,7 @@ bd close <id>         # Complete work
 
 ## GitHub PR task sync
 
-The dotfiles repo manages GitHub-to-Google-Tasks automation with:
-
-- `github-pr-task-sync`, a Node-based script that polls GitHub notifications and creates Google Tasks for pull requests where Herb is assigned or requested as a reviewer
-- a nix-darwin `launchd` agent in `nix/darwin/default.nix` that runs it every 60 seconds and logs to `/tmp/github-pr-task-sync.log`
-- persistent state in `~/.local/share/github-pr-task-sync/state.json` so repeated polls do not recreate the same task for the same notification update
-
-Tasks are created in the default Google Tasks list with title `PR: {title}` and the PR URL in the notes.
+The installed `github-pr-task-sync` wrapper uses `scripts/tasks-workflows/pr/` to capture PRs in the enrolled Tasks Inbox. Its launchd job runs every 60 seconds with Node 24, `TASKS_SPACE_ID` from the managed peer binding and `TASKS_FRESHNESS=converged`. The private checkpoint at `~/.local/share/github-pr-task-sync/state.json` preserves existing event keys and request receipts. Failures stop the batch without resetting its cursor or falling back to Google. Logs remain at `/tmp/github-pr-task-sync.log`.
 
 ## Agent harness updates
 
@@ -114,13 +107,11 @@ The dotfiles repo manages automated harness updates with:
 
 ## Morning workflow automation
 
-The dotfiles repo manages three user LaunchAgents through Home Manager in `nix/home/launchd.nix`:
+Personal task work uses the shared `tasks` skill and managed CLI. The `task-review` skill defaults to Inbox. The peer starts at login and restarts after exit. See [Tasks agent](docs/tasks-agent.md).
 
-- `resurface-tickler-tasks` runs every day at 06:00, one hour before the briefing. The deterministic TypeScript implementation lives in `scripts/google-tasks/`, uses `gws-delegated`, and logs to `/tmp/resurface-tickler-tasks.log`.
-- `process-inbox` runs hourly. Its thin wrapper invokes `briefings/scripts/inbox/run.ts`, which transfers timestamped Obsidian captures into Google Tasks Inbox, verifies each destination, and moves the original capture into `documents/inbox.archive.md`. Transfer journals and the independent research queue live under `~/.local/state/inbox-processing/`. Research writes canonical Obsidian notes with Google Task backlinks; questions and source metadata stay there, with a canonical Obsidian link and execution details in parent task notes and ordered next steps as subtasks. Logs are `/tmp/inbox-processing.log` and `/tmp/inbox-research.log`.
-- `morning-briefing` runs daily at 07:00. A thin command wrapper invokes the `briefings` repo entrypoint, which first processes inbox captures, runs three source-gathering agents in parallel, persists schema-checked results and JSONL diagnostics in a unique dated directory under `~/.local/state/morning-briefing/`, saves and verifies one canonical briefing in the daily note, waits for Obsidian Sync, and creates a pinned Codex session. After presenting the briefing, that session starts one task-review invocation with `listNames: ["Inbox", "Today"]`. Launcher output remains in `/tmp/morning-briefing.log`.
+The hourly `process-inbox` and 07:00 `morning-briefing` jobs are disabled. Their installed launchers report why: the separate Briefings repository still uses Google Tasks. Resume them only after integrating its Tasks provider, converting existing capture/research journals and updating its prompts to invoke `task-review` with `views: ["inbox"]`. Preserve the private journals and pending Obsidian captures.
 
-Home Manager exposes all three commands in `~/.local/bin` so each job can also be run manually.
+The old Tickler mover is no longer installed or scheduled. Tasks Snoozed visibility changes with the calendar date without a mutation. Historical Google helper source and tests remain for reference, not as active personal workflows. The `gws-tasks` skill is restricted to explicitly requested legacy access.
 
 ## Agent transcript archive
 

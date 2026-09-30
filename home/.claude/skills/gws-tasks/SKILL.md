@@ -1,6 +1,6 @@
 ---
 name: gws-tasks
-description: "Google Tasks: Manage task lists and tasks."
+description: "Access legacy Google Tasks only when Herb explicitly requests Google Tasks or historical migration work. Use the tasks skill for personal task management."
 metadata:
   version: 0.22.5
   openclaw:
@@ -11,7 +11,9 @@ metadata:
     cliHelp: "gws tasks --help"
 ---
 
-# tasks (v1)
+# Legacy Google Tasks (v1)
+
+Herb’s current personal board is the Tasks app. Use `../tasks/SKILL.md` for ordinary task requests. This skill is only for explicitly requested legacy access; never use it as a fallback or a second writer.
 
 > **PREREQUISITE:** Read `../gws-shared/SKILL.md` for auth, global flags, and security rules. If missing, run `gws generate-skills` to create it.
 

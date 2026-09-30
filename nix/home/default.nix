@@ -17,7 +17,7 @@
   services.tasksAgent = {
     enable = true;
     spaceId = "B7CSO2L6KYNN4HZBSBNHP3LC3SA7PYNJO";
-    autoStart = false;
+    autoStart = true;
   };
 
   programs.home-manager.enable = true;

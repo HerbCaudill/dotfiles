@@ -1,4 +1,4 @@
-{ username, ... }:
+{ config, username, ... }:
 let
   homeDirectory = "/Users/${username}";
   userBin = "${homeDirectory}/.local/bin";
@@ -25,7 +25,8 @@ in
   };
 
   launchd.agents."process-inbox" = {
-    enable = true;
+    # Briefings still uses the legacy provider; resume after its Tasks integration.
+    enable = false;
     config = {
       Label = "com.herbcaudill.process-inbox";
       ProgramArguments = [ "${userBin}/process-inbox" ];
@@ -36,12 +37,15 @@ in
         HOME = homeDirectory;
         LANG = "en_US.UTF-8";
         PATH = automationPath;
+        TASKS_SPACE_ID = config.services.tasksAgent.spaceId;
+        TASKS_FRESHNESS = "converged";
       };
     };
   };
 
   launchd.agents."morning-briefing" = {
-    enable = true;
+    # Briefings still uses the legacy provider; resume after its Tasks integration.
+    enable = false;
     config = {
       Label = "com.herbcaudill.morning-briefing";
       ProgramArguments = [ "${userBin}/morning-briefing" ];
@@ -55,26 +59,10 @@ in
         HOME = homeDirectory;
         LANG = "en_US.UTF-8";
         PATH = automationPath;
+        TASKS_SPACE_ID = config.services.tasksAgent.spaceId;
+        TASKS_FRESHNESS = "converged";
       };
     };
   };
 
-  launchd.agents."resurface-tickler-tasks" = {
-    enable = true;
-    config = {
-      Label = "com.herbcaudill.resurface-tickler-tasks";
-      ProgramArguments = [ "${userBin}/resurface-tickler-tasks" ];
-      StartCalendarInterval = {
-        Hour = 6;
-        Minute = 0;
-      };
-      StandardOutPath = "/tmp/resurface-tickler-tasks.log";
-      StandardErrorPath = "/tmp/resurface-tickler-tasks.log";
-      EnvironmentVariables = {
-        HOME = homeDirectory;
-        LANG = "en_US.UTF-8";
-        PATH = automationPath;
-      };
-    };
-  };
 }

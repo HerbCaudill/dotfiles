@@ -1,4 +1,8 @@
-# Tasks workflow cutover preparation
+# Historical Tasks workflow cutover preparation
+
+As of September 30, 2026, the Tasks skill, review skill and PR adapter have been activated from this preparation with updated live files. Briefings integration remains pending and its jobs are paused. See `docs/tasks-agent.md` for current status. The proposed files, manifest and activation patch below are historical evidence; do not apply them to the current tree.
+
+## Original checkpoint
 
 This checkpoint is inert. The new PR workflow is not imported by the installed wrapper, the proposed skills are outside the linked skills directory, and no live Nix module, job, journal, checkpoint or task record has changed. Apply the reviewed patch only as part of the coordinated Tasks and Briefings cutover.
 

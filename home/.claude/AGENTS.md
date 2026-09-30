@@ -74,6 +74,10 @@ Prefer a purpose-built connector, API, or CLI. When browser UI is necessary, use
 
 Herb gives standing authorization to transfer a one-time OAuth response from the signed-in Chrome tab directly into the local process that initiated that exact OAuth flow. Do not ask again unless a higher-priority policy requires action-time confirmation. Never log or persist the response, and close agent-opened authorization tabs afterward.
 
+## Personal tasks
+
+Use the `tasks` skill and managed `tasks` CLI for Herb’s personal board. Use `task-review` for an Inbox review. Google Tasks is legacy data, accessed only on explicit request; never use it as a fallback. Beads tracks repository work.
+
 ## Task tracking
 
 Repositories with a `.beads` directory use `bd`. Do not use TodoWrite, TaskCreate, or Markdown task lists there. Create issues only when Herb asks or the work benefits from durable tracking, not for a small task you will finish immediately.

@@ -24,7 +24,7 @@ Use the underlying `gws` binary only for authentication diagnostics, schema disc
 
 ```bash
 # Herb's unattended local authentication
-gws-delegated tasks tasklists list
+gws-delegated calendar calendarList list
 
 # Browser-based OAuth (interactive)
 gws auth login

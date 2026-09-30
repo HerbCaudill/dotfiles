@@ -1,4 +1,5 @@
 {
+  config,
   lib,
   dotfilesRoot,
   pkgs,
@@ -8,6 +9,7 @@
 let
   homeDirectory = "/Users/${username}";
   userBin = "${homeDirectory}/.local/bin";
+  tasksAgent = config.home-manager.users.${username}.services.tasksAgent;
   marvinRepository = "${homeDirectory}/Code/HerbCaudill/marvin";
   marvinRuntimeDirectory = "${homeDirectory}/Library/Application Support/Marvin";
   marvinConfigPath = "${marvinRuntimeDirectory}/config.json";
@@ -257,12 +259,14 @@ in
   launchd.agents."github-pr-task-sync" = {
     serviceConfig = {
       Label = "com.herbcaudill.github-pr-task-sync";
-      ProgramArguments = [ "${userBin}/github-pr-task-sync" ];
+      ProgramArguments = [ "${pkgs.nodejs_24}/bin/node" "${userBin}/github-pr-task-sync" ];
       StartInterval = 60;
       StandardOutPath = "/tmp/github-pr-task-sync.log";
       StandardErrorPath = "/tmp/github-pr-task-sync.log";
       EnvironmentVariables = {
-        PATH = "${userBin}:${launchdPath}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin";
+        TASKS_SPACE_ID = tasksAgent.spaceId;
+        TASKS_FRESHNESS = "converged";
+        PATH = "${userBin}:/etc/profiles/per-user/${username}/bin:${launchdPath}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin";
       };
     };
   };

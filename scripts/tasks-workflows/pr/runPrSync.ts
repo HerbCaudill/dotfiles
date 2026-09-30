@@ -9,7 +9,7 @@ import { savePrState } from "./savePrState.ts"
 import { completePrEvent } from "./completePrEvent.ts"
 import { syncPrTasks } from "./syncPrTasks.ts"
 
-/** Inert entrypoint until the reviewed wrapper and scheduler cutover selects it. */
+/** Run the managed GitHub PR capture workflow against the enrolled Tasks space. */
 export async function runPrSync(
   /** Public binding and explicit freshness supplied by activation, never inferred from upload. */
   context: {

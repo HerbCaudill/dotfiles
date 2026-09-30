@@ -1,6 +1,8 @@
 # Managed Tasks agent
 
-The Tasks agent module is imported but disabled by default. `services.tasksAgent.enable = false` installs no executable, creates no launchd job or state, and leaves unrelated rebuilds inert. The Tasks skill is staged in `scripts/tasks-agent/SKILL.md`, outside the live linked skills directory. This checkpoint does not activate or enroll the service and does not change capture, briefing, research, Tickler or PR writers.
+The Tasks agent is enabled and enrolled in space `B7CSO2L6KYNN4HZBSBNHP3LC3SA7PYNJO`. UI-to-CLI and CLI-to-UI changes were verified on September 30, including a headless CLI change after a service restart. The shared [Tasks skill](../home/.claude/skills/tasks/SKILL.md) is active. Nix enables login startup and restart after exit.
+
+The PR workflow now targets Tasks. Inbox processing and morning briefings are paused because their implementation in the separate Briefings repository still uses Google Tasks. Their installed wrappers stop with an explicit error. Before resuming, integrate the Tasks provider there, reconcile existing capture/research journals without replaying successful work, update prompts and verify destination readback. Preserve pending captures, journals and old Google data. The Tickler mover is retired because Snoozed resurfaces by date without writes.
 
 ## Release preparation
 
@@ -20,7 +22,7 @@ Preparation archives the exact commit, so uncommitted developer files cannot ent
 
 ## Managed enrollment and startup
 
-These steps remain gated on the runtime proof, code review and explicitly selected space. The Tasks connection-status popover's **Connect Tasks agent** action prepares a single-use, five-minute delegated editor invitation for its selected space. It checks owner or administrator membership, provisions the owner's EDGE agent and enables the space's replication. The displayed public space ID must match the managed binding below. The service has a separate editor identity and uses that existing EDGE agent.
+For future enrollment or recovery, use the explicitly selected space. The Tasks connection-status popover's **Connect Tasks agent** action prepares a single-use, five-minute delegated editor invitation for its selected space. It checks owner or administrator membership, provisions the owner's EDGE agent and enables the space's replication. The displayed public space ID must match the managed binding below. The service has a separate editor identity and uses that existing EDGE agent.
 
 After those gates, set `services.tasksAgent.enable = true` and the explicit public `spaceId` in managed Nix source. Leave `autoStart = false` through enrollment. A normal `pnpm nix:rebuild` then installs `tasks`, `tasks-agent` and the launchd definition without starting the process. The root and private `agent/` parent are mode 0700; daemon stdout/stderr logs are inside that private parent. The separate `agent/peer/` child must be empty for initial enrollment. The receipt journal, process lock and socket stay in the parent.
 
@@ -28,7 +30,7 @@ Select the prepared release, then copy the one-time code and pass it directly th
 
 Use `tasks-agent start`, then `tasks status` to confirm the actual serving space and peer. `tasks-agent status` reports only supervisor presence and selected release; it cannot prove the peer is healthy. Set `autoStart = true` and rebuild only after successful enrollment and restart/browser-field verification. That enables login startup and restart after exit with a 60-second throttle. `tasks-agent stop` unloads the job and waits for released ownership, preventing an immediate launchd restart.
 
-Registration of the staged Tasks skill into `home/.claude/skills/tasks/SKILL.md` belongs to the coordinated cutover. That directory is linked live across agent tools; copying the skill there is an activation step, not inert preparation.
+The active skill is `home/.claude/skills/tasks/SKILL.md`. Its directory is linked live across Claude, Codex and Pi.
 
 ## Recovery and verification
 
@@ -38,4 +40,4 @@ If shutdown fails or the process retains its lock, stop and inspect. Do not remo
 
 The installation gate requires the real managed Node 24 executable, a command with all Tasks browsers closed, restart with the same identity/data/receipts, and an independent browser later receiving actual values. Nix evaluation and `plutil -lint` validate the inert definition; isolated release tests validate exact-commit preparation and ownership-protected promotion. These checks do not replace enrollment and field replication evidence. Scheduled work cannot run while the Mac sleeps or is off.
 
-No workflow writer changes belong to this installation checkpoint. Keep existing Google copies, private snapshots and journals for the separate migration/reconciliation and coordinated cutover procedures.
+Keep existing Google copies, private snapshots and journals for historical lookup and the remaining Briefings integration.
