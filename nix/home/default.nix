@@ -16,7 +16,7 @@
 
   services.tasksAgent = {
     enable = true;
-    spaceId = "B332VGPHCIMLELOP4I5XQ35Y65PESFLBI";
+    spaceId = "B7CSO2L6KYNN4HZBSBNHP3LC3SA7PYNJO";
     autoStart = false;
   };
 
