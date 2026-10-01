@@ -41,7 +41,7 @@ To pause the proxy, use `sudo launchctl bootout system/com.herbcaudill.localhost
 
 ## Browser storage
 
-A hostname is a browser origin. `https://tasks.localhost` has separate IndexedDB, OPFS, local storage, and service workers from `http://localhost:5180`, and each worktree has separate storage. Existing storage is left intact. Use Tasks' device-linking flow to enroll the new address rather than creating a replacement board or deleting an old replica. The local proxy does not change the public deployment or expose this Mac to phones or other devices. Tasks' existing DXOS synchronization services remain external dependencies.
+A hostname is a browser origin. `https://tasks.localhost` has separate IndexedDB, OPFS, local storage, and service workers from `http://localhost:5180`, and each worktree has separate storage. Existing storage is left intact. Use Tasks' device-linking flow to enroll the new address rather than creating a replacement board or deleting an old replica. The app validates the destination origin of Tasks invitations. For a link made at an old Tasks address, change only the scheme and host to `https://tasks.localhost`, preserving its path and full invitation fragment, and enter the separate pairing secret. Composer device links are supported separately. The local proxy does not change the public deployment or expose this Mac to phones or other devices. Tasks' existing DXOS synchronization services remain external dependencies.
 
 ## Verification
 
