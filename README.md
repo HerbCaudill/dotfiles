@@ -27,3 +27,7 @@ Home Manager installs `drenv`, the Mac command for paired native Mac/Windows Dev
 - `nix/darwin/default.nix` installs a LaunchAgent that watches `home/.claude` and runs `scripts/windows/install-claude-shared-config-from-mac.sh` when the repo-managed Claude config changes. If you are already inside Windows, run `scripts/windows/install-claude-shared-config.ps1` instead.
 - LaunchAgents live in `nix/darwin/default.nix`.
 - The Marvin digest LaunchAgent runs at login and at 07:00, scanning `~/Code/HerbCaudill` and `~/Code/DevResults`. Its private config and SQLite runtime live under `~/Library/Application Support/Marvin`; deterministic exports remain in `~/Code/HerbCaudill/marvin`; combined logs go to `~/Library/Logs/Marvin/digest.log`.
+
+## Local HTTPS development
+
+Nix installs the shared Portless proxy and `localhost-dev`. Tasks now starts at `https://tasks.localhost`, with folder prefixes for linked worktrees. See [shared localhost routing](docs/localhost-router.md) for installation, project scripts, recovery, and browser-storage behavior.

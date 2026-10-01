@@ -123,6 +123,8 @@ let
   '';
 in
 {
+  imports = [ ./localhost-router.nix ];
+
   nix.enable = false;
   nixpkgs.config.allowUnfree = true;
 
