@@ -79,6 +79,8 @@ Before triggering a deployment, apply the Beads branch guard below if the reposi
 
 4. **Check the site** at `https://<project-name>.herbcaudill.com`
 
+For web apps and PWAs, apply the [mobile-pwa skill](../mobile-pwa/SKILL.md) during verification. Check the live HTML, manifest, icon URLs, waiting-worker update notice, and desktop/mobile rendering. Use an isolated production preview origin for real worker update tests. Report physical iPhone checks separately; browser emulation cannot confirm the installed app's native top blur or keyboard behavior.
+
 ## Beads and Dolt metadata branches
 
 Beads projects that sync through Dolt can push a `__dolt_remote_info__` branch containing only `DOLT_REMOTE.md`. Vercel treats that push as an app preview and fails with errors such as `vite: command not found`. Older Beads setups may also use a `beads-sync` branch.

@@ -21,6 +21,8 @@ Keep every agent prompt in a standalone Markdown file named `<name>.prompt.md`, 
 
 ## React
 
+For web apps, apply the [mobile-pwa skill](../mobile-pwa/SKILL.md). Include real icons and explicit update notices from the first build. Preserve the immobile top header, prevent input-focus and page pinch zoom, and inspect desktop and phone screenshots whenever a layout changes. Carry the chosen desktop design through to a usable mobile layout in the same change.
+
 Define a `Props` type for every component and put it at the end of the file. Build conditional Tailwind class lists with the repository’s `cx` or `cn` helper, not string interpolation.
 
 ## Functional style

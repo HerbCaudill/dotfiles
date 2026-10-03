@@ -1,0 +1,56 @@
+/* Lock the document; only app content scrolls, so rubber-banding cannot drag the toolbar. */
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: pan-x pan-y;
+}
+
+#root {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+}
+
+/* WebKit needs a declared top toolbar with a solid, full-width background. */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--background, #fff);
+  border-bottom: 1px solid var(--border, #ddd);
+}
+
+.app-content {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+  overscroll-behavior: none;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* A computed font size below 16px triggers iPhone zoom on focus. */
+@media (max-width: 767px), (pointer: coarse) {
+  input,
+  textarea,
+  select,
+  [contenteditable="true"] {
+    font-size: 16px;
+  }
+}

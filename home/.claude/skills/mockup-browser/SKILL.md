@@ -20,6 +20,8 @@ The worked example this skill is based on: `~/Code/HerbCaudill/marvin/mockups/ui
 5. Build each mockup as a **complete standalone HTML page** at a fixed canvas, then escape it into the `srcdoc` attribute (see below).
 6. Save the file where it belongs in the repo (typically `mockups/<topic>.html`), open it for Herb (or publish as an artifact if that's the session's medium), and give a one-paragraph orientation — don't re-describe every tab.
 
+After Herb chooses a direction, adapt that same design to a phone canvas and visually inspect both sizes before implementation. Specify how panes, navigation, and dialogs change on mobile. A separate “Bonus · iPhone” concept does not verify the chosen desktop direction. Follow the [mobile-pwa skill](../mobile-pwa/SKILL.md) for the app shell and verification requirements.
+
 ## Mockup pages
 
 Each `srcdoc` page is fully self-contained:

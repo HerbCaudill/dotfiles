@@ -12,14 +12,25 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt",
+      includeAssets: ["icon.svg", "apple-touch-icon.png"],
       manifest: {
         name: "{{PROJECT_TITLE}}",
         short_name: "{{PROJECT_NAME}}",
         start_url: "/",
         display: "standalone",
         background_color: "#ffffff",
-        theme_color: "#000000",
+        theme_color: "#ffffff",
+        icons: [
+          { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+          { src: "/pwa-512x512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+          {
+            src: "/pwa-maskable-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
+        ],
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
