@@ -44,6 +44,7 @@ Single quotes stay as-is (use them inside inline styles for font names). Newline
 
 ## Quality bar
 
+- Apply the [app-design skill](../app-design/SKILL.md). Desktop designs should show how common workflows work from the keyboard, where hotkey hints belong, and how users find the shortcut reference. Show all search results or automatic infinite paging as appropriate. Omit desktop hotkey hints and the reference from mobile mockups.
 - Every option must look **finished** — real hierarchy, aligned spacing, considered color — not wireframe-gray boxes. The point is to feel what each direction would be like to live with.
 - Data must be **consistent across options**: same counts, same item names, same timestamps. If option A shows "3 items need attention", every option shows those same 3 items.
 - Meta lines are load-bearing: a reader should be able to pick a direction from the Why/Tradeoff pairs alone before looking at anything.

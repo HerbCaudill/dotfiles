@@ -8,7 +8,7 @@ user_invocation: scaffold <project-name>
 
 ## Overview
 
-Scaffold a frontend-only PWA with React, TypeScript, Vite, Tailwind v4, shadcn/ui, and IBM Plex fonts. Start with a small working app that has its own placeholder icon, explicit update notice, immobile header, and scrolling content. Apply the [mobile-pwa skill](../mobile-pwa/SKILL.md) for the defaults and verification requirements.
+Scaffold a frontend-only PWA with React, TypeScript, Vite, Tailwind v4, shadcn/ui, and IBM Plex fonts. Start with a small working app that has its own placeholder icon, explicit update notice, immobile header, and scrolling content. Apply the [app-design skill](../app-design/SKILL.md) as features are added: desktop apps should be usable from the keyboard, hotkeys should be discoverable with a desktop reference, and search should show all matches or use infinite paging when needed. Apply the [mobile-pwa skill](../mobile-pwa/SKILL.md) for the defaults and verification requirements.
 
 ## Usage
 
