@@ -1,4 +1,9 @@
-{ config, username, ... }:
+{
+  config,
+  pkgs,
+  username,
+  ...
+}:
 let
   homeDirectory = "/Users/${username}";
   userBin = "${homeDirectory}/.local/bin";
@@ -38,6 +43,30 @@ in
         PATH = automationPath;
         TASKS_SPACE_ID = config.services.tasksAgent.spaceId;
         TASKS_FRESHNESS = "converged";
+      };
+    };
+  };
+
+  launchd.agents."dream" = {
+    enable = true;
+    config = {
+      Label = "com.herbcaudill.dream";
+      ProgramArguments = [
+        "${pkgs.nodejs_24}/bin/node"
+        "${homeDirectory}/Code/HerbCaudill/dreams/scripts/runDream.ts"
+      ];
+      WorkingDirectory = "${homeDirectory}/Code/HerbCaudill/dreams";
+      StartCalendarInterval = {
+        Hour = 2;
+        Minute = 0;
+      };
+      StandardOutPath = "/tmp/dream.log";
+      StandardErrorPath = "/tmp/dream.log";
+      EnvironmentVariables = {
+        HOME = homeDirectory;
+        LANG = "en_US.UTF-8";
+        PATH = automationPath;
+        TZ = "Europe/Madrid";
       };
     };
   };
