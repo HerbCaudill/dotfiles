@@ -13,4 +13,6 @@ The command owns the complete workflow. It processes new Obsidian inbox captures
 
 The Tasks provider requires the reviewed serving space and explicit freshness. An unavailable service or unmet convergence requirement is an actionable failure; do not substitute Google Tasks, stale cached records or an upload acknowledgement. The scheduled environment provides the public space binding and freshness without copying credentials.
 
+Use the Backtrack location result to filter which tasks the briefing surfaces. When Herb is in Tamariu, omit tasks that require being in Barcelona; when he is in Barcelona, omit tasks that require being in Tamariu. Location-independent tasks remain eligible. If the result is `other` or unavailable, do not assume either place. Keep the complete task inventory for duplicate and completion checks.
+
 Do not gather sources separately, edit the daily note yourself, take actions from the briefing, or start a second task review. When the command succeeds, respond with only the briefing it printed, exactly as printed; the interview continues in its pinned session. When it fails, report the command error plainly and point to the newest run manifest under `~/.local/state/morning-briefing/YYYY-MM-DD/`. If only the review kickoff fails, the verified briefing remains pinned for recovery.
