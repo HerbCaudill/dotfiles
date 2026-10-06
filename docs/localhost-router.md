@@ -24,7 +24,7 @@ Give the raw server a named package script and route the complete development co
 
 For another service, use `localhost-dev --service api pnpm dev:api`. Its address is `https://api.tasks.localhost` in the main checkout or `https://tofu.api.tasks.localhost` in that worktree. Required services must start and stop together through the project's `pnpm dev` workflow.
 
-Vite must listen on loopback at `PORT` with `strictPort: true`. Use `PORTLESS_URL` for allowed hostnames and the public HMR address: `wss`, its hostname, and client port 443. Keep the raw server script available for isolated tests and environments without this Mac's managed proxy. Tasks is the first integrated project; its isolated browser suites still start their own direct servers and never reuse a development server.
+Vite must listen on loopback at `PORT` with `strictPort: true`. Use `PORTLESS_URL` for allowed hostnames and the public HMR address: `wss`, its hostname, and client port 443. Keep the raw server script available for isolated tests and environments without this Mac's managed proxy. Tasks and the recently active web apps are integrated. Each app’s `docs/local-development.md` documents its commands; browser suites retain direct servers and never reuse a routed development server. See [the adoption report](localhost-adoption.md) for addresses and verification.
 
 ## Inspect and recover
 
