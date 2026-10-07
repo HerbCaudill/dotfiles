@@ -54,8 +54,8 @@ try {
     [void][IO.Directory]::CreateDirectory((Join-Path $manifest.paths.runtime 'web\Core\Db'))
     $manifest.catalog = 'drenv_test'
     $settingsTemplate = Join-Path $testRoot 'SecureSettings.config'
-    [IO.File]::WriteAllText($settingsTemplate, '<appSettings><add key="BlobStorageContainer" value="existing-container"/><add key="AzureBlobStorageAccount" value="foreign-cloud"/></appSettings>')
-    [IO.File]::WriteAllText((Join-Path $manifest.paths.runtime 'web\Web.config'), '<configuration><system.net><mailSettings><smtp deliveryMethod="Network"><specifiedPickupDirectory pickupDirectoryLocation="C:\mail"/></smtp></mailSettings></system.net></configuration>')
+    [IO.File]::WriteAllText($settingsTemplate, '<appSettings><add key="BlobStorageContainer" value="existing-container"/><add key="AzureBlobStorageAccount" value="foreign-cloud"/><add key="Observability.Disabled" value="false"/></appSettings>')
+    [IO.File]::WriteAllText((Join-Path $manifest.paths.runtime 'web\Web.config'), '<configuration><appSettings file="SecureSettings.config"><add key="Observability.Disabled" value="false"/></appSettings><system.net><mailSettings><smtp deliveryMethod="Network"><specifiedPickupDirectory pickupDirectoryLocation="C:\mail"/></smtp></mailSettings></system.net></configuration>')
     New-OwnedApplicationConfig $manifest $settingsTemplate
     [xml]$web = [IO.File]::ReadAllText((Join-Path $manifest.paths.runtime 'web\Web.config'))
     [xml]$app = [IO.File]::ReadAllText((Join-Path $manifest.paths.runtime 'web\SecureSettings.config'))
@@ -63,9 +63,13 @@ try {
     Assert-True ($web.SelectSingleNode('//specifiedPickupDirectory').pickupDirectoryLocation -ceq (Join-Path $manifest.paths.runtime 'mail')) 'Mail stays in owned deployment config'
     Assert-True ($app.SelectSingleNode("/appSettings/add[@key='AzureBlobStorageAccount']").value -ceq '') 'Cloud credential path is disabled'
     Assert-True ($app.SelectSingleNode("/appSettings/add[@key='AutoDbRefresh.Enabled']").value -ceq 'false') 'Copied schema is never silently upgraded'
+    $configMap = New-Object System.Configuration.ExeConfigurationFileMap
+    $configMap.ExeConfigFilename = Join-Path $manifest.paths.runtime 'web\Web.config'
+    $effectiveConfig = [System.Configuration.ConfigurationManager]::OpenMappedExeConfiguration($configMap, [System.Configuration.ConfigurationUserLevel]::None)
+    Assert-True ($effectiveConfig.AppSettings.Settings['Observability.Disabled'].Value -ceq 'true') 'Copied settings cannot re-enable local telemetry'
     Assert-True ($connections.SelectSingleNode("/connectionStrings/add[@name='Main']").connectionString -match 'Initial Catalog=drenv_test') 'SQL targets the owned catalog'
     Assert-True ($connections.SelectSingleNode("/connectionStrings/add[@name='AzureBlobStorage']").connectionString -match 'BlobEndpoint=http://127.0.0.1:23002/') 'Blob endpoint targets the reserved port'
-    $passed += 5
+    $passed += 6
     $properties = @(@{ name = 'drenv.environmentId'; value = 'test' }, @{ name = 'drenv.ownerToken'; value = $manifest.ownerToken })
     Assert-CatalogMetadata $properties @(@{ physical_name = (Join-Path $manifest.paths.runtime 'sql\0.mdf') }) $manifest
     Expect-Refusal { Assert-CatalogMetadata @() @() $manifest } 'interrupted restore'

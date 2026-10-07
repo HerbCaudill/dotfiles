@@ -215,6 +215,7 @@ function New-OwnedApplicationConfig($Manifest, [string]$SettingsTemplate = 'C:\C
     Set-AppSetting $settings 'AppTempPath' (Join-Path $Manifest.paths.runtime 'temp')
     Set-AppSetting $settings 'DiskCachePath' (Join-Path $Manifest.paths.runtime 'cache')
     Set-AppSetting $settings 'AutoDbRefresh.Enabled' 'false'
+    Set-AppSetting $settings 'Observability.Disabled' 'true'
     Set-AppSetting $settings 'AzureBlobStorageAccount' ''
     $secretPath = Join-Path $Manifest.paths.runtime 'azurite-secret.json'
     if ([IO.File]::Exists($secretPath)) { $secret = Get-Json $secretPath } else {
