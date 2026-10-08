@@ -22,6 +22,8 @@
     pnpm
     python313
     ripgrep
+    # Reads Signal Desktop's encrypted database for the morning briefing.
+    sigtop
     tree
     uv
     watchman

@@ -1,5 +1,6 @@
 {
   config,
+  lib,
   pkgs,
   username,
   ...
@@ -8,6 +9,7 @@ let
   homeDirectory = "/Users/${username}";
   userBin = "${homeDirectory}/.local/bin";
   userProfileBin = "/etc/profiles/per-user/${username}/bin";
+  morningBriefingLauncher = "${homeDirectory}/.local/libexec/morning-briefing-launcher";
   automationPath = "${userBin}:${homeDirectory}/Library/pnpm/bin:${userProfileBin}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin";
 in
 {
@@ -75,7 +77,7 @@ in
     enable = true;
     config = {
       Label = "com.herbcaudill.morning-briefing";
-      ProgramArguments = [ "${userBin}/morning-briefing" ];
+      ProgramArguments = [ morningBriefingLauncher ];
       StartCalendarInterval = {
         Hour = 7;
         Minute = 0;
@@ -92,4 +94,18 @@ in
     };
   };
 
+  # Build the launcher outside the Nix store and only when its source changes, so its code
+  # signature, and the Full Disk Access granted to it, survive rebuilds and Nix updates.
+  home.activation.morningBriefingLauncher = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    source=${./../../scripts/morning-briefing/launcher.c}
+    target=${lib.escapeShellArg morningBriefingLauncher}
+    stamp="$target.source"
+    if [ ! -x "$target" ] || [ "$(cat "$stamp" 2>/dev/null)" != "$source" ]; then
+      run mkdir -p "$(dirname "$target")"
+      run /usr/bin/clang -O2 -o "$target" "$source"
+      run /usr/bin/codesign --force --sign - --identifier com.herbcaudill.morning-briefing-launcher "$target"
+      run sh -c 'echo "$1" > "$2"' _ "$source" "$stamp"
+      echo "Rebuilt $target; grant it Full Disk Access in System Settings › Privacy & Security."
+    fi
+  '';
 }
