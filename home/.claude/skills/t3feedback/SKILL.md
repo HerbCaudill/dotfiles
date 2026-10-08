@@ -15,7 +15,7 @@ Restate the problem in one or two sentences. Ask one question at a time only whe
 
 Gather what you can without asking:
 
-- Installed version: ask Herb only if you can't find it in T3 Code's settings or in the installed app bundle (for example, `defaults read "/Applications/T3 Code.app/Contents/Info" CFBundleShortVersionString` on macOS – check the actual app name first).
+- Installed version: ask Herb only if you can't find it in T3 Code's settings or in the installed app bundle (for example, `defaults read "/Applications/T3 Code (Nightly).app/Contents/Info" CFBundleShortVersionString` on macOS – Herb runs the nightly build, but check `ls /Applications` first).
 - Environment: OS and version (`sw_vers`), provider and model if relevant.
 - Logs, if the problem left traces. For bugs that need a real investigation of the machine, suggest Herb run `npx t3 triage`, which is the project's agent-driven bug filer, instead of doing it here.
 
