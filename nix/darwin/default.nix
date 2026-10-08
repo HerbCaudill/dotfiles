@@ -135,6 +135,7 @@ in
 
   programs.zsh.enable = true;
   environment.shells = [ pkgs.zsh ];
+  fonts.packages = [ pkgs.ibm-plex ];
   system.primaryUser = username;
 
   security.pam.services.sudo_local.enable = false;
