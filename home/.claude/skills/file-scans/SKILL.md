@@ -43,7 +43,8 @@ For a first run or after changing these rules, do a batch of about 20 files befo
 
 The morning briefing runs this skill on a schedule with nobody to review the plan. Herb has authorized unattended runs to apply the full plan, including merges, splits, and duplicate deletions, without approval. In that mode:
 
-- Only touch the inboxes. Do not revisit the year folders.
+- Only file scans from the inboxes. Do not rename anything already in the year folders.
+- Before filing a scan, compare it with documents already filed near its date (same sender, same date, or same subject in that year's folder). If it is the same document, delete the new scan as a duplicate instead of filing a second copy.
 - Write the plan to a scratch directory outside Drive, then apply it. Do not ask questions; settle uncertain dates and identities with the rules above and record the doubt instead.
 - If the script rejects the plan, fix the plan and retry. Never force an overwrite. Leave a file in its inbox if it still cannot be filed, and say why.
 - Report what was filed, and separately what needs Herb's attention: payment demands, fines, deadlines, appointments, tax, legal, or official notices that ask for action, anything a family member must sign or bring somewhere, and anything filed with low confidence. Name the document by its new path, and give the deadline or amount when there is one. Ordinary statements, receipts, and confirmations need no attention.
