@@ -39,6 +39,15 @@ Split scans that hold more than one document, such as a bank statement followed 
 
 For a first run or after changing these rules, do a batch of about 20 files before the rest.
 
+## Unattended runs
+
+The morning briefing runs this skill on a schedule with nobody to review the plan. Herb has authorized unattended runs to apply the full plan, including merges, splits, and duplicate deletions, without approval. In that mode:
+
+- Only touch the inboxes. Do not revisit the year folders.
+- Write the plan to a scratch directory outside Drive, then apply it. Do not ask questions; settle uncertain dates and identities with the rules above and record the doubt instead.
+- If the script rejects the plan, fix the plan and retry. Never force an overwrite. Leave a file in its inbox if it still cannot be filed, and say why.
+- Report what was filed, and separately what needs Herb's attention: payment demands, fines, deadlines, appointments, tax, legal, or official notices that ask for action, anything a family member must sign or bring somewhere, and anything filed with low confidence. Name the document by its new path, and give the deadline or amount when there is one. Ordinary statements, receipts, and confirmations need no attention.
+
 ## Drive stalls
 
 Drive for desktop can hang indefinitely when many online-only files are read at once, and a few files can stay stuck even after the folder is made available offline. Read with a timeout (`timeout 15 pdfinfo …`). If reads hang, download the files through the Drive API instead (`gws-delegated drive files get --params '{"fileId":"…","alt":"media"}' --output <path>`; the scans folder ID is `1a8cuUGYF2TSdu06cHAjU948qXRkyAZVB`) into a local cache and read from there. Renames and moves still work on stuck files. To merge or split a stuck file, run the script against a temporary folder holding the cached copy, copy the results into Drive, then delete the original.
