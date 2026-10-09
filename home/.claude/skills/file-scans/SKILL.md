@@ -26,13 +26,19 @@ File each document in a folder named for its year, such as `2024/`, creating the
 
 ## Merging
 
-Merge scans that logically form one document, such as the pages of one letter scanned separately or a policy packet split across files. Order pages as they read. Do not merge separate documents that merely arrived together, like two different bills from the same sender or several receipts from one trip. Exact duplicate scans of the same document should be merged by keeping one copy: list only the better scan as a source and flag the other for Herb to decide.
+Merge scans that logically form one document, such as the pages of one letter scanned separately or a policy packet split across files. Order pages as they read. Do not merge separate documents that merely arrived together, like two different bills from the same sender or several receipts from one trip. Delete exact duplicate scans, keeping the better copy.
+
+Split scans that hold more than one document, such as a bank statement followed by a tax form, or a stray handwritten note at the end of a packet. Each part gets its own name and date. A page that is merely the back of a sheet (bleed-through, scrap paper reused for notes) stays with its front.
 
 ## Process
 
 1. **Read.** List the inbox PDFs. For each, read the first two pages with `pdftotext -l 2 <file> -`. If the text is garbage or empty, render the first page with `pdftoppm -r 80 -png -f 1 -l 1 <file> <tmpdir>/page` and look at the image. Delegate reading to parallel subagents when there are more than about 30 files.
-2. **Propose.** Write a plan as JSON in a scratch directory outside Drive: an array of `{ "sources": [...], "target": "..." }` entries with paths relative to the scans folder and sources in page order. Show Herb a table of current name → proposed name, marking merges and anything uncertain. Ask about uncertain items rather than guessing.
-3. **Apply.** After Herb approves, run `node scripts/applyFilingPlan.ts <scans folder> <plan.json>` from this skill's directory. It checks the whole plan before changing anything, refuses to overwrite, verifies merged page counts, deletes merged sources (they go to Drive's trash for 30 days), and appends each change to `.filing-log.jsonl` in the scans folder.
+2. **Propose.** Write a plan as JSON in a scratch directory outside Drive: an array of `{ "sources": [...], "target": "..." }` entries with paths relative to the scans folder and sources in page order. To split a scan, give it one entry per part with `"pages": "1-2"` (or `"1,3"`); together they must cover every page once. To delete a duplicate, use `"target": null`. Show Herb the proposals, marking merges, splits, deletions and anything uncertain. For more than a few dozen files, write a standalone HTML review page with its own styles (not T3 theme variables) and `open` it. Ask about uncertain items rather than guessing.
+3. **Apply.** After Herb approves, run `node scripts/applyFilingPlan.ts <scans folder> <plan.json>` from this skill's directory. It checks the whole plan before changing anything, refuses to overwrite, verifies page counts of merges and splits, deletes merged, split and duplicate sources (they go to Drive's trash for 30 days), and appends each change to `.filing-log.jsonl` in the scans folder.
 4. **Report.** Say how many documents were filed and merged, and list anything left in the inboxes and why.
 
 For a first run or after changing these rules, do a batch of about 20 files before the rest.
+
+## Drive stalls
+
+Drive for desktop can hang indefinitely when many online-only files are read at once, and a few files can stay stuck even after the folder is made available offline. Read with a timeout (`timeout 15 pdfinfo …`). If reads hang, download the files through the Drive API instead (`gws-delegated drive files get --params '{"fileId":"…","alt":"media"}' --output <path>`; the scans folder ID is `1a8cuUGYF2TSdu06cHAjU948qXRkyAZVB`) into a local cache and read from there. Renames and moves still work on stuck files. To merge or split a stuck file, run the script against a temporary folder holding the cached copy, copy the results into Drive, then delete the original.

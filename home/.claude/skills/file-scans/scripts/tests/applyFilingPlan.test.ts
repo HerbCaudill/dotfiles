@@ -36,6 +36,45 @@ describe("applyFilingPlan", () => {
     expect(await readFile(join(root, ".filing-log.jsonl"), "utf8")).toContain("CP2000")
   })
 
+  test("splits a scan holding several documents and deletes duplicates", async () => {
+    const root = await makeScansFolder({
+      "bundle.pdf": "tax p1|tax p2|fine p1|note",
+      "copy.pdf": "dup",
+    })
+
+    await applyFilingPlan(
+      root,
+      [
+        { sources: ["bundle.pdf"], pages: "1-2", target: "2024/20240617 Tax receipt.pdf" },
+        { sources: ["bundle.pdf"], pages: "3", target: "2024/20241101 Fine.pdf" },
+        { sources: ["bundle.pdf"], pages: "4", target: "2025/20250101 Note.pdf" },
+        { sources: ["copy.pdf"], target: null },
+      ],
+      fakePdfTools,
+    )
+
+    expect(await readFile(join(root, "2024/20240617 Tax receipt.pdf"), "utf8")).toBe(
+      "tax p1|tax p2",
+    )
+    expect(await readFile(join(root, "2024/20241101 Fine.pdf"), "utf8")).toBe("fine p1")
+    expect(await readFile(join(root, "2025/20250101 Note.pdf"), "utf8")).toBe("note")
+    expect((await readdir(root)).sort()).toEqual([".filing-log.jsonl", "2024", "2025"])
+  })
+
+  test("refuses to split a scan when some of its pages are not assigned", async () => {
+    const root = await makeScansFolder({ "bundle.pdf": "a|b|c" })
+
+    await expect(
+      applyFilingPlan(
+        root,
+        [{ sources: ["bundle.pdf"], pages: "1-2", target: "2024/20240101 A.pdf" }],
+        fakePdfTools,
+      ),
+    ).rejects.toThrow("page 3 not assigned")
+
+    expect(await readdir(root)).toEqual(["bundle.pdf"])
+  })
+
   test("changes nothing when any target already exists", async () => {
     const root = await makeScansFolder({
       "a.pdf": "a",
@@ -82,6 +121,18 @@ const fakePdfTools = {
   ) => {
     const parts = await Promise.all(sources.map(source => readFile(source, "utf8")))
     await writeFile(target, parts.join("|"))
+  },
+  /** Copy the chosen separator-delimited parts. */
+  extractPages: async (
+    /** Absolute source path. */
+    source: string,
+    /** One-based page numbers in output order. */
+    pages: number[],
+    /** Absolute output path. */
+    target: string,
+  ) => {
+    const parts = (await readFile(source, "utf8")).split("|")
+    await writeFile(target, pages.map(page => parts[page - 1]).join("|"))
   },
   /** Count separator-delimited parts as pages. */
   countPages: async (
