@@ -31,6 +31,7 @@ Historical capture and research journals retain original text and timestamps. Pe
 
 ## Apply the decision
 
+- A reviewed Inbox task must leave the Inbox unless it is completed or deferred: promote it to a project, add it to an existing project, or move it to Tasks (the `other` view). Do not leave a task in the Inbox after discussing it.
 - Complete or reopen a task with the explicit desired-state command after Herb decides its status. Preserve history rather than deleting it merely to clear the view.
 - Change title, project, tag or placement with the fresh observed values as preconditions. A conflict requires another read and reconciliation; it is not permission to overwrite newer work.
 - Star or unstar explicitly. Choose an existing bin and stable ordering anchors when Herb makes a Next steps decision.
