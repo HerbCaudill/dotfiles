@@ -9,7 +9,7 @@ The scans folder is `~/Library/CloudStorage/GoogleDrive-herb@devresults.com/My D
 
 ## Scope
 
-New scans arrive in two inboxes: PDFs loose at the top level of the scans folder, and PDFs in `Lynne Inbox`. File both the same way. Leave the year folders and `~Older` alone unless Herb asks otherwise.
+New scans arrive in two inboxes: PDFs loose at the top level of the scans folder, and PDFs in `Lynne Inbox`. File both the same way. Year folders are in scope too: rename any file there that does not yet follow the naming rules, and move it if it is in the wrong year. Leave `~Older` alone unless Herb asks otherwise.
 
 ## Naming rules
 
