@@ -109,6 +109,11 @@ try {
     Check ($state.failure -match 'Build command fixture exited 7 \(RuntimeException, script line \d+\)') 'Failure receipt must identify its stage, exception type, and script line'
     for($attempt=0;$attempt -lt 40 -and (Test-Supervisor $state);$attempt++){Start-Sleep -Milliseconds 100}
     Check (-not(Test-Supervisor $state)) 'Failed supervisor survived'
+    # A Windows restart ends every owned process without updating the receipt.
+    $interrupted=Get-State $m;$interrupted.status='running';$interrupted.mode='runtime';$interrupted.processStartTime=(Get-LastBootTime).AddMinutes(-5).ToString('o')
+    Write-JsonAtomic (Join-Path (Get-Control $m) 'state.json') $interrupted
+    Stop-OwnedSupervisor $m
+    Check ((Get-State $m).status -ceq 'stopped') 'Receipt from before the last restart was not recorded as stopped'
     # A normal ignored pnpm dependency junction must not block clean worktree removal.
     & {
         function Assert-Catalog($Manifest) {return $false}

@@ -13,6 +13,7 @@ function Get-State($Manifest) {
     Assert-Owner $state $Manifest
     return $state
 }
+function Get-LastBootTime { return (Get-CimInstance Win32_OperatingSystem).LastBootUpTime.ToUniversalTime() }
 function Test-Supervisor($State) {
     if($null -eq $State -or [int]$State.pid -le 0){return $false}
     $process=Get-CimInstance Win32_Process -Filter "ProcessId=$([int]$State.pid)"
@@ -52,8 +53,19 @@ function Assert-SupervisorIdle($Manifest,$State) {
     $task=Get-OwnedTask $Manifest $State
     if(($null -ne $State -and $State.status -in @('queued','starting','running')) -or ($null -ne $task -and $task.State -in @('Queued','Running'))){Deny 'An owned task is queued/running or its launch is ambiguous; inspect the exact task and supervisor receipt before retry.'}
 }
+# A supervisor recorded before the last Windows restart cannot still be running, nor can its Job's children.
+function Clear-PreBootSupervisor($Manifest,$State) {
+    if($null -eq $State -or $State.status -notin @('queued','starting','running') -or -not $State.processStartTime){return $State}
+    if([DateTimeOffset]::Parse($State.processStartTime).UtcDateTime -ge (Get-LastBootTime)){return $State}
+    $task=Get-OwnedTask $Manifest $State
+    if($null -ne $task -and $task.State -in @('Queued','Running')){return $State}
+    $State.status=if($State.mode -eq 'runtime'){'stopped'}else{'failed'}
+    $State | Add-Member -NotePropertyName interruptedByRestart -NotePropertyValue $true -Force
+    Write-JsonAtomic (Join-Path (Get-Control $Manifest) 'state.json') $State
+    return Get-State $Manifest
+}
 function Stop-OwnedSupervisor($Manifest) {
-    $state=Get-State $Manifest
+    $state=Clear-PreBootSupervisor $Manifest (Get-State $Manifest)
     [void](Get-OwnedTask $Manifest $state)
     if(Test-Supervisor $state) {
         if($state.mode -notin @('runtime','maintenance')){Deny 'An owned build is still active; wait for it to complete before changing the environment.'}
