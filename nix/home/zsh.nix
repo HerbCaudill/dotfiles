@@ -3,8 +3,6 @@
   home.sessionPath = [
     "$HOME/.local/bin"
     "$HOME/.local/share/pnpm"
-    "$HOME/.proto/bin"
-    "$HOME/.proto/shims"
     "$HOME/Library/pnpm/bin"
     "$HOME/Library/pnpm"
   ];
@@ -25,7 +23,8 @@
 
       export PROTO_HOME="$HOME/.proto"
       export PNPM_HOME="$HOME/Library/pnpm"
-      export PATH="$PNPM_HOME/bin:$PNPM_HOME:$PROTO_HOME/shims:$PROTO_HOME/bin:$PATH"
+      export PATH="$PNPM_HOME/bin:$PNPM_HOME:$PATH:$PROTO_HOME/bin"
+      ${builtins.readFile ./zsh-proto.zsh}
       export VISUAL=code
       export EDITOR="$VISUAL"
       export CLOUDSDK_PYTHON=${pkgs.python313}/bin/python3
