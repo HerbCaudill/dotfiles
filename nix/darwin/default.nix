@@ -138,6 +138,37 @@ in
   fonts.packages = [ pkgs.ibm-plex ];
   system.primaryUser = username;
 
+  # GUI apps stay on Homebrew casks, which install into /Applications and update
+  # themselves; command-line tools come from Nix in nix/home/packages.nix.
+  homebrew = {
+    enable = true;
+    onActivation.cleanup = "none";
+    taps = [ "minghinmatthewlam/tap" ];
+    casks = [
+      "1password-cli"
+      "adobe-creative-cloud"
+      "alt-tab"
+      "amethyst"
+      "discord"
+      "iterm2"
+      "macfuse"
+      "minghinmatthewlam/tap/pi-gui"
+      "nordvpn"
+      "notion"
+      "obsidian"
+      "opera"
+      "rar"
+      "raycast"
+      "rescuetime"
+      "scansnap-home"
+      "shottr"
+      "signal"
+      "slack"
+      "spotify"
+      "typora"
+    ];
+  };
+
   security.pam.services.sudo_local.enable = false;
 
   system.activationScripts.postActivation.text = ''
