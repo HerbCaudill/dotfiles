@@ -43,6 +43,8 @@ Prefer TypeScript, React, Vite, pnpm, oxfmt, Vitest, Playwright, Tabler icons, a
 
 `pnpm dev` must always be sufficient to run the complete site locally, including the services its features require. If multiple processes are needed, give each a named script such as `pnpm dev:web` and `pnpm dev:api`, and have `pnpm dev` start and stop them together. Do not leave required startup steps in ad hoc commands or separate terminals. Document any external services used by local development.
 
+When Herb asks you to run or start a site, launch its dev server as a detached process with no time limit (for example, `nohup pnpm dev > /tmp/<repo>-dev.log 2>&1 &`), not as a time-limited background task. Report the URL and how to stop it.
+
 Diagnose bugs before fixing them. Establish the intended behavior and likely cause before deciding what to test.
 
 For new or modified code that changes executable behavior, use red-green TDD when a stable automated test is practical: write one focused behavioral test, watch it fail for the expected reason, make the smallest change that passes it, then refactor while green. Test public outcomes rather than implementation details.
