@@ -20,10 +20,10 @@ Work in a scratch directory such as `/tmp/vfb`, not beside the video.
 ```bash
 mkdir -p /tmp/vfb/frames && cd /tmp/vfb
 ffmpeg -loglevel error -y -i "$VIDEO" -vn -ac 1 -ar 16000 audio.wav
-ffmpeg -loglevel error -y -i "$VIDEO" -vf "fps=1/10,scale=1752:-1" -q:v 4 frames/f_%04d.jpg
+ffmpeg -loglevel error -y -i "$VIDEO" -vf "fps=1/10,scale=iw/2:-1" -q:v 4 frames/f_%04d.jpg
 ```
 
-Frame `f_N.jpg` is at `(N-1) * 10` seconds. Scale to half width for Retina recordings so text stays readable without wasting tokens. For a moment that needs more precision, grab a single frame: `ffmpeg -ss 00:05:12 -i "$VIDEO" -frames:v 1 -q:v 3 at-0512.jpg`.
+Frame `f_N.jpg` is at `(N-1) * 10` seconds. Half-width frames keep Retina text readable without wasting tokens. For a moment that needs more precision, grab a single frame: `ffmpeg -ss 00:05:12 -i "$VIDEO" -frames:v 1 -q:v 3 at-0512.jpg`.
 
 ## 3. Transcribe
 
