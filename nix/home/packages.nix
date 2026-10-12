@@ -7,6 +7,7 @@
     dolt
     expect
     fd
+    ffmpeg
     findutils
     fzf
     gawk
