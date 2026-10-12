@@ -93,6 +93,7 @@ Keep beads out of agent-instructions files. Initialize with `bd init --agents-pr
 - Clone repositories into `~/Code/{orgname}/{reponame}`.
 - Use AGENTS.md as the canonical repository instructions file. Claude Code reads it when CLAUDE.md is absent; do not create a CLAUDE.md compatibility symlink. Claude still requires ~/.claude/CLAUDE.md for user-wide instructions, so its managed global entry point links to the shared AGENTS.md source.
 - Finish work by committing, pushing successfully, and closing its task when applicable.
+- Commit directly to `main` unless Herb says otherwise. Only the DevResults application repository uses a pull request workflow. ViberResults will eventually use one too, but Herb is its only contributor for now, so commit to `main` there as well.
 - Give commit messages a concise subject and a short paragraph explaining the context and reasoning.
 - For Codex commits, set `GIT_AUTHOR_NAME=Codex` and `GIT_AUTHOR_EMAIL=codex@localhost` on the commit command. Do not change the configured committer identity.
 - Use relative paths within a repository.
