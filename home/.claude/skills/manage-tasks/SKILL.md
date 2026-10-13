@@ -27,7 +27,7 @@ If the user says a problem is "still" happening or otherwise expected it to be f
 - Add blocking dependencies with `bd dep add <issue> <depends-on>`.
 - Link earlier work on the same topic with `--deps related:<id>`.
 - Include acceptance criteria and a verification strategy when the outcome is not obvious.
-- Mark work that needs a human — portal access, credentials, approvals — with a `human` label and an assignee. bd has no built-in concept for this; `bd human` is only a help screen.
+- Put work that Herb must do himself — portal access, credentials, approvals, vendor conversations — in his Tasks app with the `tasks` skill, not only in Beads. Create a Beads issue for it only when repository work must wait on it. That issue gets the `human` label, the Tasks link as its `--external-ref`, and a description that links to the Tasks task rather than repeating it. Keep Beads IDs out of the Tasks task. bd has no built-in concept for human work; `bd human` is only a help screen.
 
 ### Task size
 
