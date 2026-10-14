@@ -64,7 +64,7 @@ End plans with unresolved questions, if any. Use hard cutovers unless Herb asks 
 
 When scheduling meetings, use Zoom rather than Google Meet.
 
-For involved delegated work, create a standalone Codex task rather than an in-thread subagent. Use subagents for quick, narrow actions.
+When Herb asks you to put an agent on something, or for any involved delegated work, launch a standalone top-level T3 Code thread (`t3_thread_launch`, Codex by default) so he can open it and talk to the agent directly. Do not use an in-thread subagent for that. Use subagents only for quick, narrow actions he will not need to follow up on.
 
 When assigning work to another agent, use the shortest instruction that uniquely identifies it. If the authoritative task already has the requirements, give only the action and ID, such as `Complete ee-0sey.` Add context only when the agent cannot discover it or the assignment changes the task, workflow, or coordination rules.
 

@@ -49,7 +49,7 @@ Use `/Users/herbcaudill/Code/herbcaudill/notes`. Search for the canonical subjec
 
 Link the canonical note from the task or project description and use `https://tasks.herbcaudill.com/?task=<id>` or `https://tasks.herbcaudill.com/?project=<id>` in new notes and user-facing responses. Never expose a Vercel deployment hostname. Preserve old Google backlinks through reviewed source lookup; do not blindly rewrite historical notes. Missing or ambiguous historical mappings require review, with explicit Google tools reserved for requested historical access. There is no Google fallback writer.
 
-Use a subagent for a quick, bounded action and a standalone Codex task for involved work. Pass the exact typed target, confirmed authority, requested update and completion boundary. Keep durable findings and pending questions in the canonical Obsidian note. Research does not authorize sending messages, booking, purchasing, cancelling or other external actions. Wait once for initial delegated progress, then keep the interview moving. Do not duplicate a mutation made by the delegated worker.
+When Herb asks for an agent to take on research or other work, launch a standalone top-level T3 Code thread with `t3_thread_launch` so he can interact with it later, and link it in your reply. Use a subagent only for a quick, bounded action. Pass the exact typed target, confirmed authority, requested update and completion boundary. Keep durable findings and pending questions in the canonical Obsidian note. Research does not authorize sending messages, booking, purchasing, cancelling or other external actions. Wait once for initial delegated progress, then keep the interview moving. Do not duplicate a mutation made by the delegated worker.
 
 ## Verify and finish
 
