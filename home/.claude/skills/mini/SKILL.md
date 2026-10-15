@@ -56,7 +56,11 @@ The machine has Visual Studio 2026 Professional with the ASP.NET, .NET desktop, 
 
 SQL Server 2025 Standard Developer runs as the default instance (`Server=.`), and `MINI\herb` is sysadmin. `sqlcmd` is not installed; from PowerShell, use `System.Data.SqlClient.SqlConnection` with `Integrated Security=true`.
 
-Builds and unit tests need no database: `just nuget`, `just msbuild DevResults.sln -t:Build -p:Configuration=Debug -v:minimal`, `just vstest <test dlls>`, `just build-client`, and `just test` all pass there. The `dev` and `e2e` databases were restored from the Parallels VM on 2026-10-15, and `DevResults\SecureSettings.config` was copied from it. To refresh a database, back it up on the VM `WITH COPY_ONLY, COMPRESSION`, copy the `.bak` through the Mac to a path without spaces, grant `NT SERVICE\MSSQLSERVER` read access, and restore it with `MOVE` to the default data folder.
+Builds and unit tests need no database: `just nuget`, `just msbuild DevResults.sln -t:Build -p:Configuration=Debug -v:minimal`, `just vstest <test dlls>`, `just build-client`, and `just test` all pass there. The site runs at `https://<instance>.devlocal.us` (for example `devresults.devlocal.us`) from IIS Express on ports 80 and 443, with Azurite for blob storage. The `DevResults site` scheduled task runs `C:\Users\herb\setup\start-site.ps1`, which starts both; its logs are in `%LOCALAPPDATA%\devresults-site`. The task has no trigger, so start it with `Start-ScheduledTask 'DevResults site'` after a reboot, and stop it by ending the `iisexpress` and Azurite `node` processes. The first request after a build takes about 90 seconds to compile. The IIS Express config at `.vs\DevResults\config\applicationhost.config` and the Let's Encrypt `devlocal.us` certificate bound to `0.0.0.0:443` came from the VM. The certificate expires 2026-12-24; renew it with the repo's `ConfigureTls.ps1`, which needs the Cloudflare API token.
+
+Scheduled tasks must call `C:\Program Files\PowerShell\7\pwsh.exe`, the machine-wide install. The Store-style `pwsh` alias under `WindowsApps` does not resolve in S4U tasks.
+
+The `dev` and `e2e` databases were restored from the Parallels VM on 2026-10-15, and `DevResults\SecureSettings.config` was copied from it. To refresh a database, back it up on the VM `WITH COPY_ONLY, COMPRESSION`, copy the `.bak` through the Mac to a path without spaces, grant `NT SERVICE\MSSQLSERVER` read access, and restore it with `MOVE` to the default data folder.
 
 ## Maintenance
 
