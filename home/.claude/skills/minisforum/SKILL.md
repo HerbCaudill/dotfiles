@@ -52,7 +52,11 @@ To get a local Mac branch onto the machine without GitHub, push over SSH: `git p
 
 ## DevResults toolchain
 
-The machine has Visual Studio 2026 Professional with the ASP.NET, .NET desktop, and .NET Framework 4.8 components, plus Git, PowerShell 7, GitHub CLI, mise (which provides Node and just), pnpm through corepack, NuGet, and SSMS. Developer Mode and long paths are on. Run repo commands from `C:\Code\DevResults` with `just`, following the repo's `AGENTS.md`. The `setup-check` skill in the DevResults repo verifies the toolchain.
+The machine has Visual Studio 2026 Professional with the ASP.NET, .NET desktop, and .NET Framework 4.8 components, plus Git, PowerShell 7, GitHub CLI, mise (which provides Node and just), pnpm through corepack, NuGet, and SSMS. Developer Mode and long paths are on. Run repo commands from `C:\Code\DevResults` with `just`, following the repo's `AGENTS.md`. `.env.local` points `just` at Visual Studio's MSBuild and VSTest. The `setup-check` skill in the DevResults repo verifies the toolchain.
+
+SQL Server 2025 Standard Developer runs as the default instance (`Server=.`), and `MINISFORUM\herb` is sysadmin. `sqlcmd` is not installed; from PowerShell, use `System.Data.SqlClient.SqlConnection` with `Integrated Security=true`.
+
+Builds and unit tests need no database: `just nuget`, `just msbuild DevResults.sln -t:Build -p:Configuration=Debug -v:minimal`, `just vstest <test dlls>`, `just build-client`, and `just test` all pass there. Running the site also needs the `dev` database and the real values in `DevResults\SecureSettings.config` (from 1Password). Neither is on the machine until Herb provides them.
 
 ## Maintenance
 
