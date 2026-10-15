@@ -1,27 +1,27 @@
 ---
-name: minisforum
-description: Use when working on or with Herb's always-on Minisforum Windows mini PC (`minisforum`) – running commands, installing software, checking scheduled tasks, syncing repos or dotfiles, or running DevResults builds and tests there. Not for the Parallels VM (`devresults-vm`).
+name: mini
+description: Use when working on or with Herb's always-on Windows mini PC (`mini`, a Minisforum) – running commands, installing software, checking scheduled tasks, syncing repos or dotfiles, or running DevResults builds and tests there. Not for the Parallels VM (`devresults-vm`).
 ---
 
-# Minisforum mini PC
+# Mini (Windows mini PC)
 
-An always-on Windows 11 Pro mini PC that hosts coding agents, especially for DevResults backend work, which needs Windows. AMD Ryzen 9 7940HS, 32 GB RAM, 1 TB SSD. Herb's account is the local administrator `MINISFORUM\herb`.
+An always-on Windows 11 Pro mini PC that hosts coding agents, especially for DevResults backend work, which needs Windows. AMD Ryzen 9 7940HS, 32 GB RAM, 1 TB SSD. Herb's account is the local administrator `MINI\herb`.
 
 ## Connecting
 
-The machine is on Herb's tailnet as `minisforum`. The Mac's SSH config has a `minisforum` host entry, so `ssh minisforum` logs in with the Mac's ed25519 key.
+The machine is on Herb's tailnet as `mini`. The Mac's SSH config has a `mini` host entry, so `ssh mini` logs in with the Mac's ed25519 key.
 
 - **SSH** uses Windows OpenSSH Server. The default shell is Windows PowerShell 5.1; `pwsh` (7) is also installed. Admin keys live in `C:\ProgramData\ssh\administrators_authorized_keys`, which must be readable only by Administrators and SYSTEM.
-- **Remote Desktop** is on. Herb uses the Windows App on the Mac with the host `minisforum`.
+- **Remote Desktop** is on. Herb uses the Windows App on the Mac with the host `mini`.
 - Tailscale runs unattended, so the machine stays reachable after a reboot with nobody signed in.
 
 ## Running commands
 
 Quoting through SSH into PowerShell breaks easily. Use these patterns:
 
-- **One-liners:** `ssh minisforum 'Get-Service sshd'`.
+- **One-liners:** `ssh mini 'Get-Service sshd'`.
 - **Several single-line statements:** pipe them to `powershell -NoProfile -Command -`. Stdin mode runs line by line, so a multi-line block such as `foreach { ... }` silently does nothing.
-- **Anything with blocks, loops, or tricky quoting:** write a `.ps1` locally, copy it with `scp script.ps1 minisforum:C:/Users/herb/setup/`, then run `ssh minisforum 'powershell -NoProfile -ExecutionPolicy Bypass -File C:\Users\herb\setup\script.ps1'`.
+- **Anything with blocks, loops, or tricky quoting:** write a `.ps1` locally, copy it with `scp script.ps1 mini:C:/Users/herb/setup/`, then run `ssh mini 'powershell -NoProfile -ExecutionPolicy Bypass -File C:\Users\herb\setup\script.ps1'`.
 
 SSH sessions are elevated, so admin changes work directly. An SSH session's PATH is fixed when the session starts. After installing something, start a new session or rebuild PATH from the registry:
 
@@ -48,15 +48,15 @@ winget works over SSH. Pass `--accept-source-agreements --accept-package-agreeme
 
 The `gh-sync` scheduled task runs `home/.local/bin/gh-sync` from the dotfiles clone through Git Bash every 15 minutes, the same schedule as the macOS launchd agent. Its log is `%LOCALAPPDATA%\gh-sync.log`. It runs as `herb` with S4U, so it cannot read Windows Credential Manager. GitHub CLI must be signed in with `gh auth login --insecure-storage`, followed by `gh auth setup-git`. Re-register the task with `scripts/windows/register-gh-sync-task.ps1` from an elevated shell.
 
-To get a local Mac branch onto the machine without GitHub, push over SSH: `git push --receive-pack='git receive-pack' minisforum:C:/Code/DevResults <branch>`. The target repo needs `receive.denyCurrentBranch updateInstead` to update a checked-out branch.
+To get a local Mac branch onto the machine without GitHub, push over SSH: `git push --receive-pack='git receive-pack' mini:C:/Code/DevResults <branch>`. The target repo needs `receive.denyCurrentBranch updateInstead` to update a checked-out branch.
 
 ## DevResults toolchain
 
 The machine has Visual Studio 2026 Professional with the ASP.NET, .NET desktop, and .NET Framework 4.8 components, plus Git, PowerShell 7, GitHub CLI, mise (which provides Node and just), pnpm through corepack, NuGet, and SSMS. Developer Mode and long paths are on. Run repo commands from `C:\Code\DevResults` with `just`, following the repo's `AGENTS.md`. `.env.local` points `just` at Visual Studio's MSBuild and VSTest. The `setup-check` skill in the DevResults repo verifies the toolchain.
 
-SQL Server 2025 Standard Developer runs as the default instance (`Server=.`), and `MINISFORUM\herb` is sysadmin. `sqlcmd` is not installed; from PowerShell, use `System.Data.SqlClient.SqlConnection` with `Integrated Security=true`.
+SQL Server 2025 Standard Developer runs as the default instance (`Server=.`), and `MINI\herb` is sysadmin. `sqlcmd` is not installed; from PowerShell, use `System.Data.SqlClient.SqlConnection` with `Integrated Security=true`.
 
-Builds and unit tests need no database: `just nuget`, `just msbuild DevResults.sln -t:Build -p:Configuration=Debug -v:minimal`, `just vstest <test dlls>`, `just build-client`, and `just test` all pass there. Running the site also needs the `dev` database and the real values in `DevResults\SecureSettings.config` (from 1Password). Neither is on the machine until Herb provides them.
+Builds and unit tests need no database: `just nuget`, `just msbuild DevResults.sln -t:Build -p:Configuration=Debug -v:minimal`, `just vstest <test dlls>`, `just build-client`, and `just test` all pass there. The `dev` and `e2e` databases were restored from the Parallels VM on 2026-10-15, and `DevResults\SecureSettings.config` was copied from it. To refresh a database, back it up on the VM `WITH COPY_ONLY, COMPRESSION`, copy the `.bak` through the Mac to a path without spaces, grant `NT SERVICE\MSSQLSERVER` read access, and restore it with `MOVE` to the default data folder.
 
 ## Maintenance
 

@@ -71,9 +71,9 @@ These are installed into `~/.local/bin` by Home Manager rather than a custom sym
 
 A LaunchAgent in `nix/darwin/default.nix` watches `home/.claude` and runs `scripts/windows/install-claude-shared-config-from-mac.sh` when repo-managed Claude config changes. The macOS wrapper uses `prlctl` to run the PowerShell installer against `C:\Users\herbcaudill\.claude`, linking native Windows Claude to the repo-managed global instructions, agents, skills, and status line through the Parallels `\\Mac\Home\Code\HerbCaudill\dotfiles` shared folder. If running from inside Windows, use `scripts/windows/install-claude-shared-config.ps1`; use its `-Copy` flag only when Windows cannot create symlinks.
 
-## Minisforum Windows mini PC
+## Windows mini PC
 
-The always-on Windows mini PC (`minisforum` on the tailnet) keeps a plain clone of this repo at `C:\Code\HerbCaudill\dotfiles`. Only the agent config applies there: `scripts/windows/install-claude-shared-config.ps1 -RepoRoot C:\Code\HerbCaudill\dotfiles` links the shared instructions and skills into `~/.claude` and `~/.codex`. `scripts/windows/register-gh-sync-task.ps1` schedules `gh-sync` through Git Bash, which also keeps that clone current. `.gitattributes` keeps `gh-sync` and `*.sh` LF so Git Bash can run them. The `minisforum` skill covers access and operation.
+The always-on Windows mini PC (`mini` on the tailnet, a Minisforum) keeps a plain clone of this repo at `C:\Code\HerbCaudill\dotfiles`. Only the agent config applies there: `scripts/windows/install-claude-shared-config.ps1 -RepoRoot C:\Code\HerbCaudill\dotfiles` links the shared instructions and skills into `~/.claude` and `~/.codex`. `scripts/windows/register-gh-sync-task.ps1` schedules `gh-sync` through Git Bash, which also keeps that clone current. `.gitattributes` keeps `gh-sync` and `*.sh` LF so Git Bash can run them. The `mini` skill covers access and operation.
 
 ## Installing shared agent skills
 
