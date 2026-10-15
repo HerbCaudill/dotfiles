@@ -11,10 +11,11 @@ $settingsPath = Join-Path $claudeDirectory "settings.json"
 $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
 
 $items = @(
-  @{ Name = "CLAUDE.md"; Source = Join-Path $RepoRoot "home\.claude\AGENTS.md" },
-  @{ Name = "agents"; Source = Join-Path $RepoRoot "home\.claude\agents" },
-  @{ Name = "skills"; Source = Join-Path $RepoRoot "home\.claude\skills" },
-  @{ Name = "statusline.js"; Source = Join-Path $RepoRoot "home\.claude\statusline.js" }
+  @{ Name = ".claude\CLAUDE.md"; Source = Join-Path $RepoRoot "home\.claude\AGENTS.md" },
+  @{ Name = ".claude\skills"; Source = Join-Path $RepoRoot "home\.claude\skills" },
+  @{ Name = ".claude\statusline.js"; Source = Join-Path $RepoRoot "home\.claude\statusline.js" },
+  @{ Name = ".codex\AGENTS.md"; Source = Join-Path $RepoRoot "home\.claude\AGENTS.md" },
+  @{ Name = ".codex\skills"; Source = Join-Path $RepoRoot "home\.claude\skills" }
 )
 
 function Remove-ExistingLink {
@@ -59,7 +60,8 @@ function Install-SharedItem {
     throw "Missing source item: $Source"
   }
 
-  $target = Join-Path $claudeDirectory $Name
+  $target = Join-Path $UserProfile $Name
+  New-Item -ItemType Directory -Path (Split-Path $target) -Force | Out-Null
   Backup-ExistingItem -Path $target
 
   if ($Copy) {
@@ -103,4 +105,4 @@ foreach ($item in $items) {
 }
 
 Write-StatusLineSettings
-Write-Host "Claude now uses repo-managed skills, agents, global instructions, and status line assets."
+Write-Host "Claude and Codex now use repo-managed skills and global instructions, plus the Claude status line."
