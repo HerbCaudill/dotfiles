@@ -35,8 +35,8 @@ winget works over SSH. Pass `--accept-source-agreements --accept-package-agreeme
 
 ## Layout
 
-- `C:\Code` holds all repos, and `C:\Users\herb\Code` is a junction to it, so `~/Code/...` paths from shared instructions resolve.
-- `C:\Code\DevResults` is the DevResults checkout, the same path as on the Parallels VM.
+- `C:\Code` holds all repos, laid out like `~/Code` on the Mac. `C:\Users\herb\Code` is a junction to it, so `~/Code/...` paths from shared instructions resolve.
+- `C:\Code\DevResults\devresults` is the DevResults application checkout. Other DevResults org repos (`e2e`, `viberesults`, `x3`, `toolkit`, `sdk`, `DevResults.wiki`, and so on) sit beside it in `C:\Code\DevResults`. They were cloned once and are not synced automatically.
 - `C:\Code\HerbCaudill\*` holds Herb's repos, kept current by `gh-sync`.
 - `C:\Users\herb\setup` holds setup scripts and logs.
 
@@ -48,11 +48,11 @@ winget works over SSH. Pass `--accept-source-agreements --accept-package-agreeme
 
 The `gh-sync` scheduled task runs `home/.local/bin/gh-sync` from the dotfiles clone through Git Bash every 15 minutes, the same schedule as the macOS launchd agent. Its log is `%LOCALAPPDATA%\gh-sync.log`. It runs as `herb` with S4U, so it cannot read Windows Credential Manager. GitHub CLI must be signed in with `gh auth login --insecure-storage`, followed by `gh auth setup-git`. Re-register the task with `scripts/windows/register-gh-sync-task.ps1` from an elevated shell.
 
-To get a local Mac branch onto the machine without GitHub, push over SSH: `git push --receive-pack='git receive-pack' mini:C:/Code/DevResults <branch>`. The target repo needs `receive.denyCurrentBranch updateInstead` to update a checked-out branch.
+To get a local Mac branch onto the machine without GitHub, push over SSH: `git push --receive-pack='git receive-pack' mini:C:/Code/DevResults/devresults <branch>`. The target repo needs `receive.denyCurrentBranch updateInstead` to update a checked-out branch.
 
 ## DevResults toolchain
 
-The machine has Visual Studio 2026 Professional with the ASP.NET, .NET desktop, and .NET Framework 4.8 components, plus Git, PowerShell 7, GitHub CLI, mise (which provides Node and just), pnpm through corepack, NuGet, and SSMS. Developer Mode and long paths are on. Run repo commands from `C:\Code\DevResults` with `just`, following the repo's `AGENTS.md`. `.env.local` points `just` at Visual Studio's MSBuild and VSTest. The `setup-check` skill in the DevResults repo verifies the toolchain.
+The machine has Visual Studio 2026 Professional with the ASP.NET, .NET desktop, and .NET Framework 4.8 components, plus Git, PowerShell 7, GitHub CLI, mise (which provides Node and just), pnpm through corepack, NuGet, and SSMS. Developer Mode and long paths are on. Run repo commands from `C:\Code\DevResults\devresults` with `just`, following the repo's `AGENTS.md`. `.env.local` points `just` at Visual Studio's MSBuild and VSTest. The `setup-check` skill in the DevResults repo verifies the toolchain.
 
 SQL Server 2025 Standard Developer runs as the default instance (`Server=.`), and `MINI\herb` is sysadmin. `sqlcmd` is not installed; from PowerShell, use `System.Data.SqlClient.SqlConnection` with `Integrated Security=true`.
 
