@@ -2,6 +2,7 @@ import { existsSync, globSync } from "node:fs"
 import { join } from "node:path"
 import { claudeSessionsRoot, codexArchivedSessionsRoot, codexSessionsRoot } from "./constants.ts"
 import type { Provider, SessionFile } from "./types.ts"
+import { findArchivedSessionFiles } from "./find-archived-session-files.ts"
 
 /** Discover local transcript files for the selected harnesses. */
 export function findSessionFiles(
@@ -10,6 +11,8 @@ export function findSessionFiles(
   /** Whether to include archived Codex rollouts. */
   includeArchived: boolean,
 ) {
+  const machine = process.env.AGENT_SESSIONS_MACHINE ?? "local"
+  if (machine !== "local") return findArchivedSessionFiles(source, includeArchived, machine)
   const files: SessionFile[] = []
 
   if ((source === "all" || source === "claude") && existsSync(claudeSessionsRoot)) {

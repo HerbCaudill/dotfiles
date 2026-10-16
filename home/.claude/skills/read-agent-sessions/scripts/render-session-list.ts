@@ -22,7 +22,7 @@ export function renderSessionList(
           : `modified ${formatLocalDateTime(session.fileModifiedAt).slice(0, 16)}`
       const cwd = session.cwd ? basename(session.cwd) : "-"
 
-      return `${activity}  ${session.provider.padEnd(6)}  ${session.id}  ${cwd}  ${getSessionTitle(session)}`
+      return `${activity}  ${session.machine ? `${session.machine}  ` : ""}${session.provider.padEnd(6)}  ${session.id}  ${cwd}  ${getSessionTitle(session)}`
     })
     .join("\n")
 }

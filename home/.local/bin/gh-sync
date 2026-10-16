@@ -17,6 +17,10 @@ log() { echo "$LOG_PREFIX $*"; }
 repos=$(gh repo list "$OWNER" --source --no-archived --limit 1000 --json name --jq '.[].name')
 
 for repo in $repos; do
+  # The transcript writer owns this clone's commits and network synchronization.
+  if [[ "$repo" == "agent-transcripts" ]]; then
+    continue
+  fi
   dir="$BASE_DIR/$repo"
 
   if [[ ! -d "$dir" ]]; then

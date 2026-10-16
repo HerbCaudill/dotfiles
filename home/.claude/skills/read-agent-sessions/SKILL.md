@@ -1,11 +1,31 @@
 ---
 name: read-agent-sessions
-description: Use to find, inspect, compare, recover, continue, or summarize local Claude Code and Codex sessions from their logs.
+description: Use to find, inspect, compare, recover, continue, or summarize Claude Code and Codex sessions across machines or from live local logs.
 ---
 
 # Read agent sessions
 
 Use the bundled read-only CLI to normalize both harness formats. Prefer it over raw `rg`, `jq`, or SQLite queries because it removes injected instructions and duplicate protocol events.
+
+## Choose the machines
+
+For cross-machine or unspecified session searches, use the shared archive with `--machine all`. Use `--machine macbook` or `--machine mini` when the originating machine is known. The private [HerbCaudill/agent-transcripts](https://github.com/HerbCaudill/agent-transcripts) repository is cloned at `~/Code/HerbCaudill/agent-transcripts` on both machines. Each machine publishes its JSONL conversations and retrieves the other machines' snapshots every 15 minutes. Reading the archive works offline and does not require SSH access to the originating machine.
+
+Check snapshot freshness before drawing conclusions about recent activity:
+
+```text
+node "<skill-directory>/scripts/agent-sessions.ts" machines
+node "<skill-directory>/scripts/agent-sessions.ts" list --machine all
+node "<skill-directory>/scripts/agent-sessions.ts" list --machine mini --project DevResults/devresults
+```
+
+`--project ORG/REPO` matches a checkout directly beneath the `Code` directory on either operating system. Use `--cwd` with the original recorded path for worktrees or other locations. Machine names appear in archived results; retain the machine when reading a session, because IDs can appear on multiple machines.
+
+The CLI defaults to `--machine local` for live sessions on the current computer. Use this for activity newer than its last snapshot. To refresh the shared copy, run `agent-transcripts-sync` on macOS, or `scripts/windows/sync-agent-transcripts.ps1` from the dotfiles clone on Windows. This commits this machine's changed archive files, pulls the shared branch, and pushes its snapshot. If offline, the local snapshot commit remains available and the command reports the network failure. A remote computer's unuploaded work remains unavailable until that computer syncs.
+
+The archive stores compressed text JSONL files, splitting large compressed files into numbered parts. Readable conversation and tool text are retained; embedded images, audio, and encrypted binary payloads are replaced with markers. Full raw logs remain on the originating computer. The manifest records fragment ordering, original file dates, and small listing summaries. Use the CLI to reconstruct them; individual numbered parts are not standalone gzip files. SQLite databases are not archived. Pi JSONL files are retained in the archive, but this reader currently parses Claude Code and Codex only.
+
+`AGENT_SESSIONS_ARCHIVE_ROOT` can point to another clone of the archive. Setup and recovery instructions are in the dotfiles repository's `docs/agent-transcripts.md`.
 
 Resolve `<skill-directory>` to the absolute directory containing this `SKILL.md`; do not assume the skill is installed under `.claude` or `.codex`. The CLI requires Node.js 22.18 or newer. Ripgrep is optional; searches fall back to Node.js when `rg` is unavailable.
 
@@ -47,6 +67,7 @@ Pass an exact ID, a unique ID prefix, or an absolute JSONL path:
 
 ```text
 node "<skill-directory>/scripts/agent-sessions.ts" show SESSION_ID
+node "<skill-directory>/scripts/agent-sessions.ts" show SESSION_ID --machine mini
 ```
 
 The default transcript contains user and assistant text. Add `--tools` only when commands, tool inputs, or tool results are necessary to understand unfinished work:
@@ -63,6 +84,7 @@ Use `activity` to read all turns from a local calendar day across both harnesses
 
 ```text
 node "<skill-directory>/scripts/agent-sessions.ts" activity --on yesterday --source all --archived
+node "<skill-directory>/scripts/agent-sessions.ts" activity --on yesterday --machine all --source all --archived
 ```
 
 Add `--tools` only when tool traffic is necessary. Add `--format json` when a structured result is more useful than Markdown.

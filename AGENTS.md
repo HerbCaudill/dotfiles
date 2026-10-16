@@ -54,7 +54,7 @@ These are installed into `~/.local/bin` by Home Manager rather than a custom sym
 
 | Command                   | Description                                                                                                                                        | Language |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `agent-transcripts-sync`  | Sync raw local Claude Code, Codex, and Pi transcript stores into `~/Code/HerbCaudill/agent-transcripts` and commit changes there                   | Node.js  |
+| `agent-transcripts-sync`  | Sync compressed Claude Code, Codex, and Pi JSONL conversations through the private `HerbCaudill/agent-transcripts` repository                  | Node.js  |
 | `drsync`                  | Save the current macOS DevResults clone to a WIP branch, sync the Windows VM checkout, and run a Windows-side command                              | Node.js  |
 | `github-pr-task-sync`     | Poll GitHub notifications and capture assigned/review-requested PRs in Tasks                                                                | Node.js  |
 | `gws-delegated`           | Run GWS commands with a short-lived domain-wide delegated token for Herb                                                                           | Node.js  |
@@ -121,10 +121,10 @@ The old Tickler mover is no longer installed or scheduled. Tasks Snoozed visibil
 
 The dotfiles repo manages transcript archiving with:
 
-- `agent-transcripts-sync`, which copies raw Claude Code, Codex, and Pi transcript artifacts from `~/.claude`, `~/.codex`, and `~/.pi` into `~/Code/HerbCaudill/agent-transcripts`
+- `agent-transcripts-sync`, which compresses JSONL conversations from `~/.claude`, `~/.codex`, and `~/.pi` into per-machine directories in `~/Code/HerbCaudill/agent-transcripts`, commits them, and synchronizes the private GitHub repository
 - a nix-darwin `launchd` agent in `nix/darwin/default.nix` that runs `agent-transcripts-sync` every 15 minutes and logs to `/tmp/agent-transcripts-sync.log`
 
-Codex does not currently expose a clean flat session transcript file on disk in this environment, so the archive preserves Codex's raw local stores directly: `history.jsonl`, `state_5.sqlite*`, and `logs_1.sqlite*`. Pi session transcripts are archived from `~/.pi/agent/sessions/**/*.jsonl`.
+Codex active and archived session JSONL files are included. SQLite databases are excluded. A Windows scheduled task runs the same writer on mini every 15 minutes. The read-agent-sessions skill reads all machines from the local archive clone, including offline. See [Shared agent transcripts](docs/agent-transcripts.md) for enrollment, formats, and recovery.
 
 ## Lightweight workflow for trivial dotfile edits
 

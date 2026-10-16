@@ -19,12 +19,13 @@ describe("collectTranscriptEntries", () => {
     writeFileSync(join(homeDir, ".claude/history.jsonl"), "claude-history")
     writeFileSync(join(homeDir, ".claude/projects/project-a/session-1.jsonl"), "claude-session")
     writeFileSync(join(homeDir, ".codex/history.jsonl"), "codex-history")
-    writeFileSync(join(homeDir, ".codex/state_5.sqlite"), "state")
-    writeFileSync(join(homeDir, ".codex/state_5.sqlite-wal"), "state-wal")
-    writeFileSync(join(homeDir, ".codex/logs_1.sqlite"), "logs")
+    mkdirSync(join(homeDir, ".codex/sessions/2026/10"), { recursive: true })
+    mkdirSync(join(homeDir, ".codex/archived_sessions"), { recursive: true })
+    writeFileSync(join(homeDir, ".codex/sessions/2026/10/active.jsonl"), "active")
+    writeFileSync(join(homeDir, ".codex/archived_sessions/archived.jsonl"), "archived")
     writeFileSync(join(homeDir, ".pi/agent/sessions/project-a/session-1.jsonl"), "pi-session")
 
-    const entries = collectTranscriptEntries(homeDir)
+    const entries = collectTranscriptEntries(homeDir, "mini")
 
     expect(
       entries.map(entry => ({
@@ -33,31 +34,27 @@ describe("collectTranscriptEntries", () => {
       })),
     ).toEqual([
       {
-        archiveRelativePath: "sources/claude/history.jsonl",
+        archiveRelativePath: "machines/mini/claude/history.jsonl",
         sourceRelativePath: ".claude/history.jsonl",
       },
       {
-        archiveRelativePath: "sources/claude/projects/project-a/session-1.jsonl",
+        archiveRelativePath: "machines/mini/claude/projects/project-a/session-1.jsonl",
         sourceRelativePath: ".claude/projects/project-a/session-1.jsonl",
       },
       {
-        archiveRelativePath: "sources/codex/history.jsonl",
+        archiveRelativePath: "machines/mini/codex/archived_sessions/archived.jsonl",
+        sourceRelativePath: ".codex/archived_sessions/archived.jsonl",
+      },
+      {
+        archiveRelativePath: "machines/mini/codex/history.jsonl",
         sourceRelativePath: ".codex/history.jsonl",
       },
       {
-        archiveRelativePath: "sources/codex/logs/logs_1.sqlite",
-        sourceRelativePath: ".codex/logs_1.sqlite",
+        archiveRelativePath: "machines/mini/codex/sessions/2026/10/active.jsonl",
+        sourceRelativePath: ".codex/sessions/2026/10/active.jsonl",
       },
       {
-        archiveRelativePath: "sources/codex/state/state_5.sqlite",
-        sourceRelativePath: ".codex/state_5.sqlite",
-      },
-      {
-        archiveRelativePath: "sources/codex/state/state_5.sqlite-wal",
-        sourceRelativePath: ".codex/state_5.sqlite-wal",
-      },
-      {
-        archiveRelativePath: "sources/pi/agent/sessions/project-a/session-1.jsonl",
+        archiveRelativePath: "machines/mini/pi/agent/sessions/project-a/session-1.jsonl",
         sourceRelativePath: ".pi/agent/sessions/project-a/session-1.jsonl",
       },
     ])
@@ -73,11 +70,11 @@ describe("collectTranscriptEntries", () => {
     writeFileSync(join(homeDir, ".claude/projects/project-a/session-1.jsonl"), "claude-session")
     writeFileSync(join(homeDir, ".pi/agent/sessions/project-a/session-1.jsonl"), "pi-session")
 
-    const entries = collectTranscriptEntries(homeDir)
+    const entries = collectTranscriptEntries(homeDir, "macbook")
 
     expect(entries.map(entry => entry.archiveRelativePath)).toEqual([
-      "sources/claude/projects/project-a/session-1.jsonl",
-      "sources/pi/agent/sessions/project-a/session-1.jsonl",
+      "machines/macbook/claude/projects/project-a/session-1.jsonl",
+      "machines/macbook/pi/agent/sessions/project-a/session-1.jsonl",
     ])
   })
 })

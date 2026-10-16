@@ -12,6 +12,7 @@ export function parseArguments(
     rawCommand !== "search" &&
     rawCommand !== "show" &&
     rawCommand !== "activity" &&
+    rawCommand !== "machines" &&
     rawCommand !== "help" &&
     rawCommand !== "--help" &&
     rawCommand !== "-h"
@@ -21,7 +22,9 @@ export function parseArguments(
 
   const command = rawCommand === "--help" || rawCommand === "-h" ? "help" : rawCommand
   let source: Provider | "all" = "all"
+  let machine = "local"
   let cwd: string | undefined
+  let project: string | undefined
   let limit = command === "activity" ? Number.MAX_SAFE_INTEGER : 20
   let archived = false
   let tools = false
@@ -34,6 +37,20 @@ export function parseArguments(
 
   for (let index = 1; index < args.length; index++) {
     const argument = args[index]
+
+    if (argument === "--project") {
+      project = args[++index]
+      if (!project || !/^[^/\\]+[/\\][^/\\]+$/.test(project))
+        throw new Error("--project requires ORG/REPO")
+      continue
+    }
+
+    if (argument === "--machine") {
+      machine = args[++index]
+      if (!machine || !/^[a-z0-9][a-z0-9_-]*$/i.test(machine))
+        throw new Error("--machine requires local, all, or an archive machine name")
+      continue
+    }
 
     if (argument === "--source") {
       const value = args[++index]
@@ -115,7 +132,10 @@ export function parseArguments(
     throw new Error("show requires one session path, ID, or ID prefix")
   }
 
-  if ((command === "list" || command === "activity") && positional.length > 0) {
+  if (
+    (command === "list" || command === "activity" || command === "machines") &&
+    positional.length > 0
+  ) {
     throw new Error(`${command} does not accept positional arguments`)
   }
 
@@ -125,9 +145,11 @@ export function parseArguments(
   }
 
   return {
+    machine,
     command,
     source,
     cwd,
+    project,
     limit,
     archived,
     tools,

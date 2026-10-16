@@ -15,6 +15,7 @@ export function renderTranscript(
     `- Working directory: ${session.cwd ?? "unknown"}`,
     `- Source: ${session.path}`,
   ]
+  if (session.machine) metadata.push(`- Machine: ${session.machine}`)
   if (session.untimestampedMessagesOmitted) {
     metadata.push(`- Untimestamped messages omitted: ${session.untimestampedMessagesOmitted}`)
   }

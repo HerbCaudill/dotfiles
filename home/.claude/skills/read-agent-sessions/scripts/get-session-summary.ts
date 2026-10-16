@@ -8,6 +8,14 @@ export function getSessionSummary(
   /** Discovered source file. */
   file: SessionFile,
 ) {
+  if (file.summary)
+    return {
+      ...file.summary,
+      provider: file.provider,
+      path: file.path,
+      machine: file.machine,
+      fileModifiedAt: file.fileModifiedAt!,
+    }
   const stats = statSync(file.path)
   const descriptor = openSync(file.path, "r")
   const buffer = Buffer.alloc(Math.min(summaryReadBytes, stats.size))

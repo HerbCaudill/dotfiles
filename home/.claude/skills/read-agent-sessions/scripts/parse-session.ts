@@ -13,7 +13,9 @@ export function parseSession(
   /** Source file modification time. */
   fileModifiedAt: Date,
 ) {
-  return file.provider === "claude"
-    ? parseClaudeSession(file.path, text, includeTools, fileModifiedAt)
-    : parseCodexSession(file.path, text, includeTools, fileModifiedAt)
+  const session =
+    file.provider === "claude"
+      ? parseClaudeSession(file.path, text, includeTools, fileModifiedAt)
+      : parseCodexSession(file.path, text, includeTools, fileModifiedAt)
+  return { ...session, machine: file.machine }
 }

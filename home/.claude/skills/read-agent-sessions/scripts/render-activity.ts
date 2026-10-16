@@ -21,7 +21,7 @@ export function renderActivity(
     const last = getLastMessageTime(session)
     output.push(
       "",
-      `## ${cwd} — ${session.provider} — ${session.id}`,
+      `## ${session.machine ? `${session.machine} — ` : ""}${cwd} — ${session.provider} — ${session.id}`,
       "",
       `- Prompt: ${getSessionTitle(session)}`,
       `- Working directory: ${session.cwd ?? "unknown"}`,

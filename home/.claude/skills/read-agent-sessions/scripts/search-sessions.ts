@@ -1,5 +1,6 @@
-import { readFileSync, statSync } from "node:fs"
-import { arePathsEqual } from "./are-paths-equal.ts"
+import { statSync } from "node:fs"
+import { readTranscriptFile } from "./read-transcript-file.ts"
+import { matchesSessionDirectory } from "./matches-session-directory.ts"
 import { filterSessionByTime, getLastMessageTime } from "./filter-session-by-time.ts"
 import { findMatchingSessionFiles } from "./find-matching-session-files.ts"
 import { findSessionFiles } from "./find-session-files.ts"
@@ -20,18 +21,31 @@ export function searchSessions(
   includeArchived: boolean,
   /** Optional message-level time filter. */
   timeWindow?: TimeWindow,
+  /** Repository path beneath Code on either machine. */
+  project?: string,
 ) {
   const normalizedQuery = query.toLocaleLowerCase()
   const sessions: Session[] = []
   const candidates = findMatchingSessionFiles(
-    findSessionFiles(source, includeArchived),
+    findSessionFiles(source, includeArchived).filter(
+      file => !file.summary || matchesSessionDirectory(file.summary.cwd, cwd, project),
+    ),
     query,
-  ).sort((left, right) => statSync(right.path).mtimeMs - statSync(left.path).mtimeMs)
+  ).sort(
+    (left, right) =>
+      (right.fileModifiedAt ?? statSync(right.path).mtime).getTime() -
+      (left.fileModifiedAt ?? statSync(left.path).mtime).getTime(),
+  )
 
   for (const file of candidates) {
     const stats = statSync(file.path)
-    const session = parseSession(file, readFileSync(file.path, "utf8"), false, stats.mtime)
-    if (cwd && (!session.cwd || !arePathsEqual(session.cwd, cwd))) continue
+    const session = parseSession(
+      file,
+      readTranscriptFile(file),
+      false,
+      file.fileModifiedAt ?? stats.mtime,
+    )
+    if (!matchesSessionDirectory(session.cwd, cwd, project)) continue
     const candidate = timeWindow ? filterSessionByTime(session, timeWindow) : session
     if (
       !candidate.messages.some(message =>

@@ -1,56 +1,40 @@
 import { existsSync } from "node:fs"
 import { join, relative } from "node:path"
-
-import { FIXED_TRANSCRIPT_FILES } from "./constants.ts"
 import { listFilesRecursively } from "./listFilesRecursively.ts"
 import type { TranscriptEntry } from "./types.ts"
 
-/** Build the list of raw transcript artifacts that should be archived. */
+/** Collect portable conversation files beneath a separate directory for each machine. */
 export const collectTranscriptEntries = (
-  /** The home directory that contains `.claude`, `.codex`, and `.pi`. */
+  /** Home directory containing the harness stores. */
   homeDirectory: string,
+  /** Stable machine name used by archive readers. */
+  machine: string,
 ): TranscriptEntry[] => {
-  const fixedEntries = FIXED_TRANSCRIPT_FILES.flatMap<TranscriptEntry>(entry => {
-    const absoluteSourcePath = join(homeDirectory, entry.sourceRelativePath)
+  if (!/^[a-z0-9][a-z0-9_-]*$/i.test(machine)) throw new Error("Invalid archive machine name")
 
-    if (!existsSync(absoluteSourcePath)) {
-      return []
-    }
+  const roots = [
+    ".claude/projects",
+    ".codex/sessions",
+    ".codex/archived_sessions",
+    ".pi/agent/sessions",
+  ]
+  const paths = [".claude/history.jsonl", ".codex/history.jsonl"]
+    .map(path => join(homeDirectory, path))
+    .filter(path => existsSync(path))
+    .concat(
+      roots.flatMap(root =>
+        listFilesRecursively(join(homeDirectory, root)).filter(path => path.endsWith(".jsonl")),
+      ),
+    )
 
-    return [
-      {
+  return paths
+    .map(absoluteSourcePath => {
+      const sourceRelativePath = relative(homeDirectory, absoluteSourcePath)
+      return {
         absoluteSourcePath,
-        archiveRelativePath: entry.archiveRelativePath,
-        sourceRelativePath: entry.sourceRelativePath,
-      },
-    ]
-  })
-
-  const claudeProjectsDirectory = join(homeDirectory, ".claude/projects")
-  const claudeProjectEntries = listFilesRecursively(claudeProjectsDirectory)
-    .filter((filePath: string) => filePath.endsWith(".jsonl"))
-    .map((absoluteSourcePath: string) => ({
-      absoluteSourcePath,
-      archiveRelativePath: join(
-        "sources/claude/projects",
-        relative(claudeProjectsDirectory, absoluteSourcePath),
-      ),
-      sourceRelativePath: relative(homeDirectory, absoluteSourcePath),
-    }))
-
-  const piSessionsDirectory = join(homeDirectory, ".pi/agent/sessions")
-  const piSessionEntries = listFilesRecursively(piSessionsDirectory)
-    .filter((filePath: string) => filePath.endsWith(".jsonl"))
-    .map((absoluteSourcePath: string) => ({
-      absoluteSourcePath,
-      archiveRelativePath: join(
-        "sources/pi/agent/sessions",
-        relative(piSessionsDirectory, absoluteSourcePath),
-      ),
-      sourceRelativePath: relative(homeDirectory, absoluteSourcePath),
-    }))
-
-  return [...fixedEntries, ...claudeProjectEntries, ...piSessionEntries].sort((left, right) =>
-    left.archiveRelativePath.localeCompare(right.archiveRelativePath),
-  )
+        sourceRelativePath,
+        archiveRelativePath: join("machines", machine, sourceRelativePath.slice(1)),
+      }
+    })
+    .sort((left, right) => left.archiveRelativePath.localeCompare(right.archiveRelativePath))
 }

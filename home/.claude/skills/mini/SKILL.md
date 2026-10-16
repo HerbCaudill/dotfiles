@@ -50,6 +50,12 @@ The `gh-sync` scheduled task runs `home/.local/bin/gh-sync` from the dotfiles cl
 
 To get a local Mac branch onto the machine without GitHub, push over SSH: `git push --receive-pack='git receive-pack' mini:C:/Code/DevResults/devresults <branch>`. The target repo needs `receive.denyCurrentBranch updateInstead` to update a checked-out branch.
 
+## Shared agent transcripts
+
+The private `HerbCaudill/agent-transcripts` clone at `C:\Code\HerbCaudill\agent-transcripts` shares compressed text JSONL conversations with the MacBook. Readable conversation and tool text are retained; binary payloads are replaced with markers, and raw logs remain untouched. Its local Git config sets `agentTranscripts.machine` to `mini`. The `agent-transcripts-sync` scheduled task runs every 15 minutes under Herb's account with S4U, using PowerShell 7 and mise's Node shim. It uploads mini's snapshot and retrieves the shared branch; no SSH connection to the MacBook is needed. Its log is `%LOCALAPPDATA%\agent-transcripts-sync.log`.
+
+For a manual run, invoke `scripts/windows/sync-agent-transcripts.ps1` in the dotfiles clone. Re-register the task with `scripts/windows/register-agent-transcripts-task.ps1`. The read-agent-sessions skill can query `--machine macbook`, `--machine mini`, or `--machine all` from this clone while either computer is offline. Use `--machine local` for live mini sessions. See `docs/agent-transcripts.md` in dotfiles for recovery.
+
 ## DevResults toolchain
 
 The machine has Visual Studio 2026 Professional with the ASP.NET, .NET desktop, and .NET Framework 4.8 components, plus Git, PowerShell 7, GitHub CLI, mise (which provides Node and just), pnpm through corepack, NuGet, and SSMS. Developer Mode and long paths are on. Run repo commands from `C:\Code\DevResults\devresults` with `just`, following the repo's `AGENTS.md`. `.env.local` points `just` at Visual Studio's MSBuild and VSTest. The `setup-check` skill in the DevResults repo verifies the toolchain.

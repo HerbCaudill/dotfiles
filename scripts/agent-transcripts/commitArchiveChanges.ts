@@ -1,30 +1,31 @@
 import { runCommand } from "./runCommand.ts"
 
-/** Commit managed archive changes when the sync produced a diff. */
+/** Commit only the current machine's archive files. */
 export const commitArchiveChanges = (
-  /** The absolute path to the archive repository. */
+  /** Working archive repository. */
   archiveRepositoryPath: string,
+  /** Stable machine name. */
+  machine: string,
 ): boolean => {
-  runCommand("git", ["add", "--all", "--", ".gitignore", "README.md", "sources"], {
-    cwd: archiveRepositoryPath,
-  })
-
-  const diffResult = runCommand("git", ["diff", "--cached", "--name-only"], {
-    cwd: archiveRepositoryPath,
-  })
-  const changedPaths = diffResult.stdout
-    .split("\n")
-    .map(line => line.trim())
-    .filter(Boolean)
-
-  if (changedPaths.length === 0) {
-    return false
-  }
-
+  const options = { cwd: archiveRepositoryPath }
+  const staged = runCommand("git", ["diff", "--cached", "--name-only"], options).stdout.trim()
+  if (staged) throw new Error("Archive has staged changes; finish or unstage them before syncing")
+  runCommand("git", ["add", "--all", "--", `machines/${machine}`], options)
+  if (!runCommand("git", ["diff", "--cached", "--name-only"], options).stdout.trim()) return false
   const timestamp = new Date().toISOString().replace(/\.\d{3}Z$/, "Z")
-  runCommand("git", ["commit", "-m", `Sync agent transcripts: ${timestamp}`], {
-    cwd: archiveRepositoryPath,
-  })
-
+  runCommand(
+    "git",
+    [
+      "commit",
+      "-m",
+      `Sync ${machine} agent transcripts: ${timestamp}`,
+      "-m",
+      `Save ${machine}'s conversation snapshots for searches from either computer.`,
+    ],
+    {
+      ...options,
+      env: { ...process.env, GIT_AUTHOR_NAME: "Codex", GIT_AUTHOR_EMAIL: "codex@localhost" },
+    },
+  )
   return true
 }

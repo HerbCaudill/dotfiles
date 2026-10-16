@@ -7,6 +7,14 @@ export type SessionFile = {
   provider: Provider
   /** Absolute JSONL path. */
   path: string
+  /** Machine that produced an archived transcript. */
+  machine?: string
+  /** Ordered gzip fragments for an archived transcript. */
+  parts?: string[]
+  /** Original modification time before Git checkout. */
+  fileModifiedAt?: Date
+  /** Small cached summary for listing compressed transcripts. */
+  summary?: Pick<Session, "id" | "cwd" | "createdAt" | "messages">
 }
 
 /** A user-visible event normalized across harness log formats. */
@@ -21,6 +29,8 @@ export type SessionMessage = {
 
 /** A normalized Claude or Codex session. */
 export type Session = {
+  /** Machine that produced an archived transcript. */
+  machine?: string
   /** Harness that owns the session. */
   provider: Provider
   /** Harness session identifier. */
@@ -51,12 +61,16 @@ export type TimeWindow = {
 
 /** Parsed command-line options. */
 export type CliOptions = {
+  /** Live local stores, one archived machine, or all archived machines. */
+  machine: string
   /** Requested operation. */
-  command: "list" | "search" | "show" | "activity" | "help"
+  command: "list" | "search" | "show" | "activity" | "machines" | "help"
   /** Harness filter. */
   source: Provider | "all"
   /** Exact working-directory filter. */
   cwd?: string
+  /** Repository path beneath Code, shared across machine home directories. */
+  project?: string
   /** Maximum number of results. */
   limit: number
   /** Whether Codex archived sessions participate in list and search. */

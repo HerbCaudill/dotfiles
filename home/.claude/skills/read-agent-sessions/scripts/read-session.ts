@@ -1,4 +1,5 @@
-import { readFileSync, statSync } from "node:fs"
+import { statSync } from "node:fs"
+import { readTranscriptFile } from "./read-transcript-file.ts"
 import { filterSessionByTime } from "./filter-session-by-time.ts"
 import { parseSession } from "./parse-session.ts"
 import { resolveSessionFile } from "./resolve-session-file.ts"
@@ -18,6 +19,11 @@ export function readSession(
   const file = resolveSessionFile(value, source)
   const stats = statSync(file.path)
 
-  const session = parseSession(file, readFileSync(file.path, "utf8"), includeTools, stats.mtime)
+  const session = parseSession(
+    file,
+    readTranscriptFile(file),
+    includeTools,
+    file.fileModifiedAt ?? stats.mtime,
+  )
   return timeWindow ? filterSessionByTime(session, timeWindow) : session
 }

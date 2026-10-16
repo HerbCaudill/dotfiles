@@ -10,12 +10,25 @@ import { renderSessionList } from "./render-session-list.ts"
 import { renderTranscript } from "./render-transcript.ts"
 import { searchSessions } from "./search-sessions.ts"
 import { usage } from "./usage.ts"
+import { getArchiveStatus } from "./get-archive-status.ts"
 
 try {
   const options = parseArguments(process.argv.slice(2))
+  process.env.AGENT_SESSIONS_MACHINE = options.machine
 
   if (options.command === "help") {
     console.log(usage)
+  } else if (options.command === "machines") {
+    const machines = getArchiveStatus()
+    console.log(
+      options.format === "json"
+        ? JSON.stringify(machines, null, 2)
+        : machines
+            .map(
+              machine => `${machine.machine}  snapshot ${machine.syncedAt}  ${machine.files} files`,
+            )
+            .join("\n"),
+    )
   } else if (options.command === "list") {
     const sessions = listSessions(
       options.source,
@@ -23,6 +36,7 @@ try {
       options.limit,
       options.archived,
       options.timeWindow,
+      options.project,
     )
     console.log(
       options.format === "json"
@@ -37,6 +51,7 @@ try {
       options.limit,
       options.archived,
       options.timeWindow,
+      options.project,
     )
     console.log(
       options.format === "json"
@@ -50,6 +65,7 @@ try {
       options.archived,
       options.tools,
       options.timeWindow!,
+      options.project,
     ).slice(0, options.limit)
     console.log(
       options.format === "json"

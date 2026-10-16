@@ -12,14 +12,23 @@ export function resolveSessionFile(
   source: Provider | "all",
 ) {
   const candidatePath = resolve(value)
-  if (existsSync(candidatePath) && statSync(candidatePath).isFile()) {
+  const archived =
+    process.env.AGENT_SESSIONS_MACHINE && process.env.AGENT_SESSIONS_MACHINE !== "local"
+  if (!archived && existsSync(candidatePath) && statSync(candidatePath).isFile()) {
     const provider = source === "all" ? inferSessionProvider(candidatePath) : source
     return { provider, path: candidatePath } satisfies SessionFile
   }
 
   const matches = findSessionFiles(source, true).filter(file => {
     const name = basename(file.path, ".jsonl")
-    return name === value || name.endsWith(value) || name.includes(value)
+    return (
+      file.path === candidatePath ||
+      file.summary?.id === value ||
+      file.summary?.id.startsWith(value) ||
+      name === value ||
+      name.endsWith(value) ||
+      name.includes(value)
+    )
   })
 
   if (matches.length === 0) {
@@ -29,7 +38,7 @@ export function resolveSessionFile(
   if (matches.length > 1) {
     const ids = matches
       .slice(0, 8)
-      .map(file => basename(file.path, ".jsonl"))
+      .map(file => `${file.machine ? `${file.machine}: ` : ""}${basename(file.path, ".jsonl")}`)
       .join("\n")
     throw new Error(`Session prefix is ambiguous:\n${ids}`)
   }

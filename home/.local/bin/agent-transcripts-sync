@@ -2,4 +2,4 @@
 
 import { runAgentTranscriptsSync } from "../../../scripts/agent-transcripts/runAgentTranscriptsSync.ts"
 
-runAgentTranscriptsSync()
+await runAgentTranscriptsSync()

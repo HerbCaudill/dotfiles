@@ -4,12 +4,82 @@ import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { describe, test } from "node:test"
+import { gzipSync } from "node:zlib"
 import { arePathsEqual } from "../are-paths-equal.ts"
 import { chunkSessionFiles } from "../chunk-session-files.ts"
 
 const scriptPath = join(import.meta.dirname, "..", "agent-sessions.ts")
 
 describe("agent-sessions", () => {
+  test("lists, searches, and reads a compressed transcript from another machine offline", () => {
+    const fixture = createFixture()
+    const machineRoot = join(fixture.env.AGENT_SESSIONS_ARCHIVE_ROOT, "machines", "mini")
+    mkdirSync(machineRoot, { recursive: true })
+    const transcript = JSON.stringify({
+      type: "user",
+      sessionId: "remote-session",
+      cwd: "C:\\Code\\Example\\project",
+      message: { role: "user", content: "Recover the mini conversation" },
+    })
+    const compressed = gzipSync(transcript)
+    writeFileSync(
+      join(machineRoot, "remote-session.jsonl.gz.part-0000"),
+      compressed.subarray(0, 20),
+    )
+    writeFileSync(join(machineRoot, "remote-session.jsonl.gz.part-0001"), compressed.subarray(20))
+    writeFileSync(
+      join(machineRoot, "manifest.json"),
+      JSON.stringify({
+        machine: "mini",
+        syncedAt: "2026-10-16T10:00:00Z",
+        files: {
+          "claude/projects/project/remote-session.jsonl": {
+            modifiedAt: "2026-08-01T10:00:00Z",
+            paths: ["remote-session.jsonl.gz.part-0000", "remote-session.jsonl.gz.part-0001"],
+            summary: {
+              id: "remote-session",
+              cwd: "C:\\Code\\Example\\project",
+              messages: [{ role: "user", text: "Recover the mini conversation" }],
+            },
+          },
+        },
+      }),
+    )
+
+    for (const command of [["list"], ["search", "mini conversation"], ["show", "remote-session"]]) {
+      const result = spawnSync(
+        process.execPath,
+        [scriptPath, ...command, "--machine", "mini", "--format", "json"],
+        { encoding: "utf8", env: fixture.env },
+      )
+      assert.equal(result.status, 0, result.stderr)
+      const value = JSON.parse(result.stdout)
+      const session = Array.isArray(value) ? value[0] : value
+      assert.equal(session.machine, "mini")
+      assert.equal(session.id, "remote-session")
+      assert.equal(session.fileModifiedAt, "2026-08-01T10:00:00.000Z")
+      assert.ok(
+        session.messages.some((message: { text: string }) =>
+          message.text.includes("Recover the mini conversation"),
+        ),
+      )
+    }
+    const status = spawnSync(process.execPath, [scriptPath, "machines", "--format", "json"], {
+      encoding: "utf8",
+      env: fixture.env,
+    })
+    assert.equal(status.status, 0, status.stderr)
+    assert.equal(JSON.parse(status.stdout)[0].machine, "mini")
+    assert.equal(JSON.parse(status.stdout)[0].syncedAt, "2026-10-16T10:00:00Z")
+    const project = spawnSync(
+      process.execPath,
+      [scriptPath, "list", "--machine", "all", "--project", "Example/project", "--format", "json"],
+      { encoding: "utf8", env: fixture.env },
+    )
+    assert.equal(project.status, 0, project.stderr)
+    assert.equal(JSON.parse(project.stdout).length, 1)
+  })
+
   test("lists normalized Claude and Codex sessions", () => {
     const fixture = createFixture()
     const result = spawnSync(process.execPath, [scriptPath, "list"], {
@@ -403,6 +473,7 @@ function createFixture() {
       AGENT_SESSIONS_CLAUDE_ROOT: join(root, "claude"),
       AGENT_SESSIONS_CODEX_ROOT: join(root, "codex"),
       AGENT_SESSIONS_CODEX_ARCHIVED_ROOT: archivedRoot,
+      AGENT_SESSIONS_ARCHIVE_ROOT: join(root, "archive"),
     },
   }
 }
