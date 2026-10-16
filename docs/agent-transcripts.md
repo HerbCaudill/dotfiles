@@ -4,7 +4,7 @@ The private [HerbCaudill/agent-transcripts](https://github.com/HerbCaudill/agent
 
 ## Contents
 
-Each writer owns `machines/<name>/`. Claude Code, Codex active and archived sessions, Pi sessions, and the Claude/Codex history JSONL files are copied without changing the original stores. The shared copy retains readable conversation and tool text. Embedded images, audio, encrypted reasoning payloads, and binary blobs are replaced with markers. The full raw files remain on their original machines. SQLite files are excluded. Missing source files remain in the archive, so removing a local session does not remove its archived copy.
+Each writer owns `machines/<name>/`. Claude Code, Codex active and archived sessions, Pi sessions, and the Claude/Codex history JSONL files are copied without changing the original stores. The shared copy retains readable conversation and tool text. Embedded images, audio, encrypted reasoning payloads, and binary blobs are replaced with markers. Claude and Codex copies omit internal reasoning, runtime instructions, and duplicate protocol events while retaining native session IDs, working directories, timestamps, conversation messages, and tool traffic. The full raw files remain on their original machines. SQLite files are excluded. Missing source files remain in the archive, so removing a local session does not remove its archived copy.
 
 Text transcripts are gzip-compressed. Compressed files larger than 32 MiB are split into numbered parts. Each machine's `manifest.json` records the source modification date and size, text format version, ordered fragment paths, a small session summary, and the snapshot time. The read-agent-sessions skill reconstructs these files and uses the original dates for listing and filtering. It currently reads Claude Code and Codex; Pi is preserved for future reader support.
 
@@ -22,7 +22,7 @@ Clone the private repository, then run `git config agentTranscripts.machine <nam
 
 On macOS, run `agent-transcripts-sync`. The existing `com.herbcaudill.agent-transcripts-sync` launchd agent runs the same wrapper every 900 seconds. Its output goes to `/tmp/agent-transcripts-sync.log`.
 
-On Windows, run `scripts/windows/register-agent-transcripts-task.ps1` from an elevated shell in the dotfiles clone. The task runs under Herb's account with S4U, uses PowerShell 7 and mise's Node shim, ignores overlapping launches, and starts missed runs when the machine becomes available. Its log is `%LOCALAPPDATA%\agent-transcripts-sync.log`. Run `scripts/windows/sync-agent-transcripts.ps1` for a manual sync.
+On Windows, run `scripts/windows/register-agent-transcripts-task.ps1` from an elevated shell in the dotfiles clone. The task runs under Herb's account with S4U, uses PowerShell 7 and the newest supported Node installed by mise, ignores overlapping launches, and starts missed runs when the machine becomes available. It does not require mise to have a global default. Its log is `%LOCALAPPDATA%\agent-transcripts-sync.log`. Run `scripts/windows/sync-agent-transcripts.ps1` for a manual sync.
 
 `AGENT_TRANSCRIPTS_REPO_PATH` overrides the writer's clone path. `AGENT_SESSIONS_ARCHIVE_ROOT` overrides the reader's clone path.
 

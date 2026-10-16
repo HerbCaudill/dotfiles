@@ -31,7 +31,7 @@ export const copyTranscriptEntries = async (
     ).replaceAll("\\", "/")
     const existing = files[key]
     if (
-      existing?.format === "text-jsonl-v1" &&
+      existing?.format === "readable-jsonl-v1" &&
       existing?.size === sourceStats.size &&
       existing?.modifiedAt === sourceStats.mtime.toISOString() &&
       existing.paths.every((path: string) => existsSync(join(machineRoot, path)))
@@ -40,9 +40,14 @@ export const copyTranscriptEntries = async (
 
     const destination = join(machineRoot, `${key}.gz`)
     const temporary = `${destination}.tmp`
+    const provider = key.startsWith("claude/projects/")
+      ? "claude"
+      : /^codex\/(sessions|archived_sessions)\//.test(key)
+        ? "codex"
+        : undefined
     await mkdir(dirname(destination), { recursive: true })
     await pipeline(
-      readTextTranscript(entry.absoluteSourcePath),
+      readTextTranscript(entry.absoluteSourcePath, provider),
       createGzip(),
       createWriteStream(temporary),
     )
@@ -60,16 +65,11 @@ export const copyTranscriptEntries = async (
       }
       await rm(temporary)
     }
-    const provider = key.startsWith("claude/projects/")
-      ? "claude"
-      : /^codex\/(sessions|archived_sessions)\//.test(key)
-        ? "codex"
-        : undefined
     const summary = provider
       ? getSessionSummary({ provider, path: entry.absoluteSourcePath })
       : undefined
     files[key] = {
-      format: "text-jsonl-v1",
+      format: "readable-jsonl-v1",
       size: sourceStats.size,
       modifiedAt: sourceStats.mtime.toISOString(),
       paths,
