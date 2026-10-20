@@ -100,7 +100,7 @@ bd close <id>         # Complete work
 
 ## GitHub PR task sync
 
-The installed `github-pr-task-sync` wrapper uses `scripts/tasks-workflows/pr/` to capture PRs in the enrolled Tasks Inbox. Its launchd job runs every 60 seconds with Node 24, `TASKS_SPACE_ID` from the managed peer binding and `TASKS_FRESHNESS=converged`. The private checkpoint at `~/.local/share/github-pr-task-sync/state.json` preserves existing event keys and request receipts. Failures stop the batch without resetting its cursor or falling back to Google. Logs remain at `/tmp/github-pr-task-sync.log`.
+The installed `github-pr-task-sync` wrapper uses `scripts/tasks-workflows/pr/` to capture PRs in the enrolled Tasks Inbox. GitHub sends a new notification update for every comment, push or review, so it skips an update while an unfinished task already links the same PR URL. Its launchd job runs every 60 seconds with Node 24, `TASKS_SPACE_ID` from the managed peer binding and `TASKS_FRESHNESS=converged`. The private checkpoint at `~/.local/share/github-pr-task-sync/state.json` preserves existing event keys and request receipts. Failures stop the batch without resetting its cursor or falling back to Google. Logs remain at `/tmp/github-pr-task-sync.log`.
 
 ## Agent harness updates
 

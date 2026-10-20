@@ -15,11 +15,25 @@ export async function syncPrTasks(
       .filter(intent => !state.processedEventKeys.includes(intent.eventKey))
       .map(intent => [intent.eventKey, intent]),
   )
+  const resumed = new Set(pending.keys())
   for (const event of getPendingPullRequestTasks(notifications, state.processedEventKeys))
     if (!pending.has(event.eventKey))
       pending.set(event.eventKey, createPrIntent(event.eventKey, event.task))
+  const captured = new Set<string>()
   let processedCount = 0
   for (const original of pending.values()) {
+    // Each comment, push or review on a PR is a new notification update; capture once per open task.
+    const link = original.notes
+    if (
+      !resumed.has(original.eventKey) &&
+      (captured.has(link) || (await dependencies.hasOpenPrTask(link)))
+    ) {
+      state = { ...state, processedEventKeys: [...state.processedEventKeys, original.eventKey] }
+      await dependencies.saveState(state)
+      processedCount++
+      continue
+    }
+    captured.add(link)
     state = { ...state, intents: { ...state.intents, [original.eventKey]: original } }
     await dependencies.saveState(state)
     const completed = await dependencies.completeEvent(original, async progress => {

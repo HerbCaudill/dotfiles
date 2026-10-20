@@ -40,6 +40,8 @@ export type PrSyncDependencies = {
   saveState: (state: PrState) => Promise<void>
   /** Fetch every GitHub notification page since the previous complete poll. */
   listNotifications: (since: string | null) => Promise<GithubNotification[]>
+  /** Whether an unfinished Tasks task already links this PR. */
+  hasOpenPrTask: (link: string) => Promise<boolean>
   /** Complete only the stored intention, reporting progress before another phase begins. */
   completeEvent: (
     intent: PrIntent,
@@ -69,6 +71,10 @@ export type TasksResponse = {
   result?: {
     /** Shared contract outcome. */
     status: string
+    /** Query rows, used to find an existing task for a PR. */
+    items?: { kind: string; status?: string; title?: string; description?: string }[]
+    /** Opaque next page of a query. */
+    continuation?: string | null
     /** Exact created IDs returned by a successful capture. */
     createdIds?: string[]
     /** Authoritative affected IDs returned by the description write. */

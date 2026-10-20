@@ -40,6 +40,7 @@ test("recovers actual CLI process reply loss without duplicating tasks or undoin
       loadState: () => loadPrState(checkpoint),
       saveState: state => savePrState(state, checkpoint),
       listNotifications: async () => [event],
+      hasOpenPrTask: async () => false,
       completeEvent: (intent, save) => completePrEvent(intent, call, save),
     } satisfies Parameters<typeof syncPrTasks>[0]
     await expect(syncPrTasks(dependencies)).rejects.toThrow()

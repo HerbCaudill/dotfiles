@@ -11,7 +11,7 @@ export function createTasksCall(
   if (!context.spaceId.trim() || !["local", "edge-upload", "converged"].includes(context.freshness))
     throw new Error("Tasks space and explicit freshness are required")
   return async (command, input, requestId) => {
-    if (!["status", "capture", "save-description", "inspect", "retry"].includes(command))
+    if (!["status", "search", "capture", "save-description", "inspect", "retry"].includes(command))
       throw new Error("Unsupported PR workflow command")
     const json = JSON.stringify(input) + "\n"
     if (Buffer.byteLength(json) > 1024 * 1024)

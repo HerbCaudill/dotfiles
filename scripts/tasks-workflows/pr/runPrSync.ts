@@ -3,6 +3,7 @@ import { getGithubPrTaskStatePath } from "../../github-pr-tasks/getGithubPrTaskS
 import { acquirePrLock } from "./acquirePrLock.ts"
 import { bindPrState } from "./bindPrState.ts"
 import { createTasksCall } from "./createTasksCall.ts"
+import { hasOpenPrTask } from "./hasOpenPrTask.ts"
 import { listPrNotifications } from "./listPrNotifications.ts"
 import { loadPrState } from "./loadPrState.ts"
 import { savePrState } from "./savePrState.ts"
@@ -28,6 +29,7 @@ export async function runPrSync(
       loadState: async () => bindPrState(await loadPrState(path), context),
       saveState: state => savePrState(state, path),
       listNotifications: listPrNotifications,
+      hasOpenPrTask: link => hasOpenPrTask(link, call),
       completeEvent: (intent, checkpoint) => completePrEvent(intent, call, checkpoint),
     })
   } finally {
