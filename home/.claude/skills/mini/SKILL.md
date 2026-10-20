@@ -9,9 +9,10 @@ An always-on Windows 11 Pro mini PC that hosts coding agents, especially for Dev
 
 ## Connecting
 
-The machine is on Herb's tailnet as `mini`. The Mac's SSH config has a `mini` host entry, so `ssh mini` logs in with the Mac's ed25519 key.
+The machine is on Herb's tailnet as `mini`. The Mac's Home Manager SSH config has `mini` (port 22) and `mini-backup` (port 2222) entries. Both log in as `herb` with the Mac's ed25519 key. If the primary connection fails, try `ssh mini-backup` before asking Herb to intervene.
 
 - **SSH** uses Windows OpenSSH Server. The default shell is Windows PowerShell 5.1; `pwsh` (7) is also installed. Admin keys live in `C:\ProgramData\ssh\administrators_authorized_keys`, which must be readable only by Administrators and SYSTEM.
+- **Backup SSH** is the independent `sshd-backup` service on port 2222. Its Microsoft GitHub release binaries live in `C:\Program Files\OpenSSH-Backup\<release>` and its config and host key live in `C:\ProgramData\agent-access\backup`. It references the same authorized keys as the primary server and accepts key authentication only. Removing the Windows OpenSSH feature does not remove this service or its binaries.
 - **Remote Desktop** is on. Herb uses the Windows App on the Mac with the host `mini`.
 - Tailscale runs unattended, so the machine stays reachable after a reboot with nobody signed in.
 
@@ -30,6 +31,8 @@ $env:Path = "$HOME\AppData\Local\mise\shims;" + [Environment]::GetEnvironmentVar
 ```
 
 Windows ends child processes when the SSH session closes. For long work such as a big install, register a scheduled task and poll a log file instead of holding the session open. Run it as SYSTEM for machine-wide installers, or as `herb` with S4U for jobs that need Herb's profile.
+
+UAC stays enabled (`EnableLUA=1`), with administrator elevation requests approved without prompting (`ConsentPromptBehaviorAdmin=0`) under `HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System`. Local agents can request an elevated process with `Start-Process -Verb RunAs` without Herb approving a dialog. This does not elevate an already running process; start an elevated shell when needed.
 
 winget works over SSH. Pass `--accept-source-agreements --accept-package-agreements --disable-interactivity`.
 
@@ -72,4 +75,46 @@ The `dev` and `e2e` databases were restored from the Parallels VM on 2026-10-15,
 
 - Windows Update installs automatically and may reboot only on Sundays at 4 AM. Active hours are 6 AM to midnight, and feature updates wait 90 days. These are set as policy under `HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate`.
 - The machine never sleeps or hibernates on AC power.
-- Rebooting is safe: SSH, Tailscale, and the scheduled tasks all come back without a sign-in. Ask Herb before rebooting, because agents or his own sessions may be running.
+- Agents may reboot without asking only when the mini is idle: nobody signed in over Remote Desktop (including disconnected sessions), no other agent sessions, and no builds or tests running. SSH, Tailscale, and the scheduled tasks come back without a sign-in. Do not reboot when any check is uncertain.
+
+### SSH repair watchdog
+
+Run `scripts/windows/setup-agent-access.ps1` in the dotfiles clone from an elevated PowerShell 7 shell to install or refresh agent access. It preserves `C:\ProgramData\ssh`, installs the backup server, repairs the Windows capability, services and firewall rules, sets automatic startup and failure recovery, applies the UAC policy, and registers `agent-access-watchdog`. It does not reboot, including when Windows reports a pending restart.
+
+The watchdog runs as SYSTEM at startup and every five minutes from a protected copy at `C:\ProgramData\agent-access\setup-agent-access.ps1 -RepairOnly`, independent of Git sync. It repairs both servers separately, so a Windows servicing failure does not prevent backup access. Setup must be rerun after updating the repo script to refresh this protected copy. Logs with UTC timestamps are at `C:\ProgramData\agent-access\watchdog.log` (previous log: `watchdog.log.1`, rotated at 10 MB).
+
+```powershell
+Get-Service sshd, sshd-backup
+Get-ScheduledTask -TaskName agent-access-watchdog
+Get-ScheduledTaskInfo -TaskName agent-access-watchdog
+Get-Content C:\ProgramData\agent-access\watchdog.log -Tail 60
+Start-ScheduledTask -TaskName agent-access-watchdog
+```
+
+To verify recovery, connect through `mini-backup`, ensure no other primary SSH sessions need the listener, stop `sshd`, and leave the scheduled task alone. Check that it starts `sshd` again within five minutes and records the repair. Never stop both servers together.
+
+### Before rebooting
+
+Run these from an elevated SSH session immediately before a proposed reboot:
+
+```powershell
+quser.exe
+Get-NetTCPConnection -State Established -LocalPort 22,2222 -ErrorAction SilentlyContinue |
+  Select-Object LocalPort, RemoteAddress, RemotePort, OwningProcess
+Get-CimInstance Win32_Process |
+  Where-Object {
+    $_.Name -match '^(claude|codex|pi|MSBuild|VSTest.Console|testhost|dotnet|node|npm|pnpm|just|nunit|xunit|csc|vbcsccompiler)(\.exe)?$' -or
+    $_.CommandLine -match 'playwright|vitest|vstest|[ /\\]pi[ /\\]|agent.*run|build-client'
+  } | Select-Object ProcessId, ParentProcessId, Name, CommandLine
+Get-ScheduledTask | Where-Object State -eq Running | Select-Object TaskPath, TaskName
+```
+
+Any signed-in user reported by `quser` blocks an unattended reboot; an RDP session marked `Disc` still counts. A successful `quser` result of no users is expected when idle; other errors do not prove idleness. The only allowed SSH connection is your own maintenance session. Inspect matching processes and running tasks for agents, builds and tests; do not treat low CPU usage as proof that an agent is inactive. Account for local agents and background tasks as well as SSH connections. If there is other work or an ambiguous process, wait and check again.
+
+After all checks pass, record a specific reason before restarting. Windows also records the comment in System event 1074:
+
+```powershell
+$reason = 'Agent maintenance: <specific reason>; idle checks passed, no RDP users or other agents/builds/tests.'
+Add-Content C:\ProgramData\agent-access\reboots.log "$([DateTime]::UtcNow.ToString('o')) $reason"
+shutdown.exe /r /t 0 /d p:4:1 /c $reason
+```
