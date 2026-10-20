@@ -109,7 +109,7 @@ Get-CimInstance Win32_Process |
 Get-ScheduledTask | Where-Object State -eq Running | Select-Object TaskPath, TaskName
 ```
 
-Any signed-in user reported by `quser` blocks an unattended reboot; an RDP session marked `Disc` still counts. A successful `quser` result of no users is expected when idle; other errors do not prove idleness. The only allowed SSH connection is your own maintenance session. Inspect matching processes and running tasks for agents, builds and tests; do not treat low CPU usage as proof that an agent is inactive. Account for local agents and background tasks as well as SSH connections. If there is other work or an ambiguous process, wait and check again.
+Any signed-in user reported by `quser` blocks an unattended reboot; an RDP session marked `Disc` still counts. An explicit `No User exists` response is expected when idle; access-denied or other errors do not prove idleness. The only allowed SSH connection is your own maintenance session. Inspect matching processes and running tasks for agents, builds and tests; do not treat low CPU usage as proof that an agent is inactive. Account for local agents and background tasks as well as SSH connections. If there is other work or an ambiguous process, wait and check again.
 
 After all checks pass, record a specific reason before restarting. Windows also records the comment in System event 1074:
 
