@@ -1,6 +1,6 @@
 #!/bin/bash
 # @raycast.schemaVersion 1
-# @raycast.title Connect to mini
+# @raycast.title mini remote desktop
 # @raycast.mode silent
 # @raycast.packageName Remote Desktop
 # @raycast.icon 🖥️
@@ -14,7 +14,7 @@ function run(args) {
   Application('Windows App').activate();
   const client = Application('System Events').processes.byName('Windows App');
   const startupDeadline = Date.now() + 10000;
-  while (!client.exists() && Date.now() < startupDeadline) delay(0.2);
+  while (!client.exists() && Date.now() < startupDeadline) delay(0.1);
   if (!client.exists()) throw new Error('Windows App did not start.');
 
   client.frontmost = true;
@@ -32,7 +32,7 @@ function run(args) {
       return property(window, 'name') === 'Windows App';
     });
     if (center) break;
-    delay(0.2);
+    delay(0.1);
   }
   if (!center) throw new Error('Cannot find the Windows App connection window.');
 
@@ -57,7 +57,7 @@ function run(args) {
       cards[0].actions.byName('AXPress').perform();
       return 'Requested connection to ' + args[0];
     }
-    delay(0.3);
+    delay(0.1);
   }
   throw new Error('Saved device not found: ' + args[0] + '. Use Devices grid view, clear search and filters, and make its card visible. Pass its exact display name as the Raycast argument.');
 }

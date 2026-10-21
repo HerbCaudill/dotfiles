@@ -2,7 +2,7 @@
   "env": {
     "CLAUDE_CODE_ENABLE_CFC": "1"
   },
-  "model": "fable",
+  "model": "opus",
   "skillOverrides": {
     "gws-calendar-agenda": "off",
     "gws-calendar-insert": "off",
