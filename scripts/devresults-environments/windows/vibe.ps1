@@ -39,8 +39,8 @@ try {
     $lockfile=Join-Path $path 'pnpm-lock.yaml'
     $hash=(Get-FileHash $lockfile -Algorithm SHA256).Hash
     $install=Join-Path $control 'installed.json'
-    if($Request.operation -in @('prepare','install') -and (Test-Path $install)){if((Get-Content $install -Raw|ConvertFrom-Json).lockHash -ceq $hash){$result.status='installed';$result|ConvertTo-Json -Depth 30 -Compress;return}}
-    if(-not $isWatch -and $Request.operation -eq 'start' -and (-not(Test-Path $install) -or (Get-Content $install -Raw|ConvertFrom-Json).lockHash -cne $hash)){throw 'VibeResults dependencies changed; run create again to install before starting'}
+    if($Request.operation -eq 'prepare' -and (Test-Path $install)){if((Get-Content $install -Raw|ConvertFrom-Json).lockHash -ceq $hash){$result.status='installed';$result|ConvertTo-Json -Depth 30 -Compress;return}}
+    if(-not $isWatch -and $Request.operation -eq 'start' -and (-not(Test-Path $install) -or (Get-Content $install -Raw|ConvertFrom-Json).lockHash -cne $hash)){throw 'VibeResults dependencies changed; run install-vibe before starting'}
     Stop-Worker
     if($task){Unregister-ScheduledTask -TaskName $taskName -Confirm:$false}
     $runId=[guid]::NewGuid().ToString('N');$run=Join-Path $control $runId
