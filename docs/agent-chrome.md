@@ -1,0 +1,11 @@
+# Agent Chrome on the mini
+
+Agent Chrome is a separate, persistent Chrome profile for unattended browser work. It starts in Herb's interactive Windows session through the `Agent Chrome` scheduled task at sign-in, with no execution time limit and restart after failure. Search the Windows Start menu for **Agent Chrome** to open its window manually. The mini's automatic Windows sign-in supplies the desktop after a reboot; the task does not run in the invisible service session.
+
+The profile lives at `%LOCALAPPDATA%\AgentChrome\User Data`. Its parent has an explicit ACL for Herb, SYSTEM and Administrators. Chrome exposes its debugging endpoint on loopback port 9223. No firewall opening or remote tunnel is configured. This is the supported separate-profile debugging mode, so connections do not use the regular-profile approval dialog. Sign into required sites in this profile once; sites can still expire sessions or require another login. Regular Chrome remains a separate profile.
+
+Run `scripts/windows/install-agent-chrome.ps1` from an elevated PowerShell 7 shell to install or refresh the scheduled task and Start menu shortcut. It refuses an unrelated process on the requested port and will not change the launch configuration of a running Agent Chrome instance. The installer preserves all existing profile data. To stop it, close its window. To start it again, use its shortcut or `Start-ScheduledTask 'Agent Chrome'`.
+
+Codex's `chrome-devtools` MCP entry connects with `--browser-url http://127.0.0.1:9223`, using the installed `chrome-devtools-mcp` package under mise's Node 24. The CLI can use the same browser with `chrome-devtools start --browser-url http://127.0.0.1:9223 --no-usage-statistics --no-performance-crux`. Separate MCP processes can reconnect without Chrome approval prompts. Existing agent sessions need to reload their MCP configuration before using the new endpoint. Installation verified the scheduled task, separate desktop process, loopback listener and HTTP discovery endpoint. An end-to-end MCP reconnect still needs verification in a fresh agent session.
+
+Do not copy authentication databases or cookies from regular Chrome into this profile. Use ordinary website sign-in or the application's device-linking flow. Never delete or edit profile, cache or lock files while this Chrome instance is running.
