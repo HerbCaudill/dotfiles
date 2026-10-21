@@ -1,10 +1,10 @@
-import { spawnSync } from "node:child_process"
 import { homedir } from "node:os"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 
 import { loadServiceAccountCredentials } from "./loadServiceAccountCredentials.ts"
 import { requestDelegatedAccessToken } from "./requestDelegatedAccessToken.ts"
+import { spawnDelegatedGws } from "./spawnDelegatedGws.ts"
 
 /** Run one gws command using a fresh delegated Workspace access token. */
 export async function runDelegatedGws(
@@ -31,17 +31,8 @@ function defaultDependencies(): RunDelegatedGwsDependencies {
     loadCredentials: loadServiceAccountCredentials,
     now: () => new Date(),
     requestAccessToken: requestDelegatedAccessToken,
-    spawnGws,
+    spawnGws: spawnDelegatedGws,
   }
-}
-
-/** Run the installed gws binary while keeping the access token out of its arguments. */
-function spawnGws(arguments_: ReadonlyArray<string>, accessToken: string) {
-  const result = spawnSync("gws", arguments_, {
-    env: { ...process.env, GOOGLE_WORKSPACE_CLI_TOKEN: accessToken },
-    stdio: "inherit",
-  })
-  return result.status ?? 1
 }
 
 // CONSTANTS
