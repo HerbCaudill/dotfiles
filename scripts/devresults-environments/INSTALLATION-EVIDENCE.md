@@ -157,3 +157,45 @@ The primary configuration uses the local development storage emulator, with no c
 The final focused Mac environment suite passed 53 tests. The Windows provisioning fixture passed 31 checks, the Windows lifecycle fixture passed 38 checks, and the opt-in Windows empty/partial-reservation regression passed. New regressions were observed failing before their respective fixes, including the occupied-port refusal before firewall mutation. These fixture results support the actual public-command and browser evidence above.
 
 Local evidence remains under `~/.local/state/drenv/verification/20260916`: baseline/final inventories, restored-data metadata, source/SQL/blob isolation results, process-survival records, browser checks and Mac HTTPS checks. The three successful environments remain running for use. The installation task remains open pending independent final review.
+
+## October 21 native mini verification
+
+This verification ran directly on the mini after the approved Mac-to-mini handoff. Two complete native stacks ran concurrently, each with an editable legacy worktree, a VibeResults worktree, private dependencies, restored data and assigned HTTPS ports. The canonical controller owns the registry at `C:\DevResultsEnvironments\registry`. The existing VM acceptance above remains separate evidence.
+
+The September 16 immutable snapshot was relocated to `C:\DevResultsEnvironments\snapshots\dev-20260916`. Public provisioning verified its SQL and blob digests and SQL backup validity before restoring the two private catalogs. The original capture and its missing-attachment limitation remain unchanged.
+
+The original `mini-alpha` create request finished independently with an owned-listener readiness failure. Retrying creation rebuilt the source, then refused the blob copy because the first Azurite startup had changed its files. The guards remained intact. Public `sync mini-alpha` published the rebuilt deployment, reconciled the restored schema, and returned `provisioned`. Public `start mini-alpha` then verified the backend and VibeResults workers and returned `running`.
+
+### Stacks and useful data
+
+Alpha uses legacy revision `7a23b2f1baa7fad0ad7ef6324fea98ed128e34a3`, VibeResults revision `5e8ddf9daac443519a4ab0e3ca61426c8aa52a59`, IIS HTTPS port 30000, Azurite ports 30002–30004, and VibeResults HTTPS port 30006. Beta used the same legacy revision, VibeResults revision `68a889ef892ca7e5ae3b5dc485f4b653892d8e96`, IIS HTTPS port 30007, Azurite ports 30009–30011, and VibeResults HTTPS port 30013. Their Git stores, dependency trees, SQL files, blob directories and scheduled tasks were distinct.
+
+Valid-TLS requests through each VibeResults `/api/currentinstance/storage` proxy returned its own `X-Drenv-Environment` and expected legacy revision. With disposable viewer accounts restricted to the copied example tenant, Chrome rendered both VibeResults dashboards with 45 projects and populated indicator charts. Alpha's private SQL independently contained 45 active example projects. Browser checks and screenshots are saved as `drenv-alpha-browser.json`, `drenv-beta-browser.json`, and `drenv-*-dashboard.jpg` in `C:\Users\herb\setup`.
+
+The legacy application rendered its login page over valid TLS. Its existing enterprise login handoff also authenticated a disposable viewer on the real legacy origin, then reached the copied application's privacy-policy gate. No policy was accepted for a fixture, so a legacy dashboard screenshot is not claimed. An initial separate helper used an untrusted local development certificate; that browser path was abandoned without bypassing the warning. The actual IIS origin and both VibeResults origins passed TLS validation.
+
+All four temporary viewer fixtures were disabled after the checks. Their passwords, group memberships and issued tokens were removed. Existing users and credentials were unchanged. Temporary authentication servers were stopped.
+
+### Independence and lifecycle
+
+A temporary source file existed only in alpha, with no matching file in beta or the primary checkout. A committed temporary SQL marker existed only in `drenv_mini_alpha`, with zero matches in beta and the primary `dev` catalog. Through the live storage APIs, a temporary blob round-tripped in alpha and returned 404 in beta. The source file, SQL marker and blob container were removed after verification.
+
+Public `watch mini-alpha` launched a limited S4U worker and published its initial legacy client build at `2026-10-21T18:40:41.432Z`. Public stop/restart of beta preserved alpha's backend run identity, child identities, frontend PID and watcher PID, while alpha's proxy remained healthy. Alpha's backend, frontend and watcher remain running.
+
+Explicit `install-vibe` originally reused a cached receipt when the lockfile was unchanged. A Windows regression failed before the correction and passed afterward. Explicit install now drains the owned frontend and launches its limited S4U installer even with an unchanged lockfile; preparation still reuses a matching receipt. During live verification, the requesting CLI process was terminated after it printed request `d6a195c6-2c22-4b85-b7e2-5f319ed22668`. The scheduled operation continued and returned `installed`; its worker log records successful pnpm completion. Beta's frontend was then started again. The Mac was unreachable over SSH while both stacks continued running. This continuation did not exercise a fresh Mac SSH tunnel or browser session.
+
+Public removal initially exposed Git for Windows' long-path limit in beta's dependencies. The corrected path uses PowerShell 7 to verify the owned private Git mapping, unlink junctions without following their targets, and invoke Git with long paths enabled. Its native regression covers a tree deeper than 260 characters and preserves a foreign junction target. The failed first attempt had already removed Git metadata; all 3,003 remaining source files matched beta's previously verified commit before the disposable worktree was reconstructed at that same revision. No source edits were discarded. Retried public removal succeeded. Beta's registry tombstone remains, while its worktrees, deployment, catalog, ports and tasks are gone.
+
+### Video workflow and checks
+
+The VibeResults video-feedback helper ran from the main checkout with `--host mini --environment mini-alpha --no-desktop`. It verified both local applications, printed their assigned URLs, and reported `reused`. It did not install dependencies or move either worktree. Its four focused Node tests passed. Mac tunnels, browser access from the Mac, and desktop placement were not checked in this native continuation.
+
+The final focused environment suite passed 71 tests, with two opt-in Windows tests skipped. Both new native regressions were observed failing for their expected behavior before correction. Focused TypeScript checking passed. Fixes were committed and pushed as `3ba6815` and `c803db7`.
+
+### Protected resources and retained evidence
+
+The final `protected-after.json` comparison retained all eight protected file hashes, including the migration file and primary configuration, all three protected task actions, all non-drenv catalog identities, and all protected listeners except the primary Vibe listener. The primary legacy origin returned valid-TLS HTTP 302. The default database health endpoints on e2e ports 20415 and 20615 returned HTTP 200. The primary IIS process and targeted e2e IIS process retained their identities.
+
+Two differences predate this continuation. The main e2e IIS process was replaced at 19:47 local time; its earlier log stopped at 19:45, and its replacement remained healthy. The primary Vibe task had crashed at 19:58 with an `EBUSY` filesystem-watch error on the video helper's test file, before this continuation's first inspection. Its task is Ready and port 9443 is absent. It was left stopped under the instruction not to restart protected primary runtimes. The task action and script hash are unchanged.
+
+Local receipts, resource inventories, source/SQL/blob isolation checks, requester-disconnection evidence, browser captures, fixture cleanup receipts and the protected-resource comparison remain in `C:\Users\herb\setup\drenv-*` and the authoritative request directories. The original `protected-before.json`, relocated snapshot and source artifacts are retained.
