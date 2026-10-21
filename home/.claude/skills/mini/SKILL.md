@@ -15,7 +15,7 @@ The machine is on Herb's tailnet as `mini`. The Mac's Home Manager SSH config ha
 - **Backup SSH** is the independent `sshd-backup` service on port 2222. Its Microsoft GitHub release binaries live in `C:\Program Files\OpenSSH-Backup\<release>` and its config and host key live in `C:\ProgramData\agent-access\backup`. It references the same authorized keys as the primary server and accepts key authentication only. Removing the Windows OpenSSH feature does not remove this service or its binaries.
 - **Remote Desktop** is on. Herb uses the Windows App on the Mac with the host `mini`.
 - Tailscale runs unattended, so the machine stays reachable after a reboot with nobody signed in.
-- **Reaching the Mac:** `ssh mac` logs in as `herbcaudill@herbs-macbook-pro` with mini's `herb@mini` key. The host entry lives in mini's unmanaged `~/.ssh/config`. The Mac side – Remote Login, the authorized key, and no sleep on the power adapter – is in `nix/darwin/default.nix`. The Mac is unreachable while it sleeps, such as on battery or with the lid closed.
+- **Reaching the Mac:** `ssh mac` logs in as `herbcaudill@herbs-macbook-pro` with mini's `herb@mini` key. The host entry is in `home/.ssh/config.windows`, which the installer below links to mini's `~/.ssh/config`. The Mac side – Remote Login, the authorized key, and no sleep on the power adapter – is in `nix/darwin/default.nix`. The Mac is unreachable while it sleeps, such as on battery or with the lid closed.
 
 ## Running commands
 
@@ -46,7 +46,7 @@ winget works over SSH. Pass `--accept-source-agreements --accept-package-agreeme
 
 ## Dotfiles and agent config
 
-`C:\Code\HerbCaudill\dotfiles` is a normal clone with `core.autocrlf=false`. Only the agent config applies on Windows. `scripts/windows/install-claude-shared-config.ps1 -RepoRoot C:\Code\HerbCaudill\dotfiles` symlinks the shared global instructions and skills into `~/.claude` and `~/.codex`, plus the Claude status line. Because these are symlinks into the clone, a pull updates them. Rerun the installer only when the list of linked items changes. Nix, launchd, and macOS-only sections do not apply.
+`C:\Code\HerbCaudill\dotfiles` is a normal clone with `core.autocrlf=false`. Only the agent config applies on Windows. `scripts/windows/install-claude-shared-config.ps1 -RepoRoot C:\Code\HerbCaudill\dotfiles` symlinks the shared global instructions and skills into `~/.claude` and `~/.codex`, plus the Claude status line and `~/.ssh/config`. Because these are symlinks into the clone, a pull updates them. Rerun the installer only when the list of linked items changes. Nix, launchd, and macOS-only sections do not apply.
 
 ## Repo sync
 

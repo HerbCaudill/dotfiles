@@ -15,7 +15,8 @@ $items = @(
   @{ Name = ".claude\skills"; Source = Join-Path $RepoRoot "home\.claude\skills" },
   @{ Name = ".claude\statusline.js"; Source = Join-Path $RepoRoot "home\.claude\statusline.js" },
   @{ Name = ".codex\AGENTS.md"; Source = Join-Path $RepoRoot "home\.claude\AGENTS.md" },
-  @{ Name = ".codex\skills"; Source = Join-Path $RepoRoot "home\.claude\skills" }
+  @{ Name = ".codex\skills"; Source = Join-Path $RepoRoot "home\.claude\skills" },
+  @{ Name = ".ssh\config"; Source = Join-Path $RepoRoot "home\.ssh\config.windows" }
 )
 
 function Remove-ExistingLink {
@@ -105,4 +106,4 @@ foreach ($item in $items) {
 }
 
 Write-StatusLineSettings
-Write-Host "Claude and Codex now use repo-managed skills and global instructions, plus the Claude status line."
+Write-Host "Claude and Codex now use repo-managed skills and global instructions, plus the Claude status line and SSH config."
