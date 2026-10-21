@@ -131,6 +131,20 @@ in
   users.users.${username} = {
     home = homeDirectory;
     shell = pkgs.zsh;
+    # Lets agents on the mini PC reach this Mac with `ssh mac` over Tailscale.
+    openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIRkImMojhrLcv17tQ5kRa6M+sduN8+Sk7LzbTdGCk+F herb@mini"
+    ];
+  };
+
+  # Remote Login, limited to Herb's account with key authentication only.
+  services.openssh = {
+    enable = true;
+    extraConfig = ''
+      AllowUsers ${username}
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+    '';
   };
 
   programs.zsh.enable = true;
@@ -172,6 +186,9 @@ in
   security.pam.services.sudo_local.enable = false;
 
   system.activationScripts.postActivation.text = ''
+    # Never sleep on the power adapter so the mini can always reach this Mac.
+    # nix-darwin's power.sleep.computer would also apply on battery.
+    /usr/bin/pmset -c sleep 0
     ${pkgs.coreutils}/bin/install -d -m 0700 -o ${username} -g staff "${marvinRuntimeDirectory}"
     ${pkgs.coreutils}/bin/install -d -m 0700 -o ${username} -g staff "${marvinLogDirectory}"
     ${pkgs.coreutils}/bin/install -m 0600 -o ${username} -g staff ${marvinConfig} "${marvinConfigPath}.new"

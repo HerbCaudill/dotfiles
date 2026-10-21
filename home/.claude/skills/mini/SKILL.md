@@ -15,6 +15,7 @@ The machine is on Herb's tailnet as `mini`. The Mac's Home Manager SSH config ha
 - **Backup SSH** is the independent `sshd-backup` service on port 2222. Its Microsoft GitHub release binaries live in `C:\Program Files\OpenSSH-Backup\<release>` and its config and host key live in `C:\ProgramData\agent-access\backup`. It references the same authorized keys as the primary server and accepts key authentication only. Removing the Windows OpenSSH feature does not remove this service or its binaries.
 - **Remote Desktop** is on. Herb uses the Windows App on the Mac with the host `mini`.
 - Tailscale runs unattended, so the machine stays reachable after a reboot with nobody signed in.
+- **Reaching the Mac:** `ssh mac` logs in as `herbcaudill@herbs-macbook-pro` with mini's `herb@mini` key. The host entry lives in mini's unmanaged `~/.ssh/config`. The Mac side – Remote Login, the authorized key, and no sleep on the power adapter – is in `nix/darwin/default.nix`. The Mac is unreachable while it sleeps, such as on battery or with the lid closed.
 
 ## Running commands
 
