@@ -34,7 +34,23 @@ try {
     if($Request.operation -eq 'status'){if(Test-Live $state){$result.status=$state.status};$result|ConvertTo-Json -Depth 30 -Compress;return}
     if($Request.operation -in @('preflight-remove','remove')){if(((& git -C $path status --porcelain --untracked-files=all)-join '') -or $LASTEXITCODE -ne 0){throw 'VibeResults worktree is dirty; preserve its edits before removal'}}
     if($Request.operation -eq 'preflight-remove'){$result|ConvertTo-Json -Depth 30 -Compress;return}
-    if($Request.operation -in @('stop','remove','remove-task')){Stop-Worker;if($Request.operation -eq 'remove-task' -and $task){Unregister-ScheduledTask -TaskName $taskName -Confirm:$false};if($Request.operation -eq 'remove'){if($task){Unregister-ScheduledTask -TaskName $taskName -Confirm:$false};& git -C (Join-Path $control 'repository.git') worktree remove --force -- $path 2>$null;if($LASTEXITCODE -ne 0){throw 'Owned VibeResults source removal failed; preserved receipt'};Remove-Item -LiteralPath $control -Recurse -Force};$result|ConvertTo-Json -Depth 30 -Compress;return}
+    if($Request.operation -in @('stop','remove','remove-task')){
+        Stop-Worker
+        if($Request.operation -eq 'remove-task' -and $task){Unregister-ScheduledTask -TaskName $taskName -Confirm:$false}
+        if($Request.operation -eq 'remove'){
+            if($task){Unregister-ScheduledTask -TaskName $taskName -Confirm:$false}
+            $cleanupRun=Join-Path $control ([guid]::NewGuid().ToString('N'))
+            [void][IO.Directory]::CreateDirectory($cleanupRun)
+            $cleanupScript=Join-Path $cleanupRun 'remove-worktree.ps1'
+            $cleanupRequest=Join-Path $cleanupRun 'request.json'
+            [IO.File]::WriteAllText($cleanupScript,$Request.cleanup)
+            Write-State $cleanupRequest $m
+            & $pwsh -NoProfile -NonInteractive -File $cleanupScript -RequestPath $cleanupRequest
+            if($LASTEXITCODE -ne 0){throw 'Owned VibeResults source removal failed; preserved receipt'}
+            Remove-Item -LiteralPath $control -Recurse -Force
+        }
+        $result|ConvertTo-Json -Depth 30 -Compress;return
+    }
     if($Request.operation -eq 'start' -and (Test-Live $state) -and $state.status -eq 'running'){$result.status='running';$result|ConvertTo-Json -Depth 30 -Compress;return}
     $lockfile=Join-Path $path 'pnpm-lock.yaml'
     $hash=(Get-FileHash $lockfile -Algorithm SHA256).Hash

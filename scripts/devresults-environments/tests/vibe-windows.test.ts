@@ -22,3 +22,27 @@ it.skipIf(process.platform !== "win32")(
     ])
   },
 )
+
+it.skipIf(process.platform !== "win32")(
+  "removes deep owned dependencies without following a foreign junction",
+  async () => {
+    const result = await runDrenvCommand({
+      executable: "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      args: [
+        "-NoProfile",
+        "-NonInteractive",
+        "-File",
+        fileURLToPath(new URL("../windows/remove-vibe.tests.ps1", import.meta.url)),
+        "-ScriptPath",
+        fileURLToPath(new URL("../windows/vibe.ps1", import.meta.url)),
+        "-CleanupPath",
+        fileURLToPath(new URL("../windows/remove-vibe-worktree.ps1", import.meta.url)),
+      ],
+    })
+    expect(JSON.parse(result.stdout)).toEqual({
+      ok: true,
+      worktreeRemoved: true,
+      foreignPreserved: true,
+    })
+  },
+)

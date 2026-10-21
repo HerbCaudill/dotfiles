@@ -54,14 +54,14 @@ export async function operateVibeEnvironment(
     }
   }
   if (operation === "install") await operateNativeSource(sourceManifest)
-  const [script, runner, job] = await Promise.all(
-    ["vibe.ps1", "vibe-runner.ps1", "OwnedJob.cs"].map(name =>
+  const [script, runner, job, cleanup] = await Promise.all(
+    ["vibe.ps1", "vibe-runner.ps1", "OwnedJob.cs", "remove-vibe-worktree.ps1"].map(name =>
       readFile(new URL(`./windows/${name}`, import.meta.url), "utf8"),
     ),
   )
   const result = await runWindowsAssetPayload(
     "& ([ScriptBlock]::Create($r.script)) -Request $r",
-    { manifest, operation, script, runner, job },
+    { manifest, operation, script, runner, job, cleanup },
     { host: manifest.windowsHost },
   )
   const response = JSON.parse(result.stdout.trim())
