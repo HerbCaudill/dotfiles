@@ -30,6 +30,16 @@ export function runDrenvCommand(
     // An early exit can close stdin before the supplied input has been consumed.
     child.stdin?.on("error", () => {})
     child.stdin?.end(command.input)
+    let progress = ""
+    const reported = new Set<string>()
+    child.stderr?.on("data", chunk => {
+      progress = (progress + String(chunk)).slice(-512)
+      for (const match of progress.matchAll(/(?:^|\n)drenv request ([a-f0-9-]{36});/g))
+        if (!reported.has(match[1])) {
+          reported.add(match[1])
+          command.onRequest?.(match[1])
+        }
+    })
   })
 }
 
@@ -45,4 +55,6 @@ type Command = {
   input?: string
   /** Upper bound for short-lived command execution. */
   timeoutMs?: number
+  /** Surface only protocol-validated request UUIDs, never raw remote stderr. */
+  onRequest?: (id: string) => void
 }

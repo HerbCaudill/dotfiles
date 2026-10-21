@@ -73,6 +73,18 @@ Scheduled tasks must call `C:\Program Files\PowerShell\7\pwsh.exe`, the machine-
 
 The `dev` and `e2e` databases were restored from the Parallels VM on 2026-10-15, and `DevResults\SecureSettings.config` was copied from it. To refresh a database, back it up on the VM `WITH COPY_ONLY, COMPRESSION`, copy the `.bak` through the Mac to a path without spaces, grant `NT SERVICE\MSSQLSERVER` read access, and restore it with `MOVE` to the default data folder.
 
+## Isolated DevResults and VibeResults stacks
+
+Use `drenv` for parallel agent work rather than sharing the main checkout or backend. The managed native entry point is `%USERPROFILE%\.local\bin\drenv.cmd`. It defaults to mini; from the Mac use `drenv --host mini`. Both submit to the same mini registry at `C:\DevResultsEnvironments\registry`. See [the mini environment guide](../../../../scripts/devresults-environments/MINI.md) and the `devresults` skill for commands.
+
+Each environment has legacy source in `C:\DevResultsEnvironments\source\<id>`, an optional VibeResults worktree in `C:\DevResultsEnvironments\vibe\<id>`, and private deployed files, SQL, blobs, cache, temp and mail under `C:\DevResultsEnvironments\runtime\<id>`. Worktrees use private Git stores. VibeResults receives its own `node_modules` and copies of `.cert` and `.env.local` from the selected source checkout. Never link its dependency tree to the primary checkout.
+
+The `drenv mini controller` scheduled task handles elevated SQL, HTTP.sys and task registration. Dependency installs, legacy client watch and VibeResults servers use limited S4U tasks under Herb. Elevated SSH cannot reliably traverse pnpm junctions created by a limited process: Windows error 448 means "untrusted mount point." Use the managed workers instead of running `pnpm install` or a dev server over SSH. They use machine-wide PowerShell 7 and explicit `mise exec node@24 --`; .NET Framework schema checks use a separate Windows PowerShell 5 subprocess with its own module path.
+
+Requests survive SSH disconnection. The CLI prints a request UUID; `drenv --host mini request <UUID>` reads its receipt. Repeating an identical command attaches to an active request. One expensive lifecycle operation runs at a time to bound RAM use; independent runtime tasks run concurrently. Logs live beside the source ownership receipts (`<worktree>.drenv-source`), and `status <id>` reports both sides and the client watcher. Do not delete locks or kill all Node/IIS processes to recover an environment.
+
+The primary `DevResults site` and `VibeResults dev` tasks remain separate. Do not restart them, reuse 443/9443, touch the e2e lanes on 20415/20615/21415, or modify `C:\Users\herb\setup\mini-migration.md` to prepare an isolated stack. `drenv url <id>` returns assigned origins and Mac SSH forwards. Forward both HTTPS ports unchanged for side-by-side viewing; closing a forward does not stop the remote stack.
+
 ## Maintenance
 
 - Windows Update installs automatically and may reboot only on Sundays at 4 AM. Active hours are 6 AM to midnight, and feature updates wait 90 days. These are set as policy under `HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate`.

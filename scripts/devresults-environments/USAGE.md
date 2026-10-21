@@ -1,6 +1,16 @@
 # Personal DevResults environments
 
-`drenv` creates paired Mac and Windows source worktrees with their own SQL data, Azurite state, deployment, IIS ports and process supervisor. Run it on the Mac. Home Manager installs it from this dotfiles repository; Windows operations travel through `devresults-vm` SSH.
+`drenv` creates isolated source, SQL data, Azurite state, deployments and IIS runtimes. Use `--host mini` for native Windows environments controlled from either the mini or the Mac; the [mini guide](MINI.md) covers optional VibeResults worktrees, scheduled workers, SSH tunnels and recovery. Existing paired Mac/VM environments remain the Mac default. The instructions below describe that paired workflow unless they explicitly select mini.
+
+For a mini stack, source and snapshot arguments are Windows paths, even when invoked from the Mac:
+
+```sh
+drenv --host mini create my-change --source 'C:\Code\DevResults\devresults' --snapshot 'C:\DevResultsEnvironments\snapshots\dev-20260916\snapshot.json' --vibe-source 'C:\Code\DevResults\viberesults'
+drenv --host mini start my-change
+drenv --host mini url my-change
+```
+
+Native mini calls default to mini. `DRENV_HOST` selects a persistent default. The mini owns its registry and requests; a disconnected caller leaves work running. `request <UUID>` reads a durable request receipt. Use `install-vibe <id>` for explicit VibeResults dependency installation after committing dependency changes; ordinary start does not reinstall or move source revisions.
 
 ## Install and check
 

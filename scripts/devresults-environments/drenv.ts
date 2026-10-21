@@ -37,6 +37,7 @@ try {
         encodeWindowsScript(script),
       ],
       timeoutMs: 8_000_000,
+      onRequest: id => console.error(`drenv --host mini request ${id}`),
     })
     const response = JSON.parse(remote.stdout.trim())
     if (!response.ok) throw new Error(response.error)

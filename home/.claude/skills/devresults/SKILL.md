@@ -11,7 +11,7 @@ This skill applies only to the DevResults application repository at `~/Code/DevR
 
 ## Overview
 
-DevResults is a Windows-native .NET/SQL Server application. Treat the Parallels Windows VM as the source of truth for the working tree, git, builds, tests, IIS Express, and SQL Server behavior. Use macOS as the orchestration layer.
+DevResults is a Windows-native .NET/SQL Server application. Keep builds, tests, IIS Express and SQL Server verification on the selected Windows host. Prefer the mini for native agent work that must continue when the Mac sleeps; load the `mini` skill. Existing primary VM and paired Mac/VM workflows remain available. Never move work into a shared primary checkout to avoid environment setup.
 
 ## Quick Reference
 
@@ -64,6 +64,25 @@ ssh devresults-vm '$PSVersionTable.PSVersion.ToString(); hostname; whoami; Get-L
 The default SSH shell is Windows PowerShell 5.1, so use PowerShell syntax for remote commands.
 
 ## Personal isolated environments with `drenv`
+
+### Native mini environments
+
+Use `drenv --host mini` for independent agent environments on the mini. Native mini calls and Mac calls use the same authoritative Windows registry and operation locks. The mini controller runs requests through Task Scheduler, so a disconnected Mac or SSH client does not stop an operation. Use `drenv --host mini request <request UUID>` to inspect a submitted operation, or repeat the identical command to attach to its active request. On the mini, the installed command is `%USERPROFILE%\.local\bin\drenv.cmd`; native calls default to mini. Set `DRENV_HOST` only when a different persistent default is wanted.
+
+```sh
+drenv --host mini create my-change --source 'C:\Code\DevResults\devresults' --snapshot 'C:\DevResultsEnvironments\snapshots\dev-20260916\snapshot.json' --vibe-source 'C:\Code\DevResults\viberesults'
+drenv --host mini start my-change
+drenv --host mini status my-change
+drenv --host mini url my-change
+```
+
+The snapshot path is on the mini, including when the command runs on the Mac. Omit `--vibe-source` for legacy-only work; use `--vibe-revision <ref>` to select its initial committed revision. Edit legacy source at `C:\DevResultsEnvironments\source\<id>` and VibeResults at `C:\DevResultsEnvironments\vibe\<id>`. Each has a private Git store and editable worktree. Each VibeResults worktree has its own dependency installation and copies of `.cert` and `.env.local`. Do not use `dr` or `drsync` for these worktrees; those helpers still target the primary VM checkout.
+
+Commit legacy changes before `drenv --host mini sync <id>`. Sync builds and reconciles only the owned deployment and catalog and leaves the stack stopped. For legacy frontend iteration, start `drenv --host mini watch <id>` once: its limited scheduled watcher publishes successful builds without restarting IIS and survives the caller. Stop it through the environment lifecycle before backend work. VibeResults uses its normal live dev server. After committing dependency changes, explicitly run `drenv --host mini install-vibe <id>`, then start the stack; ordinary start and video preparation do not reinstall packages or move source revisions.
+
+`url` returns both origins and SSH commands. Forward the assigned ports unchanged to view them from the Mac, then use the returned `https://example.viberesults.dev:<port>` and legacy URL. A local listener must be verified as the expected tunnel; never borrow an occupied port. Stopping a tunnel leaves the mini stack running. The new mini range is 30000–39999; primary sites, e2e lanes and existing VM allocations remain separate. See the [mini guide](../../../../scripts/devresults-environments/MINI.md) for installation, task privileges, recovery and verification evidence.
+
+### Existing paired Mac/VM environments
 
 Use `drenv` on the Mac when Herb asks for a personal isolated environment. It is installed by Home Manager from `~/Code/HerbCaudill/dotfiles/scripts/devresults-environments/drenv.ts`. The [user guide](../../../../scripts/devresults-environments/USAGE.md) contains commands and prerequisites; [lifecycle details](../../../../scripts/devresults-environments/LIFECYCLE.md) describe the ownership and recovery rules. This personal workflow does not require changes to tracked DevResults scripts, configuration, instructions or team workflows.
 

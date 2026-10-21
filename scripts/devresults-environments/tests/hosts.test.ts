@@ -8,6 +8,20 @@ import { createRegistry } from "../createRegistry.ts"
 import { submitNativeRequest, waitNativeRequest } from "../submitNativeRequest.ts"
 import { writeFile } from "node:fs/promises"
 import { createEnvironmentLifecycle } from "../createEnvironmentLifecycle.ts"
+import { runDrenvCommand } from "../runDrenvCommand.ts"
+
+test("Mac callers receive a request identity without forwarding private remote diagnostics", async () => {
+  const ids: string[] = []
+  await runDrenvCommand({
+    executable: process.execPath,
+    args: [
+      "-e",
+      "process.stderr.write('private fixture\\ndrenv request ');setTimeout(()=>process.stderr.write('12345678-1234-1234-1234-123456789abc; receipts: private-path\\n'),50)",
+    ],
+    onRequest: id => ids.push(id),
+  })
+  expect(ids).toEqual(["12345678-1234-1234-1234-123456789abc"])
+})
 
 test("mini commands select one native registry without a Mac source mapping", () => {
   const options = getRegistryOptions("mini", "win32")

@@ -19,7 +19,7 @@ nix run github:LnL7/nix-darwin/master#darwin-rebuild -- \
 
 ## Personal DevResults environments
 
-Home Manager installs `drenv`, the Mac command for paired native Mac/Windows DevResults worktrees with owned SQL data, Azurite state and IIS runtimes. Start with `drenv --help` and the [user guide](scripts/devresults-environments/USAGE.md). Creation needs a verified coordinated SQL/blob snapshot and sufficient Windows disk capacity; [installation evidence](scripts/devresults-environments/INSTALLATION-EVIDENCE.md) records the live checks and remaining proof.
+Home Manager installs `drenv` for isolated DevResults source, SQL data, Azurite state and IIS runtimes. It supports existing paired Mac/VM worktrees and [native mini stacks](scripts/devresults-environments/MINI.md) with optional VibeResults worktrees, dependency trees and dev servers. Start with `drenv --help` and the [user guide](scripts/devresults-environments/USAGE.md). Creation needs a verified coordinated SQL/blob snapshot and sufficient Windows disk capacity; [installation evidence](scripts/devresults-environments/INSTALLATION-EVIDENCE.md) records live checks and remaining proof.
 
 ## Notes
 
