@@ -2,6 +2,7 @@
 {
   home.sessionPath = [
     "$HOME/.local/bin"
+    "$HOME/.t3/bin"
     "$HOME/.local/share/pnpm"
     "$HOME/Library/pnpm/bin"
     "$HOME/Library/pnpm"
