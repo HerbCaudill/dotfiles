@@ -6,6 +6,7 @@
     ./git.nix
     ./launchd.nix
     ./packages.nix
+    ./t3-bridge.nix
     ./tasks-agent.nix
     ./zsh.nix
   ];
