@@ -12,7 +12,11 @@ export async function getRelease(
 ) {
   await privateDirectory(root)
   await privateDirectory(join(root, "releases"))
-  const target = revision ? `releases/${revision}` : await readlink(join(root, "current"))
+  const target = revision
+    ? `releases/${revision}`
+    : process.platform === "win32"
+      ? `releases/${JSON.parse(await readFile(join(root, "selected.json"), "utf8")).revision}`
+      : await readlink(join(root, "current"))
   if (!/^releases\/[a-f0-9]{40}$/.test(target))
     throw new Error("The current release link must select a prepared commit.")
   const selected = target.slice("releases/".length)

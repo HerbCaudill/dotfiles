@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process"
 import { promisify } from "node:util"
+import { dirname, join } from "node:path"
 
 /** Run release preparation without shell interpolation or echoing package-manager diagnostics. */
 export async function runReleaseCommand(
@@ -11,12 +12,20 @@ export async function runReleaseCommand(
   cwd: string,
 ): Promise<string> {
   try {
-    const result = await promisify(execFile)(command, args, {
-      cwd,
-      timeout: 600_000,
-      maxBuffer: 4 * 1024 * 1024,
-      env: { ...process.env, CI: "true" },
-    })
+    const windowsPnpm = process.platform === "win32" && command === "pnpm"
+    const result = await promisify(execFile)(
+      windowsPnpm ? process.execPath : command,
+      windowsPnpm
+        ? [join(dirname(process.execPath), "node_modules/corepack/dist/pnpm.js"), ...args]
+        : args,
+      {
+        cwd,
+        timeout: 600_000,
+        maxBuffer: 4 * 1024 * 1024,
+        env: { ...process.env, CI: "true" },
+        windowsHide: true,
+      },
+    )
     return result.stdout
   } catch {
     throw new Error(
