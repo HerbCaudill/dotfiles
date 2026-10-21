@@ -2,12 +2,21 @@ import { readFile } from "node:fs/promises"
 import { encodeWindowsScript } from "./encodeWindowsScript.ts"
 import { runDrenvCommand } from "./runDrenvCommand.ts"
 import type { RegistryOptions, ResourceInventory } from "./types.ts"
+import { runWindowsAssetPayload } from "./runWindowsAssetPayload.ts"
 
 /** Discover current Windows listeners, HTTP.sys reservations and personal claims before allocation. */
 export async function inventoryEnvironmentResources(
   /** Native host roots. */
   options: RegistryOptions,
 ): Promise<ResourceInventory> {
+  if (process.platform === "win32") {
+    const result = await runWindowsAssetPayload(
+      `$ports=@(Get-NetTCPConnection -State Listen | Select-Object -ExpandProperty LocalPort);$text=((& netsh http show sslcert)+(& netsh http show urlacl)) -join "\n";$ports+=@([regex]::Matches($text,':(\\d+)(?:/|\\s|$)')|ForEach-Object{[int]$_.Groups[1].Value});if(Test-Path (Join-Path $r.root 'claims')){Get-ChildItem (Join-Path $r.root 'claims') -Filter '*.json'|ForEach-Object{$ports+=@((Get-Content $_.FullName -Raw|ConvertFrom-Json).ports)}};ConvertTo-Json -Compress -InputObject @($ports|Sort-Object -Unique)`,
+      { root: options.windowsRoot },
+      { host: options.windowsHost },
+    )
+    return { windowsPorts: JSON.parse(result.stdout.trim()), macPorts: [] }
+  }
   const script = `$root=[Console]::In.ReadToEnd(); $ports=@(Get-NetTCPConnection -State Listen | Select-Object -ExpandProperty LocalPort); $text=((& netsh http show sslcert)+(& netsh http show urlacl)) -join "\n"; $ports+=@([regex]::Matches($text,':(\\d+)(?:/|\\s|$)') | ForEach-Object {[int]$_.Groups[1].Value}); if(Test-Path -LiteralPath "$root\\claims"){Get-ChildItem -LiteralPath "$root\\claims" -Filter '*.json' | ForEach-Object {$ports+=@((Get-Content -LiteralPath $_.FullName -Raw | ConvertFrom-Json).ports)}}; ConvertTo-Json -Compress -InputObject @($ports | Sort-Object -Unique)`
   const remote = await runDrenvCommand({
     executable: "ssh",

@@ -10,8 +10,8 @@ export async function transportEnvironmentSource(
   request: SourceRequest,
 ): Promise<string> {
   const { manifest } = request
-  if (manifest.windowsHost !== "devresults-vm")
-    throw new Error("Windows source operations require devresults-vm")
+  if (!/^[A-Za-z0-9][A-Za-z0-9.-]*$/.test(manifest.windowsHost))
+    throw new Error("Unsafe Windows source host")
   if (
     !/^[A-Za-z]:\\[A-Za-z0-9_\\ .-]+$/.test(manifest.paths.windows) ||
     win32.normalize(manifest.paths.windows) !== manifest.paths.windows

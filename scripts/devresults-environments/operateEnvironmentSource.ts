@@ -18,6 +18,7 @@ export async function operateEnvironmentSource(
   /** Injectable Windows transport. */
   options: SourceOptions,
 ): Promise<string> {
+  if (!manifest.paths.mac) throw new Error("Paired source requires a Mac worktree")
   assertEnvironmentId(manifest.id)
   if (manifest.phase === "removed" || manifest.phase === "running")
     throw new Error("Stop the environment before changing source")

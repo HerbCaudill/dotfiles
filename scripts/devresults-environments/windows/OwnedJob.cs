@@ -37,6 +37,8 @@ public sealed class DrenvOwnedJob : IDisposable
     }
     /** Wait using the original creation handle, so fast exits cannot race PID lookup. */
     public bool IsAlive(int pid) { return WaitForSingleObject(processes[pid], 0) == 258; }
+    /** Verify a listener is contained in this exact job, including grandchildren. */
+    public bool Owns(int pid) { IntPtr process = OpenProcess(0x1000, false, pid); if (process == IntPtr.Zero) return false; try { bool member; return IsProcessInJob(process, handle, out member) && member; } finally { CloseHandle(process); } }
     public uint Wait(int pid) { IntPtr process = processes[pid]; if (WaitForSingleObject(process, 0xffffffff) != 0) throw new Win32Exception(); uint code; if (!GetExitCodeProcess(process, out code)) throw new Win32Exception(); return code; }
     public void Dispose() { if (handle != IntPtr.Zero) { CloseHandle(handle); handle = IntPtr.Zero; } foreach (var process in processes.Values) CloseHandle(process); processes.Clear(); }
     [DllImport("kernel32.dll", SetLastError = true)] private static extern uint WaitForSingleObject(IntPtr handle, uint milliseconds);
@@ -53,4 +55,6 @@ public sealed class DrenvOwnedJob : IDisposable
     [DllImport("kernel32.dll", SetLastError = true)] private static extern uint ResumeThread(IntPtr thread);
     [DllImport("kernel32.dll", SetLastError = true)] private static extern bool TerminateProcess(IntPtr process, uint code);
     [DllImport("kernel32.dll")] private static extern bool CloseHandle(IntPtr value);
+    [DllImport("kernel32.dll", SetLastError = true)] private static extern IntPtr OpenProcess(uint access, bool inherit, int pid);
+    [DllImport("kernel32.dll", SetLastError = true)] private static extern bool IsProcessInJob(IntPtr process, IntPtr job, out bool member);
 }

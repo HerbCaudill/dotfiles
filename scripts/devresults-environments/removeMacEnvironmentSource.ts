@@ -9,6 +9,7 @@ export async function preflightMacEnvironmentSource(
   manifest: EnvironmentManifest,
 ) {
   const path = manifest.paths.mac
+  if (!path) return
   const claim = `${path}.drenv-source`
   let receipt
   try {

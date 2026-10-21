@@ -18,7 +18,7 @@ export function createRegistry(
 ) {
   if (
     !isAbsolute(options.directory) ||
-    !isAbsolute(options.macRoot) ||
+    (!options.sourceMode && !isAbsolute(options.macRoot)) ||
     options.macRoot.startsWith("/Volumes/")
   )
     throw new Error("Registry and Mac roots must be absolute native paths")
@@ -45,12 +45,16 @@ export function createRegistry(
     validateMappings(registry.environments)
     for (const environment of registry.environments as EnvironmentManifest[]) {
       if (
-        resolve(environment.paths.mac) !== resolve(options.macRoot, environment.id) ||
+        (options.sourceMode
+          ? environment.paths.mac !== undefined || environment.sourceMode !== options.sourceMode
+          : !environment.paths.mac ||
+            resolve(environment.paths.mac) !== resolve(options.macRoot, environment.id)) ||
         win32.normalize(environment.paths.windows).toLowerCase() !==
           win32.join(options.windowsRoot, "source", environment.id).toLowerCase() ||
         win32.normalize(environment.paths.runtime).toLowerCase() !==
           win32.join(options.windowsRoot, "runtime", environment.id).toLowerCase() ||
-        environment.windowsHost !== options.windowsHost
+        environment.windowsHost !== options.windowsHost ||
+        environment.primarySource !== options.primarySource
       )
         throw new Error(
           "Foreign resource mapping: registry does not match the configured native roots and host",
@@ -92,6 +96,15 @@ export function createRegistry(
           instance: input.instance ?? (preset === "inl" ? "inl" : "example"),
         }
         const requestedRevision = input.revision ?? "HEAD"
+        if (
+          input.vibeSource &&
+          (!options.sourceMode ||
+            !win32.isAbsolute(input.vibeSource) ||
+            win32.normalize(input.vibeSource) !== input.vibeSource)
+        )
+          throw new Error("VibeResults requires a native Windows source")
+        if (input.vibeRevision && !input.vibeSource)
+          throw new Error("VibeResults revision requires its source")
         validateSourceSelection(input.id, data, requestedRevision)
         const existing = environments.find(environment => environment.id === input.id)
         if (existing) {
@@ -100,7 +113,10 @@ export function createRegistry(
           if (
             existing.preset !== preset ||
             existing.requestedRevision !== requestedRevision ||
-            JSON.stringify(existing.data) !== JSON.stringify(data)
+            JSON.stringify(existing.data) !== JSON.stringify(data) ||
+            existing.vibe?.source !== input.vibeSource ||
+            existing.vibe?.requestedRevision !==
+              (input.vibeSource ? (input.vibeRevision ?? "HEAD") : undefined)
           )
             throw new Error("Environment already exists with different creation options")
           return existing
@@ -121,10 +137,15 @@ export function createRegistry(
           if (!Number.isInteger(port) || port < 1 || port > 65535)
             throw new Error("Invalid inventory port")
         const allocated: number[] = []
-        for (let port = 20000; port <= 65535 && allocated.length < 6; port++)
+        const count = input.vibeSource ? 7 : 6
+        for (
+          let port = options.sourceMode ? 30000 : 20000;
+          port <= (options.sourceMode ? 39999 : 65535) && allocated.length < count;
+          port++
+        )
           if (!occupied.has(port)) allocated.push(port)
-        if (allocated.length !== 6) throw new Error("No free environment ports available")
-        const [https, http, blob, queue, table, tunnel] = allocated
+        if (allocated.length !== count) throw new Error("No free environment ports available")
+        const [https, http, blob, queue, table, tunnel, vibe] = allocated
         const timestamp = new Date().toISOString()
         const environment: EnvironmentManifest = {
           version: 1,
@@ -138,12 +159,24 @@ export function createRegistry(
           requestedRevision,
           data,
           windowsHost: options.windowsHost,
+          ...(options.sourceMode
+            ? { sourceMode: options.sourceMode, primarySource: options.primarySource }
+            : {}),
           paths: {
-            mac: join(options.macRoot, input.id),
+            ...(!options.sourceMode ? { mac: join(options.macRoot, input.id) } : {}),
             windows: win32.join(options.windowsRoot, "source", input.id),
             runtime: win32.join(options.windowsRoot, "runtime", input.id),
           },
-          ports: { https, http, blob, queue, table, tunnel },
+          ports: { https, http, blob, queue, table, tunnel, ...(vibe ? { vibe } : {}) },
+          ...(input.vibeSource
+            ? {
+                vibe: {
+                  source: input.vibeSource,
+                  path: win32.join(options.windowsRoot, "vibe", input.id),
+                  requestedRevision: input.vibeRevision ?? "HEAD",
+                },
+              }
+            : {}),
           catalog: `drenv_${input.id.replaceAll("-", "_")}`,
         }
         await write([...environments, environment])
@@ -212,10 +245,12 @@ function validateMappings(
     validateSourceSelection(environment.id, environment.data, environment.requestedRevision)
     validateFrozenRevision(environment.revision)
     if (
-      !isAbsolute(environment.paths.mac) ||
+      (environment.sourceMode === "native-windows"
+        ? environment.paths.mac !== undefined
+        : !environment.paths.mac || !isAbsolute(environment.paths.mac)) ||
       !/^[A-Za-z]:\\/.test(environment.paths.windows) ||
       !/^[A-Za-z]:\\/.test(environment.paths.runtime) ||
-      environment.paths.mac.startsWith("/Volumes/") ||
+      environment.paths.mac?.startsWith("/Volumes/") ||
       environment.catalog !== `drenv_${environment.id.replaceAll("-", "_")}`
     )
       throw new Error("Unsafe environment resource mapping")
@@ -229,7 +264,7 @@ function validateMappings(
     tokens.add(environment.ownerToken)
     catalogs.add(environment.catalog)
     const mappedPaths = [
-      resolve(environment.paths.mac).toLowerCase(),
+      ...(environment.paths.mac ? [resolve(environment.paths.mac).toLowerCase()] : []),
       win32.normalize(environment.paths.windows).toLowerCase().replaceAll("\\", "/"),
       win32.normalize(environment.paths.runtime).toLowerCase().replaceAll("\\", "/"),
     ]
@@ -243,9 +278,30 @@ function validateMappings(
         throw new Error("Ambiguous or overlapping environment path mapping")
       paths.push(path)
     }
-    for (const key of ["https", "http", "blob", "queue", "table", "tunnel"] as const) {
+    if (
+      environment.vibe &&
+      (environment.sourceMode !== "native-windows" ||
+        !win32.isAbsolute(environment.vibe.source) ||
+        environment.vibe.path !==
+          win32.join(
+            win32.dirname(win32.dirname(environment.paths.windows)),
+            "vibe",
+            environment.id,
+          ))
+    )
+      throw new Error("Unsafe VibeResults mapping")
+    for (const key of [
+      "https",
+      "http",
+      "blob",
+      "queue",
+      "table",
+      "tunnel",
+      ...(environment.vibe ? ["vibe" as const] : []),
+    ] as const) {
       const port = environment.ports[key]
       if (
+        port === undefined ||
         !Number.isInteger(port) ||
         port < 20000 ||
         port > 65535 ||
@@ -318,5 +374,6 @@ const phases = [
 ]
 const reservedPorts = [
   443, 444, 8080, 8100, 8443, 8444, 9443, 9444, 9445, 10000, 10001, 10002, 10010, 10011, 10012,
-  44400,
+  44400, 20415, 20416, 20417, 20418, 20419, 20615, 20616, 20617, 20618, 20619, 21415, 21416, 21417,
+  21418, 21419, 9446,
 ]

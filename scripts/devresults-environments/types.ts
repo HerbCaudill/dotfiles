@@ -18,6 +18,19 @@ export type Ownership = {
 
 /** Versioned state shared by personal Mac and Windows tooling. Contains no credentials. */
 export type EnvironmentManifest = {
+  /** Native mini source or the original paired Mac/VM source workflow. */
+  sourceMode?: "native-windows"
+  /** Read-only host configuration templates. */
+  primarySource?: string
+  /** Optional owned native VibeResults source selection. */
+  vibe?: {
+    /** Read-only source checkout for committed code and private local assets. */
+    source: string
+    /** Editable isolated Windows worktree. */
+    path: string
+    /** Initial revision selector, frozen by its source receipt. */
+    requestedRevision: string
+  }
   /** Schema version, rejected if unsupported. */
   version: 1
   /** Stable name used by every command. */
@@ -50,7 +63,7 @@ export type EnvironmentManifest = {
   /** Native source and runtime paths. */
   paths: {
     /** Native Mac Git worktree. */
-    mac: string
+    mac?: string
     /** Native Windows Git worktree. */
     windows: string
     /** Windows runtime root outside the source tree. */
@@ -70,6 +83,8 @@ export type EnvironmentManifest = {
     table: number
     /** Optional Mac SSH forwarding endpoint. */
     tunnel: number
+    /** Optional VibeResults HTTPS listener, claimed with the legacy ports. */
+    vibe?: number
   }
   /** Owned SQL catalog, never a source catalog. */
   catalog: string
@@ -79,6 +94,10 @@ export type EnvironmentManifest = {
 
 /** Registry configuration; all personal paths live outside primary checkouts. */
 export type RegistryOptions = {
+  /** Native mini source workflow, otherwise original Mac/VM pairing. */
+  sourceMode?: "native-windows"
+  /** Read-only source of machine configuration. */
+  primarySource?: string
   /** Directory containing the registry and transaction lock. */
   directory: string
   /** Parent of native Mac worktrees. */
@@ -99,6 +118,10 @@ export type ResourceInventory = {
 
 /** Creation inputs become immutable identity after reservation. */
 export type ReserveOptions = {
+  /** Optional native VibeResults source selection. */
+  vibeSource?: string
+  /** Initial VibeResults revision. */
+  vibeRevision?: string
   /** Valid stable ID. */
   id: string
   /** Source database and instance preset. */
@@ -127,8 +150,16 @@ export type EnvironmentCheckpoint = {
 
 /** Parsed public command surface; orchestration injects command handlers. */
 export type DrenvArgs = {
+  /** Optional native VibeResults checkout. */
+  vibeSource?: string
+  /** Initial committed VibeResults revision. */
+  vibeRevision?: string
+  /** Explicit target profile. */
+  host?: string
   /** Lifecycle or inspection operation. */
   command:
+    | "request"
+    | "install-vibe"
     | "create"
     | "sync"
     | "watch"

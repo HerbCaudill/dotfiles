@@ -16,7 +16,29 @@ export async function runWindowsAssetPayload(
   options: { host?: string; timeoutMs?: number } = {},
 ) {
   const host = options.host ?? "devresults-vm"
-  if (host !== "devresults-vm") throw new Error("Windows lifecycle requires devresults-vm")
+  if (!/^[A-Za-z0-9][A-Za-z0-9.-]*$/.test(host)) throw new Error("Unsafe Windows host alias")
+  if (process.platform === "win32") {
+    const directory = await mkdtemp(join(tmpdir(), "drenv-native-"))
+    try {
+      const path = join(directory, "request.json")
+      await writeFile(path, JSON.stringify(request), { mode: 0o600 })
+      const encodedPath = Buffer.from(path).toString("base64")
+      return await runDrenvCommand({
+        executable: `${process.env.SystemRoot}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`,
+        args: [
+          "-NoProfile",
+          "-NonInteractive",
+          "-EncodedCommand",
+          encodeWindowsScript(
+            `$ErrorActionPreference='Stop'; $env:PSModulePath="$env:SystemRoot\\System32\\WindowsPowerShell\\v1.0\\Modules"; $p=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${encodedPath}'));$r=[IO.File]::ReadAllText($p)|ConvertFrom-Json; ${script}`,
+          ),
+        ],
+        timeoutMs: options.timeoutMs ?? 4_000_000,
+      })
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  }
   const name = `drenv-transport-${randomUUID()}`
   const local = await mkdtemp(join(tmpdir(), name))
   /** Run only trusted encoded PowerShell without passing a piped request. */

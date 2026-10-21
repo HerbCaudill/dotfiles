@@ -25,5 +25,18 @@ try {
     $config=Commit
     Check (-not(Test-ClientOnlyRevision $root $packages $config)) 'Server configuration changes require a full build'
     Check (-not(Test-ClientOnlyRevision $root ('0'*40) $config)) 'Missing previous revisions require a full build'
+    $spec="{`n  `"x-generator`": `"NSwag old`",`n  `"openapi`": `"3.0.0`"`n}"
+    Put 'spec.json' $spec
+    $before=[IO.File]::ReadAllBytes((Join-Path $root 'spec.json'))
+    Put 'spec.json' ($spec.Replace('NSwag old','NSwag new'))
+    Restore-GeneratorMetadata (Join-Path $root 'spec.json') $before
+    Check ([IO.File]::ReadAllText((Join-Path $root 'spec.json')) -ceq $spec) 'Build-only generator metadata restores the exact committed input'
+    Put 'spec.json' ($spec.Replace('NSwag old','NSwag new').Replace("`n","`r`n"))
+    Restore-GeneratorMetadata (Join-Path $root 'spec.json') $before
+    Check ([IO.File]::ReadAllText((Join-Path $root 'spec.json')) -ceq $spec) 'Native generators may change line endings without changing the contract'
+    $contract=$spec.Replace('NSwag old','NSwag new').Replace('3.0.0','3.1.0')
+    Put 'spec.json' $contract
+    Restore-GeneratorMetadata (Join-Path $root 'spec.json') $before
+    Check ([IO.File]::ReadAllText((Join-Path $root 'spec.json')) -ceq $contract) 'Actual contract changes must remain visible to the source cleanliness gate'
     @{passed=$script:checks}|ConvertTo-Json -Compress
 } finally {Remove-Item -LiteralPath $root -Recurse -Force}

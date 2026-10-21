@@ -207,6 +207,7 @@ function Assert-CatalogMetadata($Properties, $Files, $Manifest) {
     }
 }
 function New-OwnedApplicationConfig($Manifest, [string]$SettingsTemplate = 'C:\Code\DevResults\DevResults\SecureSettings.config') {
+    if($Manifest.PSObject.Properties.Name -contains 'primarySource'){$SettingsTemplate=Join-Path $Manifest.primarySource 'DevResults\SecureSettings.config'}
     $settingsPath = Join-Path $Manifest.paths.runtime 'web\SecureSettings.config'
     $connectionsPath = Join-Path $Manifest.paths.runtime 'web\Core\Db\connections.config'
     if (-not [IO.File]::Exists($settingsTemplate)) { Deny 'Local SecureSettings.config template is required.' }
@@ -253,7 +254,7 @@ function New-OwnedIisConfig([string]$Template, [string]$Destination, $Manifest) 
     $virtual.SetAttribute('physicalPath', (Join-Path $Manifest.paths.runtime 'web'))
     $bindings = $site.SelectSingleNode('bindings'); $bindings.RemoveAll()
     foreach ($pair in @(@('https', $Manifest.ports.https), @('http', $Manifest.ports.http))) {
-        $binding = $xml.CreateElement('binding'); $binding.SetAttribute('protocol', $pair[0]); $binding.SetAttribute('bindingInformation', "*:$($pair[1]):")
+        $binding = $xml.CreateElement('binding'); $binding.SetAttribute('protocol', $pair[0]); $binding.SetAttribute('bindingInformation', $(if($Manifest.PSObject.Properties.Name -contains 'sourceMode'){"127.0.0.1:$($pair[1]):"}else{"*:$($pair[1]):"}))
         [void]$bindings.AppendChild($binding)
     }
     foreach ($location in @($xml.SelectNodes('/configuration/location'))) {
@@ -327,7 +328,7 @@ try {
     if ($certificates.Count -eq 0) { Deny 'A current devlocal.us TLS certificate with private key is required.' }
     $certificate = $certificates[0]
     $template = Join-Path $m.paths.windows '.vs\DevResults\config\applicationhost.config'
-    if (-not [IO.File]::Exists($template)) { $template = 'C:\Code\DevResults\.vs\DevResults\config\applicationhost.config' }
+    if (-not [IO.File]::Exists($template)) { $template = if($m.PSObject.Properties.Name -contains 'primarySource'){Join-Path $m.primarySource '.vs\DevResults\config\applicationhost.config'}else{'C:\Code\DevResults\.vs\DevResults\config\applicationhost.config'} }
     if (-not [IO.File]::Exists($template)) { Deny 'A local IIS Express DevResults applicationhost template is required.' }
     if ($Request.operation -eq 'verify') {
         @{ ok = $true; environmentId = $m.id; ownerToken = $m.ownerToken; revision = $m.revision; status = 'verified' } | ConvertTo-Json -Compress

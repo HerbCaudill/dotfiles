@@ -6,7 +6,17 @@ export function parseDrenvArgs(
   /** Arguments following the executable name. */
   argv: string[],
 ): DrenvArgs {
+  if (argv[0] === "--host") {
+    const host = argv[1]
+    if (!host || !/^[a-zA-Z0-9][a-zA-Z0-9.-]*$/.test(host)) throw new Error("Invalid Windows host")
+    return { ...parseDrenvArgs(argv.slice(2)), host }
+  }
   if (!argv.length || argv[0] === "--help") return { command: "help" }
+  if (argv[0] === "request") {
+    if (argv.length !== 2 || !/^[a-f0-9-]{36}$/.test(argv[1]))
+      throw new Error("request requires a request UUID")
+    return { command: "request", id: argv[1] }
+  }
   const [command, ...rest] = argv
   if (!commands.includes(command as DrenvArgs["command"]))
     throw new Error(`Unknown command: ${command}`)
@@ -18,15 +28,30 @@ export function parseDrenvArgs(
   while (rest.length) {
     const option = rest.shift()!
     if (
-      !["--preset", "--revision", "--database", "--instance", "--source", "--snapshot"].includes(
-        option,
-      )
+      ![
+        "--preset",
+        "--revision",
+        "--database",
+        "--instance",
+        "--source",
+        "--snapshot",
+        "--vibe-source",
+        "--vibe-revision",
+      ].includes(option)
     )
       throw new Error(`Unknown option: ${option}`)
     if (command !== "create") throw new Error(`${option} is only valid for create`)
     const value = rest.shift()
     if (!value || value.startsWith("--")) throw new Error(`Missing value for ${option}`)
-    const key = option.slice(2) as
+    const key = (
+      option === "--vibe-source"
+        ? "vibeSource"
+        : option === "--vibe-revision"
+          ? "vibeRevision"
+          : option.slice(2)
+    ) as
+      | "vibeSource"
+      | "vibeRevision"
       | "preset"
       | "revision"
       | "database"
@@ -43,6 +68,7 @@ export function parseDrenvArgs(
 }
 
 const commands: DrenvArgs["command"][] = [
+  "install-vibe",
   "create",
   "sync",
   "watch",

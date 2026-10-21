@@ -9,5 +9,6 @@ export async function syncEnvironmentSource(
   /** Optional transport adapter. */
   options: SourceOptions = {},
 ): Promise<string> {
+  if (!manifest.paths.mac) throw new Error("Paired sync requires a Mac worktree")
   return operateEnvironmentSource(manifest, "sync", manifest.paths.mac, options)
 }

@@ -53,12 +53,12 @@ it("pairs a frozen committed revision without touching dirty source and resumes 
   await git("commit", "-am", "second")
   expect(await pairEnvironmentSource(manifest, source, { remote })).toBe(first)
   expect(seen).toEqual([first, first])
-  expect(await readFile(join(manifest.paths.mac, "file.txt"), "utf8")).toBe("first")
+  expect(await readFile(join(manifest.paths.mac!, "file.txt"), "utf8")).toBe("first")
 })
 
 it("refuses foreign destination paths before remote effects", async () => {
   const { source, manifest } = await setup()
-  await mkdir(manifest.paths.mac, { recursive: true })
+  await mkdir(manifest.paths.mac!, { recursive: true })
   await expect(
     pairEnvironmentSource(manifest, source, {
       remote: async () => {
@@ -79,11 +79,11 @@ it("retries pairing after remote interruption and syncs only clean committed HEA
   ).rejects.toThrow("interrupted")
   const remote = async (request: { revision: string }) => request.revision
   const first = await pairEnvironmentSource(manifest, source, { remote })
-  await writeFile(join(manifest.paths.mac, "file.txt"), "second")
+  await writeFile(join(manifest.paths.mac!, "file.txt"), "second")
   await expect(syncEnvironmentSource(manifest, { remote })).rejects.toThrow("dirty")
   await runDrenvCommand({
     executable: "git",
-    args: ["-C", manifest.paths.mac, "commit", "-am", "second"],
+    args: ["-C", manifest.paths.mac!, "commit", "-am", "second"],
   })
   const revision = await syncEnvironmentSource(manifest, { remote })
   expect(revision).not.toBe(first)
@@ -94,7 +94,7 @@ it("rejects a foreign source receipt and a mismatched remote verification", asyn
   await expect(
     pairEnvironmentSource(manifest, source, { remote: async () => "0".repeat(40) }),
   ).rejects.toThrow("verification")
-  const marker = `${manifest.paths.mac}.drenv-source/owner.json`
+  const marker = `${manifest.paths.mac!}.drenv-source/owner.json`
   const receipt = JSON.parse(await readFile(marker, "utf8"))
   await writeFile(marker, JSON.stringify({ ...receipt, ownerToken: "foreign" }))
   await expect(
@@ -107,10 +107,10 @@ it("sync transfers only changes after the last verified Windows revision", async
   const first = await pairEnvironmentSource(manifest, source, {
     remote: async request => request.revision,
   })
-  await writeFile(join(manifest.paths.mac, "file.txt"), "second")
+  await writeFile(join(manifest.paths.mac!, "file.txt"), "second")
   await runDrenvCommand({
     executable: "git",
-    args: ["-C", manifest.paths.mac, "commit", "-am", "second"],
+    args: ["-C", manifest.paths.mac!, "commit", "-am", "second"],
   })
   await syncEnvironmentSource(manifest, {
     remote: async request => {

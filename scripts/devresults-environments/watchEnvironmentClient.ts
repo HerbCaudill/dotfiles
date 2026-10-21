@@ -8,6 +8,7 @@ import type { EnvironmentManifest } from "./types.ts"
 
 /** Run a foreground frontend-only loop without changing the paired checkout or restarting IIS. */
 export async function watchEnvironmentClient(manifest: EnvironmentManifest) {
+  if (!manifest.paths.mac) throw new Error("Paired watch requires a Mac worktree")
   if (manifest.phase !== "running" || !manifest.revision)
     throw new Error("Start a fully synced environment before running drenv watch")
   const receipt = JSON.parse(

@@ -59,10 +59,10 @@ it.skipIf(process.env.DRENV_WINDOWS_SOURCE_TEST !== "1")(
       await windows('Remove-Item -LiteralPath (Join-Path $d.path "untracked.txt")', {
         path: manifest.paths.windows,
       })
-      await writeFile(join(manifest.paths.mac, "test.txt"), "second")
+      await writeFile(join(manifest.paths.mac!, "test.txt"), "second")
       await runDrenvCommand({
         executable: "git",
-        args: ["-C", manifest.paths.mac, "commit", "-am", "next"],
+        args: ["-C", manifest.paths.mac!, "commit", "-am", "next"],
       })
       const second = await syncEnvironmentSource(manifest)
       expect(second).not.toBe(first)

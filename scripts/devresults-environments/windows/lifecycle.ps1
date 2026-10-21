@@ -3,6 +3,8 @@ $ErrorActionPreference='Stop'
 Set-StrictMode -Version Latest
 
 function Quote-Argument([string]$Value) { if($Value.Contains('"') -or $Value -match '[\r\n]'){Deny 'Unsupported process argument'};return '"'+$Value+'"' }
+function Test-NativeMini($Manifest) { return $Manifest.PSObject.Properties.Name -contains 'sourceMode' -and $Manifest.sourceMode -eq 'native-windows' }
+function Get-SupervisorExecutable($Manifest) { if(Test-NativeMini $Manifest){return 'C:\Program Files\PowerShell\7\pwsh.exe'};return (Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe') }
 function Get-Control($Manifest) { return "$($Manifest.paths.windows).drenv-source\runner" }
 function Get-State($Manifest) {
     $path=Join-Path (Get-Control $Manifest) 'state.json'
@@ -45,7 +47,7 @@ function Get-OwnedTask($Manifest,$State) {
     if($null -eq $State){Deny 'Scheduled task has no owned supervisor receipt'}
     $directory=Split-Path -Parent $State.request
     $expected='-NoProfile -NonInteractive -ExecutionPolicy Bypass -File '+(Quote-Argument (Join-Path $directory 'supervisor.ps1'))+' -RequestPath '+(Quote-Argument $State.request)
-    $executable=Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+    $executable=Get-SupervisorExecutable $Manifest
     if(@($task.Actions).Count -ne 1 -or $task.Actions[0].Execute -ine $executable -or $task.Actions[0].Arguments -cne $expected -or $task.Actions[0].WorkingDirectory -ine $directory -or @($task.Triggers | Where-Object {$null -ne $_}).Count -ne 0){Deny 'Scheduled task action differs from the exact owned supervisor request'}
     return $task
 }
@@ -127,7 +129,7 @@ function Start-OwnedSupervisor($Manifest,[string]$Mode,$Assets,$Commands=$null) 
     }
     $request=@{manifest=$Manifest;mode=$Mode;runId=$runId;state=(Join-Path $control 'state.json');stop=(Join-Path $directory 'stop.json');commands=$Commands}
     if($Mode -in @('runtime','maintenance')) {
-        $request.node=(Get-Command node.exe).Source
+        $request.node=if(Test-NativeMini $Manifest){((& mise where node@24)-join '').Trim()+'\node.exe'}else{(Get-Command node.exe).Source}
         $hostRoot=Split-Path -Parent (Split-Path -Parent $Manifest.paths.runtime)
         if($Mode -eq 'maintenance'){$dependencyLock=Enter-ProvisionLock $hostRoot;try{$request.azurite=Ensure-Azurite $hostRoot}finally{$dependencyLock.Dispose()}}else{$request.azurite=Ensure-Azurite $hostRoot}
         $request.iis='C:\Program Files\IIS Express\iisexpress.exe'
@@ -137,9 +139,9 @@ function Start-OwnedSupervisor($Manifest,[string]$Mode,$Assets,$Commands=$null) 
     Write-JsonAtomic $requestPath $request
     # Save the exact task action before registration so a crash can be retried without adopting a task.
     Write-JsonAtomic (Join-Path $control 'state.json') @{environmentId=$Manifest.id;ownerToken=$Manifest.ownerToken;revision=$Manifest.revision;runId=$runId;mode=$Mode;status='queued';pid=0;processStartTime='';request=$requestPath;children=@()}
-    $executable=Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+    $executable=Get-SupervisorExecutable $Manifest
     $action=New-ScheduledTaskAction -Execute $executable -Argument ('-NoProfile -NonInteractive -ExecutionPolicy Bypass -File '+(Quote-Argument (Join-Path $directory 'supervisor.ps1'))+' -RequestPath '+(Quote-Argument $requestPath)) -WorkingDirectory $directory
-    $principal=New-ScheduledTaskPrincipal -UserId ([Security.Principal.WindowsIdentity]::GetCurrent().Name) -LogonType S4U -RunLevel Highest
+    $principal=New-ScheduledTaskPrincipal -UserId ([Security.Principal.WindowsIdentity]::GetCurrent().Name) -LogonType S4U -RunLevel $(if((Test-NativeMini $Manifest) -and $Mode -eq 'build'){'Limited'}else{'Highest'})
     $settings=New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([timespan]::Zero) -MultipleInstances IgnoreNew -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
     Register-ScheduledTask -TaskName $taskName -Action $action -Principal $principal -Settings $settings | Out-Null
     Start-ScheduledTask -TaskName $taskName
@@ -225,17 +227,26 @@ function Test-ClientOnlyRevision([string]$Source,[string]$Previous,[string]$Curr
     }
     return $true
 }
+function Restore-GeneratorMetadata([string]$Path,[byte[]]$Before) {
+    $original=[Text.Encoding]::UTF8.GetString($Before)
+    $current=[Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes($Path))
+    $pattern='(?m)^  "x-generator": "[^"\r\n]*",\r?$'
+    $old=[regex]::Match($original,$pattern);$new=[regex]::Match($current,$pattern)
+    if($old.Success -and $new.Success){$normalized=$current.Substring(0,$new.Index)+$old.Value+$current.Substring($new.Index+$new.Length);if($normalized.Replace("`r`n","`n") -ceq $original.Replace("`r`n","`n")){[IO.File]::WriteAllBytes($Path,$Before)}}
+}
 function Build-OwnedSource($Manifest,$Assets) {
     Stop-OwnedSupervisor $Manifest
     Assert-OwnedSource $Manifest
+    $generator=Join-Path $Manifest.paths.windows 'DevResults\OpenApiSpec.txt'
+    $generatorBefore=if((Test-NativeMini $Manifest) -and (Test-Path $generator)){[IO.File]::ReadAllBytes($generator)}else{$null}
     $control=Get-Control $Manifest;[void][IO.Directory]::CreateDirectory($control)
     $envFile=Join-Path $control 'build.env'
-    $sourceEnv='C:\Code\DevResults\.env.local'
+    $sourceEnv=if(Test-NativeMini $Manifest){Join-Path $Manifest.primarySource '.env.local'}else{'C:\Code\DevResults\.env.local'}
     if(-not(Test-Path -LiteralPath $sourceEnv)){Deny 'Primary build tool paths in .env.local are required'}
     $lines=@(Get-Content -LiteralPath $sourceEnv | Where-Object {$_ -match '^(MSBUILD|VSTEST)='})
     if($lines.Count -ne 2){Deny 'MSBUILD and VSTEST tool paths are required for the existing just recipes'}
     [IO.File]::WriteAllLines($envFile,$lines)
-    $pwsh=(Get-Command pwsh.exe).Source
+    $pwsh=if(Test-NativeMini $Manifest){'C:\Program Files\PowerShell\7\pwsh.exe'}else{(Get-Command pwsh.exe).Source}
     $commands=@()
     $steps=@('nuget','packages',(Get-AppBuildRecipe $env:PROCESSOR_ARCHITECTURE $env:PROCESSOR_ARCHITEW6432),'build-client')
     $previousBuild=Join-Path $control 'build.json'
@@ -255,9 +266,10 @@ function Build-OwnedSource($Manifest,$Assets) {
     }
     foreach($step in $steps) {
         $text=if($step -eq 'packages'){'& pnpm install --frozen-lockfile; exit $LASTEXITCODE'}else{'& just --dotenv-path '+(Quote-Argument $envFile)+' '+$step+'; exit $LASTEXITCODE'}
-        $commands+=@{name=$step;executable=$pwsh;arguments='-NoProfile -NonInteractive -EncodedCommand '+[Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($text))}
+        if(Test-NativeMini $Manifest){$text="& { "+$text+" } *> "+(Quote-Argument (Join-Path $control ($step+'.log')));$text="& mise exec node@24 -- 'C:\Program Files\PowerShell\7\pwsh.exe' -NoProfile -EncodedCommand "+[Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($text))+";exit `$LASTEXITCODE"};$commands+=@{name=$step;executable=$pwsh;arguments='-NoProfile -NonInteractive -EncodedCommand '+[Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($text))}
     }
     $completed=Start-OwnedSupervisor $Manifest 'build' $Assets $commands
+    if($null -ne $generatorBefore){Restore-GeneratorMetadata $generator $generatorBefore}
     Assert-OwnedSource $Manifest
     Write-JsonAtomic (Join-Path $control 'build.json') @{environmentId=$Manifest.id;ownerToken=$Manifest.ownerToken;revision=$Manifest.revision;completedAt=[datetime]::UtcNow.ToString('o');runId=$completed.runId;artifacts=(Get-BuildArtifacts $Manifest (Join-Path $Manifest.paths.windows 'DevResults'))}
 }
@@ -357,6 +369,7 @@ function Snapshot-OwnedData($Manifest) {
 }
 function Initialize-OwnedEndpoints($Manifest) {
     $root=Split-Path -Parent (Split-Path -Parent $Manifest.paths.runtime)
+    if(Test-NativeMini $Manifest){Assert-TlsBinding $Manifest;return}
     Assert-TlsBinding $Manifest
     $claims=@(Get-ChildItem -LiteralPath (Join-Path $root 'claims') -Filter '*.json' | ForEach-Object {Get-Json $_.FullName})
     Assert-NoForeignPorts $Manifest $claims $true
@@ -531,7 +544,7 @@ try {
         'schema' {Test-OwnedSchema $m $Request.assets;$result.status='schema-verified'}
         'start' {
             $state=Get-State $m
-            if((Test-Supervisor $state) -and $state.mode -eq 'runtime' -and $state.status -eq 'running'){Assert-Runtime $m;Ensure-OwnedFirewall $m (Get-SshPeer);$result.status='running';break}
+            if((Test-Supervisor $state) -and $state.mode -eq 'runtime' -and $state.status -eq 'running'){Assert-Runtime $m;if(-not(Test-NativeMini $m)){Ensure-OwnedFirewall $m (Get-SshPeer)};$result.status='running';break}
             Test-OwnedSchema $m $Request.assets
             Initialize-OwnedEndpoints $m
             $started=Start-OwnedSupervisor $m 'runtime' $Request.assets
@@ -546,6 +559,7 @@ try {
             $result.status='recovered'
         }
         'reset' {Remove-OwnedData $m $false}
+        'preflight-remove' {Assert-RemovalPreflight $m $true;$result.status='preflight-verified'}
         'remove' {Remove-OwnedData $m $true;$result.status='removed'}
         default {Deny 'Unknown lifecycle operation'}
     }

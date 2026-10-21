@@ -1,3 +1,4 @@
+import { getDrenvHelp } from "./getDrenvHelp.ts"
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises"
 import { homedir } from "node:os"
 import { join } from "node:path"
@@ -16,6 +17,9 @@ import {
 } from "./removeMacEnvironmentSource.ts"
 import { runDrenvCommand } from "./runDrenvCommand.ts"
 import { watchEnvironmentClient } from "./watchEnvironmentClient.ts"
+import { operateNativeSource } from "./operateNativeSource.ts"
+import { operateVibeEnvironment } from "./operateVibeEnvironment.ts"
+import { operateNativeClientWatch } from "./operateNativeClientWatch.ts"
 import type { DrenvArgs, EnvironmentManifest, RegistryOptions, ResourceInventory } from "./types.ts"
 
 /** Compose the complete identity-explicit command under durable operation locks. */
@@ -27,6 +31,8 @@ export function createEnvironmentLifecycle(
 ) {
   const registry = createRegistry(options)
   const remote = adapters.windows ?? runWindowsLifecycle
+  const vibe = adapters.vibe ?? operateVibeEnvironment
+  const nativeWatch = adapters.nativeWatch ?? operateNativeClientWatch
   /** Accept maintenance only after Windows reports its independent post-refresh verification. */
   const refreshDatabase = async (manifest: EnvironmentManifest) => {
     const result = await remote(manifest, "refresh-db")
@@ -48,13 +54,14 @@ export function createEnvironmentLifecycle(
   }
   /** Execute one public command without inferring a destination from the current directory. */
   return async (args: DrenvArgs): Promise<unknown> => {
-    if (args.command === "help")
-      return "drenv create <id> [--source <Mac checkout>] [--revision <ref>] [--preset inl] [--snapshot <receipt.json>]\ndrenv sync|watch|start|status|url|open|stop|snapshot|reset|remove|recover|refresh-db <id>\nUse watch for saved frontend edits on a running environment. Commit paired Mac edits before sync. Creation requires a coordinated SQL/blob snapshot. Reset restores the original creation snapshot."
+    if (args.command === "help") return getDrenvHelp()
     if (args.command === "status" && !args.id) return registry.list()
     if (!args.id) throw new Error("An environment ID is required")
     if (args.command === "recover") {
       await recoverEnvironmentLock(options.directory)
       const manifest = await registry.get(args.id)
+      await nativeWatch(manifest, "stop")
+      await vibe(manifest, "stop")
       await remote(manifest, "recover")
       await recoverEnvironmentLock(join(options.directory, "operations", args.id))
       return {
@@ -67,7 +74,7 @@ export function createEnvironmentLifecycle(
       let manifest: EnvironmentManifest | undefined
       try {
         if (args.command === "create") {
-          const intent = await creationIntent(options.directory, args)
+          const intent = await creationIntent(options.directory, args, options.primarySource)
           manifest = await registry.reserve({
             id: args.id!,
             preset: intent.preset,
@@ -75,10 +82,16 @@ export function createEnvironmentLifecycle(
             database: intent.database,
             instance: intent.instance,
             inventory: await (adapters.inventory ?? inventoryEnvironmentResources)(options),
+            vibeSource: intent.vibeSource,
+            vibeRevision: intent.vibeRevision,
           })
           if (manifest.phase === "running")
             throw new Error("Stop the environment before resuming creation")
-          const revision = await (adapters.pair ?? pairEnvironmentSource)(manifest, intent.source)
+          await nativeWatch(manifest, "stop")
+          await vibe(manifest, "stop")
+          const revision = await (
+            adapters.pair ?? (options.sourceMode ? operateNativeSource : pairEnvironmentSource)
+          )(manifest, intent.source)
           manifest = await registry.checkpoint(manifest.id, manifest.ownerToken, {
             phase: "source-ready",
             completedStep: "source-paired",
@@ -102,6 +115,7 @@ export function createEnvironmentLifecycle(
             })
           )(manifest, intent.snapshot)
           await ensureSchema(manifest)
+          await vibe(manifest, "prepare")
           return registry.checkpoint(manifest.id, manifest.ownerToken, {
             phase: "provisioned",
             completedStep: "schema-verified",
@@ -110,20 +124,44 @@ export function createEnvironmentLifecycle(
         manifest = await registry.get(args.id!)
         if (args.command === "url" || args.command === "open") {
           const url = `https://${manifest.data.instance}.devlocal.us:${manifest.ports.https}`
+          if (manifest.sourceMode)
+            return {
+              legacy: url,
+              vibe: manifest.vibe
+                ? `https://${manifest.data.instance}.viberesults.dev:${manifest.ports.vibe}`
+                : undefined,
+              tunnels: [manifest.ports.https, ...(manifest.vibe ? [manifest.ports.vibe!] : [])].map(
+                port => `ssh -N -L ${port}:127.0.0.1:${port} ${options.windowsHost}`,
+              ),
+            }
           if (args.command === "open")
             await runDrenvCommand({ executable: "open", args: ["-a", "Google Chrome", url] })
           return url
         }
         if (args.command === "status")
-          return { ...manifest, live: await remote(manifest, "status") }
+          return {
+            ...manifest,
+            live: await remote(manifest, "status"),
+            vibeLive: await vibe(manifest, "status"),
+            clientWatch: await nativeWatch(manifest, "status"),
+          }
         if (args.command === "watch") {
           const live = await remote(manifest, "status")
           if (live.status !== "running") throw new Error("Start the environment before watch")
-          return (adapters.watch ?? watchEnvironmentClient)(manifest)
+          return (
+            adapters.watch ??
+            (manifest.sourceMode ? m => nativeWatch(m, "start") : watchEnvironmentClient)
+          )(manifest)
         }
         if (manifest.phase === "removed")
           throw new Error("This environment was removed; choose a new ID")
+        if (args.command === "install-vibe") {
+          if (!manifest.vibe) throw new Error("This environment has no VibeResults side")
+          return vibe(manifest, "install")
+        }
         if (args.command === "stop") {
+          await nativeWatch(manifest, "stop")
+          await vibe(manifest, "stop")
           await remote(manifest, "stop")
           return registry.checkpoint(manifest.id, manifest.ownerToken, { phase: "stopped" })
         }
@@ -131,18 +169,24 @@ export function createEnvironmentLifecycle(
           const result = await remote(manifest, "start")
           if (result.status !== "running")
             throw new Error("Supervisor did not verify all owned runtime processes")
+          const frontend = await vibe(manifest, "start")
+          if (manifest.vibe && frontend?.status !== "running")
+            throw new Error("VibeResults did not verify a running owned worker")
           return registry.checkpoint(manifest.id, manifest.ownerToken, {
             phase: "running",
             completedStep: "runtime-started",
           })
         }
         if (args.command === "remove") {
+          await vibe(manifest, "preflight-remove")
           const source = await (adapters.preflightMac ?? preflightMacEnvironmentSource)(manifest)
           if (!manifest.revision && source)
             throw new Error(
               "Mac source resources exist without a verified source revision; preserve them and inspect interrupted pairing before removal",
             )
         }
+        await nativeWatch(manifest, "stop")
+        await vibe(manifest, "stop")
         await remote(manifest, "stop")
         manifest = await registry.checkpoint(manifest.id, manifest.ownerToken, { phase: "stopped" })
         if (args.command === "refresh-db") {
@@ -153,7 +197,9 @@ export function createEnvironmentLifecycle(
           })
         }
         if (args.command === "sync") {
-          const revision = await (adapters.sync ?? syncEnvironmentSource)(manifest)
+          const revision = await (
+            adapters.sync ?? (options.sourceMode ? operateNativeSource : syncEnvironmentSource)
+          )(manifest)
           manifest = await registry.checkpoint(manifest.id, manifest.ownerToken, {
             phase: "source-ready",
             revision,
@@ -205,6 +251,11 @@ export function createEnvironmentLifecycle(
           })
         }
         if (args.command === "remove") {
+          if (manifest.sourceMode) {
+            await remote(manifest, "preflight-remove")
+            await nativeWatch(manifest, "remove")
+          }
+          await vibe(manifest, "remove")
           await remote(manifest, "remove")
           await (adapters.removeMac ?? removeMacEnvironmentSource)(manifest)
           return registry.checkpoint(manifest.id, manifest.ownerToken, {
@@ -235,6 +286,8 @@ async function creationIntent(
   directory: string,
   /** Explicit create options; omitted retry options retain their prior values. */
   args: DrenvArgs,
+  /** Native host source, otherwise the existing Mac source default. */
+  defaultSource?: string,
 ): Promise<Intent> {
   const parent = join(directory, "intents")
   await mkdir(parent, { recursive: true })
@@ -246,13 +299,25 @@ async function creationIntent(
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error
   }
   const next = { ...saved }
-  for (const key of ["source", "snapshot", "revision", "preset", "database", "instance"] as const) {
+  for (const key of [
+    "source",
+    "snapshot",
+    "revision",
+    "preset",
+    "database",
+    "instance",
+    "vibeSource",
+    "vibeRevision",
+  ] as const) {
     if (args[key] === undefined) continue
     if (saved?.[key] !== undefined && saved[key] !== args[key])
       throw new Error("Retry creation inputs differ from the saved selection")
     Object.assign(next, { [key]: args[key] })
   }
-  const intent: Intent = { source: join(homedir(), "Code", "DevResults", "DevResults"), ...next }
+  const intent: Intent = {
+    source: defaultSource ?? join(homedir(), "Code", "DevResults", "DevResults"),
+    ...next,
+  }
   const temporary = `${path}.tmp`
   await writeFile(temporary, JSON.stringify(intent), { mode: 0o600 })
   await rename(temporary, path)
@@ -260,11 +325,18 @@ async function creationIntent(
 }
 
 /** Immutable human creation choices, independent of later source sync. */
-type Intent = Pick<DrenvArgs, "snapshot" | "revision" | "preset" | "database" | "instance"> & {
+type Intent = Pick<
+  DrenvArgs,
+  "snapshot" | "revision" | "preset" | "database" | "instance" | "vibeSource" | "vibeRevision"
+> & {
   source: string
 }
 /** Host boundaries that can be substituted without mocking registry semantics. */
 type Adapters = {
+  /** Optional paired frontend lifecycle boundary. */
+  vibe?: typeof operateVibeEnvironment
+  /** Optional native client watch lifecycle boundary. */
+  nativeWatch?: typeof operateNativeClientWatch
   /** Foreground frontend watch; never stops or replaces the runtime. */
   watch?: (manifest: EnvironmentManifest) => Promise<unknown>
   /** Fresh listener and binding inventory. */

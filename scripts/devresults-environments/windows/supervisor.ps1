@@ -1,4 +1,5 @@
 param([string]$RequestPath)
+if($PSVersionTable.PSVersion.Major -gt 5){$env:PSModulePath="$env:SystemRoot\System32\WindowsPowerShell\v1.0\Modules";& "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $PSCommandPath -RequestPath $RequestPath;exit $LASTEXITCODE}
 $ErrorActionPreference='Stop'
 Set-StrictMode -Version Latest
 function Save($Value) {
@@ -9,6 +10,7 @@ function Save($Value) {
 function Quote([string]$Value) { if($Value.Contains('"') -or $Value -match '[\r\n]'){throw 'Invalid process argument'}; return '"'+$Value+'"' }
 $request = Get-Content -LiteralPath $RequestPath -Raw | ConvertFrom-Json
 $m=$request.manifest
+if($m.PSObject.Properties.Name -contains 'sourceMode'){$env:MISE_TRUSTED_CONFIG_PATHS=$m.paths.windows}
 $job=$null
 $diagnostic='Supervisor initialization or process containment failed'
 $state=@{environmentId=$m.id; ownerToken=$m.ownerToken; revision=$m.revision; runId=$request.runId; mode=$request.mode; status='starting'; pid=$PID; processStartTime=(Get-Process -Id $PID).StartTime.ToUniversalTime().ToString('o'); request=$RequestPath; children=@()}
