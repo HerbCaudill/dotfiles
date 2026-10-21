@@ -47,6 +47,8 @@ Prefer TypeScript, React, Vite, pnpm, oxfmt, Vitest, Playwright, Tabler icons, a
 
 When Herb asks you to run or start a site, launch its dev server as a detached process with no time limit (for example, `nohup pnpm dev > /tmp/<repo>-dev.log 2>&1 &`), not as a time-limited background task. Report the URL and how to stop it.
 
+You may run `sudo` yourself; do not ask Herb to run a command just because it needs root. Before each `sudo` command, tell Herb the command and what you need it for, then run it so he can approve the biometric prompt.
+
 Diagnose bugs before fixing them. Establish the intended behavior and likely cause before deciding what to test.
 
 For new or modified code that changes executable behavior, use red-green TDD when a stable automated test is practical: write one focused behavioral test, watch it fail for the expected reason, make the smallest change that passes it, then refactor while green. Test public outcomes rather than implementation details.
