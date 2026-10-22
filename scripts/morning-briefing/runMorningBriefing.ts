@@ -1,16 +1,19 @@
 #!/usr/bin/env -S node --experimental-strip-types
 
 import { spawn } from "node:child_process"
-
-const REPOSITORY_ENTRYPOINT =
-  "/Users/herbcaudill/Code/HerbCaudill/briefings/scripts/morning-briefing/run.ts"
+import { getBriefingInvocation } from "./getBriefingInvocation.ts"
 
 /** Forward the installed command to the repository-owned morning briefing pipeline. */
 async function runMorningBriefing(): Promise<void> {
-  const child = spawn(REPOSITORY_ENTRYPOINT, process.argv.slice(2), {
-    env: process.env,
-    stdio: "inherit",
-  })
+  const invocation = getBriefingInvocation(process.argv.slice(2))
+  const child = spawn(
+    process.execPath,
+    ["--experimental-strip-types", invocation.entrypoint, ...invocation.arguments],
+    {
+      env: process.env,
+      stdio: "inherit",
+    },
+  )
 
   await new Promise<void>((resolve, reject) => {
     child.on("error", reject)
