@@ -8,6 +8,7 @@ import { getRelease } from "./getRelease.ts"
 import { prepareRelease } from "./prepareRelease.ts"
 import { privateDirectory } from "./privateDirectory.ts"
 import { waitForServiceLock } from "./waitForServiceLock.ts"
+import { prepareWindowsCli } from "./prepareWindowsCli.ts"
 
 /** Manage the mini's isolated Tasks release; enrollment never copies another machine's identity. */
 async function main() {
@@ -25,20 +26,27 @@ async function main() {
   const command = positionals[0]
   if (values.help || !command) {
     process.stdout.write(
-      "tasks-agent <prepare|select|release-path|enroll|serve|start|stop|status> [--repo path] [--revision full-sha]\nEnrollment consumes a one-time invitation from stdin. Automatic startup is enabled only after verification.\n",
+      "tasks-agent <prepare|prepare-cli|select|release-path|enroll|serve|start|stop|status> [--repo path] [--revision full-sha]\nEnrollment consumes a one-time invitation from stdin. Automatic startup is enabled only after verification.\n",
     )
     return
   }
   if (command === "prepare") {
     if (!values.repo || !values.revision) throw new Error("prepare requires --repo and --revision")
-    process.stdout.write(
-      JSON.stringify(
-        await prepareRelease({ repo: values.repo, revision: values.revision, root, pnpm: "pnpm" }),
-      ) + "\n",
-    )
+    const prepared = await prepareRelease({
+      repo: values.repo,
+      revision: values.revision,
+      root,
+      pnpm: "pnpm",
+    })
+    await prepareWindowsCli(root, prepared)
+    process.stdout.write(JSON.stringify(prepared) + "\n")
     return
   }
   const release = await getRelease(root, command === "select" ? values.revision : undefined)
+  if (command === "prepare-cli") {
+    process.stdout.write((await prepareWindowsCli(root, release)) + "\n")
+    return
+  }
   const stateDir = join(root, "agent")
   if (command === "select") {
     if (!values.revision) throw new Error("select requires --revision")
