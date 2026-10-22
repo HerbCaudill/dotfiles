@@ -35,7 +35,7 @@ in
     enable = true;
     config = {
       Label = "com.herbcaudill.process-inbox";
-      ProgramArguments = [ "${userBin}/process-inbox" ];
+      ProgramArguments = [ morningBriefingLauncher "--mac-sources" ];
       StartInterval = 3600;
       StandardOutPath = "/tmp/inbox-processing.log";
       StandardErrorPath = "/tmp/inbox-processing.log";
