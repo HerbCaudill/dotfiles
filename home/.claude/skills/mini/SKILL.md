@@ -61,6 +61,14 @@ The private `HerbCaudill/agent-transcripts` clone at `C:\Code\HerbCaudill\agent-
 
 For a manual run, invoke `scripts/windows/sync-agent-transcripts.ps1` in the dotfiles clone. Re-register the task with `scripts/windows/register-agent-transcripts-task.ps1`. The read-agent-sessions skill can query `--machine macbook`, `--machine mini`, or `--machine all` from this clone while either computer is offline. Use `--machine local` for live mini sessions. See `docs/agent-transcripts.md` in dotfiles for recovery.
 
+## Personal automation
+
+The managed Tasks peer runs as the interactive `tasks-agent` task in Herb's automatically signed-in desktop session. S4U and SSH clients connect to that same peer; they do not need the Mac. Use the `tasks` skill for space checks, converged reads and receipt recovery. Never copy or reset its storage to resolve a transport failure. Windows clients use a revision-bound, hash-checked CLI bundle outside the immutable release to avoid pnpm junction failures over elevated SSH.
+
+`C:\Code\HerbCaudill\briefings` owns the Windows job runner at `scripts/windows/runBriefingJob.ps1`. `Inbox intake` runs hourly through S4U; `Inbox research` is an independent S4U task with no fixed runtime limit. `Morning briefing` requires the interactive desktop for Obsidian and authenticated Agent Chrome. Its automatic morning cutover is still gated on a complete reviewed publication; check `C:\Users\herb\setup\mini-migration-status.md` before enabling it or disabling the Mac morning job.
+
+Obsidian Sync is the mini's sole vault sync method at `C:\Code\HerbCaudill\notes`; Windows gh-sync excludes that repository. Signal reads use sigtop's Windows key store. Browser sources use the dedicated Agent Chrome profile on loopback9223. The Mac retains an hourly source-only job through its existing Full Disk Access launcher: undated Reminders go to Tasks, and recent Apple Messages are exported to the mini. A sleeping Mac leaves a stale Messages artifact, which the briefing must label stale.
+
 ## DevResults toolchain
 
 The machine has Visual Studio 2026 Professional with the ASP.NET, .NET desktop, and .NET Framework 4.8 components, plus Git, PowerShell 7, GitHub CLI, mise (which provides Node and just), pnpm through corepack, NuGet, and SSMS. Developer Mode and long paths are on. Run repo commands from `C:\Code\DevResults\devresults` with `just`, following the repo's `AGENTS.md`. `.env.local` points `just` at Visual Studio's MSBuild and VSTest. The `setup-check` skill in the DevResults repo verifies the toolchain.
