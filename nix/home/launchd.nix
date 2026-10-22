@@ -74,7 +74,7 @@ in
   };
 
   launchd.agents."morning-briefing" = {
-    enable = true;
+    enable = false;
     config = {
       Label = "com.herbcaudill.morning-briefing";
       ProgramArguments = [ morningBriefingLauncher ];
