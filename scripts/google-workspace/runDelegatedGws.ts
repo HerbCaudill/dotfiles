@@ -1,6 +1,5 @@
 import { homedir } from "node:os"
 import { join } from "node:path"
-import { pathToFileURL } from "node:url"
 
 import { loadServiceAccountCredentials } from "./loadServiceAccountCredentials.ts"
 import { requestDelegatedAccessToken } from "./requestDelegatedAccessToken.ts"
@@ -70,9 +69,7 @@ type RunDelegatedGwsDependencies = {
   spawnGws: (arguments_: ReadonlyArray<string>, accessToken: string) => number
 }
 
-const invokedPath = process.argv[1]
-
-if (invokedPath && import.meta.url === pathToFileURL(invokedPath).href) {
+if (import.meta.main) {
   runDelegatedGws(process.argv.slice(2))
     .then(status => {
       process.exitCode = status
