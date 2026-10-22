@@ -9,4 +9,6 @@ $bin = Join-Path $env:USERPROFILE '.local\bin'
 New-Item -ItemType Directory -Path $bin -Force | Out-Null
 $launcher = "@echo off`r`n`"$node`" --experimental-strip-types `"$entry`" %*`r`n"
 [IO.File]::WriteAllText((Join-Path $bin 'gws-delegated.cmd'), $launcher, [Text.UTF8Encoding]::new($false))
+$powershellLauncher = "& '$($node.Replace("'", "''"))' --experimental-strip-types '$($entry.Replace("'", "''"))' @args`r`nexit `$LASTEXITCODE`r`n"
+[IO.File]::WriteAllText((Join-Path $bin 'gws-delegated.ps1'), $powershellLauncher, [Text.UTF8Encoding]::new($false))
 Write-Output 'Installed gws-delegated. Its existing delegated credential must be installed separately with private Windows ACLs.'
