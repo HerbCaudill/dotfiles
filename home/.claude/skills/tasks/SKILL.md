@@ -7,7 +7,7 @@ description: Use the local Tasks CLI to read or change the personal board throug
 
 This is the default skill for Herb’s personal tasks. The enrolled space is `B7CSO2L6KYNN4HZBSBNHP3LC3SA7PYNJO`; verify it with `tasks status` before working. Use this skill for task requests, including capture, review and completion. Repository development issues still use Beads.
 
-Use `tasks` for board reads and writes. It connects to one local peer and works with every Tasks browser window closed. The Mac must be awake. Never open, copy into, reset or repair the peer's SQLite files as part of a normal task command.
+Use `tasks` for board reads and writes. It connects to one local peer and works with every Tasks browser window closed. On the mini, the peer runs in Herb's automatically signed-in Windows session and does not depend on the Mac being awake. A disconnected Remote Desktop session is sufficient. On the Mac, its local peer requires the Mac to be awake. Never open, copy into, reset or repair the peer's SQLite files as part of a normal task command.
 
 The canonical public Tasks origin is `https://tasks.herbcaudill.com`. When presenting, storing or constructing a task or project link, use that origin with the typed query parameter returned by Tasks, such as `https://tasks.herbcaudill.com/?task=<id>` or `https://tasks.herbcaudill.com/?project=<id>`. Never expose a Vercel deployment hostname. Use ordinary HTTPS links; Chrome may route them into the installed app when link capturing is enabled, but do not construct Chrome-specific or machine-specific app links.
 
