@@ -21,6 +21,10 @@ for repo in $repos; do
   if [[ "$repo" == "agent-transcripts" ]]; then
     continue
   fi
+  # Obsidian Sync owns the mini vault; Git remains an archive and recovery source there.
+  if [[ "$repo" == "notes" && "$OSTYPE" == msys* ]]; then
+    continue
+  fi
   dir="$BASE_DIR/$repo"
 
   if [[ ! -d "$dir" ]]; then
