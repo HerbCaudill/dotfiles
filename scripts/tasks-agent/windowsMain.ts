@@ -2,6 +2,7 @@ import { spawn, execFile } from "node:child_process"
 import { mkdir, open, rename } from "node:fs/promises"
 import { homedir } from "node:os"
 import { join } from "node:path"
+import { fileURLToPath } from "node:url"
 import { parseArgs, promisify } from "node:util"
 import { getRelease } from "./getRelease.ts"
 import { prepareRelease } from "./prepareRelease.ts"
@@ -108,7 +109,7 @@ async function scheduled(
       "-Command",
       action === "start"
         ? "Start-ScheduledTask -TaskName tasks-agent -ErrorAction Stop"
-        : "if (Get-ScheduledTask -TaskName tasks-agent -ErrorAction SilentlyContinue) { Stop-ScheduledTask -TaskName tasks-agent -ErrorAction Stop }",
+        : `& '${fileURLToPath(new URL("../windows/stop-tasks-agent.ps1", import.meta.url)).replaceAll("'", "''")}'`,
     ],
     { windowsHide: true },
   )
