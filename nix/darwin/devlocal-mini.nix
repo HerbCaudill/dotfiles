@@ -41,4 +41,3 @@ in
     StandardErrorPath = "/var/log/devlocal-mini-tunnel.log";
   };
 }
-
