@@ -10,7 +10,7 @@ let
       -o BatchMode=yes -o ExitOnForwardFailure=yes \
       -o ConnectTimeout=10 -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
       -L 127.0.0.2:80:127.0.0.1:80 \
-      -L 127.0.0.2:443:127.0.0.1:443 mini
+      -L 127.0.0.2:443:127.0.0.1:8443 mini
   '';
 in
 {

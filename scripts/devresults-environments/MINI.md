@@ -36,10 +36,10 @@ Commit legacy source changes, then use `sync <id>` to rebuild and reconcile its 
 `url <id>` returns both origins and exact commands. For example:
 
 ```sh
-ssh -N -L 30000:127.0.0.1:30000 -L 30006:127.0.0.1:30006 mini
+ssh -N -L 127.0.0.2:30000:127.0.0.1:30000 -L 127.0.0.1:30006:127.0.0.1:30006 mini
 ```
 
-Then visit `https://example.devlocal.us:30000` and `https://example.viberesults.dev:30006`. Use the actual assigned ports. Legacy redirects can include the IIS port, so forward it unchanged. Local DNS must resolve these names to loopback, and the browser must trust their existing certificates. Check occupied local ports before opening a tunnel. A tunnel is only transport; closing it leaves the stack running.
+Then visit `https://example.devlocal.us:30000` and `https://example.viberesults.dev:30006`. Use the actual assigned ports. Legacy redirects can include the IIS port, so forward it unchanged. On the Mac, `*.devlocal.us` resolves to `127.0.0.2`, while `*.viberesults.dev` resolves to `127.0.0.1`; bind each forward to its matching address. The browser must trust their existing certificates. Check occupied local ports before opening a tunnel. A tunnel is only transport; closing it leaves the stack running. The portless primary `https://<instance>.devlocal.us` route is separate: its managed Mac tunnel forwards `127.0.0.2:443` to primary IIS on mini loopback port `8443`. Tailscale keeps its own port `443`. Never send an isolated environment’s allocated port to that primary backend. Existing VM environments retain their private catalogs and ports; when viewing them after the DNS cutover, bind `127.0.0.2:<assigned HTTPS port>` to the same port on `devresults-vm`.
 
 New mini allocations use 30000–39999 and are committed under the authoritative registry lock. The allocator also checks Windows listeners, HTTP.sys and existing claims. Primary ports and documented e2e lane ports remain excluded even while their services are stopped. Existing VM allocations remain unchanged.
 

@@ -118,3 +118,27 @@ test("native stop drains both frontend workers before stopping IIS; partial star
     await rm(directory, { recursive: true, force: true })
   }
 })
+
+test("native viewing keeps each allocated port and binds the matching Mac hostname address", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "drenv-viewing-"))
+  try {
+    const options = { ...getRegistryOptions("mini", "win32"), directory }
+    const manifest = await createRegistry(options).reserve({
+      id: "viewing-proof",
+      vibeSource: "C:\\Code\\Vibe",
+      inventory: { windowsPorts: [], macPorts: [] },
+    })
+    const urls = await createEnvironmentLifecycle(options)({ command: "url", id: manifest.id })
+    expect(urls).toMatchObject({
+      legacy: `https://example.devlocal.us:${manifest.ports.https}`,
+      vibe: `https://example.viberesults.dev:${manifest.ports.vibe}`,
+      tunnels: [
+        `ssh -N -L 127.0.0.2:${manifest.ports.https}:127.0.0.1:${manifest.ports.https} mini`,
+        `ssh -N -L 127.0.0.1:${manifest.ports.vibe}:127.0.0.1:${manifest.ports.vibe} mini`,
+      ],
+    })
+    expect((await createRegistry(options).get(manifest.id)).phase).toBe(manifest.phase)
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})

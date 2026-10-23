@@ -130,8 +130,12 @@ export function createEnvironmentLifecycle(
               vibe: manifest.vibe
                 ? `https://${manifest.data.instance}.viberesults.dev:${manifest.ports.vibe}`
                 : undefined,
-              tunnels: [manifest.ports.https, ...(manifest.vibe ? [manifest.ports.vibe!] : [])].map(
-                port => `ssh -N -L ${port}:127.0.0.1:${port} ${options.windowsHost}`,
+              tunnels: [
+                { address: "127.0.0.2", port: manifest.ports.https },
+                ...(manifest.vibe ? [{ address: "127.0.0.1", port: manifest.ports.vibe! }] : []),
+              ].map(
+                ({ address, port }) =>
+                  `ssh -N -L ${address}:${port}:127.0.0.1:${port} ${options.windowsHost}`,
               ),
             }
           if (args.command === "open")
