@@ -123,7 +123,7 @@ let
   '';
 in
 {
-  imports = [ ./localhost-router.nix ];
+  imports = [ ./localhost-router.nix ./devlocal-mini.nix ];
 
   nix.enable = false;
   nixpkgs.config.allowUnfree = true;
