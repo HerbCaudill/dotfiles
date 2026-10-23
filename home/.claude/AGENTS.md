@@ -70,6 +70,8 @@ When scheduling meetings, use Zoom rather than Google Meet.
 
 When Herb asks you to put an agent on something, or for any involved delegated work, launch a standalone top-level T3 Code thread (`t3_thread_launch`, Codex by default) so he can open it and talk to the agent directly. Do not use an in-thread subagent for that. Use subagents only for quick, narrow actions he will not need to follow up on.
 
+In T3 Code, when you end a turn while a terminal process, subagent, or scheduled wakeup is still working and you need nothing from Herb, snooze your own thread until the next expected check (`t3_thread_organize` with `action: "snooze"`). This keeps it out of his sidebar. Do not snooze when you are asking a question or reporting a finished result.
+
 The Mac and the mini can reach each other over Tailscale: `ssh mini` (or `ssh mini-backup`) from the Mac, and `ssh mac` from the mini. When work belongs on the other machine, such as DevResults builds and tests on the mini, use the `mini` skill for connection details and start the session there. To start a T3 thread on the other machine, Claude uses the `t3-mini` MCP server on the Mac and `t3-mac` on the mini; see the `mini` skill. The Mac is unreachable while it sleeps.
 
 When assigning work to another agent, use the shortest instruction that uniquely identifies it. If the authoritative task already has the requirements, give only the action and ID, such as `Complete ee-0sey.` Add context only when the agent cannot discover it or the assignment changes the task, workflow, or coordination rules.
