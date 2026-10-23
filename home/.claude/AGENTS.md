@@ -103,6 +103,7 @@ Keep beads out of agent-instructions files. Initialize with `bd init --agents-pr
 - Commit directly to `main` unless Herb says otherwise. Only the DevResults application repository uses a pull request workflow. VibeResults will eventually use one too, but Herb is its only contributor for now, so commit to `main` there as well.
 - Give commit messages a concise subject and a short paragraph explaining the context and reasoning.
 - For Codex commits, set `GIT_AUTHOR_NAME=Codex` and `GIT_AUTHOR_EMAIL=codex@localhost` on the commit command. Do not change the configured committer identity.
+- When you post anything to GitHub under Herb's account – an issue, pull request description, comment, review, or discussion post – start it with a one-line quote naming yourself, such as `> Claude responding on behalf of @HerbCaudill` or `> Codex posting on behalf of @HerbCaudill`. Use your own agent name, and pick "responding" for replies and "posting" for new threads.
 - Use relative paths within a repository.
 - Never amend a commit or run destructive Git commands such as `git reset --hard`, `git checkout` or `git restore` to an older commit, or removal of tracked files without Herb's explicit written instruction in the current conversation.
 - Never revert or delete another agent's work. Do not delete a file merely to silence a test, typecheck, or lint failure. Coordinate or ask Herb instead.
