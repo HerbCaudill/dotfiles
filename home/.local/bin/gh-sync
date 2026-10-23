@@ -1,22 +1,66 @@
 #!/usr/bin/env bash
 
 ##
-## Sync ~/Code/HerbCaudill with all repos on github.com/HerbCaudill.
+## Sync ~/Code/HerbCaudill with all repos on github.com/HerbCaudill, and ~/Code/DevResults with
+## DevResults repos pushed in the last 30 days.
 ## Clones missing repos; for existing clean repos, pulls and pushes the default branch.
 ##
 
 set -uo pipefail
 
-OWNER="HerbCaudill"
-BASE_DIR="$HOME/Code/HerbCaudill"
 LOG_PREFIX="[gh-sync]"
+ACTIVE_DAYS=30
 
 log() { echo "$LOG_PREFIX $*"; }
 
-# Get all non-fork, non-archived repo names from GitHub
-repos=$(gh repo list "$OWNER" --source --no-archived --limit 1000 --json name --jq '.[].name')
+# Clone or sync one repo. Args: owner, repo, base dir, whether to push ("push" or "pull-only")
+sync_repo() {
+  local owner="$1" repo="$2" base_dir="$3" mode="$4"
+  local dir="$base_dir/$repo"
 
-for repo in $repos; do
+  if [[ ! -d "$dir" ]]; then
+    log "Cloning $owner/$repo..."
+    gh repo clone "$owner/$repo" "$dir" 2>&1 | sed "s/^/$LOG_PREFIX   /" || log "  Clone failed for $repo"
+    return
+  fi
+
+  # Skip if not a git repo
+  if [[ ! -d "$dir/.git" ]]; then
+    return
+  fi
+
+  # Skip if working tree is dirty
+  if ! git -C "$dir" diff --quiet 2>/dev/null || ! git -C "$dir" diff --cached --quiet 2>/dev/null; then
+    log "Skipping $repo (dirty working tree)"
+    return
+  fi
+
+  # Get the default branch
+  local default_branch
+  default_branch=$(git -C "$dir" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||' || echo "")
+  if [[ -z "$default_branch" ]]; then
+    default_branch="main"
+  fi
+
+  # Only sync if we're on the default branch
+  local current_branch
+  current_branch=$(git -C "$dir" branch --show-current 2>/dev/null || echo "")
+  if [[ "$current_branch" != "$default_branch" ]]; then
+    log "Skipping $repo (on branch '$current_branch', not '$default_branch')"
+    return
+  fi
+
+  # Fetch, pull, push
+  log "Syncing $owner/$repo..."
+  git -C "$dir" fetch --quiet 2>/dev/null || true
+  git -C "$dir" pull --quiet 2>/dev/null || log "  Pull failed for $repo"
+  if [[ "$mode" == "push" ]]; then
+    git -C "$dir" push --quiet 2>/dev/null || true
+  fi
+}
+
+# All non-fork, non-archived HerbCaudill repos
+for repo in $(gh repo list HerbCaudill --source --no-archived --limit 1000 --json name --jq '.[].name'); do
   # The transcript writer owns this clone's commits and network synchronization.
   if [[ "$repo" == "agent-transcripts" ]]; then
     continue
@@ -25,43 +69,20 @@ for repo in $repos; do
   if [[ "$repo" == "notes" && "$OSTYPE" == msys* ]]; then
     continue
   fi
-  dir="$BASE_DIR/$repo"
+  sync_repo HerbCaudill "$repo" "$HOME/Code/HerbCaudill" push
+done
 
-  if [[ ! -d "$dir" ]]; then
-    log "Cloning $repo..."
-    gh repo clone "$OWNER/$repo" "$dir" 2>&1 | sed "s/^/$LOG_PREFIX   /" || log "  Clone failed for $repo"
-    continue
+# Active DevResults repos: non-fork, non-archived, pushed in the last $ACTIVE_DAYS days
+cutoff=$(($(date +%s) - ACTIVE_DAYS * 86400))
+devresults_repos=$(gh repo list DevResults --source --no-archived --limit 1000 --json name,pushedAt \
+  --jq ".[] | select((.pushedAt | fromdateiso8601) > $cutoff) | .name")
+for repo in $devresults_repos; do
+  # The application repo takes changes only through pull requests.
+  if [[ "$repo" == "DevResults" ]]; then
+    sync_repo DevResults "$repo" "$HOME/Code/DevResults" pull-only
+  else
+    sync_repo DevResults "$repo" "$HOME/Code/DevResults" push
   fi
-
-  # Skip if not a git repo
-  if [[ ! -d "$dir/.git" ]]; then
-    continue
-  fi
-
-  # Skip if working tree is dirty
-  if ! git -C "$dir" diff --quiet 2>/dev/null || ! git -C "$dir" diff --cached --quiet 2>/dev/null; then
-    log "Skipping $repo (dirty working tree)"
-    continue
-  fi
-
-  # Get the default branch
-  default_branch=$(git -C "$dir" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||' || echo "")
-  if [[ -z "$default_branch" ]]; then
-    default_branch="main"
-  fi
-
-  # Only sync if we're on the default branch
-  current_branch=$(git -C "$dir" branch --show-current 2>/dev/null || echo "")
-  if [[ "$current_branch" != "$default_branch" ]]; then
-    log "Skipping $repo (on branch '$current_branch', not '$default_branch')"
-    continue
-  fi
-
-  # Fetch, pull, push
-  log "Syncing $repo..."
-  git -C "$dir" fetch --quiet 2>/dev/null || true
-  git -C "$dir" pull --quiet 2>/dev/null || log "  Pull failed for $repo"
-  git -C "$dir" push --quiet 2>/dev/null || true
 done
 
 log "Done."

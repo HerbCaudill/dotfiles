@@ -41,7 +41,7 @@ winget works over SSH. Pass `--accept-source-agreements --accept-package-agreeme
 ## Layout
 
 - `C:\Code` holds all repos, laid out like `~/Code` on the Mac. `C:\Users\herb\Code` is a junction to it, so `~/Code/...` paths from shared instructions resolve.
-- `C:\Code\DevResults\devresults` is the DevResults application checkout. Other DevResults org repos (`e2e`, `viberesults`, `x3`, `toolkit`, `sdk`, `DevResults.wiki`, and so on) sit beside it in `C:\Code\DevResults`. They were cloned once and are not synced automatically.
+- `C:\Code\DevResults\devresults` is the DevResults application checkout. Other DevResults org repos (`e2e`, `viberesults`, `x3`, `toolkit`, `sdk`, `DevResults.wiki`, and so on) sit beside it in `C:\Code\DevResults`. `gh-sync` clones and pulls the ones pushed to GitHub in the last 30 days; older ones were cloned once and are not synced. It pulls the application repo but never pushes it.
 - `C:\Code\HerbCaudill\*` holds Herb's repos, kept current by `gh-sync`.
 - `C:\Users\herb\setup` holds setup scripts and logs.
 

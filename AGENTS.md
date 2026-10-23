@@ -60,7 +60,7 @@ These are installed into `~/.local/bin` by Home Manager rather than a custom sym
 | `gws-delegated`           | Run GWS commands with a short-lived domain-wide delegated token for Herb                                                                           | Node.js  |
 | `update-agent-harnesses`  | Update Claude Code, Pi, Codex, pnpm, and bd                                                                                                        | Zsh      |
 | `beads`                   | Wrapper for `bd`                                                                                                                                   | Shell    |
-| `gh-sync`                 | Sync `~/Code/HerbCaudill` with all repos on github.com/HerbCaudill                                                                                 | Bash     |
+| `gh-sync`                 | Sync `~/Code/HerbCaudill` with all HerbCaudill repos, and `~/Code/DevResults` with DevResults repos pushed in the last 30 days                     | Bash     |
 | `serena`                  | Invoke Serena CLI                                                                                                                                  | Python   |
 | `serena-mcp-server`       | Start the Serena MCP server                                                                                                                        | Python   |
 | `index-project`           | Invoke Serena's project indexing                                                                                                                   | Python   |
