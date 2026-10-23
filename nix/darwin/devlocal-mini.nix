@@ -4,7 +4,7 @@ let
   tunnel = pkgs.writeShellScript "devlocal-mini-tunnel" ''
     /sbin/ifconfig lo0 alias 127.0.0.2 up
     exec /usr/bin/ssh -NT \
-      -F "${homeDirectory}/.ssh/config" \
+      -F /dev/null -l herb \
       -o "IdentityFile=${homeDirectory}/.ssh/id_ed25519" \
       -o "UserKnownHostsFile=${homeDirectory}/.ssh/known_hosts" \
       -o BatchMode=yes -o ExitOnForwardFailure=yes \
