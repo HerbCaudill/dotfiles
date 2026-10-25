@@ -120,6 +120,7 @@ Do not use Claude Code's per-project memory directory at `~/.claude/projects/...
 - Obsidian vault: `~/Code/herbcaudill/notes`; daily notes are in `daily/` and meeting transcripts in `meetings/`.
 - DevResults wiki: `~/Code/DevResults/DevResults.wiki`.
 - Google Drive [macOS only]: `~/Library/CloudStorage/GoogleDrive-herb@devresults.com/My Drive`. Google Docs, Sheets, and Slides are cloud-only stubs. Use `gws-*` skills only when Google's first-party tools cannot do the work. For Google Workspace API calls, use `gws-delegated`; use raw `gws` only for authentication diagnostics, schema discovery, help, or skill generation.
+- X (Twitter) API: use `xurl --app bookmarks`. Its OAuth 2 login works on only one machine at a time; signing in on one device invalidates the other. It is currently signed in on the mini, so run X API work there rather than re-authenticating on the Mac. A bookmark export script lives at `C:\Users\herb\setup\exportBookmarks.ts` on the mini and writes `documents/X bookmarks.md` and `documents/x-bookmarks/bookmarks.json` in the notes vault.
 
 ## DevResults repository [macOS only]
 
