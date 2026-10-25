@@ -7,6 +7,10 @@ description: Use when designing or refining an app's interactions, especially de
 
 Apply these defaults when choosing a design and when implementing it. For web apps, also apply the [mobile-pwa skill](../mobile-pwa/SKILL.md) for icons, updates, the app shell, and mobile adaptation and verification.
 
+## UI copy
+
+Don’t add marketing copy, slogans, or editorial commentary to app UIs. Omit text that restates the screen’s purpose or explains obvious controls. Keep labels and guidance that help users act, understand state, or avoid mistakes.
+
 ## Desktop keyboard use
 
 Desktop apps of any complexity should generally be fully usable from the keyboard. Cover navigation, search, selection, opening details, editing, saving, cancelling, menus, and dialogs. Use normal Tab navigation and native control behavior, with hotkeys for common actions and appropriate arrow-key navigation within lists and menus. Keep focus visible and restore it sensibly when a dialog or editor closes. Do not require a mouse-only gesture to complete a normal workflow.
