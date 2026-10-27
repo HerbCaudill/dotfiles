@@ -38,7 +38,9 @@ npx tsx ~/.claude/skills/scaffold/scaffold.ts <project-name> --icon /absolute/pa
 
 When Codex runs the script, set `GIT_AUTHOR_NAME=Codex GIT_AUTHOR_EMAIL=codex@localhost` on that invocation so the script's initial commit inherits the required author identity. Preserve the configured committer identity.
 
-The script handles everything:
+The script handles the local scaffold. Complete the setup on both machines afterward as described below.
+
+The script:
 
 - Creates Vite project with React + TypeScript template
 - Installs dependencies (Tailwind, shadcn, Vitest, Playwright, etc.)
@@ -158,6 +160,17 @@ Test real production service-worker updates as described in the mobile-pwa skill
 | Vercel CLI not found         | Run `pnpm add -g vercel`                    |
 
 ## After scaffolding
+
+### Set up both machines and T3 projects
+
+Finish scaffolding with the repository cloned on both the Mac and the mini, and a T3 project registered on each machine. Use the same project name for the repository, folder, and T3 project. The canonical paths are `~/Code/HerbCaudill/<project-name>` on the Mac and `C:\Code\HerbCaudill\<project-name>` on the mini. Apply the [mini skill](../mini/SKILL.md) for connections between machines.
+
+1. Commit and push the finished scaffold before syncing the other machine. Honor the user's GitHub publication instructions; if repository creation is not yet authorized, finish the local setup and report that the second clone is pending publication.
+2. Check both canonical paths before cloning. Reuse an existing clone only after confirming its remote points to the intended repository. Update a clean clone with `git pull --ff-only`; preserve and report local changes or divergent commits instead of replacing them. Clone missing repositories from GitHub into the canonical paths.
+3. Register each canonical folder in that machine's running T3 server. Prefer `t3_project_list` and `t3_project_create` when tools for that server are available. Otherwise, run `t3 project add <absolute-path> --title <project-name>` locally or over SSH. Check `t3 project add --help` if the installed CLI differs. Reuse an existing registration; use `t3_project_update` to correct its title or workspace path, or `t3 project rename <project-id-or-path> <project-name>` for a CLI title change. Registering a project does not require launching a thread.
+4. Verify that both clones have the pushed commit and that both T3 projects point to the canonical folders. Report both paths. If the other machine is unreachable, complete the available setup and report exactly what remains pending; do not claim both machines are ready.
+
+### Deployment
 
 Once the project is verified working, ask the user if they want to deploy it:
 
