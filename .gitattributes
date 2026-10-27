@@ -4,4 +4,5 @@
 
 # Keep shell scripts LF so Git Bash can run them from Windows checkouts
 home/.local/bin/gh-sync text eol=lf
+home/.local/bin/qmd text eol=lf
 *.sh text eol=lf

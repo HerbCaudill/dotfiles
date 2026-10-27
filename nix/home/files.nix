@@ -42,6 +42,7 @@ in
     ".local/bin/obsidian-sync".source = mkRepoSymlink "home/.local/bin/obsidian-sync";
     ".local/bin/personal-info-sync".source = mkRepoSymlink "home/.local/bin/personal-info-sync";
     ".local/bin/process-inbox".source = mkRepoSymlink "scripts/morning-briefing/processInbox.ts";
+    ".local/bin/qmd".source = mkRepoSymlink "home/.local/bin/qmd";
     ".local/bin/update-agent-harnesses".source = mkRepoSymlink "home/.local/bin/update-agent-harnesses";
     ".local/bin/serena".source = mkRepoSymlink "home/.local/bin/serena";
     ".local/bin/serena-mcp-server".source = mkRepoSymlink "home/.local/bin/serena-mcp-server";

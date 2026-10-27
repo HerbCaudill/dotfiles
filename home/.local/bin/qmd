@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Keep QMD's native dependencies together in the same dedicated npm prefix.
+set -euo pipefail
+
+prefix="$HOME/.local/share/qmd"
+bin="$prefix/bin/qmd"
+
+if [[ ! -x "$bin" ]]; then
+  echo "qmd: installing @tobilu/qmd@2.8.3 into $prefix..." >&2
+  npm install -g --prefix "$prefix" @tobilu/qmd@2.8.3 \
+    --allow-scripts=node-llama-cpp,better-sqlite3,tree-sitter-go,tree-sitter-python,tree-sitter-rust,tree-sitter-typescript,tree-sitter-javascript >&2
+fi
+
+exec "$bin" "$@"
