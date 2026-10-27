@@ -52,20 +52,20 @@ These are installed into `~/.local/bin` by Home Manager rather than a custom sym
 
 ### Other tools
 
-| Command                   | Description                                                                                                                                        | Language |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `agent-transcripts-sync`  | Sync compressed Claude Code, Codex, and Pi JSONL conversations through the private `HerbCaudill/agent-transcripts` repository                  | Node.js  |
-| `drsync`                  | Save the current macOS DevResults clone to a WIP branch, sync the Windows VM checkout, and run a Windows-side command                              | Node.js  |
-| `github-pr-task-sync`     | Poll GitHub notifications and capture assigned/review-requested PRs in Tasks                                                                | Node.js  |
-| `gws-delegated`           | Run GWS commands with a short-lived domain-wide delegated token for Herb                                                                           | Node.js  |
-| `update-agent-harnesses`  | Update Claude Code, Pi, Codex, pnpm, and bd                                                                                                        | Zsh      |
-| `beads`                   | Wrapper for `bd`                                                                                                                                   | Shell    |
-| `gh-sync`                 | Sync `~/Code/HerbCaudill` with all HerbCaudill repos, and `~/Code/DevResults` with DevResults repos pushed in the last 30 days                     | Bash     |
-| `serena`                  | Invoke Serena CLI                                                                                                                                  | Python   |
-| `serena-mcp-server`       | Start the Serena MCP server                                                                                                                        | Python   |
-| `index-project`           | Invoke Serena's project indexing                                                                                                                   | Python   |
-| `morning-briefing`        | Run the repo-owned multi-agent briefing pipeline, save it to the daily note, and create a pinned Codex task                                        | Node.js  |
-| `tslsp`                   | Type-aware TypeScript code intelligence via tsgo; self-installs into `~/.local/share/tslsp` with npm (pnpm's global layout breaks its tsgo lookup) | Bash     |
+| Command                  | Description                                                                                                                                                          | Language |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `agent-transcripts-sync` | Sync compressed Claude Code, Codex, and Pi JSONL conversations through the private `HerbCaudill/agent-transcripts` repository                                        | Node.js  |
+| `drsync`                 | Save the current macOS DevResults clone to a WIP branch, sync the Windows VM checkout, and run a Windows-side command                                                | Node.js  |
+| `github-pr-task-sync`    | Poll GitHub notifications and capture assigned/review-requested PRs in Tasks                                                                                         | Node.js  |
+| `gws-delegated`          | Run GWS commands with a short-lived domain-wide delegated token for Herb                                                                                             | Node.js  |
+| `update-agent-harnesses` | Update Claude Code, Pi, Codex, pnpm, and bd                                                                                                                          | Zsh      |
+| `beads`                  | Wrapper for `bd`                                                                                                                                                     | Shell    |
+| `gh-sync`                | Sync `~/Code/HerbCaudill` with all HerbCaudill repos, and `~/Code/DevResults` with DevResults repos pushed in the last 30 days, including each repo's beads database | Bash     |
+| `serena`                 | Invoke Serena CLI                                                                                                                                                    | Python   |
+| `serena-mcp-server`      | Start the Serena MCP server                                                                                                                                          | Python   |
+| `index-project`          | Invoke Serena's project indexing                                                                                                                                     | Python   |
+| `morning-briefing`       | Run the repo-owned multi-agent briefing pipeline, save it to the daily note, and create a pinned Codex task                                                          | Node.js  |
+| `tslsp`                  | Type-aware TypeScript code intelligence via tsgo; self-installs into `~/.local/share/tslsp` with npm (pnpm's global layout breaks its tsgo lookup)                   | Bash     |
 
 ## Windows Parallels Claude setup
 

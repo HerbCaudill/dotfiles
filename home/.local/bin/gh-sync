@@ -3,7 +3,8 @@
 ##
 ## Sync ~/Code/HerbCaudill with all repos on github.com/HerbCaudill, and ~/Code/DevResults with
 ## DevResults repos pushed in the last 30 days.
-## Clones missing repos; for existing clean repos, pulls and pushes the default branch.
+## Clones missing repos; for existing clean repos, pulls and pushes the default branch. Also syncs
+## each pushable repo's beads database with its Dolt remote.
 ##
 
 set -uo pipefail
@@ -12,6 +13,25 @@ LOG_PREFIX="[gh-sync]"
 ACTIVE_DAYS=30
 
 log() { echo "$LOG_PREFIX $*"; }
+
+# launchd's PATH omits ~/.local/bin, where update-agent-harnesses installs bd on macOS
+BD=$(command -v bd || echo "$HOME/.local/bin/bd")
+
+# Sync a repo's beads database with its Dolt remote. Beads data travels on its own Dolt ref, so this
+# runs regardless of the Git working tree or branch. Repos whose database is absent on this machine,
+# or has no Dolt remote, are skipped.
+sync_beads() {
+  local dir="$1" repo="$2"
+
+  [[ -d "$dir/.beads" && -x "$BD" ]] || return
+  if [[ -z "$("$BD" -C "$dir" dolt remote list 2>/dev/null)" ]]; then
+    return
+  fi
+
+  log "Syncing beads for $repo..."
+  timeout 300 "$BD" -C "$dir" sync --no-adopt --quiet </dev/null 2>&1 | sed "s/^/$LOG_PREFIX   /" ||
+    log "  Beads sync failed for $repo"
+}
 
 # Clone or sync one repo. Args: owner, repo, base dir, whether to push ("push" or "pull-only")
 sync_repo() {
@@ -27,6 +47,10 @@ sync_repo() {
   # Skip if not a git repo
   if [[ ! -d "$dir/.git" ]]; then
     return
+  fi
+
+  if [[ "$mode" == "push" ]]; then
+    sync_beads "$dir" "$repo"
   fi
 
   # Skip if working tree is dirty

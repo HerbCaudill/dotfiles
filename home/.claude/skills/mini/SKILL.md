@@ -53,6 +53,8 @@ winget works over SSH. Pass `--accept-source-agreements --accept-package-agreeme
 
 The `gh-sync` scheduled task runs `home/.local/bin/gh-sync` from the dotfiles clone through Git Bash every 15 minutes, the same schedule as the macOS launchd agent. Its log is `%LOCALAPPDATA%\gh-sync.log`. It runs as `herb` with S4U, so it cannot read Windows Credential Manager. GitHub CLI must be signed in with `gh auth login --insecure-storage`, followed by `gh auth setup-git`. Re-register the task with `scripts/windows/register-gh-sync-task.ps1` from an elevated shell.
 
+`gh-sync` also runs `bd sync` in each pushable repo whose beads database has a Dolt remote, so issues travel between machines on each repo's `refs/dolt/data`. `bd sync` shells out to the `dolt` CLI, so `C:\Program Files\Dolt\bin` must be on the user PATH. beads comes from winget (`GasTownHall.Beads`); the `beads-upgrade` task upgrades it daily and at sign-in. Re-register that task with `scripts/windows/register-beads-upgrade-task.ps1`; it logs to `%LOCALAPPDATA%\beads-upgrade.log`.
+
 To get a local Mac branch onto the machine without GitHub, push over SSH: `git push --receive-pack='git receive-pack' mini:C:/Code/DevResults/devresults <branch>`. The target repo needs `receive.denyCurrentBranch updateInstead` to update a checked-out branch.
 
 ## Shared agent transcripts
