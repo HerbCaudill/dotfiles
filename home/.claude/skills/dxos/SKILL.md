@@ -1,11 +1,15 @@
 ---
 name: dxos
-description: Use when working with, researching, or evaluating DXOS (local-first framework, ECHO database, Composer app). Covers the local clone, how to navigate the repo's design docs, current architecture, and in-flight migrations as of 2026-08.
+description: Use when working with, researching, or evaluating DXOS, ECHO, Composer, or agent access to DXOS project data through MCP. Covers the hosted MCP connection, project schema guidance, local clone, and architecture.
 ---
 
 # DXOS
 
 Working knowledge of the DXOS monorepo, gathered from a full survey on 2026-08-29 (main at `0132aab498`, just after v0.11.1 / the v0.9.0 tag backfill). Verify anything load-bearing against the repo — this project moves at ~350 commits/month and renames public APIs freely.
+
+## Agent access to project data
+
+For hosted MCP access, read [agent data access](references/agent-data-access.md). It records the verified Codex connection, explicit space selection, project schema sources, and current discovery limitations. Herb’s personal board management continues through the `tasks` skill and its guarded CLI.
 
 ## Local setup
 
