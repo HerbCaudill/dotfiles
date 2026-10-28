@@ -51,6 +51,25 @@
           home-manager.darwinModules.home-manager
           {
             nixpkgs.hostPlatform = system;
+            # Beads' current storage format requires Dolt 2.x.
+            nixpkgs.overlays = [
+              (final: prev: {
+                dolt = prev.stdenvNoCC.mkDerivation {
+                  pname = "dolt";
+                  version = "2.6.1";
+                  src = prev.fetchurl {
+                    url = "https://github.com/dolthub/dolt/releases/download/v2.6.1/dolt-darwin-arm64.tar.gz";
+                    hash = "sha256-bzXtQrxwc8d85DsokN/COdGCgfhw96MzIxD44h5RxYw=";
+                  };
+                  installPhase = ''
+                    runHook preInstall
+                    install -Dm755 bin/dolt $out/bin/dolt
+                    runHook postInstall
+                  '';
+                  meta.platforms = [ "aarch64-darwin" ];
+                };
+              })
+            ];
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             home-manager.backupFileExtension = "before-home-manager";
