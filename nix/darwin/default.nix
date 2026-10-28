@@ -173,7 +173,6 @@ in
       "opera"
       "rar"
       "raycast"
-      "rescuetime"
       "scansnap-home"
       "shottr"
       "signal"
