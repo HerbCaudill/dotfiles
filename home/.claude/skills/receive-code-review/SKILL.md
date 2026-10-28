@@ -19,6 +19,16 @@ Treat review comments as technical claims to evaluate, not instructions to accep
 
 Prioritize security and broken behavior, then simple fixes, then larger refactors.
 
+## Repeated review rounds
+
+Apply these rules when Herb explicitly requests a review loop. Receiving feedback alone does not start one.
+
+Retain a ledger of finding ID, claim, evidence, and disposition: fixed, rejected with reason, or unresolved. Keep the same ID for the same finding across revisions.
+
+Use at most three review rounds unless Herb requests more. Later rounds inspect changed behavior and unresolved findings; broaden only when a change creates a concrete new dependency or risk. Documentation, formatting, and declined nits alone do not require another round.
+
+Stop when the current behavior has been reviewed and no blocking finding remains, or when the budget ends. Budget exhaustion, missing replies, and disputed findings are not approval. Report unresolved findings and disagreements with the evidence and the remaining decision for Herb.
+
 ## Evaluation
 
 Push back when a suggestion:
