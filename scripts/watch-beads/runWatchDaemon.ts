@@ -2,18 +2,24 @@ import { mkdir, open, readdir, unlink } from "node:fs/promises"
 import { join } from "node:path"
 import { createWatchSession } from "./createWatchSession.ts"
 import { isRunning } from "./isRunning.ts"
+import { getProcessIdentity } from "./getProcessIdentity.ts"
 import { readWatchJson, watchHome } from "./watchStorage.ts"
-import type { WatchConfig } from "./types.ts"
+import type { DaemonReceipt, WatchConfig } from "./types.ts"
 
 /** Supervise all enrolled repositories, with one daemon and one stream per repository. */
 export async function runWatchDaemon() {
   await mkdir(join(watchHome, "repositories"), { recursive: true, mode: 0o700 })
   const lockPath = join(watchHome, "daemon.json")
-  const prior = await readWatchJson<{ pid: number }>(lockPath)
-  if (prior && isRunning(prior.pid)) throw new Error(`Watcher daemon already running: ${prior.pid}`)
+  const prior = await readWatchJson<DaemonReceipt>(lockPath)
+  if (prior && isRunning(prior.pid, prior.identity))
+    throw new Error(`Watcher daemon already running: ${prior.pid}`)
   if (prior) await unlink(lockPath)
+  const identity = getProcessIdentity(process.pid)
+  if (!identity) throw new Error("Cannot inspect the daemon process start identity")
   const lock = await open(lockPath, "wx", 0o600)
-  await lock.writeFile(JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() }))
+  await lock.writeFile(
+    JSON.stringify({ pid: process.pid, identity, startedAt: new Date().toISOString() }),
+  )
   await lock.close()
   const sessions = new Map<string, { config: string; stop: () => void }>()
   const errors = new Map<string, string>()
@@ -64,7 +70,7 @@ export async function runWatchDaemon() {
     clearInterval(timer)
     for (const session of sessions.values()) session.stop()
     const receipt = await readWatchJson<{ pid: number }>(lockPath)
-    if (receipt?.pid === process.pid) await unlink(lockPath)
+    if (receipt?.pid === process.pid && receipt.identity === identity) await unlink(lockPath)
   }
 
   const timer = setInterval(

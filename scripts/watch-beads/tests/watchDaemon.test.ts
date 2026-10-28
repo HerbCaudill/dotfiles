@@ -20,6 +20,31 @@ afterEach(async () => {
   if (directory) await rm(directory, { recursive: true, force: true })
 })
 
+it("recovers a stale daemon receipt whose PID now belongs to another process", async () => {
+  directory = await mkdtemp(join(tmpdir(), "watch-beads-stale-test-"))
+  const stateDirectory = join(directory, "state")
+  await mkdir(stateDirectory)
+  const receiptPath = join(stateDirectory, "daemon.json")
+  await writeFile(
+    receiptPath,
+    JSON.stringify({
+      pid: process.pid,
+      identity: "a previous process start",
+      startedAt: "2025-01-01T00:00:00Z",
+    }),
+  )
+  const child = spawn(process.execPath, [cli, "_daemon"], {
+    env: { ...process.env, WATCH_BEADS_HOME: stateDirectory },
+    stdio: "ignore",
+  })
+  processes.push(child)
+  await eventually(async () => {
+    const receipt = JSON.parse(await readFile(receiptPath, "utf8"))
+    expect(receipt.pid).toBe(child.pid)
+    expect(receipt.identity).not.toBe("a previous process start")
+  })
+}, 10_000)
+
 it("debounces event wakes, preserves delivery state across restart, protects owners and stops cleanly", async () => {
   directory = await mkdtemp(join(tmpdir(), "watch-beads-test-"))
   const bin = join(directory, "bin")

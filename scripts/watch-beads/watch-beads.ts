@@ -7,7 +7,7 @@ import { runWatchDaemon } from "./runWatchDaemon.ts"
 import { isRunning } from "./isRunning.ts"
 import { runWatchCommand } from "./runWatchCommand.ts"
 import { readWatchJson, watchHome, watchPaths } from "./watchStorage.ts"
-import type { WatchConfig, WatchState } from "./types.ts"
+import type { DaemonReceipt, WatchConfig, WatchState } from "./types.ts"
 
 try {
   const { positionals, values } = parseArgs({
@@ -83,13 +83,13 @@ try {
       console.log(JSON.stringify({ registered: false, repo }))
     } else if (command === "status") {
       const state = await readWatchJson<WatchState>(paths.state)
-      const daemon = await readWatchJson<{ pid: number }>(join(watchHome, "daemon.json"))
+      const daemon = await readWatchJson<DaemonReceipt>(join(watchHome, "daemon.json"))
       console.log(
         JSON.stringify(
           {
             registered: Boolean(existing),
             config: existing,
-            serviceRunning: Boolean(daemon && isRunning(daemon.pid)),
+            serviceRunning: Boolean(daemon && isRunning(daemon.pid, daemon.identity)),
             state,
             log: "/tmp/watch-beads.log",
           },

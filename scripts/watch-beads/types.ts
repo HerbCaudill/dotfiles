@@ -21,3 +21,6 @@ export type WatchState = {
   lastWake?: string
   lastError?: string
 }
+
+/** Process receipt that distinguishes a daemon from an unrelated reused PID. */
+export type DaemonReceipt = { pid: number; identity: string; startedAt: string }
