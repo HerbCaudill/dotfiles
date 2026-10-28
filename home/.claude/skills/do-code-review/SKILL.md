@@ -43,9 +43,13 @@ Refute matters of taste, first-use abstractions, line-count arguments, and broad
 
 ## Output
 
-Report at most 8 findings, ranked by correctness and data safety, then maintainability, then conventions:
+Report at most 8 findings, ranked by correctness and data safety, then maintainability, then conventions.
 
-> **N. `file:line` — one-line summary** (VERDICT)
+Assign each reported finding a stable ID such as R1. Keep its ID when reviewing a later revision of the same change; do not renumber retained findings or reuse an old ID for a different finding.
+
+State impact priority separately from confidence: BLOCKING or NON-BLOCKING alongside CONFIRMED or PLAUSIBLE. A blocking finding prevents the intended outcome, risks security or data integrity, or violates required behavior on a supported path. Do not demote a supported security, data-loss, or concurrency failure merely because it is uncommon. Do not use review scores as evidence of correctness.
+
+> **R1. `file:line` — one-line summary** (BLOCKING or NON-BLOCKING; CONFIRMED or PLAUSIBLE)
 > Impact: the failing case or concrete maintenance cost. Cite sibling locations or governing rules when relevant.
 
 If nothing survives, say so. Do not apply or offer fixes.
