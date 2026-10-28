@@ -52,3 +52,5 @@ Use factual acknowledgments such as “Fixed: the parser now rejects empty input
 If your initial pushback was wrong, state what evidence changed your conclusion and correct the work.
 
 Reply to GitHub inline comments in their threads, not as top-level PR comments.
+
+Before resolving an authorized GitHub review thread, verify that the explanatory reply posted successfully. Existing authorization rules still govern posting and resolving.
