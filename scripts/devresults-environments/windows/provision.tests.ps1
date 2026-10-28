@@ -35,6 +35,67 @@ try {
     Assert-True ($before.sha256 -ne $after.sha256) 'Changing captured blob content invalidates its receipt'
     Assert-True ($after.bytes -eq 5) 'Blob size describes actual bytes'
     $passed += 2
+    $blobManifest = [pscustomobject]@{id='test';ownerToken=$manifest.ownerToken;primarySource=(Join-Path $testRoot 'primary');paths=@{runtime=(Join-Path $testRoot 'blob-runtime')}}
+    $blobSnapshotRoot = Join-Path $testRoot 'blob-snapshot'
+    $blobOwnedRoot = Join-Path $blobManifest.paths.runtime 'blobs'
+    [void][IO.Directory]::CreateDirectory($blobSnapshotRoot)
+    [void][IO.Directory]::CreateDirectory($blobOwnedRoot)
+    Write-JsonAtomic (Join-Path $blobManifest.paths.runtime 'owner.json') @{environmentId='test';ownerToken=$manifest.ownerToken}
+    $metadataName = '__azurite_db_blob__.json'
+    $snapshotFilename = Join-Path (Join-Path $blobManifest.primarySource 'DevResults\.azurite\data') $metadataName
+    $metadata = @{filename=$snapshotFilename;collections=@(@{name='blobs';data=@(@{filename='nested-data';size=123})})}
+    Write-JsonAtomic (Join-Path $blobSnapshotRoot $metadataName) $metadata
+    [IO.File]::WriteAllText((Join-Path $blobSnapshotRoot 'payload'), 'original bytes')
+    Copy-Item -Path (Join-Path $blobSnapshotRoot '*') -Destination $blobOwnedRoot -Recurse
+    $blobSnapshot = @{blobs=(Get-BlobDigest $blobSnapshotRoot)}; $blobSnapshot.blobs.path=$blobSnapshotRoot
+    Assert-OwnedBlobCopy $blobSnapshot $blobManifest $false
+    $metadata.filename=Join-Path $blobOwnedRoot $metadataName
+    Write-JsonAtomic (Join-Path $blobOwnedRoot $metadataName) $metadata
+    Assert-OwnedBlobCopy $blobSnapshot $blobManifest $true
+    Expect-Refusal { Assert-OwnedBlobCopy $blobSnapshot $blobManifest $false } 'incomplete or changed'
+    $metadata.filename=Join-Path $testRoot $metadataName
+    Write-JsonAtomic (Join-Path $blobOwnedRoot $metadataName) $metadata
+    Expect-Refusal { Assert-OwnedBlobCopy $blobSnapshot $blobManifest $true } 'not the expected owned relocation'
+    $metadata.filename=Join-Path $blobOwnedRoot $metadataName
+    $metadata.collections[0].data[0].filename='changed nested filename'
+    Write-JsonAtomic (Join-Path $blobOwnedRoot $metadataName) $metadata
+    Expect-Refusal { Assert-OwnedBlobCopy $blobSnapshot $blobManifest $true } 'changed beyond'
+    $metadata.collections[0].data[0].filename='nested-data'
+    $metadata.collections[0].data[0].size=124
+    Write-JsonAtomic (Join-Path $blobOwnedRoot $metadataName) $metadata
+    Expect-Refusal { Assert-OwnedBlobCopy $blobSnapshot $blobManifest $true } 'changed beyond'
+    $metadata.collections[0].data[0].size='123'
+    Write-JsonAtomic (Join-Path $blobOwnedRoot $metadataName) $metadata
+    Expect-Refusal { Assert-OwnedBlobCopy $blobSnapshot $blobManifest $true } 'changed beyond'
+    $metadata.collections[0].data[0].size=123
+    Write-JsonAtomic (Join-Path $blobOwnedRoot $metadataName) $metadata
+    [IO.File]::WriteAllText((Join-Path $blobOwnedRoot 'payload'), 'tampered bytes')
+    Expect-Refusal { Assert-OwnedBlobCopy $blobSnapshot $blobManifest $true } 'payload or unrecognized metadata changed'
+    [IO.File]::WriteAllText((Join-Path $blobOwnedRoot 'payload'), 'original bytes')
+    [IO.File]::WriteAllText((Join-Path $blobOwnedRoot 'extra'), 'extra bytes')
+    Expect-Refusal { Assert-OwnedBlobCopy $blobSnapshot $blobManifest $true } 'file set changed'
+    Remove-Item -LiteralPath (Join-Path $blobOwnedRoot 'extra')
+    Write-JsonAtomic (Join-Path $blobManifest.paths.runtime 'owner.json') @{environmentId='foreign';ownerToken=$manifest.ownerToken}
+    Expect-Refusal { Assert-OwnedBlobCopy $blobSnapshot $blobManifest $true } 'Foreign'
+    Write-JsonAtomic (Join-Path $blobManifest.paths.runtime 'owner.json') @{environmentId='test';ownerToken=$manifest.ownerToken}
+    $originalSnapshot = [IO.File]::ReadAllText((Join-Path $blobSnapshotRoot $metadataName))
+    [IO.File]::WriteAllText((Join-Path $blobSnapshotRoot $metadataName), 'tampered snapshot')
+    Expect-Refusal { Assert-OwnedBlobCopy $blobSnapshot $blobManifest $true } 'snapshot hash or size mismatch'
+    [IO.File]::WriteAllText((Join-Path $blobSnapshotRoot $metadataName), $originalSnapshot)
+    $unexpected = @{filename=(Join-Path $testRoot 'foreign-capture.json');collections=$metadata.collections}
+    Write-JsonAtomic (Join-Path $blobSnapshotRoot $metadataName) $unexpected
+    $badCapture = @{blobs=(Get-BlobDigest $blobSnapshotRoot)}; $badCapture.blobs.path=$blobSnapshotRoot
+    Expect-Refusal { Assert-OwnedBlobCopy $badCapture $blobManifest $true } 'not the expected owned relocation'
+    [IO.File]::WriteAllText((Join-Path $blobSnapshotRoot $metadataName), $originalSnapshot)
+    foreach ($name in @('__azurite_db_blob_extent__.json','__azurite_db_queue__.json','__azurite_db_queue_extent__.json','__azurite_db_table__.json')) {
+        $metadata.filename=Join-Path $blobSnapshotRoot $name
+        Write-JsonAtomic (Join-Path $blobSnapshotRoot $name) $metadata
+        $metadata.filename=Join-Path $blobOwnedRoot $name
+        Write-JsonAtomic (Join-Path $blobOwnedRoot $name) $metadata
+    }
+    $blobSnapshot = @{blobs=(Get-BlobDigest $blobSnapshotRoot)}; $blobSnapshot.blobs.path=$blobSnapshotRoot
+    Assert-OwnedBlobCopy $blobSnapshot $blobManifest $true
+    $passed += 13
     [xml]$settings = '<appSettings><add key="BlobStorageContainer" value="existing-container"/><add key="AutoDbRefresh.Enabled" value="true"/></appSettings>'
     Set-AppSetting $settings 'AutoDbRefresh.Enabled' 'false'
     Assert-True ($settings.SelectSingleNode("/appSettings/add[@key='AutoDbRefresh.Enabled']").value -ceq 'false') 'Schema refresh stays disabled'

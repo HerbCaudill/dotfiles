@@ -88,6 +88,51 @@ function Assert-Snapshot($Snapshot, $Manifest) {
     if ($allocation -ne [long]$Snapshot.sql.allocatedBytes) { Deny 'SQL snapshot allocation does not match the receipt.' }
     return ,$files
 }
+function Assert-OwnedBlobCopy($Snapshot, $Manifest, [bool]$AllowRelocation) {
+    $source = $Snapshot.blobs.path
+    $destination = Join-Path $Manifest.paths.runtime 'blobs'
+    Assert-NativePath $source; Assert-NativePath $destination
+    if ($source -ieq $destination) { Deny 'Snapshot and owned blob paths must be separate.' }
+    Assert-Owner (Get-Json (Join-Path $Manifest.paths.runtime 'owner.json')) $Manifest
+    $original = Get-BlobDigest $source
+    if ($original.sha256 -cne $Snapshot.blobs.sha256 -or $original.bytes -ne $Snapshot.blobs.bytes) { Deny 'Blob snapshot hash or size mismatch.' }
+    $copied = Get-BlobDigest $destination
+    if ($copied.sha256 -ceq $Snapshot.blobs.sha256) { return }
+    if (-not $AllowRelocation) { Deny 'Owned blob copy is incomplete or changed; inspect it before explicit recovery.' }
+    $expected = @(Get-ChildItem -LiteralPath $source -File -Recurse -Force | ForEach-Object { $_.FullName.Substring($source.Length + 1) } | Sort-Object)
+    $observed = @(Get-ChildItem -LiteralPath $destination -File -Recurse -Force | ForEach-Object { $_.FullName.Substring($destination.Length + 1) } | Sort-Object)
+    if (($expected -join "`n") -cne ($observed -join "`n")) { Deny 'Owned blob file set changed.' }
+    $metadata = @('__azurite_db_blob__.json', '__azurite_db_blob_extent__.json', '__azurite_db_queue__.json', '__azurite_db_queue_extent__.json', '__azurite_db_table__.json')
+    Add-Type -AssemblyName System.Web.Extensions
+    $parser = [Web.Script.Serialization.JavaScriptSerializer]::new(); $parser.MaxJsonLength = [int]::MaxValue; $parser.RecursionLimit = 100
+    foreach ($relative in $expected) {
+        $before = Join-Path $source $relative; $after = Join-Path $destination $relative
+        if ((Get-FileHash -LiteralPath $before -Algorithm SHA256).Hash -ceq (Get-FileHash -LiteralPath $after -Algorithm SHA256).Hash) { continue }
+        if ($relative -cnotin $metadata) { Deny 'Owned blob payload or unrecognized metadata changed.' }
+        $left = $parser.DeserializeObject([IO.File]::ReadAllText($before)); $right = $parser.DeserializeObject([IO.File]::ReadAllText($after))
+        if ($left -isnot [Collections.IDictionary] -or $right -isnot [Collections.IDictionary] -or -not $left.ContainsKey('filename') -or -not $right.ContainsKey('filename')) { Deny 'Azurite metadata requires its root filename.' }
+        $capturePaths = @($before)
+        if ($Manifest.PSObject.Properties.Name -contains 'primarySource') { $capturePaths += Join-Path (Join-Path $Manifest.primarySource 'DevResults\.azurite\data') $relative }
+        if ($left['filename'] -isnot [string] -or $left['filename'] -cnotin $capturePaths -or $right['filename'] -isnot [string] -or $right['filename'] -cne $after) { Deny 'Azurite metadata filename is not the expected owned relocation.' }
+        # Normalize this one verified root path in memory; never rewrite the captured or owned store.
+        $right['filename'] = $left['filename']
+        if (-not (Test-BlobMetadataEqual $left $right)) { Deny 'Azurite metadata changed beyond its expected root filename relocation.' }
+    }
+}
+function Test-BlobMetadataEqual($Left, $Right) {
+    if ($null -eq $Left -or $null -eq $Right) { return ($null -eq $Left -and $null -eq $Right) }
+    if ($Left -is [Collections.IDictionary] -and $Right -is [Collections.IDictionary]) {
+        if ($Left.Count -ne $Right.Count) { return $false }
+        foreach ($key in $Left.Keys) { if (-not $Right.ContainsKey($key) -or -not (Test-BlobMetadataEqual $Left[$key] $Right[$key])) { return $false } }
+        return $true
+    }
+    if ($Left -is [array] -and $Right -is [array]) {
+        if ($Left.Count -ne $Right.Count) { return $false }
+        for ($i = 0; $i -lt $Left.Count; $i++) { if (-not (Test-BlobMetadataEqual $Left[$i] $Right[$i])) { return $false } }
+        return $true
+    }
+    return ($Left.GetType() -eq $Right.GetType() -and $Left -ceq $Right)
+}
 function Assert-NoForeignPorts($Manifest, $Claims, [bool]$ExistingClaim) {
     $ports = @($Manifest.ports.https, $Manifest.ports.http, $Manifest.ports.blob, $Manifest.ports.queue, $Manifest.ports.table)
     if (@($ports | Select-Object -Unique).Count -ne 5) { Deny 'Windows runtime ports must be distinct.' }
@@ -344,6 +389,7 @@ try {
         $ownedFiles = Invoke-Sql 'SELECT physical_name FROM sys.database_files' $m.catalog
         Assert-CatalogMetadata $properties.Rows $ownedFiles.Rows $m
         Assert-ExistingProvisionedSchema $Request.operation $snapshot $m
+        if ($Request.operation -ne 'verify-reset') { Assert-OwnedBlobCopy $snapshot $m $true }
     }
     $drive = [IO.DriveInfo]::new([IO.Path]::GetPathRoot($m.paths.runtime))
     [long]$needed = [long]$snapshot.blobs.bytes + $deploymentBytes + 2GB
@@ -395,8 +441,7 @@ try {
     }
     $blobDestination = Join-Path $m.paths.runtime 'blobs'
     if (@(Get-ChildItem -LiteralPath $blobDestination -Force).Count -eq 0) { Copy-Item -Path (Join-Path $snapshot.blobs.path '*') -Destination $blobDestination -Recurse -Force }
-    $copied = Get-BlobDigest $blobDestination
-    if ($copied.sha256 -cne $snapshot.blobs.sha256) { Deny 'Owned blob copy is incomplete or changed; inspect it before explicit recovery.' }
+    Assert-OwnedBlobCopy $snapshot $m $databaseExists
     Copy-OwnedApplication $m
     New-OwnedIisConfig $template (Join-Path $m.paths.runtime 'iis\applicationhost.config') $m
     $tls = (& netsh http show sslcert "ipport=0.0.0.0:$($m.ports.https)") -join "`n"
