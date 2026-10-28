@@ -13,6 +13,22 @@ let
   automationPath = "${userBin}:${homeDirectory}/Library/pnpm/bin:${userProfileBin}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin";
 in
 {
+  launchd.agents."watch-beads" = {
+    enable = true;
+    config = {
+      Label = "com.herbcaudill.watch-beads";
+      ProgramArguments = [ "${pkgs.nodejs_24}/bin/node" "${userBin}/watch-beads" "_daemon" ];
+      RunAtLoad = true;
+      KeepAlive = true;
+      ThrottleInterval = 10;
+      StandardOutPath = "/tmp/watch-beads.log";
+      StandardErrorPath = "/tmp/watch-beads.log";
+      EnvironmentVariables = {
+        PATH = "${homeDirectory}/.t3/bin:${userBin}:${homeDirectory}/Library/pnpm:${userProfileBin}:${lib.makeBinPath [ pkgs.nodejs_24 pkgs.dolt ]}:/usr/bin:/bin:/usr/sbin:/sbin";
+      };
+    };
+  };
+
   # Chrome shows Codex's debugger warning in every tab. Start the first Chrome
   # process with this flag so Raycast searches and web app launchers reuse it.
   launchd.agents."chrome-silent-debugging" = {

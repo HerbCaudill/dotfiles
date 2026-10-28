@@ -31,7 +31,7 @@ When Herb says to stop watching, run `watch-beads stop --repo <repository> --thr
 
 ## Setup or recovery
 
-The CLI and service are managed in the dotfiles repository: `scripts/watch-beads`, `nix/home/files.nix` and `nix/darwin/default.nix`. Follow that repository's instructions when changing or applying them. `start` reports an error if the LaunchAgent is unavailable; do not substitute recurring model prompts. On a host without this managed service, report the missing capability instead of installing an unreviewed polling workaround.
+The CLI and service are managed in the dotfiles repository: `scripts/watch-beads`, `nix/home/files.nix` and `nix/home/launchd.nix`. Follow that repository's instructions when changing or applying them. `start` reports an error if the LaunchAgent is unavailable; do not substitute recurring model prompts. On a host without this managed service, report the missing capability instead of installing an unreviewed polling workaround.
 
 If an old recurring automation still targets the same thread, disable that specific automation during migration; do not create another one. Read its current state first and preserve unrelated automations.
 

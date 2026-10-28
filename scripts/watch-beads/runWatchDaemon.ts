@@ -69,7 +69,7 @@ export async function runWatchDaemon() {
     stopping = true
     clearInterval(timer)
     for (const session of sessions.values()) session.stop()
-    const receipt = await readWatchJson<{ pid: number }>(lockPath)
+    const receipt = await readWatchJson<DaemonReceipt>(lockPath)
     if (receipt?.pid === process.pid && receipt.identity === identity) await unlink(lockPath)
   }
 
