@@ -226,6 +226,12 @@ function Assert-ProvisionedSchema($Schema, $Snapshot, $Manifest, [bool]$Database
         if ($recorded.Count -ne 1 -or $recorded[0].sha256 -cne (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()) { Deny 'Verified schema deployment artifacts changed.' }
     }
 }
+# Reset validates ownership and immutable snapshot bytes elsewhere, then replaces the current data and deployment.
+function Assert-ExistingProvisionedSchema([string]$Operation, $Snapshot, $Manifest) {
+    if ($Operation -eq 'verify-reset') { return }
+    $schema = Invoke-Sql "SELECT _Value FROM dbo._Global WHERE _Key=N'SchemaHash'" $Manifest.catalog
+    Assert-ProvisionedSchema $schema $Snapshot $Manifest $true
+}
 function New-OwnedApplicationConfig($Manifest, [string]$SettingsTemplate = 'C:\Code\DevResults\DevResults\SecureSettings.config') {
     if($Manifest.PSObject.Properties.Name -contains 'primarySource'){$SettingsTemplate=Join-Path $Manifest.primarySource 'DevResults\SecureSettings.config'}
     $settingsPath = Join-Path $Manifest.paths.runtime 'web\SecureSettings.config'
@@ -337,8 +343,7 @@ try {
         $properties = Invoke-Sql "SELECT name, CONVERT(nvarchar(4000),value) AS value FROM sys.extended_properties WHERE class=0 AND name IN ('drenv.environmentId','drenv.ownerToken')" $m.catalog
         $ownedFiles = Invoke-Sql 'SELECT physical_name FROM sys.database_files' $m.catalog
         Assert-CatalogMetadata $properties.Rows $ownedFiles.Rows $m
-        $schema = Invoke-Sql "SELECT _Value FROM dbo._Global WHERE _Key=N'SchemaHash'" $m.catalog
-        Assert-ProvisionedSchema $schema $snapshot $m $true
+        Assert-ExistingProvisionedSchema $Request.operation $snapshot $m
     }
     $drive = [IO.DriveInfo]::new([IO.Path]::GetPathRoot($m.paths.runtime))
     [long]$needed = [long]$snapshot.blobs.bytes + $deploymentBytes + 2GB
@@ -352,7 +357,7 @@ try {
     $template = Join-Path $m.paths.windows '.vs\DevResults\config\applicationhost.config'
     if (-not [IO.File]::Exists($template)) { $template = if($m.PSObject.Properties.Name -contains 'primarySource'){Join-Path $m.primarySource '.vs\DevResults\config\applicationhost.config'}else{'C:\Code\DevResults\.vs\DevResults\config\applicationhost.config'} }
     if (-not [IO.File]::Exists($template)) { Deny 'A local IIS Express DevResults applicationhost template is required.' }
-    if ($Request.operation -eq 'verify') {
+    if ($Request.operation -in @('verify', 'verify-reset')) {
         @{ ok = $true; environmentId = $m.id; ownerToken = $m.ownerToken; revision = $m.revision; status = 'verified' } | ConvertTo-Json -Compress
         return
     }

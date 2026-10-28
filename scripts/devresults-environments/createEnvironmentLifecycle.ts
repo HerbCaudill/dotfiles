@@ -239,7 +239,7 @@ export function createEnvironmentLifecycle(
           if (!adapters.provision)
             await provisionWindowsEnvironment(manifest, {
               snapshot: intent.snapshot,
-              operation: "verify",
+              operation: "verify-reset",
             })
           await remote(manifest, "reset")
           await (

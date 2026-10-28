@@ -2,6 +2,8 @@
 
 `provisionWindowsEnvironment(manifest, { snapshot, operation? })` accepts the local path of an explicit coordinated snapshot receipt. `operation: "verify"` checks prerequisites and returns `status: "verified"`; the default operation creates owned data/configuration and returns `status: "provisioned"`. Neither status proves that the built application schema is compatible or that an application has run. The caller owns the Mac environment lock and registry checkpoints. Windows operations serialize using an exclusive host file handle, which cannot be stolen while its process remains alive.
 
+Explicit reset uses `operation: "verify-reset"` for its read-only preflight. It validates the immutable snapshot and current catalog ownership without certifying the schema or deployment that reset will replace. Creation and resume still require the existing database to match the snapshot or its verified migration receipt; reset independently verifies the restored application's schema afterward.
+
 `refreshWindowsDeployment(manifest)` replaces the owned deployment after a completed Windows build and returns `status: "refreshed"`. Stop the verified owned runtime before calling it. It refuses live reserved listeners or processes whose command lines reference this environment's source/runtime. It checks source ownership, Git store, current revision, native paths, reparse points, and disk space. This is also the freshness boundary after source sync. The caller must independently prove the completed build belongs to that revision.
 
 ## Data and runtime layout

@@ -103,6 +103,27 @@ it("preserves concrete sanitized Windows prerequisites", async () => {
   )
 })
 
+it("accepts snapshot-only reset preflight without certifying the existing deployment", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "drenv-reset-preflight-"))
+  temporary.push(directory)
+  const path = join(directory, "snapshot.json")
+  await writeFile(path, JSON.stringify(receipt))
+  const run = vi.fn().mockResolvedValue({
+    stdout: JSON.stringify({
+      ok: true,
+      environmentId: manifest.id,
+      ownerToken: manifest.ownerToken,
+      revision: manifest.revision,
+      status: "verified",
+    }),
+    stderr: "",
+  })
+  await expect(
+    provisionWindowsEnvironment(manifest, { snapshot: path, operation: "verify-reset", run }),
+  ).resolves.toMatchObject({ status: "verified" })
+  expect(run.mock.calls[0]![1].operation).toBe("verify-reset")
+})
+
 it("preserves an older snapshot revision as provenance for independently checked current builds", () => {
   const prior = { ...receipt, revision: "d".repeat(40) }
   expect(validateSnapshotReceipt(prior, target).revision).toBe(prior.revision)

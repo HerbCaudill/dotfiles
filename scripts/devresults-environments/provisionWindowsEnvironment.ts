@@ -31,7 +31,7 @@ export type ProvisionOptions = {
   /** Local JSON receipt certifying the coordinated immutable native Windows snapshot. */
   snapshot?: string
   /** Read-only prerequisite check, or actual provisioning. */
-  operation?: "verify" | "provision"
+  operation?: "verify" | "verify-reset" | "provision"
   /** Test transport injection. */
   run?: typeof runWindowsAssetPayload
 }

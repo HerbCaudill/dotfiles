@@ -110,6 +110,15 @@ try {
     Write-JsonAtomic $schemaPath $receipt
     [IO.File]::WriteAllText($artifactPath, 'changed build')
     Expect-Refusal { Assert-ProvisionedSchema $schema $snapshot $manifest $true } 'artifacts changed'
+    $originalSql = ${function:Invoke-Sql}
+    $script:resumeTestSchema = $schema
+    try {
+        function Invoke-Sql { return ,$script:resumeTestSchema }
+        Assert-ExistingProvisionedSchema 'verify-reset' $snapshot $manifest
+        Expect-Refusal { Assert-ExistingProvisionedSchema 'verify' $snapshot $manifest } 'artifacts changed'
+        Expect-Refusal { Assert-ExistingProvisionedSchema 'provision' $snapshot $manifest } 'artifacts changed'
+        $passed += 3
+    } finally { Set-Item Function:Invoke-Sql $originalSql }
     [IO.File]::WriteAllText($artifactPath, 'verified build')
     $extra = Join-Path $bin 'extra.dll'; [IO.File]::WriteAllText($extra, 'unverified assembly')
     Expect-Refusal { Assert-ProvisionedSchema $schema $snapshot $manifest $true } 'artifact set changed'

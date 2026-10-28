@@ -9,7 +9,7 @@ export async function runWindowsProvisioning(
   manifest: EnvironmentManifest,
   /** One guarded operation and its optional coordinated snapshot. */
   options: {
-    operation: "verify" | "provision" | "refresh"
+    operation: "verify" | "verify-reset" | "provision" | "refresh"
     snapshot?: SnapshotReceipt
     run?: typeof runWindowsAssetPayload
   },
@@ -32,9 +32,12 @@ export async function runWindowsProvisioning(
     throw new Error(
       response.prerequisite ?? "Windows provisioning refused; inspect the owned Windows journal",
     )
-  const expectedStatus = { verify: "verified", provision: "provisioned", refresh: "refreshed" }[
-    options.operation
-  ]
+  const expectedStatus = {
+    verify: "verified",
+    "verify-reset": "verified",
+    provision: "provisioned",
+    refresh: "refreshed",
+  }[options.operation]
   if (
     response.environmentId !== manifest.id ||
     response.ownerToken !== manifest.ownerToken ||
