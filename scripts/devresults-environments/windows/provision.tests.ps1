@@ -86,6 +86,37 @@ try {
     Assert-True ($deployment.state -ceq 'ready' -and $deployment.revision -ceq $manifest.revision) 'Interrupted owned copy recovers to verified revision'
     Assert-True ([IO.File]::ReadAllText((Join-Path $manifest.paths.windows 'DevResults\Web.config')).Contains('C:\mail')) 'Deployment overlay leaves source Web.config unchanged'
     $passed += 3
+    $snapshot = @{ revision = 'b' * 40; schemaHash = 'snapshot-schema' }
+    $schema = [Data.DataTable]::new(); [void]$schema.Columns.Add('_Value'); [void]$schema.Rows.Add('snapshot-schema')
+    Assert-ProvisionedSchema $schema $snapshot $manifest $false
+    $schema.Rows[0]._Value = 'c' * 64
+    Expect-Refusal { Assert-ProvisionedSchema $schema $snapshot $manifest $false } 'schema hash does not match'
+    Expect-Refusal { Assert-ProvisionedSchema $schema $snapshot $manifest $true } 'schema hash does not match'
+    $schemaPath = Join-Path $manifest.paths.runtime 'schema.json'
+    $receipt = @{ environmentId = $manifest.id; ownerToken = $manifest.ownerToken; revision = $manifest.revision; snapshotRevision = $snapshot.revision; schemaHash = 'c' * 64; verifiedAt = [datetime]::UtcNow.ToString('o'); artifacts = @() }
+    $bin = Join-Path $manifest.paths.runtime 'web\bin'; [void][IO.Directory]::CreateDirectory($bin)
+    [void][IO.Directory]::CreateDirectory((Join-Path $manifest.paths.runtime 'web\Web\dist'))
+    $artifactPath = Join-Path $bin 'app.dll'; [IO.File]::WriteAllText($artifactPath, 'verified build')
+    $receipt.artifacts = @(@{path='bin\app.dll';sha256=(Get-FileHash $artifactPath -Algorithm SHA256).Hash.ToLowerInvariant()})
+    Write-JsonAtomic $schemaPath $receipt
+    Assert-ProvisionedSchema $schema $snapshot $manifest $true
+    Expect-Refusal { Assert-ProvisionedSchema $schema $snapshot $manifest $false } 'schema hash does not match'
+    foreach ($field in @('environmentId', 'ownerToken', 'revision', 'snapshotRevision', 'schemaHash')) {
+        $original = $receipt[$field]; $receipt[$field] = 'foreign'
+        Write-JsonAtomic $schemaPath $receipt
+        Expect-Refusal { Assert-ProvisionedSchema $schema $snapshot $manifest $true } 'Foreign|stale|differs'
+        $receipt[$field] = $original
+    }
+    Write-JsonAtomic $schemaPath $receipt
+    [IO.File]::WriteAllText($artifactPath, 'changed build')
+    Expect-Refusal { Assert-ProvisionedSchema $schema $snapshot $manifest $true } 'artifacts changed'
+    [IO.File]::WriteAllText($artifactPath, 'verified build')
+    $extra = Join-Path $bin 'extra.dll'; [IO.File]::WriteAllText($extra, 'unverified assembly')
+    Expect-Refusal { Assert-ProvisionedSchema $schema $snapshot $manifest $true } 'artifact set changed'
+    Remove-Item -LiteralPath $extra
+    Assert-ProvisionedSchema $schema $snapshot $manifest $true
+    Remove-Item -LiteralPath $artifactPath
+    $passed += 14
     $applicationBytes = Get-DeploymentBytes $manifest
     $dependencyTarget = Join-Path $testRoot 'dependency-store'
     [void][IO.Directory]::CreateDirectory($dependencyTarget)

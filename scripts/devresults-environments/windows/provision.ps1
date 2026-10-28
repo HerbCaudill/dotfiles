@@ -206,6 +206,26 @@ function Assert-CatalogMetadata($Properties, $Files, $Manifest) {
         if (-not $file.physical_name.StartsWith($sqlRoot, [StringComparison]::OrdinalIgnoreCase)) { Deny 'Owned catalog references foreign SQL files.' }
     }
 }
+# Provisioning accepts snapshot data; startup independently verifies the built application's schema.
+function Assert-ProvisionedSchema($Schema, $Snapshot, $Manifest, [bool]$DatabaseExists) {
+    if ($Schema.Rows.Count -ne 1) { Deny 'Restored SQL schema hash does not match the compatible snapshot receipt.' }
+    if ($Schema.Rows[0]._Value -ceq $Snapshot.schemaHash) { return }
+    $path = Join-Path $Manifest.paths.runtime 'schema.json'
+    if (-not $DatabaseExists -or -not [IO.File]::Exists($path)) { Deny 'Restored SQL schema hash does not match the compatible snapshot receipt.' }
+    $receipt = Get-Json $path; Assert-Owner $receipt $Manifest
+    if ($receipt.revision -cne $Manifest.revision -or $receipt.snapshotRevision -cne $Snapshot.revision -or $receipt.schemaHash -cnotmatch '^[a-f0-9]{64}$' -or $receipt.schemaHash -cne $Schema.Rows[0]._Value -or [string]::IsNullOrWhiteSpace($receipt.verifiedAt)) { Deny 'Owned schema verification receipt is stale or differs from restored SQL.' }
+    # A prior migration attests only to these deployed bytes. New builds still need independent schema verification.
+    $web = Join-Path $Manifest.paths.runtime 'web'
+    $deployment = Get-Json (Join-Path $web '.drenv-deployment.json'); Assert-Owner $deployment $Manifest
+    if ($deployment.state -cne 'ready' -or $deployment.revision -cne $receipt.revision) { Deny 'Verified schema deployment is incomplete or stale.' }
+    $files = @(Get-ChildItem -LiteralPath (Join-Path $web 'bin'), (Join-Path $web 'Web\dist') -File -Recurse -Force -ErrorAction Stop | Where-Object { $_.Name -cne 'Drenv.SchemaProbe.dll' })
+    if ($files.Count -eq 0 -or $files.Count -ne @($receipt.artifacts).Count) { Deny 'Verified schema deployment artifact set changed.' }
+    foreach ($file in $files) {
+        $relative = $file.FullName.Substring($web.Length + 1)
+        $recorded = @($receipt.artifacts | Where-Object { $_.path -ceq $relative })
+        if ($recorded.Count -ne 1 -or $recorded[0].sha256 -cne (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()) { Deny 'Verified schema deployment artifacts changed.' }
+    }
+}
 function New-OwnedApplicationConfig($Manifest, [string]$SettingsTemplate = 'C:\Code\DevResults\DevResults\SecureSettings.config') {
     if($Manifest.PSObject.Properties.Name -contains 'primarySource'){$SettingsTemplate=Join-Path $Manifest.primarySource 'DevResults\SecureSettings.config'}
     $settingsPath = Join-Path $Manifest.paths.runtime 'web\SecureSettings.config'
@@ -317,6 +337,8 @@ try {
         $properties = Invoke-Sql "SELECT name, CONVERT(nvarchar(4000),value) AS value FROM sys.extended_properties WHERE class=0 AND name IN ('drenv.environmentId','drenv.ownerToken')" $m.catalog
         $ownedFiles = Invoke-Sql 'SELECT physical_name FROM sys.database_files' $m.catalog
         Assert-CatalogMetadata $properties.Rows $ownedFiles.Rows $m
+        $schema = Invoke-Sql "SELECT _Value FROM dbo._Global WHERE _Key=N'SchemaHash'" $m.catalog
+        Assert-ProvisionedSchema $schema $snapshot $m $true
     }
     $drive = [IO.DriveInfo]::new([IO.Path]::GetPathRoot($m.paths.runtime))
     [long]$needed = [long]$snapshot.blobs.bytes + $deploymentBytes + 2GB
@@ -362,8 +384,10 @@ try {
         [void](Invoke-Sql "ALTER DATABASE $(Sql-Identifier $m.catalog) SET READ_WRITE WITH NO_WAIT")
         [void](Invoke-Sql "IF EXISTS (SELECT 1 FROM sys.extended_properties WHERE class=0 AND name=N'drenv.environmentId') EXEC sys.sp_updateextendedproperty @name=N'drenv.environmentId', @value=$(Sql-Literal $m.id); ELSE EXEC sys.sp_addextendedproperty @name=N'drenv.environmentId', @value=$(Sql-Literal $m.id); IF EXISTS (SELECT 1 FROM sys.extended_properties WHERE class=0 AND name=N'drenv.ownerToken') EXEC sys.sp_updateextendedproperty @name=N'drenv.ownerToken', @value=$(Sql-Literal $m.ownerToken); ELSE EXEC sys.sp_addextendedproperty @name=N'drenv.ownerToken', @value=$(Sql-Literal $m.ownerToken);" $m.catalog)
     }
-    $schema = Invoke-Sql "SELECT _Value FROM dbo._Global WHERE _Key=N'SchemaHash'" $m.catalog
-    if ($schema.Rows.Count -ne 1 -or $schema.Rows[0]._Value -cne $snapshot.schemaHash) { Deny 'Restored SQL schema hash does not match the compatible snapshot receipt.' }
+    if (-not $databaseExists) {
+        $schema = Invoke-Sql "SELECT _Value FROM dbo._Global WHERE _Key=N'SchemaHash'" $m.catalog
+        Assert-ProvisionedSchema $schema $snapshot $m $false
+    }
     $blobDestination = Join-Path $m.paths.runtime 'blobs'
     if (@(Get-ChildItem -LiteralPath $blobDestination -Force).Count -eq 0) { Copy-Item -Path (Join-Path $snapshot.blobs.path '*') -Destination $blobDestination -Recurse -Force }
     $copied = Get-BlobDigest $blobDestination

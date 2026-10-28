@@ -5,7 +5,10 @@ import type { EnvironmentManifest } from "./types.ts"
 import { runWindowsAssetPayload } from "./runWindowsAssetPayload.ts"
 
 /** Exercise the real PowerShell helper functions using owned Windows temporary files and mocked host inventory. */
-export async function runWindowsProvisionTests() {
+export async function runWindowsProvisionTests(
+  /** Windows host on which disposable helper fixtures run. */
+  host = "devresults-vm",
+) {
   const [script, tests] = await Promise.all([
     readFile(new URL("./windows/provision.ps1", import.meta.url), "utf8"),
     readFile(new URL("./windows/provision.tests.ps1", import.meta.url), "utf8"),
@@ -19,15 +22,14 @@ ${tests}
   const result = await runWindowsAssetPayload(
     "& ([ScriptBlock]::Create($r.script))",
     { script: command },
-    { timeoutMs: 120_000 },
+    { host, timeoutMs: 120_000 },
   )
   const checks = JSON.parse(result.stdout.trim()) as { passed: number; scope: string }
   let refused = false
   try {
-    await runWindowsProvisioning(
-      { id: "INVALID", windowsHost: "devresults-vm" } as EnvironmentManifest,
-      { operation: "verify" },
-    )
+    await runWindowsProvisioning({ id: "INVALID", windowsHost: host } as EnvironmentManifest, {
+      operation: "verify",
+    })
   } catch (error) {
     refused =
       error instanceof Error && error.message === "Invalid environment identity or frozen revision."
@@ -38,5 +40,5 @@ ${tests}
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  console.log(JSON.stringify(await runWindowsProvisionTests()))
+  console.log(JSON.stringify(await runWindowsProvisionTests(process.argv[2])))
 }
