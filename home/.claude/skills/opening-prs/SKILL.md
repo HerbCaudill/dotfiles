@@ -3,19 +3,20 @@ name: opening-prs
 description: Use when opening, updating, or preparing a pull request after local changes are committed
 ---
 
-# Opening Pull Requests
+# Opening pull requests
 
 ## Overview
 
-Open pull requests that are easy to review: pushed branch, focused summary, clear verification, and honest remaining risk.
+Open pull requests that are easy to review: pushed branch, focused summary, clear verification, and honest remaining risk. Follow the repository's branch and PR workflow.
 
 ## Before opening
 
 1. Confirm the branch is pushed and contains only intended commits.
-2. Review the diff against the target branch.
-3. Check for project PR templates or repo-specific instructions.
-4. If there are UI changes, use screenshots for static changes and the `video-evidence` skill for motion or interaction changes.
-5. Collapse any runs of `WIP` commits into a single commit
+2. Check whether the branch already has an open PR against the intended base. Update that PR when it is the requested target rather than opening a duplicate. Confirm the live head, base, and diff before updating its description.
+3. Review the diff against the target branch.
+4. Check for project PR templates or repo-specific instructions.
+5. If there are UI changes, use screenshots for static changes and the `video-evidence` skill for motion or interaction changes.
+6. Do not rewrite commits as part of opening a PR. Leave existing history intact unless Herb explicitly authorizes a separate history change.
 
 ## Opening a PR
 
@@ -30,15 +31,9 @@ Always create a draft PR so the user can review it first.
 
 ## PR body
 
-Include:
+Start with the concrete problem and resulting behavior. For a small change, use one or two sentences plus relevant validation. Add implementation details, alternatives, screenshots, reviewer steps, and remaining risks when they help assess the change.
 
-- A summary of the problem or motivation for the change
-- Summary of this solution, possibly including rejected alternatives (and why)
-- A more detailed description of individual changes.
-- Screenshots or recordings for UI changes.
-- Follow-ups, omissions, or known risks.
-- Description of any manual/automated testing done
-- Instructions for how a reviewer can verify the change.
+Describe the final diff and remove stale claims after scope changes. Claim a measured improvement only when supported by evidence. Follow the global agent attribution instructions.
 
 ## After opening
 
@@ -46,7 +41,7 @@ Give the user a link to the PR.
 
 ## Review hygiene
 
-- Link related issues or beads tasks when available.
+- Link related public issues when useful. Do not include internal Beads IDs in public titles or descriptions.
 - Do not overstate confidence; report evidence.
 - Do not ask for review until the PR description reflects the current diff.
-- If updating an existing PR after review feedback, summarize only the new changes since the last review.
+- If updating an existing PR after review feedback, summarize the new changes since the last review while keeping the full description accurate for the final diff.
