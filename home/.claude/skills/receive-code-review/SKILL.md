@@ -31,6 +31,8 @@ Stop when the current behavior has been reviewed and no blocking finding remains
 
 ## Evaluation
 
+Match review evidence to the current head. Recheck whether older findings still apply; do not discard them merely because they predate a push.
+
 Push back when a suggestion:
 
 - breaks required behavior or supported platforms;
