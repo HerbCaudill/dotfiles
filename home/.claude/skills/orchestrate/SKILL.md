@@ -32,6 +32,8 @@ If no tasks are ready, report and stop.
 
 For each ready task, read its description with `bd show <id>` and estimate which files and directories it will touch. File overlap is heuristic – when in doubt, treat tasks as overlapping.
 
+Exclude epics and human-labelled tasks from implementation dispatch. Read in-progress work and existing assignees before claiming anything; coordinate existing owners instead of duplicating their tasks.
+
 ### Track open tasks
 
 A task is open from dispatch until its bead is closed. That includes implementing, awaiting review, in review, and fixing review findings. A task in review still holds its files, because `CHANGES REQUESTED` sends the original worker back to edit them.
@@ -57,7 +59,7 @@ If a task seems unsafe to run in the local checkout even with no overlapping ope
 
 Use the harness's native subagents for implementation and review by default. They keep internal coordination out of the user's task list while the bead, commits, pushed branch, and orchestration task provide durable state.
 
-Native subagent limits are not a reason to wait. When native capacity is full and T3 Code's `delegate_task` is available, dispatch the extra implementation or review work through `delegate_task` instead. Prefer `delegate_task` for reviewers when native slots are held by implementers waiting on review. Retain each returned `taskId` and use `task_status` to track it. A new review or fix round on a delegated worker is a new `delegate_task` call whose prompt includes the original brief, prior findings, and responses; use a distinct `clientRequestId` per round.
+Native subagent limits are not a reason to wait. When native capacity is full and T3 Code's `delegate_task` is available, dispatch the extra implementation or review work through `delegate_task` instead. Prefer `delegate_task` for reviewers when native slots are held by implementers waiting on review. Retain each returned `taskId` and follow its returned `next` instruction. Completion notifications resume the parent; never poll a running delegate. A new review or fix round on a delegated worker is a new `delegate_task` call whose prompt includes the original brief, prior findings, and responses; use a distinct `clientRequestId` per round.
 
 If neither native capacity nor `delegate_task` is available, queue the task until a worker finishes.
 
@@ -124,13 +126,14 @@ Never waive review because a change is trivial, tests pass, a deadline is near, 
 
 ### Monitor quietly
 
-Use beads as the source of truth: a task is done when its issue is closed. An `in_progress` implementation may be implementing, awaiting review, or addressing findings; inspect the worker when its state stops changing.
+Use beads as the source of truth: a task is done when its issue is closed. An `in_progress` implementation may be implementing, awaiting review, or addressing findings. Keep its files reserved until independent review approves the pushed changes and the orchestrator closes it.
 
 While tasks are open:
 
-- Poll bead state about every 30 seconds with `bd show <id>` or `bd ready --json`.
-- Prefer the harness's agent wait/status mechanism, or `task_status` for delegated tasks, over repeatedly inspecting worker output.
-- Inspect an implementation or review worker's latest output no more than about every 5 minutes unless the user asks for status or the bead state suggests failure/blockage.
+- Use harness completion notifications. If a delegated task says completion will wake the thread, end the turn and wait for that notification; do not call status/wait tools or schedule wake-ups to check it.
+- When `watch-beads` is active, its managed background service detects newly eligible work and released capacity without model calls. Leave the enrollment active between turns.
+- On a completion notification or relevant watcher event, read fresh bead state and apply the dispatch rule. A duplicate wake-up is not permission to duplicate an owner or implementation.
+- Inspect a worker's output when its completion, failure or explicit blocker notification arrives, or when Herb asks for status. Do not infer a stuck worker merely from unchanged issue timestamps.
 - Polling is silent. Do not say that there is no bead-level change, that a task is still in progress, that you will keep polling, or that you are checking the thread again.
 - Do not summarize routine worker progress into the orchestration task.
 - Report in the orchestration task only when a task is done, stuck, failed, blocked on human input, or a new issue/dependency is discovered that changes orchestration decisions.

@@ -281,6 +281,21 @@ in
     };
   };
 
+  launchd.agents."watch-beads" = {
+    serviceConfig = {
+      Label = "com.herbcaudill.watch-beads";
+      ProgramArguments = [ "${pkgs.nodejs_24}/bin/node" "${userBin}/watch-beads" "_daemon" ];
+      RunAtLoad = true;
+      KeepAlive = true;
+      ThrottleInterval = 10;
+      StandardOutPath = "/tmp/watch-beads.log";
+      StandardErrorPath = "/tmp/watch-beads.log";
+      EnvironmentVariables = {
+        PATH = "${homeDirectory}/.t3/bin:${userBin}:${homeDirectory}/Library/pnpm:/etc/profiles/per-user/${username}/bin:${launchdPath}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin";
+      };
+    };
+  };
+
   launchd.agents."agent-transcripts-sync" = {
     serviceConfig = {
       Label = "com.herbcaudill.agent-transcripts-sync";
