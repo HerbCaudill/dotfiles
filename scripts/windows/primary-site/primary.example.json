@@ -1,0 +1,21 @@
+{
+  "candidates": [
+    {
+      "node": "C:\\Users\\herb\\AppData\\Local\\mise\\installs\\node\\24.22.1\\node.exe",
+      "entry": "C:\\Users\\herb\\AppData\\Local\\npm-cache\\_npx\\0f244c8e667cf24b\\node_modules\\azurite\\dist\\src\\azurite.js",
+      "version": "3.37.0"
+    }
+  ],
+  "dataPath": "C:\\Code\\DevResults\\devresults\\DevResults\\.azurite\\data",
+  "debugLogPath": "C:\\Code\\DevResults\\devresults\\DevResults\\azurite_debug.log",
+  "logPath": "C:\\Users\\herb\\AppData\\Local\\devresults-site",
+  "ports": [10000, 10001, 10002],
+  "iisPort": 8443,
+  "app": {
+    "executable": "C:\\Program Files\\IIS Express\\iisexpress.exe",
+    "args": [
+      "/config:C:\\Code\\DevResults\\devresults\\.vs\\DevResults\\config\\applicationhost.config",
+      "/site:DevResults"
+    ]
+  }
+}
