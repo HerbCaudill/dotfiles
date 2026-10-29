@@ -4,25 +4,13 @@ import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { assertManagedProxy } from "./assertManagedProxy.ts"
 import { getLaunchSettings } from "./getLaunchSettings.ts"
+import { getPortlessEnv } from "./getPortlessEnv.ts"
 
 const stateDir = join(homedir(), ".portless")
 const args = process.argv.slice(2)
 const portless = process.env.LOCALHOST_DEV_PORTLESS
 if (!portless) throw new Error("Use the localhost-dev executable installed by dotfiles.")
-const env = {
-  ...Object.fromEntries(
-    Object.entries(process.env).filter(
-      ([key]) => key !== "PORTLESS" && !key.startsWith("PORTLESS_"),
-    ),
-  ),
-  PORTLESS_STATE_DIR: stateDir,
-  PORTLESS_PORT: "443",
-  PORTLESS_HTTPS: "1",
-  PORTLESS_LAN: "0",
-  PORTLESS_SYNC_HOSTS: "0",
-  PORTLESS_WILDCARD: "0",
-  PORTLESS_TLD: "localhost",
-}
+const env = getPortlessEnv(stateDir)
 try {
   if (args[0] === "url") {
     console.log(getLaunchSettings(process.cwd(), [...args.slice(1), "url"]).url)

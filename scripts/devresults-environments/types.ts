@@ -173,6 +173,7 @@ export type DrenvArgs = {
     | "remove"
     | "recover"
     | "refresh-db"
+    | "route"
     | "help"
   /** Required except for status and help. */
   id?: string
@@ -188,4 +189,8 @@ export type DrenvArgs = {
   source?: string
   /** Explicit coordinated snapshot receipt; provisioning worker validates it. */
   snapshot?: string
+  /** Hostname label for a Portless route. */
+  name?: string
+  /** Instance subdomains for a Portless route. */
+  instances?: string[]
 }

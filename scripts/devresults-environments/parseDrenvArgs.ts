@@ -37,12 +37,22 @@ export function parseDrenvArgs(
         "--snapshot",
         "--vibe-source",
         "--vibe-revision",
+        "--name",
       ].includes(option)
     )
       throw new Error(`Unknown option: ${option}`)
-    if (command !== "create") throw new Error(`${option} is only valid for create`)
     const value = rest.shift()
     if (!value || value.startsWith("--")) throw new Error(`Missing value for ${option}`)
+    if (command === "route") {
+      if (option === "--name") {
+        if (result.name !== undefined) throw new Error(`Duplicate option: ${option}`)
+        result.name = value
+      } else if (option === "--instance") result.instances = [...(result.instances ?? []), value]
+      else throw new Error(`${option} is not valid for route`)
+      continue
+    }
+    if (option === "--name") throw new Error("--name is only valid for route")
+    if (command !== "create") throw new Error(`${option} is only valid for create`)
     const key = (
       option === "--vibe-source"
         ? "vibeSource"
@@ -82,5 +92,6 @@ const commands: DrenvArgs["command"][] = [
   "remove",
   "recover",
   "refresh-db",
+  "route",
   "help",
 ]

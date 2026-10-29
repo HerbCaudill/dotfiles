@@ -41,6 +41,17 @@ ssh -N -L 127.0.0.2:30000:127.0.0.1:30000 -L 127.0.0.1:30006:127.0.0.1:30006 min
 
 Then visit `https://example.devlocal.us:30000` and `https://example.viberesults.dev:30006`. Use the actual assigned ports. Legacy redirects can include the IIS port, so forward it unchanged. On the Mac, `*.devlocal.us` resolves to `127.0.0.2`, while `*.viberesults.dev` resolves to `127.0.0.1`; bind each forward to its matching address. The browser must trust their existing certificates. Check occupied local ports before opening a tunnel. A tunnel is only transport; closing it leaves the stack running. The portless primary `https://<instance>.devlocal.us` route is separate: its managed Mac tunnel forwards `127.0.0.2:443` to primary IIS on mini loopback port `8443`. Tailscale keeps its own port `443`. Never send an isolated environment’s allocated port to that primary backend. Existing VM environments retain their private catalogs and ports; when viewing them after the DNS cutover, bind `127.0.0.2:<assigned HTTPS port>` to the same port on `devresults-vm`.
 
+### Separate sign-ins with `.localhost` names
+
+Browser cookies ignore ports, so signing in at one `example.devlocal.us:<port>` environment signs you out of every other. To keep sessions separate, give each environment its own hostname through the managed Portless proxy:
+
+```sh
+drenv --host mini route compare-main --name devresults-main
+drenv --host mini route compare-design-refresh --name devresults-design-refresh --instance example --instance demo
+```
+
+The legacy site is then at `https://<instance>.<name>.localhost`, for example `https://example.devresults-main.localhost`. `--name` defaults to `devresults-<id>`, and `--instance` defaults to the instance in `url`; repeat it to route more instances. Wildcard routing is off, so each instance needs its own route. The command runs in the foreground: it opens a private SSH forward to the environment's HTTPS port and registers one Portless route per instance. Each route runs a small TLS bridge, because Portless forwards plain HTTP and DevResults forms auth requires HTTPS. The browser's `Host` header passes through unchanged; DevResults resolves the instance from the first label and IIS bindings accept any host. Ctrl+C or SIGTERM removes the routes and closes the forward, leaving the stack running. Use `nohup drenv --host mini route … &` to keep it running after the terminal closes. Generated email links still use `ApplicationDomainName` (`devlocal.us`). Route only runs on the Mac and only for mini environments.
+
 New mini allocations use 30000–39999 and are committed under the authoritative registry lock. The allocator also checks Windows listeners, HTTP.sys and existing claims. Primary ports and documented e2e lane ports remain excluded even while their services are stopped. Existing VM allocations remain unchanged.
 
 ## Requests, privileges and recovery

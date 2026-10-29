@@ -13,6 +13,7 @@ import { runDrenvCommand } from "./runDrenvCommand.ts"
 import { encodeWindowsScript } from "./encodeWindowsScript.ts"
 import { readFile } from "node:fs/promises"
 import { getDrenvHelp } from "./getDrenvHelp.ts"
+import { routeEnvironment } from "./routeEnvironment.ts"
 
 try {
   const argv = process.argv.slice(2)
@@ -22,26 +23,22 @@ try {
     console.log(getDrenvHelp())
     process.exit(0)
   }
+  if (args.command === "route") {
+    if (options.windowsHost !== "mini" || process.platform === "win32")
+      throw new Error("route runs on the Mac and requires --host mini")
+    const { legacy } = await runOnMini(["url", args.id!])
+    await routeEnvironment({
+      host: "mini",
+      id: args.id!,
+      legacyUrl: legacy,
+      name: args.name,
+      instances: args.instances,
+    })
+    process.exit()
+  }
   let result
   if (options.windowsHost === "mini" && process.platform !== "win32") {
-    const payload = Buffer.from(JSON.stringify(argv)).toString("base64")
-    const script = `$a=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${payload}'))|ConvertFrom-Json;$env:DRENV_JSON_RESPONSE='1';$env:Path="$env:USERPROFILE\\AppData\\Local\\mise\\shims;$env:USERPROFILE\\AppData\\Local\\mise\\bin;"+$env:Path;& mise exec node@24 -- node --experimental-strip-types C:\\Code\\HerbCaudill\\dotfiles\\scripts\\devresults-environments\\drenv.ts @a;exit $LASTEXITCODE`
-    const remote = await runDrenvCommand({
-      executable: "ssh",
-      args: [
-        "-n",
-        "mini",
-        "powershell.exe",
-        "-NoProfile",
-        "-EncodedCommand",
-        encodeWindowsScript(script),
-      ],
-      timeoutMs: 8_000_000,
-      onRequest: id => console.error(`drenv --host mini request ${id}`),
-    })
-    const response = JSON.parse(remote.stdout.trim())
-    if (!response.ok) throw new Error(response.error)
-    result = response.value
+    result = await runOnMini(argv)
     if (args.command === "open")
       for (const url of [result.legacy, result.vibe].filter(Boolean))
         await runDrenvCommand({ executable: "open", args: ["-a", "Google Chrome", url] })
@@ -82,4 +79,29 @@ try {
     console.error(message)
     process.exitCode = 1
   }
+}
+
+/** Run a drenv command through the native mini controller and return its result. */
+async function runOnMini(
+  /** drenv arguments; the mini controller is the native default host. */
+  argv: string[],
+) {
+  const payload = Buffer.from(JSON.stringify(argv)).toString("base64")
+  const script = `$a=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${payload}'))|ConvertFrom-Json;$env:DRENV_JSON_RESPONSE='1';$env:Path="$env:USERPROFILE\\AppData\\Local\\mise\\shims;$env:USERPROFILE\\AppData\\Local\\mise\\bin;"+$env:Path;& mise exec node@24 -- node --experimental-strip-types C:\\Code\\HerbCaudill\\dotfiles\\scripts\\devresults-environments\\drenv.ts @a;exit $LASTEXITCODE`
+  const remote = await runDrenvCommand({
+    executable: "ssh",
+    args: [
+      "-n",
+      "mini",
+      "powershell.exe",
+      "-NoProfile",
+      "-EncodedCommand",
+      encodeWindowsScript(script),
+    ],
+    timeoutMs: 8_000_000,
+    onRequest: id => console.error(`drenv --host mini request ${id}`),
+  })
+  const response = JSON.parse(remote.stdout.trim())
+  if (!response.ok) throw new Error(response.error)
+  return response.value
 }
