@@ -117,7 +117,7 @@ Do not use Claude Code's per-project memory directory at `~/.claude/projects/...
 
 ## Local resources
 
-- Obsidian vault: `~/Code/herbcaudill/notes`; daily notes are in `daily/` and meeting transcripts in `meetings/`.
+- Obsidian vault: `~/Code/herbcaudill/notes`; daily notes are in `daily/` and meeting transcripts in `meetings/`. It has a local QMD search index: run `qmd query "question" -c notes` for hybrid semantic search and `qmd search "keywords" -c notes` for exact terms. Check freshness with `qmd status`, and read a result's current file before relying on it. The vault's `AGENTS.md` has the details.
 - DevResults wiki: `~/Code/DevResults/DevResults.wiki`.
 - Google Drive [macOS only]: `~/Library/CloudStorage/GoogleDrive-herb@devresults.com/My Drive`. Google Docs, Sheets, and Slides are cloud-only stubs. Use `gws-*` skills only when Google's first-party tools cannot do the work. For Google Workspace API calls, use `gws-delegated`; use raw `gws` only for authentication diagnostics, schema discovery, help, or skill generation.
 - X (Twitter) API: use `xurl --app bookmarks`. Its OAuth 2 login works on only one machine at a time; signing in on one device invalidates the other. It is currently signed in on the mini, so run X API work there rather than re-authenticating on the Mac. A bookmark export script lives at `C:\Users\herb\setup\exportBookmarks.ts` on the mini and writes `documents/X bookmarks.md` and `documents/x-bookmarks/bookmarks.json` in the notes vault.
