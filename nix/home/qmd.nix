@@ -11,7 +11,8 @@
       ];
       StartCalendarInterval = { Hour = 9; Minute = 0; };
       RunAtLoad = true;
-      ProcessType = "Background";
+      # Background process policy can stall Metal shader initialization.
+      ProcessType = "Standard";
       LowPriorityIO = true;
       Nice = 10;
       StandardOutPath = "/tmp/qmd-refresh.log";
