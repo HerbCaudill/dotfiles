@@ -1,16 +1,20 @@
 import { spawn, spawnSync } from "node:child_process"
-import {
-  closeSync,
-  existsSync,
-  mkdirSync,
-  openSync,
-  readFileSync,
-  unlinkSync,
-  writeFileSync,
-} from "node:fs"
 import { homedir, setPriority, constants } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { pathToFileURL } from "node:url"
+import { createServer, type Server } from "node:net"
+
+/** Hold an OS-owned lock that cannot survive a crashed worker or PID reuse. */
+export async function acquireRefreshLock(port = 37739): Promise<Server | null> {
+  return new Promise((resolve, reject) => {
+    const server = createServer(socket => socket.destroy())
+    server.once("error", (error: NodeJS.ErrnoException) => {
+      if (error.code === "EADDRINUSE") resolve(null)
+      else reject(error)
+    })
+    server.listen({ host: "127.0.0.1", port, exclusive: true }, () => resolve(server))
+  })
+}
 
 /** Bound mini work to twenty hours and keep 06:00–09:00 free for the briefing. */
 export function refreshBudget(now: Date, cpu: boolean): number {
@@ -27,23 +31,8 @@ async function main() {
   const cpu = process.platform === "win32"
   const budget = refreshBudget(new Date(), cpu)
   if (!budget) return console.log("QMD refresh deferred for the briefing window")
-  const state = join(homedir(), ".local", "state", "qmd")
-  mkdirSync(state, { recursive: true })
-  const lock = join(state, "refresh.lock")
-  if (existsSync(lock)) {
-    const pid = Number(readFileSync(lock, "utf8"))
-    if (!Number.isInteger(pid) || pid <= 0) throw new Error(`Invalid lock: ${lock}`)
-    try {
-      process.kill(pid, 0)
-      return console.log(`QMD refresh already running: ${pid}`)
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error
-      unlinkSync(lock)
-    }
-  }
-  const descriptor = openSync(lock, "wx")
-  writeFileSync(descriptor, String(process.pid))
-  closeSync(descriptor)
+  const lock = await acquireRefreshLock()
+  if (!lock) return console.log("QMD refresh already running (loopback lock held)")
   const deadline = Date.now() + budget
   try {
     console.log(
@@ -94,7 +83,7 @@ async function main() {
     }
     console.log(`${new Date().toISOString()} QMD refresh completed`)
   } finally {
-    unlinkSync(lock)
+    lock.close()
   }
 }
 
