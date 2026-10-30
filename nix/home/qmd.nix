@@ -1,5 +1,24 @@
-{ config, ... }:
+{ config, pkgs, ... }:
 {
+  launchd.agents.qmd-refresh = {
+    enable = true;
+    config = {
+      Label = "com.herbcaudill.qmd-refresh";
+      ProgramArguments = [
+        "${pkgs.nodejs_24}/bin/node"
+        "--experimental-strip-types"
+        "${config.home.homeDirectory}/Code/HerbCaudill/dotfiles/scripts/qmd/refresh.ts"
+      ];
+      StartCalendarInterval = { Hour = 9; Minute = 0; };
+      RunAtLoad = true;
+      ProcessType = "Background";
+      LowPriorityIO = true;
+      Nice = 10;
+      StandardOutPath = "/tmp/qmd-refresh.log";
+      StandardErrorPath = "/tmp/qmd-refresh.log";
+      EnvironmentVariables.PATH = "${pkgs.nodejs_24}/bin:/usr/bin:/bin:/usr/sbin:/sbin";
+    };
+  };
   home.file.".config/qmd/index.yml".text = ''
     collections:
       notes:
