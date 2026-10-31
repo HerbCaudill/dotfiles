@@ -43,6 +43,8 @@ Prefer TypeScript, React, Vite, pnpm, oxfmt, Vitest, Playwright, Tabler icons, a
 
 ## Workflow
 
+For unattended recurring work, default to OS-scheduled headless processes. Write routine results to logs or existing destinations. Create or reactivate a T3 thread only for requested interaction, actionable work already authorized by Herb, or a decision that needs him. Reuse an existing related heartbeat where suitable. Detect events without model calls where practical; use headless model runs when the check requires judgment.
+
 `pnpm dev` must always be sufficient to run the complete site locally, including the services its features require. If multiple processes are needed, give each a named script such as `pnpm dev:web` and `pnpm dev:api`, and have `pnpm dev` start and stop them together. Do not leave required startup steps in ad hoc commands or separate terminals. Document any external services used by local development.
 
 When Herb asks you to run or start a site, launch its dev server as a detached process with no time limit (for example, `nohup pnpm dev > /tmp/<repo>-dev.log 2>&1 &`), not as a time-limited background task. Report the URL and how to stop it.
