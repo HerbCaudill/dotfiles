@@ -17,6 +17,7 @@ Creates a structured plan for implementing a feature or change. Outputs:
 ### 1\. Gather context, if you haven't already
 
 - Read the project's AGENTS.md and README
+- Read `glossary.md` if it exists. Use its settled terms consistently in the plan and all Beads issue titles, descriptions, and acceptance criteria. Resolve conflicting or vague terms with `grill-me` before treating them as settled; capture definitions there as they are agreed. Use `glossary.md`, never `GLOSSARY.md` or `CONTEXT.md`.
 - Explore relevant parts of the codebase
 - Identify existing patterns and conventions
 - Use the `grill-me` skill to clarify the user's thinking
@@ -73,3 +74,5 @@ After completing the plan, summarize:
 - For mechanical changes across many files, prefer a few invariant-based checkpoints over file-by-file tasks.
 - Most plans should need roughly 3-8 top-level tasks. Use fewer or more when the actual implementation and review boundaries justify it.
 - Don't over-specify implementation details, but do provide a sentence or two of context in each issue's description.
+
+Domain-language guidance adapted from Matt Pocock's [domain-modeling skill](https://github.com/mattpocock/skills/blob/main/skills/engineering/domain-modeling/SKILL.md), under the [MIT license](../retro/LICENSE).
