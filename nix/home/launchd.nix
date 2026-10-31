@@ -13,6 +13,28 @@ let
   automationPath = "${userBin}:${homeDirectory}/Library/pnpm/bin:${userProfileBin}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin";
 in
 {
+  # bd treats the shared server as external and doesn't restart it, so without
+  # this every repo's beads are down after a reboot until someone runs
+  # `bd dolt start`.
+  launchd.agents."beads-shared-server" = {
+    enable = true;
+    config = {
+      Label = "com.herbcaudill.beads-shared-server";
+      ProgramArguments = [
+        "${pkgs.dolt}/bin/dolt"
+        "sql-server"
+        "--config"
+        "${homeDirectory}/.beads/shared-server/dolt-server-config.yaml"
+      ];
+      WorkingDirectory = "${homeDirectory}/.beads/shared-server/dolt";
+      RunAtLoad = true;
+      KeepAlive = true;
+      ThrottleInterval = 10;
+      StandardOutPath = "${homeDirectory}/.beads/shared-server/dolt-server.log";
+      StandardErrorPath = "${homeDirectory}/.beads/shared-server/dolt-server.log";
+    };
+  };
+
   launchd.agents."watch-beads" = {
     enable = true;
     config = {
