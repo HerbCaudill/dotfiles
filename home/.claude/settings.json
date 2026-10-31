@@ -3,6 +3,9 @@
     "CLAUDE_CODE_ENABLE_CFC": "1"
   },
   "model": "opus",
+  "deniedMcpServers": [
+    { "serverName": "claude.ai Vercel" }
+  ],
   "skillOverrides": {
     "gws-calendar-agenda": "off",
     "gws-calendar-insert": "off",
