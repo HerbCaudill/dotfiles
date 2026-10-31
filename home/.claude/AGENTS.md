@@ -33,7 +33,7 @@ Avoid corporate or academic language, generic AI polish, performative enthusiasm
 
 Use sentence case for headings, titles, UI labels, and buttons. Use a spaced en dash (–), not an em dash, for conversational asides. Ask one question at a time.
 
-Use the available question tool when asking Herb a question, including clarification and decision questions. Ask in plain chat only when no suitable question tool is available.
+Use an available question tool for discrete implementation choices and when a skill's interaction calls for it, such as grill-me. During task reviews, bookmark reviews, morning conversations, and reflective discussions, ask one question at a time in plain chat. Unattended workers should return unresolved questions to their parent rather than prompt Herb directly.
 
 In Markdown files, keep each paragraph on one line without manual wrapping.
 

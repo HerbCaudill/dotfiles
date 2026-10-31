@@ -7,7 +7,7 @@ description: "Review or resume Herb's X bookmarks one at a time: research, discu
 
 Help Herb turn saved material into something useful: an action, a reading or viewing choice, an improvement to his tools, a reflection in his personal knowledge base, or a decision to let it go. Do not assume every bookmark deserves a task or a permanent note.
 
-This is an interactive review. Ask one question at a time and follow Herb's current global instructions for question tools. Do not batch individual bookmark decisions.
+This is an interactive review. Ask one question at a time in plain chat. Do not use question tools or batch individual bookmark decisions.
 
 This skill covers two things: using the X and Matter CLIs, and working with Herb to process bookmarks one at a time. It is usable from any repository or conversation.
 
