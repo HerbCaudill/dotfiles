@@ -1,6 +1,6 @@
 ---
 name: messaging
-description: Review, search, summarize, draft, or send Herb's messages across WhatsApp, Signal, Apple Messages, Facebook Messenger, LinkedIn, and Slack. Use when Herb asks what needs his attention, asks about a conversation or person, wants messages checked across services, or asks to compose or send a message.
+description: "Check attention, search conversations, summarize, draft, or send messages on WhatsApp, Signal, Apple Messages, Messenger, LinkedIn, or Slack. Reviewing is read-only; sending needs explicit authorization."
 ---
 
 # Messaging

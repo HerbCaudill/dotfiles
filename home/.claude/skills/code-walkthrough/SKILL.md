@@ -1,6 +1,6 @@
 ---
 name: code-walkthrough
-description: Use when the user asks for a walkthrough or explanation of code, a code change, diff, branch, or pull request.
+description: "Explain code, a diff, branch, or PR inline. Use showcase for a staged live demonstration with checkpoints."
 ---
 
 # Code walkthrough

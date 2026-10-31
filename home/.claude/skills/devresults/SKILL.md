@@ -1,6 +1,6 @@
 ---
 name: devresults
-description: Use only when working on the DevResults application repository whose primary macOS checkout is at ~/Code/DevResults/DevResults; do not use for sibling repositories under ~/Code/DevResults.
+description: "Use only for the DevResults application repo (primary Mac checkout ~/Code/DevResults/DevResults), never sibling repos."
 ---
 
 # DevResults

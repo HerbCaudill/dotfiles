@@ -1,6 +1,6 @@
 ---
 name: mobile-pwa
-description: Use when building or refining a responsive web app or PWA, especially icons, update notices, iPhone inputs, zoom prevention, fixed headers, safe areas, and mobile visual verification.
+description: "Build or refine responsive web apps/PWAs: icons, updates, iPhone zoom and inputs, fixed headers, safe areas, and mobile visual checks."
 ---
 
 # Mobile PWA defaults

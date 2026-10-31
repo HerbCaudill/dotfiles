@@ -7,6 +7,7 @@
     { "serverName": "claude.ai Vercel" }
   ],
   "skillOverrides": {
+    "anthropic-skills:format-flights": "user-invocable-only",
     "gws-calendar-agenda": "off",
     "gws-calendar-insert": "off",
     "gws-docs-write": "off",

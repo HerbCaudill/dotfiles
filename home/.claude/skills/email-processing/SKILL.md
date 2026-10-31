@@ -1,6 +1,6 @@
 ---
 name: email-processing
-description: Process Herb's herb@devresults.com Gmail inbox headlessly by archiving high-confidence unwanted or safely delegated mail and promoting important mail from Updates, Promotions, Social, or Forums to Primary. Use when Herb asks to process or triage email, clean his inbox, review Gmail categories, or invokes $email-processing, including from a scheduled run.
+description: "Triage or clean Herb's Gmail inbox and categories, including scheduled runs: archive eligible mail and promote important mail using the guarded email-processing command."
 ---
 
 # Email processing

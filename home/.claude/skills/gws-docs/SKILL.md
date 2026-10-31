@@ -1,6 +1,6 @@
 ---
 name: gws-docs
-description: "Read and write Google Docs."
+description: "Google Docs CLI fallback when first-party document tools cannot do the requested work."
 metadata:
   version: 0.22.5
   openclaw:

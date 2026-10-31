@@ -1,6 +1,6 @@
 ---
 name: bookmark-review
-description: "Process Herb's X bookmarks as a standalone interactive review: research sources and media, discuss one item at a time, save long-form reading through the Matter CLI, capture agreed actions or reflections, then verify outcomes. Also use when resuming an existing bookmark-review log."
+description: "Review or resume Herb's X bookmarks one at a time: research, discuss, save reading to Matter, and verify agreed actions."
 ---
 
 # Bookmark review

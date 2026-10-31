@@ -1,6 +1,6 @@
 ---
 name: manage-tasks
-description: Create and manage Beads issues during planning, implementation, and triage. Use when an agent needs to record, organize, prioritize, relate, claim, defer, or close repository work with `bd`.
+description: "Create, organize, claim, defer, or close repository work in Beads (bd). Use tasks for Herb's personal board."
 ---
 
 # Manage tasks

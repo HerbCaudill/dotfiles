@@ -1,6 +1,6 @@
 ---
 name: viz-data-flows
-description: Build an interactive vertical swimlane page that traces how data moves through a codebase, step by step, across ownership lanes (feature code, libraries, SDKs, servers, storage). Use whenever Herb wants to see, illustrate, diagram, or explain a data layer, a request path, how a page loads or saves its data, cache and persistence behavior, cache hits versus misses, or what a mutation touches, even if he does not say "diagram" or "swimlane". Also use when asked to visualize an architecture from the perspective of one request or one user action.
+description: "Explain or visualize a codebase's data layer, request path, page load/save, caches, persistence, or mutations as interactive swimlanes across owners. Use even when no diagram is requested."
 ---
 
 # Data flow swimlanes

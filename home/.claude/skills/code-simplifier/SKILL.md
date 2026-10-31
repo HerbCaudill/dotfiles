@@ -1,6 +1,6 @@
 ---
 name: code-simplifier
-description: Use when simplifying or refining recently modified code for clarity, consistency, and maintainability while preserving all functionality.
+description: "Simplify recently changed code for clarity and consistency while preserving behavior."
 ---
 
 Your job is to analyze recently modified code and simplify it in order to enhance clarity, consistency, and maintainability while preserving exact functionality and behavior.

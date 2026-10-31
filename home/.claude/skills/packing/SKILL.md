@@ -1,6 +1,6 @@
 ---
 name: packing
-description: Create or update a trip packing checklist in Herb's Obsidian vault. Use when Herb asks to pack for a trip, make a packing list, or update the packing master.
+description: "Create or update a trip packing checklist or packing master in Herb's Obsidian vault."
 ---
 
 # Packing

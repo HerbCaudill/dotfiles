@@ -1,6 +1,6 @@
 ---
 name: tslsp
-description: Type-aware TypeScript/JavaScript code intelligence — references, rename, file/folder rename, symbols, diagnostics, call hierarchy, code actions — via tsgo (Microsoft's native TypeScript language server). Use instead of grep/edit/mv for symbol-aware tasks.
+description: "Use tsgo-based tslsp for TypeScript/JavaScript symbols, references, renames/moves, diagnostics, call hierarchy, and code actions instead of text search/edit/mv."
 allowed-tools: Bash(tslsp:*), Bash(npx:*)
 ---
 

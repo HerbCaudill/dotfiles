@@ -1,6 +1,6 @@
 ---
 name: thinking-partner
-description: Use for reflective conversations that help Herb develop his own thinking about books, articles, ideas, or experiences, rather than execute a task. Also use when starting a standalone reading-notes or reflective discussion session at his request.
+description: "Reflect with Herb on books, articles, ideas, experiences, or reading notes to develop his thinking; not an execution or task-planning workflow."
 ---
 
 # Thinking partner

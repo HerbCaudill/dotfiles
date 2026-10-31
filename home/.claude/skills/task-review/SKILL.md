@@ -1,6 +1,6 @@
 ---
 name: task-review
-description: Review Herb's Tasks Inbox, named board views or projects one item at a time, with fresh reads, explicit decisions and verified writes. Defaults to Inbox; broader review scope is optional.
+description: "Review Herb's Tasks Inbox, a named view, or projects one item at a time with fresh reads, explicit decisions, and verified writes. Default to Inbox."
 ---
 
 # Task review

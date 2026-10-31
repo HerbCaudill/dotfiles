@@ -1,6 +1,6 @@
 ---
 name: app-design
-description: Use when designing or refining an app's interactions, especially desktop keyboard use, discoverable hotkeys, shortcut references, and large search-result lists.
+description: "Design or refine app interactions, desktop keyboard shortcuts and their discovery, and large search-result lists."
 ---
 
 # App design defaults

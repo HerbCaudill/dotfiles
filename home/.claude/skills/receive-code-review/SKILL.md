@@ -1,6 +1,6 @@
 ---
 name: receive-code-review
-description: Use before implementing code-review feedback. Verify each suggestion against the codebase, clarify ambiguity, and push back when evidence does not support it.
+description: "Before applying review feedback, verify suggestions against the code and resolve ambiguity or unsupported claims."
 ---
 
 # Receive code review

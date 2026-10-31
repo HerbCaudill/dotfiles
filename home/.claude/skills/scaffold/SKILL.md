@@ -1,6 +1,6 @@
 ---
 name: scaffold
-description: Use when starting a new frontend web app project. Scaffold React, TypeScript, Vite, Tailwind v4, shadcn/ui, an app-specific icon, safe PWA updates, an immobile mobile shell, IBM Plex fonts, and desktop/mobile checks.
+description: "Start a new frontend web app with Herb's React/TypeScript stack, PWA defaults, and desktop/mobile verification."
 user_invocation: scaffold <project-name>
 ---
 

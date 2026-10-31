@@ -1,6 +1,6 @@
 ---
 name: tasks
-description: Use the local Tasks CLI to read or change the personal board through its persistent peer, including Inbox, projects, Next steps, descriptions and task state.
+description: "Read or change Herb's personal Tasks board through its managed CLI and persistent peer. For an item-by-item review, use task-review."
 ---
 
 # Tasks

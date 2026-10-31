@@ -1,6 +1,6 @@
 ---
 name: gws-gmail
-description: "Gmail: Send, read, and manage email."
+description: "Gmail CLI fallback when connectors cannot read or manage mail. Use email-processing for inbox triage."
 metadata:
   version: 0.22.5
   openclaw:

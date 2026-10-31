@@ -1,6 +1,6 @@
 ---
 name: gws-sheets
-description: "Google Sheets: Read and write spreadsheets."
+description: "Google Sheets CLI fallback when first-party spreadsheet tools cannot do the requested work."
 metadata:
   version: 0.22.5
   openclaw:

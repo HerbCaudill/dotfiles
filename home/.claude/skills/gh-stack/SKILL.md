@@ -1,6 +1,5 @@
 ---
-description: |
-    Manage stacked branches and pull requests with the gh-stack GitHub CLI extension. Use when the user wants to create, push, rebase, sync, navigate, or view stacks of dependent PRs. Triggers on tasks involving stacked diffs, dependent pull requests, branch chains, or incremental code review workflows.
+description: "Manage dependent branches and PR stacks with gh-stack: create, push, rebase, sync, navigate, or inspect stacked diffs."
 metadata:
     author: github
     github-path: skills/gh-stack

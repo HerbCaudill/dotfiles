@@ -1,6 +1,6 @@
 ---
 name: browser-use
-description: "Use for browser work, especially repetitive tasks, authenticated Chrome sessions, connection recovery, and tab cleanup. Prefer connectors, exports, APIs, and scripts to manual clicking."
+description: "Use for browser tasks, authenticated Chrome, connection recovery, bulk extraction, and tab cleanup. Prefer connectors or APIs to clicking."
 ---
 
 # Browser use

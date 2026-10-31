@@ -1,6 +1,6 @@
 ---
 name: dxos
-description: Use when working with, researching, or evaluating DXOS, ECHO, Composer, or agent access to DXOS project data through MCP. Covers the hosted MCP connection, project schema guidance, local clone, and architecture.
+description: "Research or work on DXOS, ECHO, Composer, their architecture, or MCP access to DXOS project data."
 ---
 
 # DXOS

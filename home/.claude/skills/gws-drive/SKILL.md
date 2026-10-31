@@ -1,6 +1,6 @@
 ---
 name: gws-drive
-description: "Google Drive: Manage files, folders, and shared drives."
+description: "Google Drive CLI fallback when connectors cannot manage files, folders, or sharing."
 metadata:
   version: 0.22.5
   openclaw:

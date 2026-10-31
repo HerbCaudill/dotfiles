@@ -1,6 +1,6 @@
 ---
 name: video-feedback
-description: Use when Herb gives you a screen recording or a Scrawl capture (a `.scrawl` bundle, or a pasted summary starting `[scrawl …]`) of himself commenting on an app and wants it turned into tasks, issues, or a list of changes.
+description: "Turn Herb's app commentary in a screen recording, .scrawl bundle, or pasted [scrawl …] summary into tasks, issues, or a change list."
 ---
 
 # Video feedback

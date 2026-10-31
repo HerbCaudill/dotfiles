@@ -1,6 +1,6 @@
 ---
 name: devresults-branding
-description: Use when selecting or applying DevResults brand logos, colors, or fonts; creating a DevResults-branded artifact; or checking whether an artifact follows the planned 2025 DevResults identity.
+description: "Apply or check DevResults logos, colors, fonts, and branded artifacts against the planned 2025 identity."
 ---
 
 # DevResults branding

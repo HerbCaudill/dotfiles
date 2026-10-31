@@ -1,6 +1,6 @@
 ---
 name: t3feedback
-description: Use when Herb complains about, reports a problem with, or suggests a change to T3 Code. Turns the complaint into the right GitHub action on pingdotgg/t3code – an upvote on an existing report, a bug issue, an Ideas discussion, a Q&A question, or a small fix PR.
+description: "Handle Herb's T3 Code complaints, bugs, or suggestions through the appropriate GitHub reaction, issue, discussion, or small fix on pingdotgg/t3code."
 ---
 
 # T3 Code feedback

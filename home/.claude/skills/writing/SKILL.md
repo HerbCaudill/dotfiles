@@ -1,6 +1,6 @@
 ---
 name: writing
-description: Use when drafting, editing, rewriting, or reviewing substantial prose or a durable written artifact. Applies the global communication style in greater detail, especially for documents, proposals, explanations, public copy, and sensitive correspondence.
+description: "Draft, edit, rewrite, or review substantial prose or durable writing, including proposals, explanations, public copy, and sensitive correspondence."
 ---
 
 # Writing

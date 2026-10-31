@@ -1,6 +1,6 @@
 ---
 name: google-maps
-description: Geospatial query capabilities — geocoding, nearby search, routing, place details, elevation. Trigger when the user mentions locations, addresses, coordinates, navigation, "what's nearby", "how to get there", distance/duration, or any question that inherently involves geographic information — even if they don't explicitly say "map". Update when new tools are added or tool parameters change.
+description: "Use for place or address lookup, nearby search, routes, navigation, travel times, distances, coordinates, elevation, local weather, or air quality; not incidental place mentions."
 license: MIT
 version: 0.0.38
 compatibility:

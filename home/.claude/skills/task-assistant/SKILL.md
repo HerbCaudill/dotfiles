@@ -1,6 +1,7 @@
 ---
 name: task-assistant
-description: Run a session devoted exclusively to managing Beads issues without implementing them. Use only when the user explicitly invokes `$task-assistant`; never trigger this skill automatically from an ordinary task request.
+description: "Only when explicitly invoked: manage Beads issues for the session without implementing changes. Not ordinary task requests."
+disable-model-invocation: true
 ---
 
 # Task assistant

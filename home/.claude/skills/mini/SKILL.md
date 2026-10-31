@@ -1,6 +1,6 @@
 ---
 name: mini
-description: Use when working on or with Herb's always-on Windows mini PC (`mini`, a Minisforum) – running commands, installing software, checking scheduled tasks, syncing repos or dotfiles, or running DevResults builds and tests there. Not for the Parallels VM (`devresults-vm`).
+description: "Operate the always-on Windows mini PC (mini): commands, setup, scheduled tasks, repo sync, and builds/tests. Not the Parallels VM (devresults-vm)."
 ---
 
 # Mini (Windows mini PC)

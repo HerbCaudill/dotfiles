@@ -1,6 +1,6 @@
 ---
 name: showcase
-description: "Guide a human through a committed code change"
+description: "Demonstrate a committed change's old and new behavior, then explain its code, pausing for the user between stages."
 ---
 
 # Showcase

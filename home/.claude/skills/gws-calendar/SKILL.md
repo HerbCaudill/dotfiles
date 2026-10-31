@@ -1,6 +1,6 @@
 ---
 name: gws-calendar
-description: "Google Calendar: Manage calendars and events."
+description: "Google Calendar CLI fallback when connectors cannot manage calendars or events."
 metadata:
   version: 0.22.5
   openclaw:
