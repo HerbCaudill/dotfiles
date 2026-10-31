@@ -1,6 +1,7 @@
 { username, ... }:
 {
   imports = [
+    ./claude-chats.nix
     ./codex.nix
     ./files.nix
     ./git.nix

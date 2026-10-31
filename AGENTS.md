@@ -117,6 +117,10 @@ The hourly `process-inbox` and 07:00 `morning-briefing` jobs use the Briefings r
 
 The old Tickler mover is no longer installed or scheduled. Tasks Snoozed visibility changes with the calendar date without a mutation. Historical Google helper source and tests remain for reference, not as active personal workflows. The `gws-tasks` skill is restricted to explicitly requested legacy access.
 
+## Claude chat sync
+
+`nix/home/claude-chats.nix` runs `scripts/claude-chats/runClaudeChatSync.ts` nightly at 03:00 and logs to `/tmp/claude-chat-sync.log`. Headless Codex clicks **Export data** in the signed-in Chrome (`requestExport.prompt.md`). The script then polls Gmail for the "ready" email, opens the manifest and conversations links in separate Chrome tabs, updates `chats/` in the notes vault by chat ID, and commits only that folder. Export links are single-use and Chrome allows one automatic download per tab, so each link is opened once in its own tab and never retried. Chats that match a secret pattern are withheld and reported in a macOS notification. Other export files are not downloaded.
+
 ## Agent transcript archive
 
 The dotfiles repo manages transcript archiving with:
