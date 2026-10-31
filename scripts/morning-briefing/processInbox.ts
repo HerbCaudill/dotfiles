@@ -8,7 +8,7 @@ async function processInbox(): Promise<void> {
     process.execPath,
     [
       "--experimental-strip-types",
-      "/Users/herbcaudill/Code/HerbCaudill/briefings/scripts/inbox/run.ts",
+      "/Users/herbcaudill/Code/HerbCaudill/leo/scripts/inbox/run.ts",
       ...process.argv.slice(2),
     ],
     { env: process.env, stdio: "inherit" },

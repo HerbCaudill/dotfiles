@@ -6,7 +6,7 @@ description: Generate Herb's morning briefing and begin a Tasks Inbox review in 
 Run the repository-owned morning briefing pipeline:
 
 ```bash
-cd ~/Code/HerbCaudill/briefings && pnpm briefing:morning
+cd ~/Code/HerbCaudill/leo && pnpm briefing:morning
 ```
 
 The command owns the complete workflow. It processes new Obsidian inbox captures, starts relevant research independently, gathers sources through parallel agents, persists private intermediate artifacts, writes and verifies today's `## Daily briefing` section in Obsidian, waits for Obsidian Sync, and triggers a T3 Code webhook task. That task starts a fresh pinned thread, which first presents the exact saved briefing, then invokes task-review once with `views: ["inbox"]` and asks the first useful question. The command prints the saved briefing to standard output.

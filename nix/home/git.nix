@@ -33,7 +33,7 @@
       safe.directory = [
         "/Users/${username}"
         "/Users/${username}/Code/HerbCaudill"
-        "/Users/${username}/Code/HerbCaudill/briefings"
+        "/Users/${username}/Code/HerbCaudill/leo"
         "/Users/${username}/Desktop/dev environment"
       ];
     };

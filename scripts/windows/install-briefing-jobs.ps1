@@ -1,4 +1,4 @@
-param([string]$BriefingsRoot = 'C:/Code/HerbCaudill/briefings', [switch]$EnableSchedules)
+param([string]$BriefingsRoot = 'C:/Code/HerbCaudill/leo', [switch]$EnableSchedules)
 $ErrorActionPreference = 'Stop'
 $runner = Join-Path $BriefingsRoot 'scripts/windows/runBriefingJob.ps1'
 if (-not (Test-Path -LiteralPath $runner)) { throw 'Briefing runner is missing.' }

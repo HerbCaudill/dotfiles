@@ -11,7 +11,7 @@ The deterministic crawl/extract pipeline now lives in the `briefings` repo.
 
 Use this skill only after a raw file already exists at:
 
-- `~/Code/HerbCaudill/briefings/public/briefings/raw/YYYY-MM-DD.json`
+- `~/Code/HerbCaudill/leo/public/briefings/raw/YYYY-MM-DD.json`
 
 Do not crawl source sites, fetch headlines, or extract article bodies here. The raw file already contains the candidate articles, source metadata, first-seen positions, sightings, and extracted body text.
 
