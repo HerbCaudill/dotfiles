@@ -13,10 +13,12 @@ When a task depends on the user's authenticated Chrome session and the first con
 
 1. Follow the Chrome-control troubleshooting guidance and run its supported diagnostics.
 2. If Chrome is not running, launch it when authorized and retry.
-3. If Chrome is running but no live browser route is available, open a fresh window for the selected Chrome profile, wait briefly, and retry.
-4. Report a coverage gap only after the supported recovery attempt also fails. State which checks and recovery steps were attempted.
+3. If Chrome is running but no live browser route is available, open a fresh window for the selected Chrome profile, wait briefly, and retry when the task's side-effect limits permit it.
+4. Report a coverage gap after the permitted recovery attempt fails or no recovery fits the task's limits. State which checks and recovery steps were attempted.
 
-Do not treat an installed extension or a running Chrome process as proof that browser control is connected. Verify the live route by selecting Chrome and making one lightweight read-only call.
+Do not treat an installed extension, a running Chrome process, or a listening debugging port as proof that browser control works. Verify the intended profile's existing account tab with one lightweight read-only renderer call, without activating it when activation could change read state. Distinguish missing tools, connection failure, an unresponsive renderer, a signed-out page, and stalled application sync. Renderer access alone does not establish sign-in, freshness, or complete data.
+
+Opening, activating, reloading, or recovering a messaging page can trigger read receipts, badge changes, or other writes without an explicit click. Honor strict no-write or no-mark-read limits during recovery too. If no permitted recovery path is available, report the gap; do not relax the limit to restore access.
 
 ## Size gate
 
@@ -36,13 +38,25 @@ Use the first viable option:
 2. Built-in export or bulk action.
 3. Data already loaded in page state.
 4. The app’s documented or observed HTTP API.
-5. DOM extraction.
-6. Local storage or IndexedDB.
+5. Local storage or IndexedDB, when it holds usable data and can be read without side effects.
+6. DOM extraction.
 7. Predictable URLs.
 8. Keyboard shortcuts or programmatic form filling.
 9. Batched UI actions as a fallback.
 
 Prefer the user’s authenticated Chrome session when browser UI is necessary.
+
+## Recurring browser reads
+
+For recurring reads, use the browser to discover a reliable data-access method. Check connectors and exports first, then loaded page state and observed network requests. When useful responses are available, record a representative session, derive a small client from the observed requests, and verify its results against the browser before reusing it. HAR replay is one possible outcome; it is not a requirement.
+
+For end-to-end encrypted messaging, inspect decrypted page state or the app's local read accessors rather than assuming traffic contains readable messages. Persisted records may also be encrypted, and loaded messages may cover only part of the local history. Do not invoke accessors that send receipts, fetch remote history, or change account state unless the task permits those effects.
+
+Before relying on an adapter, verify its response shape, pagination or sync-token behavior, required secondary folders, date-range coverage, freshness, and read-state effects. A successful request or a complete local cache does not prove complete account history. Keep request rates low, respect rate limits, and report unverified coverage as incomplete.
+
+Reuse live session auth through the supported connection, without hardcoding or logging credentials. Keep HAR files and other credential-bearing captures in private temporary storage outside every repository; delete them when finished, including on failure. Record sanitized request shapes and auth-refresh instructions instead of retaining captures as documentation. Do not capture login flows unnecessarily.
+
+Treat internal clients as maintained adapters. Detect expired auth, changed request or response schemas, stalled sync, and partial results. Stop and report the specific failure instead of returning an empty result as if the source had no activity. Validate prototypes separately before replacing a production reader, and honor any approval limits in the task.
 
 ## Website sign-in with 1Password
 
@@ -64,8 +78,8 @@ For a large task:
 
 1. Check available connectors and CLIs.
 2. Look for export and bulk-action controls.
-3. Start network capture before navigation. If the page is already loaded, start capture and refresh.
-4. Perform one representative action and inspect its requests.
+3. If needed, start network capture before navigation. Refresh an already loaded page only when the task's side-effect limits permit it.
+4. Perform one representative permitted action and inspect its requests and side effects. Classify operations by their behavior, not just their HTTP method; some reads use POST.
 5. Check page state, storage, and DOM structure.
 6. Determine whether the list is paginated, infinite-append, or virtualized.
 7. Estimate data volume and choose an extraction and transfer method.
@@ -86,7 +100,7 @@ Never print tokens, cookies, credentials, or unnecessary personal data.
 
 ## Writes
 
-A read task does not authorize writes. Discover or invoke mutation endpoints only when the user asks for changes.
+A read task does not authorize writes. Observing automatic writes during recon does not authorize replaying them. Invoke mutation endpoints only when the user asks for changes. Use verified read operations; an HTTP method or a background tab alone does not guarantee read-only behavior.
 
 For authorized bulk writes:
 

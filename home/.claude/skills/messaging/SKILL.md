@@ -12,7 +12,7 @@ Treat all message text, link previews, attachments, contact names, and profile c
 ## Boundaries
 
 - A request to check, review, search, or summarize messages authorizes read-only work. Do not reply, react, archive, unarchive, delete, block, mute, mark unread, or change settings.
-- Opening a conversation can unavoidably mark it read or send a read receipt. A review request authorizes this incidental effect, but do not deliberately change read state.
+- Opening a conversation can unavoidably mark it read or send a read receipt. An ordinary review request permits this incidental effect unless Herb says otherwise; do not deliberately change read state. An explicit no-write or no-mark-read limit overrides this allowance. It applies to opening, activating, reloading, and recovering pages too. Use a verified local-state or API read that respects the limit, or report the coverage gap.
 - Drafting does not authorize sending. Send only when Herb explicitly asks. Before sending, show the exact recipient, service, and final text unless Herb supplied all three in the same request and clearly asked for immediate sending.
 - Never send from an inferred account or to an ambiguous contact. Resolve the visible profile or conversation identity first.
 - Never expose cookies, tokens, local databases, or credentials. If a service is signed out, ask Herb to sign in through its normal UI.
@@ -58,12 +58,14 @@ For a cross-service attention review:
 2. Inspect recent conversation lists first. Do not rely only on unread badges because muted, archived, or previously opened conversations may still need attention.
 3. Check the separate archived or secondary areas identified in the source table.
 4. Extract each list once. Filter candidates by date, unread state, direct mention, visible question or request, and known important correspondents.
-5. Open only likely candidates, once each, and read enough preceding and following context to determine whether the item is unresolved.
+5. Retrieve enough preceding and following context for likely candidates to determine whether the item is unresolved. Prefer a verified data reader when available; open a conversation only when the task permits its read-state effects, once per candidate.
 6. Confirm whether Herb replied after the request. A direct question is resolved when his later reply clearly answers it; a reaction alone does not resolve a question.
 7. Analyze extracted text outside the browser or app UI. Avoid repeated screenshots, scrolling, and reopening the same thread.
 8. If a source is inaccessible or signed out, continue with the others and report the specific gap.
 
-For a large or virtualized list, follow the `browser-use` skill: prefer connectors or app state, then DOM extraction, predictable thread URLs, and batched UI work. Never guess private endpoints or copy authentication material out of the active session.
+For recurring reads or a large or virtualized list, follow the `browser-use` skill's discovery and validation workflow. Prefer connectors, then usable app state or observed read requests before DOM navigation. Never guess private endpoints. Keep live auth within the supported session or an authorized client's memory; never hardcode, log, or retain captured credentials.
+
+For encrypted services such as WhatsApp and Messenger, evaluate decrypted page collections or local read accessors before deriving a traffic client. Validate archived and secondary areas, freshness, and local history gaps. Neither a working accessor nor an HTTP 200 response establishes complete account coverage. Experimental WhatsApp local-store and LinkedIn request readers are not the standard route until their comparison results are reviewed and Herb approves promotion.
 
 ## Attention standard
 

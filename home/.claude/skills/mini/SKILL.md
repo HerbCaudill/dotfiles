@@ -71,6 +71,8 @@ The managed Tasks peer runs as the interactive `tasks-agent` task in Herb's auto
 
 Obsidian Sync is the mini's sole vault sync method at `C:\Code\HerbCaudill\notes`; Windows gh-sync excludes that repository. Signal reads use sigtop's Windows key store. Browser sources use the dedicated Agent Chrome profile on loopback9223. The Mac retains an hourly source-only job through its existing Full Disk Access launcher: undated Reminders go to Tasks, and recent Apple Messages are exported to the mini. A sleeping Mac leaves a stale Messages artifact, which the briefing must label stale.
 
+The Windows communications lane explicitly configures its pinned Chrome DevTools MCP connection to Agent Chrome; it does not depend on global Codex MCP registration. From the `leo` repo, `pnpm browser:health` checks existing account renderers without activating tabs. The morning runner logs this check and continues if a browser source is unavailable. A responsive renderer does not establish sign-in, completed sync, or full history. See `leo/docs/windows-briefing.md` for the connection settings. Follow the browser-use and messaging skills for recovery and data-access discovery; keep experimental readers outside the production briefing until approved.
+
 ## DevResults toolchain
 
 The machine has Visual Studio 2026 Professional with the ASP.NET, .NET desktop, and .NET Framework 4.8 components, plus Git, PowerShell 7, GitHub CLI, mise (which provides Node and just), pnpm through corepack, NuGet, and SSMS. Developer Mode and long paths are on. Run repo commands from `C:\Code\DevResults\devresults` with `just`, following the repo's `AGENTS.md`. `.env.local` points `just` at Visual Studio's MSBuild and VSTest. The `setup-check` skill in the DevResults repo verifies the toolchain.
