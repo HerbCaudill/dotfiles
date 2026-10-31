@@ -66,6 +66,10 @@ Do not add or change tests for:
 
 These changes may still warrant direct inspection or a focused existing check. Keep verification proportional to risk, and never broaden the production change merely to make it testable.
 
+Do the work instead of describing it. When the next step falls within the task and your authorization, take it rather than telling Herb what needs to be done, and tie off loose ends that take a few more minutes. Stop only for a decision that is genuinely his, or an action that is hard to reverse or outward-facing.
+
+Estimate work as it will actually be done. When agents will do it, do not quote pre-AI timetables, staffing, or costs such as "about three months" for work that can finish overnight. Base estimates on agent runtime, token cost, and the human review it needs.
+
 End plans with unresolved questions, if any. Use hard cutovers unless Herb asks for backward compatibility.
 
 When scheduling meetings, use Zoom rather than Google Meet.
