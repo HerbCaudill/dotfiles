@@ -45,6 +45,8 @@ function requestExport() {
     [
       "-a",
       "never",
+      "-m",
+      "gpt-6-luna",
       "exec",
       "--skip-git-repo-check",
       "--ephemeral",
