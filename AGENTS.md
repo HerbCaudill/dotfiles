@@ -130,6 +130,10 @@ The dotfiles repo manages transcript archiving with:
 
 Codex active and archived session JSONL files are included. SQLite databases are excluded. A Windows scheduled task runs the same writer on mini every 15 minutes. The read-agent-sessions skill reads all machines from the local archive clone, including offline. See [Shared agent transcripts](docs/agent-transcripts.md) for enrollment, formats, and recovery.
 
+## Agent session notes
+
+`scripts/agent-session-notes/runAgentSessionNotes.ts` turns archived sessions into readable Markdown in the vault's `sessions/` folder, one note per conversation. The Windows task `agent-session-notes` runs it on mini at 02:00 and logs to `%LOCALAPPDATA%\agent-session-notes.log`; register it with `scripts/windows/register-agent-session-notes-task.ps1`. Mini is the only writer. It writes files and never touches Git, because Obsidian Sync owns that vault. Notes leave out tool traffic, subagent logs, automated runs and duplicate logs, and wait until a session has been quiet for a day. The filter for automated runs matches opening prompts, because the archive doesn't record how a session started, so add new automated prompts to `AUTOMATED_PROMPTS` in `planSessionNotes.ts`. Sessions that match a secret pattern are withheld and logged by ID. The `sessions` qmd collection indexes the folder; the `notes` collection ignores it. Mini's qmd config is machine-local, so its `index.yml` has to be changed by hand to match `nix/home/qmd.nix`.
+
 ## Lightweight workflow for trivial dotfile edits
 
 For trivial, localized edits such as adding a shell alias, changing a small config value, or fixing a typo:

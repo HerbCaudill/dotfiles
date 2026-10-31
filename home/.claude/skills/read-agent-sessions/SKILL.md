@@ -37,6 +37,8 @@ node "<skill-directory>/scripts/agent-sessions.ts" --help
 
 ## Find the session
 
+To find a session by topic rather than exact words, search the readable exports first: `qmd query "question" -c sessions`. Each note's frontmatter has the `session_id` and `machine` to pass to `show`. The exports leave out tool traffic, subagent logs, automated runs and sessions active in the last day, so use the commands below for those.
+
 List recent sessions from the other harness, usually scoped to the current project:
 
 ```text

@@ -25,8 +25,16 @@
       notes:
         path: ${builtins.toJSON "${config.home.homeDirectory}/Code/HerbCaudill/notes"}
         pattern: "**/*.md"
+        ignore:
+          - "sessions/**"
         context:
           "": "Herb Caudill's personal Obsidian wiki: ideas, reference notes, daily notes and meeting transcripts."
+      sessions:
+        path: ${builtins.toJSON "${config.home.homeDirectory}/Code/HerbCaudill/notes/sessions"}
+        pattern: "**/*.md"
+        includeByDefault: false
+        context:
+          "": "Conversations between Herb and coding agents, without tool output. Frontmatter identifies the full log in the transcript archive."
     models:
       embed: hf:ggml-org/embeddinggemma-300M-GGUF/embeddinggemma-300M-Q8_0.gguf
       generate: hf:tobil/qmd-query-expansion-1.7B-gguf/qmd-query-expansion-1.7B-q4_k_m.gguf
