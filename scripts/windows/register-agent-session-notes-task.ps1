@@ -9,5 +9,5 @@ $action = New-ScheduledTaskAction -Execute $pwsh -Argument "-NoProfile -Executio
 $trigger = New-ScheduledTaskTrigger -Daily -At "02:00"
 $principal = New-ScheduledTaskPrincipal -UserId ([Security.Principal.WindowsIdentity]::GetCurrent().Name) -LogonType S4U -RunLevel Limited
 $settings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 30) -StartWhenAvailable -AllowStartIfOnBatteries
-Register-ScheduledTask -TaskName "agent-session-notes" -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force | Out-Null
+Register-ScheduledTask -TaskName "agent-session-notes" -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force -ErrorAction Stop | Out-Null
 Write-Host "Registered daily 02:00 agent-session-notes; log: $env:LOCALAPPDATA\agent-session-notes.log"
