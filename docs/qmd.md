@@ -34,7 +34,7 @@ Use `--format json` for structured agent results. Read the current source note b
 
 ## Mini
 
-The mini has QMD 2.8.3 installed globally with npm. Vulkan initialization exited unexpectedly during setup, so scheduled refreshes use CPU mode, one embedding context and one document per batch. Check `qmd status` for pending work before treating semantic results as complete. From the mini, the MacBook is another option when awake:
+The mini has QMD 2.8.3 installed globally with npm. The Radeon 780M can run embeddings through Vulkan with cooperative matrices disabled: `GGML_VK_DISABLE_COOPMAT=1`. Keep one embedding context and one document per batch. The refresh runner sets these options explicitly. See the 2026-11-01 investigation below before resuming its disabled scheduled task. Check `qmd status` for pending work before treating semantic results as complete. From the mini, the MacBook is another option when awake:
 
 ```powershell
 ssh mac 'qmd query "your question" -c notes'
@@ -48,7 +48,7 @@ qmd collection add C:/Code/HerbCaudill/notes --name notes --mask '**/*.md'
 qmd context add qmd://notes 'Personal Obsidian wiki belonging to Herb Caudill.'
 ```
 
-The original mini installation needed `npm rebuild -g node-llama-cpp --allow-scripts=node-llama-cpp` after npm blocked its installation script. Setup persisted `QMD_FORCE_CPU=1` and `QMD_EMBED_PARALLELISM=1` in the mini's user environment; these are workarounds, not settings for the MacBook.
+The original mini installation needed `npm rebuild -g node-llama-cpp --allow-scripts=node-llama-cpp` after npm blocked its installation script. Setup persisted `QMD_FORCE_CPU=1` and `QMD_EMBED_PARALLELISM=1` in the mini's user environment. The CPU workaround is superseded by the Vulkan workaround below; these are mini settings, not settings for the MacBook.
 
 Dotfiles owns index maintenance on both machines, separate from Briefings and vault synchronization. This follows the mini's existing S4U task convention, using machine-wide PowerShell 7 and an explicit mise Node runtime. Register from an elevated shell with `scripts/windows/register-qmd-task.ps1`. Task `qmd-refresh` runs daily at 09:00, including after a missed start, with `MultipleInstances=IgnoreNew`. Run it now with `Start-ScheduledTask qmd-refresh`; inspect `Get-ScheduledTaskInfo qmd-refresh` and `~/.local/state/qmd/refresh.log` for completion or failure. Re-register after changing the selected Node installation.
 
@@ -59,3 +59,38 @@ The 2026-10-30 mini backfill reused complete Mac embedding batches only where co
 QMD status's `Updated` value comes from the latest indexed document modification time, not the last maintenance run. Use the timestamped `QMD refresh completed` log entry and scheduler exit result to confirm a recent scan.
 
 Each machine has independent collection paths, source files and index freshness. A complete Mac index does not complete the mini's index. Vault synchronization is managed separately; QMD must not pull, stash, merge or resolve vault Git conflicts.
+
+### Mini Vulkan investigation, 2026-11-01
+
+QMD 2.8.3 bundles node-llama-cpp 3.20.0 and llama.cpp b10361. The Radeon 780M driver is AMD 24.20.11.04, WMI version `32.0.12011.4002`, dated 2024-10-14. Vulkan detects `KHR_coopmat`, loads all 25 embedding-model layers, and creates the context. With cooperative matrices enabled, the first `getEmbeddingFor` terminates the native process without a JavaScript exception. The original Git Bash probe reported 127; direct PowerShell reproductions reported 9. Neither number by itself establishes the native fault. The debug log ends after the embedding output buffer is resized, without a device-lost or allocation error.
+
+Setting `GGML_VK_DISABLE_COOPMAT=1` makes the same standalone probe finish cleanly. Disabling FP16 alone still fails. This isolates the failure to the cooperative-matrix path on this backend/driver combination; it does not establish whether the underlying defect is in the driver, shader compiler, or llama.cpp. The [b10361 Vulkan source](https://github.com/ggml-org/llama.cpp/blob/b10361/ggml/src/ggml-vulkan/ggml-vulkan.cpp) checks this environment variable before enabling `VK_KHR_cooperative_matrix`. A driver update is unnecessary for this workaround, and none was installed.
+
+The original 20 short embeddings completed in 1.26 seconds with the workaround. A separate GPU run completed 60 embeddings in 18.44 seconds, using a 2,048-token context and inputs of 14, 1,618, and 1,108 tokens. All vectors had 768 finite components and all 25 layers remained on the GPU. These are small diagnostic runs under existing memory pressure, not an index-throughput benchmark. Probe scripts and outputs remain in `%TEMP%\qp`; they do not open the production database.
+
+The same three inputs produced CPU-versus-GPU cosine distances of 0.000399, 0.000376, and 0.000289. A long CPU comparison was stopped after about two minutes to limit resource use; a separate three-input CPU comparison completed in 66.54 seconds. The real refresh runner then completed `update` and `embed` against `%TEMP%\qp\test.sqlite`, with an isolated `QMD_CONFIG_DIR`: five chunks from two documents, exit 0. Direct semantic search put `capture.md` first, and `qmd doctor` confirmed Vulkan offloading, current fingerprints, and exact reproduction of all three sampled chunks. The existing lock and cutoff tests also passed.
+
+Mini's user environment now has `QMD_LLAMA_GPU=vulkan`, `GGML_VK_DISABLE_COOPMAT=1`, and `QMD_EMBED_PARALLELISM=1`; the persisted `QMD_FORCE_CPU=1` was removed. Existing agent hosts and shells retain inherited variables until restarted. For an existing PowerShell session, use the following before QMD commands. The scheduled runner explicitly overrides the old CPU setting, so it does not depend on refreshing the scheduler's inherited environment.
+
+```powershell
+$env:QMD_FORCE_CPU = $null
+$env:QMD_LLAMA_GPU = 'vulkan'
+$env:GGML_VK_DISABLE_COOPMAT = '1'
+$env:QMD_EMBED_PARALLELISM = '1'
+```
+
+The production database was backed up through SQLite's backup API to `C:\Users\herb\.cache\qmd\backups\20261101-before-vulkan\index.sqlite` before disposable-index validation. No production update, cleanup, or re-embed was run. Existing vectors include the earlier Metal import and subsequent CPU batches. GPU arithmetic can change vectors slightly even with the same model and fingerprint, so scores and close rankings can change. Completing only the pending documents preserves that mixed history. A full `qmd embed --force` would replace all vectors with local Vulkan results and give indexing and queries the same backend; run it only after explaining this tradeoff to Herb, confirming the e2e hold is released, checking for an active embed, and taking a fresh backup. Use `qmd doctor` and a known semantic query afterward.
+
+### Disabled refresh task
+
+The task was deliberately disabled at 10:47 local time on 2026-11-01 to release resources for DevResults e2e work. The earlier coordinator transcript records Herb's approval and says QMD must stay paused until e2e finishes. The process-exit receipt at `C:\Users\herb\lean-evidence\qmd-completion-boundary-20261101-080118-v2\result.json` records the embedding processes ending at `09:47:08Z`; the task file changed at 10:47:05 local time. Result `267014` (`0x41306`, terminated) therefore reflects the approved stop, not a successful refresh or evidence of an automatic memory kill. Task Scheduler's Operational log was disabled, so it cannot supply an independent event history for that run.
+
+The previous overnight run reached its intended 06:00 cutoff. The 09:00 run indexed successfully, reported 2,701 pending hashes, and was stopped before completion; the investigation found 2,582 pending documents and 20,091 embedded chunks. Completed batches survived. The task remains disabled. The runner is prepared to use Vulkan with the workaround when the e2e hold is released; its lock, one-context/one-document limits, low priority, and 06:00 cutoff remain in place. Do not re-register the task just to change the runner, because registration would undo the deliberate disabled state.
+
+### Memory findings
+
+At about 21:04 local time, the mini had 29.8 GiB of usable RAM and about 2.6 GiB available, with 49.7 GiB committed. `Win32_PageFileUsage` reported 4,405 MiB actually in the pagefile, with a 5,099 MiB peak and 25,895 MiB allocated. The earlier roughly 49 GB figure describes commit, not measured swap use. Paging was active during inspection, but there is no retained morning memory trace that proves its effect on the stopped refresh.
+
+Windows kernel pools accounted for about 8.0 GiB nonpaged and 7.9 GiB paged. A read-only `NtQuerySystemInformation(SystemPoolTagInformation)` probe found the largest allocations under `File` (6.18 GiB nonpaged, about 16.6 million outstanding objects), `FMfn` (2.80 GiB paged), `Ntfc` (1.23 GiB paged), and `IoNm` (1.16 GiB paged). These point to file objects and filesystem/filter name bookkeeping. They do not identify which process or filter retains the references. The machine had been up since 2026-10-27. Attributing this retention to a particular driver or application needs a separate handle/reference or kernel-trace investigation; the AMD graphics driver has not been established as its cause.
+
+Application private memory also contributed: 34 Node processes totaled about 9.7 GiB, including the Tasks Vite server (2.44 GiB) and the DevResults design-refresh Vite build watcher (2.31 GiB). Seven IIS Express processes totaled 3.54 GiB, Chrome 2.11 GiB, Notepad 1.94 GiB, ChatGPT 1.78 GiB, three Claude processes 1.68 GiB, and SQL Server 1.44 GiB. Private commit and working set are different measures and must not be added together. No shared process or service was stopped, restarted, or modified. Memory pressure plausibly slowed CPU embedding, but the documented reason for the morning termination was the e2e resource hold.

@@ -17,8 +17,8 @@ export async function acquireRefreshLock(port = 37739): Promise<Server | null> {
 }
 
 /** Bound mini work to twenty hours and keep 06:00–09:00 free for the briefing. */
-export function refreshBudget(now: Date, cpu: boolean): number {
-  if (!cpu) return 2 * 3600_000
+export function refreshBudget(now: Date, windows: boolean): number {
+  if (!windows) return 2 * 3600_000
   if (now.getHours() >= 6 && now.getHours() < 9) return 0
   const cutoff = new Date(now)
   cutoff.setHours(6, 0, 0, 0)
@@ -28,8 +28,8 @@ export function refreshBudget(now: Date, cpu: boolean): number {
 
 /** Refresh only the local index, preserving completed embedding batches on interruption. */
 async function main() {
-  const cpu = process.platform === "win32"
-  const budget = refreshBudget(new Date(), cpu)
+  const windows = process.platform === "win32"
+  const budget = refreshBudget(new Date(), windows)
   if (!budget) return console.log("QMD refresh deferred for the briefing window")
   const lock = await acquireRefreshLock()
   if (!lock) return console.log("QMD refresh already running (loopback lock held)")
@@ -38,31 +38,39 @@ async function main() {
     console.log(
       `${new Date().toISOString()} QMD refresh started; deadline ${new Date(deadline).toISOString()}`,
     )
-    const qmd = cpu
+    const qmd = windows
       ? join(dirname(process.execPath), "node_modules", "@tobilu", "qmd", "bin", "qmd")
       : join(homedir(), ".local", "bin", "qmd")
     for (const args of [
       ["update"],
-      ["embed", "--timeout", "0", ...(cpu ? ["--no-gpu", "--max-docs-per-batch", "1"] : [])],
+      ["embed", "--timeout", "0", ...(windows ? ["--max-docs-per-batch", "1"] : [])],
     ]) {
       await new Promise<void>((resolve, reject) => {
-        const child = spawn(cpu ? process.execPath : qmd, cpu ? [qmd, ...args] : args, {
+        const child = spawn(windows ? process.execPath : qmd, windows ? [qmd, ...args] : args, {
           stdio: "inherit",
-          detached: !cpu,
+          detached: !windows,
           windowsHide: true,
           env: {
             ...process.env,
-            ...(cpu ? { QMD_FORCE_CPU: "1", QMD_EMBED_PARALLELISM: "1" } : {}),
+            ...(windows
+              ? {
+                  QMD_FORCE_CPU: "0",
+                  QMD_LLAMA_GPU: "vulkan",
+                  // The mini's Radeon 780M crashes on the cooperative-matrix path.
+                  GGML_VK_DISABLE_COOPMAT: "1",
+                  QMD_EMBED_PARALLELISM: "1",
+                }
+              : {}),
           },
         })
-        if (cpu && child.pid) setPriority(child.pid, constants.priority.PRIORITY_LOW)
+        if (windows && child.pid) setPriority(child.pid, constants.priority.PRIORITY_LOW)
         const timer = setTimeout(
           () => {
             console.error(
               `${new Date().toISOString()} QMD cutoff reached; stopping only refresh process tree`,
             )
             if (!child.pid) return
-            if (cpu)
+            if (windows)
               spawnSync("taskkill.exe", ["/PID", String(child.pid), "/T", "/F"], {
                 windowsHide: true,
               })
