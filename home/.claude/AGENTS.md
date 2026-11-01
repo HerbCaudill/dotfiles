@@ -23,6 +23,10 @@ Use this map when turning source identifiers into names. Prefer the familiar giv
 | GitHub | `CandyceEA`     | Candyce Washington |
 | GitHub | `cmwilliams623` | Colleen Williams   |
 
+## Leo
+
+Leo is Herb's AI chief of staff, a high-powered executive assistant covering both work and personal life. See `~/Code/HerbCaudill/leo` and its `AGENTS.md`.
+
 ## Communication
 
 Be concise. Lead with the answer, then give the reasoning that matters. Write warm, straightforward, conversational English for a smart reader.
