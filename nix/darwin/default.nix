@@ -10,11 +10,6 @@ let
   homeDirectory = "/Users/${username}";
   userBin = "${homeDirectory}/.local/bin";
   tasksAgent = config.home-manager.users.${username}.services.tasksAgent;
-  marvinRepository = "${homeDirectory}/Code/HerbCaudill/marvin";
-  marvinRuntimeDirectory = "${homeDirectory}/Library/Application Support/Marvin";
-  marvinConfigPath = "${marvinRuntimeDirectory}/config.json";
-  marvinLogDirectory = "${homeDirectory}/Library/Logs/Marvin";
-  marvinSecretsPath = "${homeDirectory}/.secrets";
   launchdPath = lib.makeBinPath [
     pkgs.coreutils
     pkgs.dolt
@@ -31,96 +26,6 @@ let
     pkgs.python313
     pkgs.uv
   ];
-  marvinPath = "${userBin}:${homeDirectory}/Library/pnpm/bin:${launchdPath}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin";
-  marvinConfig = pkgs.writeText "marvin-config.json" (
-    builtins.toJSON {
-      schemaVersion = 1;
-      repositoryRoot = marvinRepository;
-      roots = [
-        "${homeDirectory}/Code/DevResults"
-        "${homeDirectory}/Code/HerbCaudill"
-      ];
-      collectionIntervalMs = 60000;
-      collectionTimeoutMs = 120000;
-      laneSummary = {
-        checkpointIntervalMs = 600000;
-        model = "gpt-5.6-luna";
-        timeoutMs = 10000;
-      };
-      port = 43127;
-    }
-  );
-  marvinCredentialValidator = pkgs.runCommand "marvin-credential-validator" { } ''
-    ${pkgs.coreutils}/bin/mkdir -p "$out"
-    ${pkgs.coreutils}/bin/cp ${../../scripts/marvin/assertPrivateCredentialFile.ts} "$out/assertPrivateCredentialFile.ts"
-    ${pkgs.coreutils}/bin/cp ${../../scripts/marvin/constants.ts} "$out/constants.ts"
-    ${pkgs.coreutils}/bin/cp ${../../scripts/marvin/repairPrivateCredentialFile.ts} "$out/repairPrivateCredentialFile.ts"
-  '';
-  marvinDigest = pkgs.writeShellScript "marvin-digest" ''
-    set -eu
-
-    expected_uid="$(${pkgs.coreutils}/bin/id -u)"
-    if ! ${pkgs.nodejs_24}/bin/node --experimental-strip-types ${marvinCredentialValidator}/assertPrivateCredentialFile.ts \
-      --check "${marvinSecretsPath}" "$expected_uid" >/dev/null 2>&1
-    then
-      echo "Marvin digest credentials are unavailable" >&2
-      exit 1
-    fi
-    if ! source "${marvinSecretsPath}" >/dev/null 2>&1; then
-      echo "Marvin digest credentials are unavailable" >&2
-      exit 1
-    fi
-    if [[ -z "''${OPENAI_API_KEY:-}" ]]; then
-      echo "Marvin digest credentials are unavailable" >&2
-      exit 1
-    fi
-
-    ${pkgs.coreutils}/bin/env -i \
-      HOME="${homeDirectory}" \
-      LANG="en_US.UTF-8" \
-      LOGNAME="${username}" \
-      OPENAI_API_KEY="$OPENAI_API_KEY" \
-      PATH="${marvinPath}" \
-      USER="${username}" \
-      ${pkgs.pnpm}/bin/pnpm --silent digest -- \
-        --config "${marvinConfigPath}" \
-        --model gpt-5.6-terra \
-        --model-timeout-ms 60000 \
-        --beads-timeout-ms 60000 \
-        --collection-timeout-ms 300000 \
-        --operation-timeout-ms 90000 \
-        >/dev/null
-    echo "Marvin digest completed"
-  '';
-  marvinDaemon = pkgs.writeShellScript "marvin-daemon" ''
-    set -eu
-
-    expected_uid="$(${pkgs.coreutils}/bin/id -u)"
-    if ! ${pkgs.nodejs_24}/bin/node --experimental-strip-types ${marvinCredentialValidator}/assertPrivateCredentialFile.ts \
-      --check "${marvinSecretsPath}" "$expected_uid" >/dev/null 2>&1
-    then
-      echo "Marvin daemon credentials are unavailable" >&2
-      exit 1
-    fi
-    if ! source "${marvinSecretsPath}" >/dev/null 2>&1; then
-      echo "Marvin daemon credentials are unavailable" >&2
-      exit 1
-    fi
-    if [[ -z "''${OPENAI_API_KEY:-}" ]]; then
-      echo "Marvin daemon credentials are unavailable" >&2
-      exit 1
-    fi
-
-    exec ${pkgs.coreutils}/bin/env -i \
-      HOME="${homeDirectory}" \
-      LANG="en_US.UTF-8" \
-      LOGNAME="${username}" \
-      OPENAI_API_KEY="$OPENAI_API_KEY" \
-      PATH="${marvinPath}" \
-      USER="${username}" \
-      ${pkgs.nodejs_24}/bin/node --disable-warning=ExperimentalWarning --experimental-strip-types \
-        "${marvinRepository}/src/daemon-command.ts" --config "${marvinConfigPath}"
-  '';
 in
 {
   imports = [ ./localhost-router.nix ./devlocal-mini.nix ];
@@ -189,23 +94,6 @@ in
     # Never sleep on the power adapter so the mini can always reach this Mac.
     # nix-darwin's power.sleep.computer would also apply on battery.
     /usr/bin/pmset -c sleep 0
-    ${pkgs.coreutils}/bin/install -d -m 0700 -o ${username} -g staff "${marvinRuntimeDirectory}"
-    ${pkgs.coreutils}/bin/install -d -m 0700 -o ${username} -g staff "${marvinLogDirectory}"
-    ${pkgs.coreutils}/bin/install -m 0600 -o ${username} -g staff ${marvinConfig} "${marvinConfigPath}.new"
-    ${pkgs.coreutils}/bin/mv -f "${marvinConfigPath}.new" "${marvinConfigPath}"
-    ${pkgs.coreutils}/bin/touch "${marvinLogDirectory}/digest.log"
-    ${pkgs.coreutils}/bin/touch "${marvinLogDirectory}/daemon.log"
-    ${pkgs.coreutils}/bin/chown ${username}:staff "${marvinLogDirectory}/digest.log" "${marvinLogDirectory}/daemon.log"
-    ${pkgs.coreutils}/bin/chmod 0600 "${marvinLogDirectory}/digest.log" "${marvinLogDirectory}/daemon.log"
-    if [[ -e "${marvinSecretsPath}" || -L "${marvinSecretsPath}" ]]; then
-      expected_uid="$(${pkgs.coreutils}/bin/id -u ${username})"
-      if ! ${pkgs.nodejs_24}/bin/node --experimental-strip-types ${marvinCredentialValidator}/assertPrivateCredentialFile.ts \
-        --repair-mode "${marvinSecretsPath}" "$expected_uid" >/dev/null 2>&1
-      then
-        echo "Marvin digest credentials are unavailable" >&2
-        exit 1
-      fi
-    fi
   '';
 
   launchd.agents."daily-note" = {
@@ -258,45 +146,6 @@ in
       EnvironmentVariables = {
         # pi lives in the pnpm global bin, which is not part of launchdPath.
         PATH = "${homeDirectory}/Library/pnpm/bin:${launchdPath}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin";
-      };
-    };
-  };
-
-  launchd.agents."marvin-digest" = {
-    serviceConfig = {
-      Label = "com.herbcaudill.marvin-digest";
-      ProgramArguments = [ "${marvinDigest}" ];
-      WorkingDirectory = marvinRepository;
-      RunAtLoad = true;
-      StartCalendarInterval = {
-        Hour = 7;
-        Minute = 0;
-      };
-      StandardOutPath = "${marvinLogDirectory}/digest.log";
-      StandardErrorPath = "${marvinLogDirectory}/digest.log";
-      Umask = 63;
-      EnvironmentVariables = {
-        HOME = homeDirectory;
-        PATH = marvinPath;
-      };
-    };
-  };
-
-  launchd.agents."marvin-daemon" = {
-    serviceConfig = {
-      Label = "com.herbcaudill.marvin-daemon";
-      ProgramArguments = [ "${marvinDaemon}" ];
-      WorkingDirectory = marvinRepository;
-      RunAtLoad = true;
-      KeepAlive = {
-        SuccessfulExit = false;
-      };
-      StandardOutPath = "${marvinLogDirectory}/daemon.log";
-      StandardErrorPath = "${marvinLogDirectory}/daemon.log";
-      Umask = 63;
-      EnvironmentVariables = {
-        HOME = homeDirectory;
-        PATH = marvinPath;
       };
     };
   };
