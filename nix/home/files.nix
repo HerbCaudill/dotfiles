@@ -37,6 +37,7 @@ in
     ".local/bin/github-pr-task-sync".source = mkRepoSymlink "home/.local/bin/github-pr-task-sync";
     ".local/bin/gws-delegated".source = mkRepoSymlink "home/.local/bin/gws-delegated";
     ".local/bin/index-project".source = mkRepoSymlink "home/.local/bin/index-project";
+    ".local/bin/llm".source = mkRepoSymlink "home/.local/bin/llm";
     ".local/bin/morning-briefing".source =
       mkRepoSymlink "scripts/morning-briefing/runMorningBriefing.ts";
     ".local/bin/obsidian-sync".source = mkRepoSymlink "home/.local/bin/obsidian-sync";

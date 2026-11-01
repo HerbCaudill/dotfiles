@@ -37,6 +37,10 @@ Agents may run `pnpm nix:rebuild` themselves after changes that need the live ma
 
 These are installed into `~/.local/bin` by Home Manager rather than a custom symlink script.
 
+### Headless LLM calls
+
+`llm` runs a prompt on the cheapest model that meets an intelligence level. See `docs/llm.md`.
+
 ### Worktree helpers (Bash)
 
 | Command                   | Description                                                |

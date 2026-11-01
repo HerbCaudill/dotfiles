@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url"
 import { setTimeout as sleep } from "node:timers/promises"
 
 import { isMainModule } from "../isMainModule.ts"
+import { readSnapshot } from "../llm/readSnapshot.ts"
+import { resolveVariant } from "../llm/resolveVariant.ts"
 import { findExportLink } from "./findExportLink.ts"
 import { findSecrets } from "./findSecrets.ts"
 import { planChatImport } from "./planChatImport.ts"
@@ -40,13 +42,19 @@ async function main() {
 /** Ask headless Codex to click Export data in the signed-in Chrome. */
 function requestExport() {
   const prompt = readFileSync(join(SCRIPT_DIR, "requestExport.prompt.md"), "utf8")
+  const { effort, model } = resolveVariant(readSnapshot(), {
+    harness: "codex",
+    level: EXPORT_LEVEL,
+  })
   const result = spawnSync(
     "codex",
     [
       "-a",
       "never",
       "-m",
-      "gpt-6-luna",
+      model,
+      "-c",
+      `model_reasoning_effort="${effort}"`,
       "exec",
       "--skip-git-repo-check",
       "--ephemeral",
@@ -262,6 +270,7 @@ function notifyFailure(
 
 // CONSTANTS
 
+const EXPORT_LEVEL = 15
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
 const NOTES_DIR = join(homedir(), "Code/HerbCaudill/notes")
 const CHATS_DIR = join(NOTES_DIR, "chats")
