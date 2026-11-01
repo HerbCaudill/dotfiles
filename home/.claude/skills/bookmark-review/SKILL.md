@@ -22,7 +22,7 @@ X authentication lives on the mini. Apply [mini](../mini/SKILL.md) and use `xurl
 - Preserve post IDs as the stable identities. Expand links from both normal and long-post URL entities. The maintained export can contain historical posts that are no longer bookmarked, so verify current presence through the live list.
 - Remove an authorized bookmark with `xurl --app bookmarks unbookmark <post-id>`. Then independently paginate the live list and verify the ID is absent. Apply the decision rules below before any removal.
 
-Use read-only commands to inspect or refresh the queue. Do not change other X account state while processing bookmarks.
+Use read-only commands to inspect or refresh the queue. Do not change other X account state while processing bookmarks. To show a post in the thread, use [tweet-cards](../tweet-cards/SKILL.md).
 
 ### Save long-form reading to Matter
 
