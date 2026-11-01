@@ -67,6 +67,7 @@ Do not add or change tests for:
 - static content or data edits whose correctness is directly visible in the diff, including copy, rosters, lookup tables, fixtures, and seed data, unless transformation or validation behavior changes;
 - removal of obsolete behavior, data, or UI – remove tests that no longer apply, but do not add tests that assert the absence;
 - renames, moves, formatting, generated files, or mechanical refactors that do not change observable behavior;
+- behavior the type system already guarantees;
 - configuration or metadata changes that the owning tool can validate directly; or
 - exploratory, flaky, environmental, build, or tooling investigations before the failure boundary is understood.
 
