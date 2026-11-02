@@ -1,6 +1,6 @@
 ---
 name: bookmark-review
-description: "Review or resume Herb's X bookmarks one at a time: research, discuss, save reading to Matter, and verify agreed actions."
+description: "Review or resume Herb's X and Bluesky bookmarks one at a time: research, discuss, save reading to Matter, and verify agreed actions."
 ---
 
 # Bookmark review
@@ -9,7 +9,7 @@ Help Herb turn saved material into something useful: an action, a reading or vie
 
 This is an interactive review. Ask one question at a time in plain chat. Do not use question tools or batch individual bookmark decisions.
 
-This skill covers two things: using the X and Matter CLIs, and working with Herb to process bookmarks one at a time. It is usable from any repository or conversation.
+This skill covers two things: using the X, Bluesky, and Matter CLIs, and working with Herb to process bookmarks one at a time. It is usable from any repository or conversation.
 
 ## Working with bookmarks through the CLIs
 
@@ -23,6 +23,17 @@ X authentication lives on the mini. Apply [mini](../mini/SKILL.md) and use `xurl
 - Remove an authorized bookmark with `xurl --app bookmarks unbookmark <post-id>`. Then independently paginate the live list and verify the ID is absent. Apply the decision rules below before any removal.
 
 Use read-only commands to inspect or refresh the queue. Do not change other X account state while processing bookmarks. To show a post in the thread, use [tweet-cards](../tweet-cards/SKILL.md).
+
+### Bluesky bookmarks
+
+Run these on the mini, where the app password lives, from `C:\Code\HerbCaudill\leo`; from the Mac, go through `ssh mini`. Never print `~/.config/bluesky/app-password` or pass it in a command.
+
+- `pnpm -s bluesky:bookmarks list` prints every live bookmark as JSON, following all pages. Each `item` is a post, with its text in `record.text`, full links in `record.facets`, and images, link cards, video, and quoted posts in `embed`.
+- `pnpm -s bluesky:bookmarks remove <post-at-uri>` removes one bookmark, then re-reads the live list and verifies it is absent. Apply the decision rules below before any removal.
+
+Preserve the post's AT URI as its stable identity. Its link is `https://bsky.app/profile/<did>/post/<rkey>`. The maintained archive is `documents/bluesky-bookmarks/bookmarks.json` and `documents/Bluesky bookmarks.md`; like the X export, it retains removed items and must not be hand-edited.
+
+Keep Bluesky in its own review with its own queue and log, `documents/Bluesky bookmark review.md`. Everything below about research, presentation, capture, decisions, and the audit trail applies the same way, using the Bluesky commands in place of the X ones. Post cards are the same self-contained HTML, with Bluesky's author, handle, date, and link; `tweet-cards` itself is X-only. A bookmarked post deleted since it was saved no longer appears in the live list, so check the archive for its text.
 
 ### Save long-form reading to Matter
 
