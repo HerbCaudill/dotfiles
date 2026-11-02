@@ -15,7 +15,7 @@ Watch the current repository's beads using a background process. The agent ends 
 4. Read fresh `bd ready --json` and in-progress issues, then follow `orchestrate` for eligible work. Exclude epics, human-labelled issues and issues assigned to an existing owner from new implementation dispatch. File overlap and permission to dispatch remain the orchestrator's decisions.
 5. When there is nothing to dispatch, end the turn. Keep the enrollment active. Background watcher messages and delegate completion notifications resume this thread when there is useful work.
 
-Do not create an interval schedule, repeatedly send the watch prompt, hold an agent tool open in a sleep loop, use Monitor to poll delegates, or repeatedly inspect a running delegate. The background service owns detection; the agent owns implementation, independent review and closure.
+Do not create an interval schedule, repeatedly send the watch prompt, hold an agent tool open in a sleep loop, use Monitor to poll delegates, or repeatedly inspect a running delegate. The background service owns detection; the agent owns dispatch, and its workers own implementation and closure.
 
 ## What wakes the thread
 

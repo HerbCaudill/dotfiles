@@ -44,7 +44,7 @@ Treat a top-level task or epic child as a separate implementation and review uni
 - Create subtasks under a non-epic parent with `--parent=<id>`. Their IDs use the form `<parent-id>.1`. Ralph completes the parent and its subtasks as one implementation unit.
 - Create independent tasks under an `epic` with `--parent=<id>`. Each child gets its own ID and implementation session.
 
-Use subtasks for granular steps within one implementation and review unit. Use an epic only when its children warrant separate implementation sessions and independent reviews.
+Use subtasks for granular steps within one implementation unit. Use an epic only when its children warrant separate implementation sessions.
 
 ## Update issues
 

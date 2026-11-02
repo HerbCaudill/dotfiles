@@ -7,9 +7,9 @@ description: Use when the user wants to clear a ready beads backlog containing m
 
 ## Overview
 
-Dispatch ready beads tasks to subagents while the current task remains the coordinator and the only routine user-visible task. Keep a rolling set of open tasks: whenever capacity frees up, start the next ready task that does not collide with any open task. Use one implementation worker and one independent review worker per issue, enforce review before closure, and repeat until the queue is drained or blocked.
+Dispatch ready beads tasks to subagents while the current task remains the coordinator and the only routine user-visible task. Optimize for throughput: run as much as possible in parallel, and let each worker verify, push and close its own work. Repeat until the queue is drained or blocked.
 
-**Core principle:** An implementation worker must never review or close its own bead. Only the orchestrator closes a bead after an independent reviewer approves the pushed changes.
+**Core principle:** A task should take about as long as it would if Herb handed it directly to one agent. Pushed, self-verified work closes the task. Independent review is the exception.
 
 ## Usage
 
@@ -25,108 +25,47 @@ bd ready --json
 
 If no tasks are ready, report and stop.
 
-### Rank ready tasks
+### Group ready tasks
 
-- Bugs take priority over features
-- Higher priority (lower number) takes precedence
+Bugs take priority over features, and a higher priority (lower number) takes precedence. Otherwise, start everything you can.
 
-For each ready task, read its description with `bd show <id>` and estimate which files and directories it will touch. File overlap is heuristic – when in doubt, treat tasks as overlapping.
+Exclude epics and human-labelled tasks. Read in-progress work and existing assignees before claiming anything; coordinate existing owners instead of duplicating their tasks.
 
-Exclude epics and human-labelled tasks from implementation dispatch. Read in-progress work and existing assignees before claiming anything; coordinate existing owners instead of duplicating their tasks.
-
-### Track open tasks
-
-A task is open from dispatch until its bead is closed. That includes implementing, awaiting review, in review, and fixing review findings. A task in review still holds its files, because `CHANGES REQUESTED` sends the original worker back to edit them.
-
-Keep a working record of each open task: bead ID, title, estimated files, phase, and the worker or delegated task IDs for its implementer and reviewer.
+Read each task with `bd show <id>`, then group tasks by product area. Give one worker a whole group, so that related tasks land together. Serialize only tasks that really edit the same code: a guess that two areas might overlap is not a reason to wait, because rebasing is cheaper than waiting.
 
 ### Dispatch rule
 
-Start the highest-ranked ready task when all of these hold:
-
-- Its estimated files do not overlap with any open task's files
-- None of its dependencies are still open
-- Capacity is available (see below)
-- Fewer than about 6 tasks are open, so the coordinator can still track them
-
-If the top task collides with an open task, skip it and try the next one. A skipped task waits until the conflicting task closes.
-
-Re-run the dispatch rule whenever a task closes, a worker frees capacity, or `bd ready --json` shows newly unblocked tasks.
-
-If a task seems unsafe to run in the local checkout even with no overlapping open task, do not silently switch it to a worktree. Pause before dispatching it, explain the collision risk, and ask the user whether to run it alone, skip it, or use a worktree anyway.
+Start a worker for every group whose dependencies are closed, up to about 8 at a time. Re-run this whenever a worker finishes or `bd ready --json` shows new tasks. A dependency inside a group is the worker's to sequence.
 
 ### Choose the worker type and capacity
 
-Use the harness's native subagents for implementation and review by default. They keep internal coordination out of the user's task list while the bead, commits, pushed branch, and orchestration task provide durable state.
+Use `delegate_task` when T3 Code provides it, otherwise the harness's native subagents. Retain each returned `taskId` and follow its returned `next` instruction. Completion notifications resume the parent; never poll a running delegate. Native subagent limits are not a reason to wait.
 
-Native subagent limits are not a reason to wait. When native capacity is full and T3 Code's `delegate_task` is available, dispatch the extra implementation or review work through `delegate_task` instead. Prefer `delegate_task` for reviewers when native slots are held by implementers waiting on review. Retain each returned `taskId` and follow its returned `next` instruction. Completion notifications resume the parent; never poll a running delegate. A new review or fix round on a delegated worker is a new `delegate_task` call whose prompt includes the original brief, prior findings, and responses; use a distinct `clientRequestId` per round.
+Give each parallel worker its own worktree when the repository supports it, without asking first. Follow any repository rules for isolated environments.
 
-If neither native capacity nor `delegate_task` is available, queue the task until a worker finishes.
+Create a standalone top-level task only when the user asks for one, or the work needs sustained user interaction. Name it `{id}: {title}`.
 
-Create a standalone top-level task only when:
+Use the default model and reasoning effort for clear, localized tasks, and the strongest model with high effort for ambiguous or cross-cutting work. Honor any explicit user preference.
 
-- The user explicitly asks for one
-- The work needs sustained user interaction or a meaningful decision before it can proceed
-- The work should remain independently visible and resumable after the orchestration task ends
+### Dispatch workers
 
-When a standalone task is warranted, name it exactly:
+Give each worker its group name as its task label where the harness allows. If the harness supports goals, set one for the orchestration task: resolve all ready beads through parallel workers, until no ready tasks remain or a real blocker appears.
 
-```text
-{id}: {title}
-```
+**Worker prompt template**
 
-When multiple models or reasoning levels are available, use the default or balanced model and reasoning effort for clear, localized tasks, and the strongest coding/reasoning model with high reasoning effort for ambiguous, cross-cutting, or high-risk work. Escalate the model or reasoning effort when a worker is blocked by reasoning, and honor any explicit user preference.
+> Complete Beads tasks {ids}: {titles}. Claim them, verify with focused tests, typecheck and lint, plus a browser check when a change is visual. Do not run the whole test suite for each task. Commit, rebase and push to the repository's normal integration target, and resolve conflicts yourself. Then close each task with a one-line reason naming the commit. If a task needs Herb, comment on it and move on. Do not open a review or wait for one.
 
-Do not use worktrees for orchestration workers unless the user explicitly asks for a worktree in the current conversation. Worktrees add setup overhead, can make large submodules expensive to materialize, and can confuse shared beads state.
+Repository rules still apply. Where a repository requires pull requests, such as DevResults, the worker opens the pull request and the task closes under that repository's rules.
 
-### Dispatch implementation
+### Independent review
 
-Give each implementation worker the bead ID and title as its task label where the harness allows.
+Do not review by default. Request it only when a change could lose data, change permissions or security behavior, alter a schema or migration, or broadly change a shared component in a risky way, or when Herb asks for it. Triviality is not the test: most changes get none.
 
-If the harness supports goals, set a goal for the orchestration task and include the task goal in each implementation worker's prompt.
-
-**Orchestration goal**
-
-```text
-Resolve all ready beads by dispatching non-overlapping tasks to implementation and review workers as capacity frees up, monitoring bead status, checking stuck workers when needed, and continuing until no ready tasks remain or a real blocker appears.
-```
-
-**Implementation goal**
-
-```text
-Complete Beads task {id}: {title} and leave it open for independent review.
-```
-
-**Implementation prompt template**
-
-> Complete Beads task {id}: {title}. Leave the bead open for independent review. When ready, report `READY FOR REVIEW` with the base SHA, ordered task commit SHAs, verification commands and results, and pushed branch name.
-
-### Dispatch independent review
-
-When an implementation worker reports `READY FOR REVIEW`, leave the bead `in_progress` and create a fresh review worker. The reviewer must not be the implementation agent. Give it the label below where the harness allows:
-
-```text
-Review {id}: {title}
-```
-
-Require the reviewer to use the `do-code-review` skill.
-
-**Review prompt template**
-
-> Independently review Beads task {id}: {title} using the `do-code-review` skill. The base SHA is {base_sha}; the ordered task commit SHAs are {task_commit_shas}. The implementation agent reported: {verification_summary}. Do not edit, commit, push, or close the bead. End with exactly one verdict: `APPROVED`, `CHANGES REQUESTED`, or `BLOCKED`.
-
-### Resolve review findings
-
-- `APPROVED`: Confirm every reviewed commit is pushed, then the orchestrator runs `bd close {id}`, removes the task from the open set, and re-runs the dispatch rule.
-- `CHANGES REQUESTED`: Send all blocking findings to the original implementation worker and trigger a follow-up turn. It must fix, verify, commit, push, and report the new commit SHAs without closing the bead. Return the complete updated commit list to the same independent reviewer and trigger a follow-up review. For delegated workers, start a new `delegate_task` round with the full history instead. Repeat until approved.
-- `BLOCKED`: Keep the bead open and report the blocker to the user. Its files stay held until the task is resolved or the user says to release them.
-- File worthwhile non-blocking findings as separate beads when they should not expand the current task.
-
-Never waive review because a change is trivial, tests pass, a deadline is near, or the implementation agent is confident. A closed bead means independently reviewed and approved work, not merely pushed code.
+When review is warranted, run one fresh worker using the `do-code-review` skill, without holding up other work. The reviewer blocks only on real defects, not on style, missing evidence or preferences. The coordinator fixes a real defect through one follow-up worker, or files it as a new task. Do not re-review the fix unless the fix is itself risky.
 
 ### Monitor quietly
 
-Use beads as the source of truth: a task is done when its issue is closed. An `in_progress` implementation may be implementing, awaiting review, or addressing findings. Keep its files reserved until independent review approves the pushed changes and the orchestrator closes it.
+Use beads as the source of truth: a task is done when its issue is closed.
 
 While tasks are open:
 
@@ -146,4 +85,4 @@ Stop when no tasks are open and `bd ready --json` returns nothing dispatchable, 
 
 ### Status report
 
-If asked for a "status report" (or "update", or "how's it going", etc.), provide a concise summary of the current state of all tasks, preferably in the form of a markdown task list. Include the bead ID, title, and status for each task, and for open tasks their phase (implementing, in review, fixing). Do not include implementation or review worker output unless a task is blocked or failed.
+If asked for a "status report" (or "update", or "how's it going", etc.), provide a concise summary of the current state of all tasks, preferably in the form of a markdown task list. Include the bead ID, title, and status for each task. Do not include worker output unless a task is blocked or failed.
