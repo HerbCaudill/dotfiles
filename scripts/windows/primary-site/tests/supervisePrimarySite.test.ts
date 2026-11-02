@@ -1,4 +1,5 @@
 import { mkdtemp, readFile, writeFile } from "node:fs/promises"
+import { readFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { createServer } from "node:net"
@@ -83,6 +84,15 @@ test("reports unavailable installed candidates without starting IIS", async () =
   f.config.candidates[0].entry += ".missing"
   await expect(f.run()).rejects.toThrow(/No verified installed Azurite/)
   await expect(readFile(f.started)).rejects.toThrow()
+})
+
+test("persists each reported state before notifying observers", async () => {
+  const f = await fixture()
+  const run = supervisePrimarySite(f.config, f.controller.signal, () => {
+    const status = JSON.parse(readFileSync(join(f.config.logPath, "status.json"), "utf8"))
+    if (status.state === "running") f.controller.abort()
+  })
+  await expect(run).resolves.toBeUndefined()
 })
 
 test("skips a broken installed candidate and verifies the next configured entry", async () => {

@@ -20,7 +20,6 @@ export async function supervisePrimarySite(
   const pollMs = config.pollMs ?? 1000
   /** Persist the current dependency state for operators and task diagnostics. */
   async function status(state: string, message: string) {
-    report(message)
     await writeFile(
       join(config.logPath, "status.json"),
       JSON.stringify(
@@ -34,6 +33,7 @@ export async function supervisePrimarySite(
         2,
       ),
     )
+    report(message)
   }
   /** Start a direct executable with durable output and no package manager or shell. */
   async function start(name: string, executable: string, args: string[]) {
