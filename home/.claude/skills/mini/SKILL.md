@@ -101,7 +101,7 @@ The primary `DevResults site` and `VibeResults dev` tasks remain separate. Do no
 
 - Windows Update installs automatically and may reboot only on Sundays at 4 AM. Active hours are 6 AM to midnight, and feature updates wait 90 days. These are set as policy under `HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate`.
 - The machine never sleeps or hibernates on AC power.
-- Agents may reboot without asking only when the mini is idle: nobody signed in over Remote Desktop (including disconnected sessions), no other agent sessions, and no builds or tests running. SSH, Tailscale, and the scheduled tasks come back without a sign-in. Do not reboot when any check is uncertain.
+- Agents may reboot without asking only when the mini is idle: nobody signed in over Remote Desktop (including disconnected sessions), no other agent sessions, and no builds or tests running. SSH, Tailscale, and the scheduled tasks come back without a sign-in. Do not reboot when any check is uncertain. Leo has one separate standing permission, for when memory is blocking e2e; its conditions are in `leo/Goals.md` in the vault, and no one else may use it.
 
 ### SSH repair watchdog
 
