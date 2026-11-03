@@ -57,6 +57,14 @@ Give each worker its group name as its task label where the harness allows. If t
 
 Repository rules still apply. Where a repository requires pull requests, such as DevResults, the worker opens the pull request and the task closes under that repository's rules.
 
+### Keep the review server current
+
+The coordinator owns the checkout and running server Herb uses to review changes, including Storybook. Identify its URL, process working directory, and source commit at the start. Worker worktree checks and a push to remote main do not update that server.
+
+After each completed batch is pushed, update the review checkout to the integrated commits before reporting the changes as visible. Check for local edits and preserve them. Stop the owned server before changing files it serves, fast-forward safely, then restart it detached on the same URL. Never reset, stash, overwrite local work, or disturb another owner’s server to force an update; report the exact blocker instead.
+
+Verify the restarted server responds and exposes a concrete changed story or behavior from the new source. A healthy old server or refreshed browser tab is insufficient. If the review server cannot be updated, distinguish “pushed” from “available in your Storybook” in the completion report. Keep this synchronization coordinator-owned so parallel workers do not restart the user’s server.
+
 ### Independent review
 
 Do not review by default. Request it only when a change could lose data, change permissions or security behavior, alter a schema or migration, or broadly change a shared component in a risky way, or when Herb asks for it. Triviality is not the test: most changes get none.

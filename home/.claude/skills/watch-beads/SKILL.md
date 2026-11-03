@@ -13,7 +13,8 @@ Watch the current repository's beads using a background process. The agent ends 
 2. Run `watch-beads status --repo <repository>`. If another thread owns the watch, coordinate with it instead of replacing it or starting a duplicate. If this thread already owns it, leave the enrollment intact.
 3. Run `watch-beads start --repo <repository> --thread <thread-id>` when not enrolled. The command validates the existing T3 thread, enables the local Beads event journal and enrolls one repository with the managed service. Use `--t3-home <path>` only when the thread belongs to an explicitly different local T3 data directory.
 4. Read fresh `bd ready --json` and in-progress issues, then follow `orchestrate` for eligible work. Exclude epics, human-labelled issues and issues assigned to an existing owner from new implementation dispatch. File overlap and permission to dispatch remain the orchestrator's decisions.
-5. When there is nothing to dispatch, end the turn. Keep the enrollment active. Background watcher messages and delegate completion notifications resume this thread when there is useful work.
+5. After worker completions, follow orchestrate’s review-server synchronization step before reporting changes as visible to Herb.
+6. When there is nothing to dispatch, end the turn. Keep the enrollment active. Background watcher messages and delegate completion notifications resume this thread when there is useful work.
 
 Do not create an interval schedule, repeatedly send the watch prompt, hold an agent tool open in a sleep loop, use Monitor to poll delegates, or repeatedly inspect a running delegate. The background service owns detection; the agent owns dispatch, and its workers own implementation and closure.
 
