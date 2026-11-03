@@ -88,7 +88,7 @@ Show the verified full post inline before the brief, including quoted posts wher
 
 In T3 Code, call `html_preview` and then `html_render` with the HTML. Follow the renderer's theme and layout rules. Do not start a server just to show the card.
 
-Keep each turn in reading order: wrap-up of the previous bookmark, then the next card, then its discussion. T3 places a rendered card above the turn's final reply, so write the wrap-up (what was saved, removed and logged) as interim text before calling `html_render`, and put only the new bookmark's discussion in the final reply.
+Keep each turn in reading order: wrap-up of the previous bookmark, then the next card, then its discussion. T3 places a rendered card above the turn's final reply, so write the wrap-up (what was saved, removed and logged) as interim text before calling `html_render`, and put only the new bookmark's discussion in the final reply. Render the card in the same turn as the decision question, immediately before asking it, so Herb can see the bookmark while he answers; never ask about a bookmark whose card was shown only in an earlier turn.
 
 Follow with a short explanation of what is useful and what is uncertain, including where you would file it if he chooses File, then ask for the decision with the question tool. Do not recite the whole research report or turn every reaction into a task proposal.
 
