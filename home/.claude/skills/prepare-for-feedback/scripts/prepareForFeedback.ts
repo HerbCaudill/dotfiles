@@ -133,15 +133,11 @@ chmod +x /tmp/reload-devlocal.command
 open -a Terminal /tmp/reload-devlocal.command`
 }
 
-/** Tile VibeResults on the left and DevResults on the right on desktop 2, falling back to plain tabs. */
+/** Tile VibeResults on the left and DevResults on the right on the current desktop, falling back to plain tabs. */
 function getOpenScript(left: string, right: string) {
   return `osascript -l JavaScript - '${left}' '${right}' <<'EOF' || open -a "Google Chrome" '${left}' '${right}'
 ObjC.import("AppKit")
 function run([left, right]) {
-  try {
-    Application("System Events").keyCode(19, { using: "control down" })
-    delay(1.5)
-  } catch {}
   const screen = $.NSScreen.screens.objectAtIndex(0)
   const visible = screen.visibleFrame
   const top = screen.frame.size.height - visible.origin.y - visible.size.height
