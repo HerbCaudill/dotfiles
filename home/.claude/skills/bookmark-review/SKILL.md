@@ -82,6 +82,8 @@ Show the verified full post inline before the brief, including quoted posts wher
 
 In T3 Code, call `html_preview` and then `html_render` with the HTML. Follow the renderer's theme and layout rules. Do not start a server just to show the card.
 
+Keep each turn in reading order: wrap-up of the previous bookmark, then the next card, then its discussion. T3 places a rendered card above the turn's final reply, so write the wrap-up (what was saved, removed and logged) as interim text before calling `html_render`, and put only the new bookmark's discussion in the final reply.
+
 Follow with a short explanation of what is useful, what is uncertain, and a question suited to this item. Do not recite the whole research report, force a choice among the same categories every time, or turn every reaction into a task proposal.
 
 For reflective material, use [thinking-partner](../thinking-partner/SKILL.md). Herb wants sources to provoke his own thinking and contribute to a richly interlinked personal wiki or zettelkasten. A quote collection or read-later dump is not a substitute for his reflection. Preserve his uncertainty and distinguish his thoughts from the source and the agent's interpretation. Search existing notes before proposing additions, and make only meaningful connections.
