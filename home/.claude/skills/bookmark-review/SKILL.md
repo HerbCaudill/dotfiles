@@ -7,7 +7,13 @@ description: "Review or resume Herb's X and Bluesky bookmarks one at a time: res
 
 Help Herb turn saved material into something useful: an action, a reading or viewing choice, an improvement to his tools, a reflection in his personal knowledge base, or a decision to let it go. Do not assume every bookmark deserves a task or a permanent note.
 
-This is an interactive review. Ask one question at a time in plain chat. Do not use question tools or batch individual bookmark decisions.
+This is an interactive review, one bookmark at a time. Ask for each bookmark's decision with the question tool, with these options:
+
+- **Discard:** remove the bookmark with no capture.
+- **File:** put it in his notes and/or make a task, whichever fits the item (see "Capture in the right place").
+- **Discuss in a new session:** start a standalone session about it (see "Standalone follow-up conversations").
+
+He can answer with free text instead. Never batch decisions for several bookmarks into one question. Use plain chat for any follow-up that the choice leaves open, one question at a time.
 
 This skill covers two things: using the X, Bluesky, and Matter CLIs, and working with Herb to process bookmarks one at a time. It is usable from any repository or conversation.
 
@@ -84,7 +90,7 @@ In T3 Code, call `html_preview` and then `html_render` with the HTML. Follow the
 
 Keep each turn in reading order: wrap-up of the previous bookmark, then the next card, then its discussion. T3 places a rendered card above the turn's final reply, so write the wrap-up (what was saved, removed and logged) as interim text before calling `html_render`, and put only the new bookmark's discussion in the final reply.
 
-Follow with a short explanation of what is useful, what is uncertain, and a question suited to this item. Do not recite the whole research report, force a choice among the same categories every time, or turn every reaction into a task proposal.
+Follow with a short explanation of what is useful and what is uncertain, including where you would file it if he chooses File, then ask for the decision with the question tool. Do not recite the whole research report or turn every reaction into a task proposal.
 
 For reflective material, use [thinking-partner](../thinking-partner/SKILL.md). Herb wants sources to provoke his own thinking and contribute to a richly interlinked personal wiki or zettelkasten. A quote collection or read-later dump is not a substitute for his reflection. Preserve his uncertainty and distinguish his thoughts from the source and the agent's interpretation. Search existing notes before proposing additions, and make only meaningful connections.
 
