@@ -45,6 +45,19 @@ In Markdown files, keep each paragraph on one line without manual wrapping.
 
 Prefer TypeScript, React, Vite, pnpm, oxfmt, Vitest, Playwright, Tabler icons, and IBM Plex fonts. Prefer TypeScript to bash, Python, or PowerShell for scripts. Follow the `code-style` skill whenever you write or edit code.
 
+## Model roles
+
+When you start a thread, subagent, or delegated task, choose its settings by role and always set the effort level explicitly. Do not rely on a tool's default model or effort.
+
+| Role       | Harness     | Model         | Effort | Use for                                                                                |
+| ---------- | ----------- | ------------- | ------ | -------------------------------------------------------------------------------------- |
+| `default`  | Claude Code | Opus 5.5      | high   | Anything not listed below, especially architecture and planning, review, and UI design |
+| `author`   | Codex       | GPT-6.1 Sol   | high   | High-volume authoring                                                                  |
+| `bulk`     | Codex       | GPT-6.1 Terra | low    | Simple tasks at high volume                                                            |
+| `bulk-min` | Codex       | GPT-6 Luna    | low    | Trivial tasks at very high volume                                                      |
+
+The bulk roles are starting points from the cost frontier, not proven picks. Before committing a high-volume job to one, benchmark it against the next role up on a sample of the real task. Herb curates this table by hand; propose changes rather than editing it.
+
 ## Workflow
 
 For unattended recurring work, default to OS-scheduled headless processes. Write routine results to logs or existing destinations. Create or reactivate a T3 thread only for requested interaction, actionable work already authorized by Herb, or a decision that needs him. Reuse an existing related heartbeat where suitable. Detect events without model calls where practical; use headless model runs when the check requires judgment.
@@ -77,7 +90,7 @@ End plans with unresolved questions, if any. Use hard cutovers unless Herb asks 
 
 When scheduling meetings, use Zoom rather than Google Meet.
 
-When Herb asks you to put an agent on something, or for any involved delegated work, launch a standalone top-level T3 Code thread (`t3_thread_launch`, Codex by default) so he can open it and talk to the agent directly. Do not use an in-thread subagent for that. Use subagents only for quick, narrow actions he will not need to follow up on.
+When Herb asks you to put an agent on something, or for any involved delegated work, launch a standalone top-level T3 Code thread (`t3_thread_launch`, with settings from the model roles above) so he can open it and talk to the agent directly. Do not use an in-thread subagent for that. Use subagents only for quick, narrow actions he will not need to follow up on.
 The Mac and the mini can reach each other over Tailscale: `ssh mini` (or `ssh mini-backup`) from the Mac, and `ssh mac` from the mini. When work belongs on the other machine, such as DevResults builds and tests on the mini, use the `mini` skill for connection details and start the session there. To start a T3 thread on the other machine, Claude uses the `t3-mini` MCP server on the Mac and `t3-mac` on the mini; see the `mini` skill. The Mac is unreachable while it sleeps.
 
 When serving a site or demo from the mini, always tunnel its port back to the MacBook and give Herb the MacBook-accessible URL. Assume he is working on the MacBook unless he says otherwise. Verify access from the MacBook before reporting the site ready. If the MacBook is unreachable, report that the tunnel is blocked rather than presenting a mini-local localhost URL as usable.
