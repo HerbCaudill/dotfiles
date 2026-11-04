@@ -4,6 +4,35 @@ import { join } from "node:path"
 import { expect, it } from "vitest"
 import { parseDrenvArgs } from "../parseDrenvArgs.ts"
 import { createEnvironmentLifecycle } from "../createEnvironmentLifecycle.ts"
+import { createRegistry } from "../createRegistry.ts"
+
+it("returns the completed removal receipt when removal is retried", async () => {
+  const directory = await realpath(await mkdtemp(join(tmpdir(), "drenv-removed-")))
+  const options = {
+    directory,
+    macRoot: join(directory, "mac"),
+    windowsRoot: "C:\\DrenvTest",
+    windowsHost: "devresults-vm",
+  }
+  try {
+    const registry = createRegistry(options)
+    const manifest = await registry.reserve({
+      id: "proof",
+      inventory: { windowsPorts: [], macPorts: [] },
+    })
+    const removed = await registry.checkpoint(manifest.id, manifest.ownerToken, {
+      phase: "removed",
+      completedStep: "removed",
+    })
+    const lifecycle = createEnvironmentLifecycle(options)
+    expect(await lifecycle({ command: "remove", id: "proof" })).toEqual(removed)
+    await expect(lifecycle({ command: "start", id: "proof" })).rejects.toThrow(
+      "This environment was removed",
+    )
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
 
 it("resumes failed creation with durable inputs and stops before syncing/building", async () => {
   const directory = await realpath(await mkdtemp(join(tmpdir(), "drenv-lifecycle-")))

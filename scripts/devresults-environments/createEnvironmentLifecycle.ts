@@ -157,6 +157,7 @@ export function createEnvironmentLifecycle(
             (manifest.sourceMode ? m => nativeWatch(m, "start") : watchEnvironmentClient)
           )(manifest)
         }
+        if (manifest.phase === "removed" && args.command === "remove") return manifest
         if (manifest.phase === "removed")
           throw new Error("This environment was removed; choose a new ID")
         if (args.command === "install-vibe") {

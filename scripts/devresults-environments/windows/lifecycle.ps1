@@ -444,14 +444,15 @@ function Assert-RemovalPreflight($Manifest,[bool]$Complete) {
         if($LASTEXITCODE -ne 0 -or $dirty){Deny 'Windows source has uncommitted work; preserve it before removal'}
     }
 }
-# Git for Windows can traverse junctions during forced worktree removal. Unlink them first.
+# Unlink junctions without following their targets, including dependencies past MAX_PATH.
 function Remove-SourceLinks([string]$Root) {
+    Assert-NoReparse $Root $false
     $pending=[Collections.Generic.Stack[string]]::new()
-    $pending.Push($Root)
+    $pending.Push('\\?\'+[IO.Path]::GetFullPath($Root))
     while($pending.Count) {
-        $directory=$pending.Pop()
-        Assert-NoReparse $directory $false
-        foreach($entry in @(Get-ChildItem -LiteralPath $directory -Force)) {
+        $directory=[IO.DirectoryInfo]::new($pending.Pop())
+        if($directory.Attributes -band [IO.FileAttributes]::ReparsePoint){Deny 'Source directory changed to a junction'}
+        foreach($entry in $directory.EnumerateFileSystemInfos()) {
             if(($entry.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
                 if(($entry.Attributes -band [IO.FileAttributes]::Directory) -ne 0){[IO.Directory]::Delete($entry.FullName,$false)}else{[IO.File]::Delete($entry.FullName)}
             } elseif(($entry.Attributes -band [IO.FileAttributes]::Directory) -ne 0){$pending.Push($entry.FullName)}
@@ -490,12 +491,18 @@ function Remove-OwnedData($Manifest,[bool]$Complete) {
         $sourceClaim="$($Manifest.paths.windows).drenv-source"
         if(Test-Path -LiteralPath $Manifest.paths.windows) {
             Assert-OwnedSource $Manifest
-            if((& git -C $Manifest.paths.windows status --porcelain --untracked-files=all) -join ''){Deny 'Windows source has uncommitted work; preserve it before removal'}
+            $dirty=(& git -C $Manifest.paths.windows status --porcelain --untracked-files=all) -join ''
+            if($LASTEXITCODE -ne 0 -or $dirty){Deny 'Windows source has uncommitted work; preserve it before removal'}
             Remove-SourceLinks $Manifest.paths.windows
-            & git -C (Join-Path $sourceClaim 'repository.git') worktree remove --force -- $Manifest.paths.windows 2>$null
-            if($LASTEXITCODE -ne 0){Deny 'Windows source has uncommitted/ignored work or removal failed; preserve it before removal'}
+            # Git's deletion can fail halfway through ignored dependencies even on long-path-enabled hosts.
+            [IO.Directory]::Delete(('\\?\'+[IO.Path]::GetFullPath($Manifest.paths.windows)),$true)
         }
-        if(Test-Path -LiteralPath $sourceClaim){Assert-NoReparse $sourceClaim;Assert-Owner (Get-Json (Join-Path $sourceClaim 'owner.json')) $Manifest;Remove-Item -LiteralPath $sourceClaim -Recurse -Force}
+        if(Test-Path -LiteralPath $sourceClaim){
+            Assert-NoReparse $sourceClaim;Assert-Owner (Get-Json (Join-Path $sourceClaim 'owner.json')) $Manifest
+            & git -C (Join-Path $sourceClaim 'repository.git') worktree prune --expire now
+            if($LASTEXITCODE -ne 0){Deny 'Windows source worktree pruning failed; preserved ownership receipt'}
+            Remove-Item -LiteralPath $sourceClaim -Recurse -Force
+        }
     }
 }
 

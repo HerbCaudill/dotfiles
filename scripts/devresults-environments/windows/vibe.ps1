@@ -21,33 +21,43 @@ try {
     $root=Split-Path (Split-Path $m.paths.runtime)
     if($path -cne $(if($isWatch){$m.paths.windows}else{Join-Path $root "vibe\$($m.id)"})){throw 'Foreign VibeResults path'}
     $control="$path.drenv-source"
-    $owner=Get-Content (Join-Path $control 'owner.json') -Raw|ConvertFrom-Json;Assert-Owner $owner
-    if($owner.path -cne $path){throw 'Foreign VibeResults source mapping'}
-    $common=((& git -C $path rev-parse --path-format=absolute --git-common-dir)-join '').Trim()
-    if($LASTEXITCODE -ne 0 -or [IO.Path]::GetFullPath($common) -ine (Join-Path $control 'repository.git')){throw 'Foreign VibeResults Git store'}
+    $exists=Test-Path -LiteralPath $path
+    # Interrupted removal may leave only worker receipts. Validate everything that survives.
+    if($exists -or (Test-Path -LiteralPath $control)){
+        $owner=Get-Content (Join-Path $control 'owner.json') -Raw|ConvertFrom-Json;Assert-Owner $owner
+        if($owner.path -cne $path){throw 'Foreign VibeResults source mapping'}
+    }
+    $revision=''
+    if($exists){
+        $common=((& git -C $path rev-parse --path-format=absolute --git-common-dir)-join '').Trim()
+        if($LASTEXITCODE -ne 0 -or [IO.Path]::GetFullPath($common) -ine (Join-Path $control 'repository.git')){throw 'Foreign VibeResults Git store'}
+        $revision=((& git -C $path rev-parse HEAD)-join '').Trim()
+    } elseif($Request.operation -notin @('status','stop','preflight-remove','remove','remove-task')){throw 'Owned VibeResults worktree is missing'}
     $statePath=Join-Path $control $(if($isWatch){'client-watch-state.json'}else{'vibe-state.json'})
     $taskName="drenv-$(if($isWatch){'watch'}else{'vibe'})-$($m.id)-$($m.ownerToken)"
     $pwsh='C:\Program Files\PowerShell\7\pwsh.exe'
     $state=Get-State
     $task=Get-Task $state
-    $result=@{ok=$true;environmentId=$m.id;ownerToken=$m.ownerToken;status='stopped';state=$state;path=$path;port=$(if($isWatch){0}else{$m.ports.vibe});revision=((& git -C $path rev-parse HEAD)-join '').Trim()}
-    if($Request.operation -eq 'status'){if(Test-Live $state){$result.status=$state.status};$result|ConvertTo-Json -Depth 30 -Compress;return}
-    if($Request.operation -in @('preflight-remove','remove')){if(((& git -C $path status --porcelain --untracked-files=all)-join '') -or $LASTEXITCODE -ne 0){throw 'VibeResults worktree is dirty; preserve its edits before removal'}}
+    $result=@{ok=$true;environmentId=$m.id;ownerToken=$m.ownerToken;status='stopped';state=$state;path=$path;port=$(if($isWatch){0}else{$m.ports.vibe});revision=$revision}
+    if($Request.operation -eq 'status'){if(Test-Live $state){$result.status=$state.status}elseif(-not $exists){$result.status='absent'};$result|ConvertTo-Json -Depth 30 -Compress;return}
+    if($exists -and $Request.operation -in @('preflight-remove','remove')){if(((& git -C $path status --porcelain --untracked-files=all)-join '') -or $LASTEXITCODE -ne 0){throw 'VibeResults worktree is dirty; preserve its edits before removal'}}
     if($Request.operation -eq 'preflight-remove'){$result|ConvertTo-Json -Depth 30 -Compress;return}
     if($Request.operation -in @('stop','remove','remove-task')){
         Stop-Worker
         if($Request.operation -eq 'remove-task' -and $task){Unregister-ScheduledTask -TaskName $taskName -Confirm:$false}
         if($Request.operation -eq 'remove'){
             if($task){Unregister-ScheduledTask -TaskName $taskName -Confirm:$false}
-            $cleanupRun=Join-Path $control ([guid]::NewGuid().ToString('N'))
-            [void][IO.Directory]::CreateDirectory($cleanupRun)
-            $cleanupScript=Join-Path $cleanupRun 'remove-worktree.ps1'
-            $cleanupRequest=Join-Path $cleanupRun 'request.json'
-            [IO.File]::WriteAllText($cleanupScript,$Request.cleanup)
-            Write-State $cleanupRequest $m
-            & $pwsh -NoProfile -NonInteractive -File $cleanupScript -RequestPath $cleanupRequest
-            if($LASTEXITCODE -ne 0){throw 'Owned VibeResults source removal failed; preserved receipt'}
-            Remove-Item -LiteralPath $control -Recurse -Force
+            if($exists){
+                $cleanupRun=Join-Path $control ([guid]::NewGuid().ToString('N'))
+                [void][IO.Directory]::CreateDirectory($cleanupRun)
+                $cleanupScript=Join-Path $cleanupRun 'remove-worktree.ps1'
+                $cleanupRequest=Join-Path $cleanupRun 'request.json'
+                [IO.File]::WriteAllText($cleanupScript,$Request.cleanup)
+                Write-State $cleanupRequest $m
+                & $pwsh -NoProfile -NonInteractive -File $cleanupScript -RequestPath $cleanupRequest
+                if($LASTEXITCODE -ne 0){throw 'Owned VibeResults source removal failed; preserved receipt'}
+            }
+            if(Test-Path -LiteralPath $control){Remove-Item -LiteralPath $control -Recurse -Force}
         }
         $result|ConvertTo-Json -Depth 30 -Compress;return
     }
