@@ -18,7 +18,7 @@ The `gws` binary must be on `$PATH`. See the project README for install options.
 
 ## Authentication
 
-On Herb's Mac, use `gws-delegated` in place of `gws` for API commands. It creates a short-lived service-account token for `herb@devresults.com` using the domain-wide delegation scopes approved by the Workspace administrator. It does not use interactive OAuth or the `gws` credential cache.
+On Herb's Mac and on the mini, use `gws-delegated` in place of `gws` for API commands. On the mini it's a PowerShell shim (`~/.local/bin/gws-delegated.ps1` and `.cmd`), so run it from PowerShell; Git Bash's `which` won't find it, and plain `gws` there isn't signed in. It creates a short-lived service-account token for `herb@devresults.com` using the domain-wide delegation scopes approved by the Workspace administrator. It does not use interactive OAuth or the `gws` credential cache.
 
 Use the underlying `gws` binary only for authentication diagnostics, schema discovery, `--help`, and `generate-skills`.
 
