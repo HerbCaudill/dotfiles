@@ -621,7 +621,7 @@ function correctionReason(
 }
 
 /** Normalize one processable Gmail message and its meaningful thread context. */
-async function normalizeCandidate(
+export async function normalizeCandidate(
   /** Target message. */
   message: GmailMessage,
   /** Complete Gmail thread. */

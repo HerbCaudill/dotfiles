@@ -1,0 +1,77 @@
+{
+  "mail_kind": {
+    "type": "choice",
+    "instructions": "What kind of email this is for its recipient, Herb Caudill (herb@devresults.com), owner of DevResults. Judge the message itself, using the sender, subject, body and whether it carries bulk-mail headers.",
+    "criteria": {
+      "personal": {
+        "covers": "A message a person wrote to Herb or to a small group including him: colleagues, clients, partners, friends and family, including replies in an existing conversation.",
+        "excludes": "Mass mail made to look personal, and cold pitches from strangers."
+      },
+      "cold_outreach": {
+        "covers": "Unsolicited one-to-one style pitches from people or firms Herb has no relationship with: software or service sales, lead generation, recruiting, job seekers, investors, brokers, acquisition inquiries, event or award solicitations.",
+        "excludes": "Replies to something Herb started, and mail from companies he already buys from."
+      },
+      "marketing": {
+        "covers": "Bulk promotional mail from a company or organization: sales and discounts, product or feature announcements, webinars and events, upgrade or upsell offers, loyalty and rewards promotions, app tips, re-engagement, feedback and review surveys, fundraising appeals, and company newsletters whose purpose is to promote the sender.",
+        "excludes": "Receipts, account notices, alerts and editorial writing, even when they come from the same company."
+      },
+      "editorial": {
+        "covers": "Newsletters whose main content is writing, journalism, analysis or commentary that Herb subscribed to read, such as a writer's Substack or a news outlet's editorial newsletter.",
+        "excludes": "Company newsletters promoting the company's own products, events or offers."
+      },
+      "transactional": {
+        "covers": "Mail about a specific transaction or account action: receipts, invoices, statements, payment confirmations or reminders, bookings and reservations, shipping, renewals, one-time codes, verification and password-reset messages.",
+        "excludes": "Promotions that only mention an account."
+      },
+      "notification": {
+        "covers": "Automated alerts about Herb's own accounts, systems, groups or activity: security alerts, monitoring and service status, calendar invitations and responses, shared documents, comments, mentions, mailing-list or group posts, and changes to terms or service.",
+        "excludes": "Promotional mail dressed up as an alert."
+      },
+      "government": {
+        "covers": "Mail from a government agency or official public body, including tax, labor, licensing and public-service notices and newsletters.",
+        "excludes": "Private companies that work with government."
+      }
+    }
+  },
+  "cold_type": {
+    "type": "choice",
+    "instructions": "If this message were an unsolicited pitch to Herb, which kind of pitch it would be.",
+    "criteria": {
+      "cold_vendor": "Selling software, services, consulting, recruiting services, lead generation, payroll, financial products or similar offerings.",
+      "cold_job_inquiry": "A job seeker, résumé, freelancer looking for work, or recruiter introducing a candidate.",
+      "cold_investor": "An investor, private-equity firm, broker, funding pitch or acquisition inquiry.",
+      "generic_solicitation": "A generic solicitation, repeated cold follow-up, unsolicited promotional event, pay-to-play award or vanity-publication offer."
+    }
+  },
+  "needs_attention": {
+    "type": "noul",
+    "instructions": "As of evaluatedAt, this message gives Herb a current, material reason to notice it soon: a direct personal message, an explicit request, decision, approval or deadline for him, a cancelled or changed meeting, a concrete security incident on his account, a production failure, bounced mail or failed payment, a medical result or action, an unusual charge or other financial exception, an imminent cancellation or loss of service, or a concrete problem or assignment in active work. Routine receipts, statements, confirmations, newsletters, promotions, one-time codes and digests that repeat old events are not reasons.",
+    "criteria": {
+      "true": "There is a current, material reason for Herb to notice this message soon.",
+      "false": "The message is routine, promotional, informational or out of date."
+    }
+  },
+  "attention_reason": {
+    "type": "choice",
+    "instructions": "If Herb needs to notice this message, the main reason why.",
+    "criteria": {
+      "personal_message": "A direct personal message or meaningful message from an active correspondent.",
+      "explicit_action": "A current request, decision, approval, deadline or other action explicitly required from Herb.",
+      "scheduling_exception": "A declined or cancelled meeting, proposed new time, missing meeting link, delivery failure or similar scheduling exception.",
+      "account_security": "A completed or attempted security-sensitive event such as a risky sign-in, new device, password or authentication change, or account recovery.",
+      "operational_failure": "A current production failure, bounced outgoing mail, failed payment, service interruption or similar operational exception.",
+      "medical_action": "Current medical results, prescriptions, treatment changes or healthcare actions.",
+      "financial_anomaly": "An overdraft, reversal, unexpected account change, unusual charge or other current financial exception.",
+      "service_decision": "An approaching cancellation decision, missing payment details, imminent loss of service or similar time-sensitive service choice.",
+      "active_work": "A meaningful update in active work with a concrete decision, problem or assigned action."
+    }
+  },
+  "routine_authentication": {
+    "type": "noul",
+    "instructions": "This message is only a one-time password, access or verification code, magic or sign-in link, or account registration message, and it does not report a concrete security event such as a risky sign-in, new device, credential change or account recovery.",
+    "criteria": {
+      "true": "Only a routine code, link or registration message.",
+      "false": "Something else, or it reports a concrete security event."
+    }
+  }
+}
