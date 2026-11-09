@@ -103,7 +103,7 @@ When assigning work to another agent, use the shortest instruction that uniquely
 
 When Herb asks to open a page in a browser for him, use the command line (for example, `open <url>`) and do not use browser-control tools.
 
-Prefer a purpose-built connector, API, or CLI. When browser UI is necessary, use Herb's Chrome session rather than the in-app browser. Ask Herb to sign in there if needed.
+Prefer a purpose-built connector, API, or CLI. When browser UI is necessary, use Herb's Chrome session rather than the in-app browser. Ask Herb to sign in there if needed. The `browser-use` skill says which Chrome tool to use: Browse or Claude in Chrome.
 
 Herb gives standing authorization to transfer a one-time OAuth response from the signed-in Chrome tab directly into the local process that initiated that exact OAuth flow. Do not ask again unless a higher-priority policy requires action-time confirmation. Never log or persist the response, and close agent-opened authorization tabs afterward.
 

@@ -15,17 +15,17 @@ DevResults is a Windows-native .NET/SQL Server application. Keep builds, tests, 
 
 ## Quick Reference
 
-| Need                       | Default approach                                                                                                      |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Work in the repo           | Edit in a separate macOS clone and sync to Windows with `drsync`, or SSH to `devresults-vm` for Windows-only work     |
-| Query dev SQL Server       | Use the `sql-server-dev` skill from macOS                                                                             |
-| Run the web app            | Use IIS Express in the Windows VM                                                                                     |
-| Test browser behavior      | Open the VM-hosted app URL from macOS when reachable                                                                  |
-| Verify logged-in app state | Use Herb's logged-in Chrome (claude-in-chrome MCP) — don't fight cookie auth with curl/bearer tokens on non-API pages |
-| Edit files                 | Prefer a separate macOS clone synced with `drsync`; never edit through the mounted Windows checkout                   |
-| Repo instructions          | Read `AGENTS.md` from the DevResults repo root                                                                        |
-| Repo-specific skills       | Check `.claude/skills` inside the DevResults repo                                                                     |
-| Common repo commands       | Use `drsync <command>` from a macOS clone, or `dr <command>` for Windows-only commands                                |
+| Need                       | Default approach                                                                                                                  |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Work in the repo           | Edit in a separate macOS clone and sync to Windows with `drsync`, or SSH to `devresults-vm` for Windows-only work                 |
+| Query dev SQL Server       | Use the `sql-server-dev` skill from macOS                                                                                         |
+| Run the web app            | Use IIS Express in the Windows VM                                                                                                 |
+| Test browser behavior      | Open the VM-hosted app URL from macOS when reachable                                                                              |
+| Verify logged-in app state | Use Herb's logged-in Chrome through Browse (see `browser-use`) — don't fight cookie auth with curl/bearer tokens on non-API pages |
+| Edit files                 | Prefer a separate macOS clone synced with `drsync`; never edit through the mounted Windows checkout                               |
+| Repo instructions          | Read `AGENTS.md` from the DevResults repo root                                                                                    |
+| Repo-specific skills       | Check `.claude/skills` inside the DevResults repo                                                                                 |
+| Common repo commands       | Use `drsync <command>` from a macOS clone, or `dr <command>` for Windows-only commands                                            |
 
 ## Editing customer instances through the web UI
 
