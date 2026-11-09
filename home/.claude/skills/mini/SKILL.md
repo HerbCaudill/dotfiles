@@ -7,6 +7,8 @@ description: "Operate the always-on Windows mini PC (mini): commands, setup, sch
 
 An always-on Windows 11 Pro mini PC that hosts coding agents, especially for DevResults backend work, which needs Windows. AMD Ryzen 9 7940HS, 32 GB RAM, 1 TB SSD. Herb's account is the local administrator `MINI\herb`.
 
+For user-facing previews, complete the MacBook delivery required by global AGENTS.md before reporting ready. For VibeResults beside DevResults, use [prepare-for-feedback](../prepare-for-feedback/SKILL.md). For other running sites, tunnel and verify the intended page from the Mac. For standalone HTML files, copy and open the file on the Mac when browser delivery is requested.
+
 ## Connecting
 
 The machine is on Herb's tailnet as `mini`. The Mac's Home Manager SSH config has `mini` (port 22) and `mini-backup` (port 2222) entries. Both log in as `herb` with the Mac's ed25519 key. If the primary connection fails, try `ssh mini-backup` before asking Herb to intervene.

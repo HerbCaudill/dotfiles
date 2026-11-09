@@ -18,7 +18,7 @@ The worked example this skill is based on: `~/Code/HerbCaudill/marvin/mockups/ui
 3. Design **4–7 options spanning genuinely different philosophies** — dashboard vs. document vs. inbox vs. board vs. terminal vs. multi-pane app — not variations on one layout. Label them `A · Name`, `B · Name`, …. Off-menu ideas (a menu-bar sketch, a phone widget) go at the end as `Bonus · Name`.
 4. For each option write the meta block: **Why** is one sentence on the philosophy and what it's best at; **Tradeoff** is one honest sentence on the cost. No hedging, no marketing.
 5. Build each mockup as a **complete standalone HTML page** at a fixed canvas, then escape it into the `srcdoc` attribute (see below).
-6. Save the file where it belongs in the repo (typically `mockups/<topic>.html`), open it for Herb (or publish as an artifact if that's the session's medium), and give a one-paragraph orientation — don't re-describe every tab.
+6. Save the file where it belongs in the repo (typically `mockups/<topic>.html`), open it for Herb (or publish as an artifact if that's the session's medium), and give a one-paragraph orientation — don't re-describe every tab. When working on the mini and opening the result in Herb's browser, follow the [mini skill's MacBook delivery guidance](../mini/SKILL.md).
 
 After Herb chooses a direction, adapt that same design to a phone canvas and visually inspect both sizes before implementation. Specify how panes, navigation, and dialogs change on mobile. A separate “Bonus · iPhone” concept does not verify the chosen desktop direction. Follow the [mobile-pwa skill](../mobile-pwa/SKILL.md) for the app shell and verification requirements.
 
