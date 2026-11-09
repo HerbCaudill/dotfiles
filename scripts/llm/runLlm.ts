@@ -1,48 +1,29 @@
 import { DEFAULT_TIMEOUT_MS } from "./constants.ts"
 import { isFailedResult } from "./isFailedResult.ts"
-import { isUsageLimitFailure } from "./isUsageLimitFailure.ts"
-import { resolveVariant } from "./resolveVariant.ts"
-import type { Harness, Invocation, ProcessResult, RunRequest, Snapshot, Variant } from "./types.ts"
+import { resolveRole } from "./resolveRole.ts"
+import type { Harness, Invocation, ProcessResult, Role, RunRequest } from "./types.ts"
 
-/** Run a prompt on the resolved variant, moving to another harness if a usage limit runs out. */
+/** Run a prompt with the harness, model and effort of a role. */
 export async function runLlm(
   /** What the caller asked for. */
   request: RunRequest,
-  /** Scores and side effects. */
+  /** Roles and side effects. */
   dependencies: RunLlmDependencies,
 ): Promise<RunLlmResult> {
-  const { execute, harnesses, log, snapshot } = dependencies
-  const excludedHarnesses: string[] = []
-  let previous: Variant | undefined
+  const { execute, harnesses, roles } = dependencies
+  const role = resolveRole(roles, request.role)
+  const harness = harnesses[role.harness]
+  if (!harness) throw new Error(`Unknown harness: ${role.harness}`)
 
-  while (true) {
-    const variant = resolveVariant(snapshot, {
-      excludedHarnesses,
-      harness: request.harness,
-      level: request.level,
-    })
-    if (previous) log(`Falling back from ${previous.model} to ${variant.model}: usage limit`)
-
-    const harness = harnesses[variant.harness]
-    if (!harness) throw new Error(`Unknown harness: ${variant.harness}`)
-    const invocation = harness.getInvocation(request, variant)
-    const result = await execute(invocation, {
-      cwd: request.cwd,
-      prompt: request.prompt,
-      timeoutMs: request.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-    })
-    if (!isFailedResult(result)) return { output: harness.readOutput(result, invocation), variant }
-
-    const message = `${variant.model} failed: ${result.stderr.trim() || result.stdout.trim()}`
-    const hasFallback =
-      !request.harness &&
-      snapshot.variants.some(
-        other => other.harness !== variant.harness && !excludedHarnesses.includes(other.harness),
-      )
-    if (!isUsageLimitFailure(result) || !hasFallback) throw new Error(message)
-    excludedHarnesses.push(variant.harness)
-    previous = variant
-  }
+  const invocation = harness.getInvocation(request, role)
+  const result = await execute(invocation, {
+    cwd: request.cwd,
+    prompt: invocation.input ?? request.prompt,
+    timeoutMs: request.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+  })
+  if (isFailedResult(result))
+    throw new Error(`${role.model} failed: ${result.stderr.trim() || result.stdout.trim()}`)
+  return { output: harness.readOutput(result, invocation), role }
 }
 
 export type RunLlmDependencies = {
@@ -53,15 +34,13 @@ export type RunLlmDependencies = {
   ) => Promise<ProcessResult>
   /** Harness adapters by name. */
   harnesses: Record<string, Harness>
-  /** Write a diagnostic line. */
-  log: (message: string) => void
-  /** Scores and scale. */
-  snapshot: Snapshot
+  /** The model roles table. */
+  roles: Role[]
 }
 
 export type RunLlmResult = {
   /** The harness's final message. */
   output: string
-  /** The variant that produced it. */
-  variant: Variant
+  /** The role that produced it. */
+  role: Role
 }

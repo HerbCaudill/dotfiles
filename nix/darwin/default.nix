@@ -116,26 +116,6 @@ in
     };
   };
 
-  launchd.agents."llm-refresh" = {
-    serviceConfig = {
-      Label = "com.herbcaudill.llm-refresh";
-      ProgramArguments = [
-        "${userBin}/llm"
-        "refresh"
-      ];
-      StartCalendarInterval = {
-        Hour = 3;
-        Minute = 30;
-      };
-      StandardOutPath = "${homeDirectory}/.local/state/llm/refresh.log";
-      StandardErrorPath = "${homeDirectory}/.local/state/llm/refresh.log";
-      EnvironmentVariables = {
-        HOME = homeDirectory;
-        PATH = "${homeDirectory}/Library/pnpm/bin:${userBin}:/etc/profiles/per-user/${username}/bin:${launchdPath}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin";
-      };
-    };
-  };
-
   launchd.agents."meeting-notes" = {
     serviceConfig = {
       Label = "com.herbcaudill.meeting-notes";

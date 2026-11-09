@@ -39,7 +39,7 @@ These are installed into `~/.local/bin` by Home Manager rather than a custom sym
 
 ### Headless LLM calls
 
-`llm` runs a prompt on the cheapest model that meets an intelligence level. See `docs/llm.md`.
+`llm` runs a prompt with the harness, model and effort of a role from the model roles table in `home/.claude/AGENTS.md`. See `docs/llm.md`.
 
 ### Worktree helpers (Bash)
 

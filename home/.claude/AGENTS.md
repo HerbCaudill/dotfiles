@@ -51,20 +51,20 @@ Prefer TypeScript, React, Vite, pnpm, oxfmt, Vitest, Playwright, Tabler icons, a
 
 When you start a thread, subagent, or delegated task, choose its settings by role and always set the effort level explicitly. Do not rely on a tool's default model or effort.
 
-| Role       | Harness     | Model         | Effort | Use for                                                                                |
-| ---------- | ----------- | ------------- | ------ | -------------------------------------------------------------------------------------- |
-| `default`  | Claude Code | Opus 5.5      | high   | Anything not listed below, especially architecture and planning, review, and UI design |
-| `author`   | Codex       | GPT-6.1 Sol   | high   | High-volume authoring                                                                  |
-| `bulk`     | Codex       | GPT-6.1 Terra | low    | Simple tasks at high volume                                                            |
-| `bulk-min` | Codex       | GPT-6 Luna    | low    | Trivial tasks at very high volume                                                      |
+| Role       | Harness     | Model             | Effort | Use for                                                                                |
+| ---------- | ----------- | ----------------- | ------ | -------------------------------------------------------------------------------------- |
+| `default`  | Claude Code | `claude-opus-5-5` | high   | Anything not listed below, especially architecture and planning, review, and UI design |
+| `author`   | Codex       | `gpt-6.1-sol`     | high   | High-volume authoring                                                                  |
+| `bulk`     | Codex       | `gpt-6.1-terra`   | low    | Simple tasks at high volume                                                            |
+| `bulk-min` | Codex       | `gpt-6-luna`      | low    | Trivial tasks at very high volume                                                      |
 
-The bulk roles are starting points from the cost frontier, not proven picks. Before committing a high-volume job to one, benchmark it against the next role up on a sample of the real task. Herb curates this table by hand; propose changes rather than editing it.
+The bulk roles are starting points, not proven picks. Before committing a high-volume job to one, benchmark it against the next role up on a sample of the real task. Herb curates this table by hand; propose changes rather than editing it. This table is the single source of truth for model choice: the `llm` CLI in dotfiles reads it, so keep its columns and the exact model IDs.
 
 ## Workflow
 
 For unattended recurring work, default to OS-scheduled headless processes. Write routine results to logs or existing destinations. Create or reactivate a T3 thread only for requested interaction, actionable work already authorized by Herb, or a decision that needs him. Reuse an existing related heartbeat where suitable. Detect events without model calls where practical; use headless model runs when the check requires judgment.
 
-For headless LLM calls in scripts and jobs, use `llm run --level <0-100>` from dotfiles rather than naming a model; see `docs/llm.md` there.
+For headless LLM calls in scripts and jobs, use `llm run --role <role>` from dotfiles rather than naming a model, and `llm resolve --role <role>` when a script must start a harness itself; see `docs/llm.md` there.
 
 `pnpm dev` must always be sufficient to run the complete site locally, including the services its features require. If multiple processes are needed, give each a named script such as `pnpm dev:web` and `pnpm dev:api`, and have `pnpm dev` start and stop them together. Do not leave required startup steps in ad hoc commands or separate terminals. Document any external services used by local development.
 
