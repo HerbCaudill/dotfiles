@@ -1,9 +1,11 @@
 /*
- * Turn a Jev dry-run results file into a Markdown report next to it.
+ * Turn a Jev dry-run results file into a Markdown report and an HTML report next to it.
  *
  * Usage: node --experimental-strip-types scripts/email-processing/renderJevDryRunReport.ts <dry-run.json>
  */
 import { readFileSync, writeFileSync } from "node:fs"
+
+import { renderHtmlReport } from "./renderJevDryRunHtml.ts"
 
 import {
   ARCHIVE_THRESHOLD,
@@ -14,14 +16,17 @@ import {
   type JevAnswers,
 } from "./decideFromJevAnswers.ts"
 
-/** Read a results file, render the report and print its path. */
+/** Read a results file, render both reports and print their paths. */
 function main() {
   const inputPath = process.argv[2]
   if (!inputPath) throw new Error("Pass the dry-run JSON file")
   const run = JSON.parse(readFileSync(inputPath, "utf8")) as DryRun
-  const outputPath = inputPath.replace(/\.json$/, ".md")
-  writeFileSync(outputPath, renderReport(run))
-  console.log(outputPath)
+  const markdownPath = inputPath.replace(/\.json$/, ".md")
+  const htmlPath = inputPath.replace(/\.json$/, ".html")
+  writeFileSync(markdownPath, renderReport(run))
+  writeFileSync(htmlPath, renderHtmlReport(run))
+  console.log(markdownPath)
+  console.log(htmlPath)
 }
 
 /** Render the whole report. */
@@ -490,7 +495,7 @@ function percentile(
 
 // TYPES
 
-type ClassifiedRecord = {
+export type ClassifiedRecord = {
   /** Gmail message ID. */
   messageId: string
   /** Gmail thread ID. */
@@ -499,6 +504,10 @@ type ClassifiedRecord = {
   gmailUrl: string
   /** Labels at run time. */
   labelIds: string[]
+  /** Raw List-Id header, or an empty string. */
+  listId: string
+  /** Whether the message offers RFC 8058 one-click unsubscribe. */
+  oneClickUnsubscribe: boolean
   /** Receipt time. */
   receivedAt: string
   /** Sender. */
@@ -517,9 +526,9 @@ type ClassifiedRecord = {
   label: "marketing" | "not-marketing" | null
 }
 
-type DryRunRecord = ClassifiedRecord | { threadId: string; gmailUrl: string; error: string }
+export type DryRunRecord = ClassifiedRecord | { threadId: string; gmailUrl: string; error: string }
 
-type DryRun = {
+export type DryRun = {
   /** Run time. */
   createdAt: string
   /** Window length. */
