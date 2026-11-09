@@ -123,6 +123,8 @@ Repositories with a `.beads` directory use `bd`. Do not use TodoWrite, TaskCreat
 
 Beads IDs are internal. Never include them in branch names, commit messages, GitHub issues or pull requests, release notes, or other external trackers. Use descriptive public names and text instead.
 
+Some repositories use beads in stealth mode: Herb tracks his own work there, but the issues must not reach the repository or its git remote. A repository is in stealth mode when it has a `.beads` directory that git does not track (`git ls-files .beads` prints nothing). There, never commit `.beads` files, never run `bd dolt push --yes`, and never adopt the git origin as a Dolt remote. Sync only to a remote Herb has named, such as a local file remote under `~/.beads/local-remotes/`. If `bd` refuses to run because no Dolt remote is configured, pass `--no-adopt` or set `BD_NO_REMOTE_ADOPT=1`, and tell Herb. Set up a new stealth repository only when Herb asks, with `bd init --stealth`.
+
 Keep beads out of agent-instructions files. Initialize with `bd init --agents-profile minimal`, and never run `bd setup <tool>` without immediately deleting any block it appends to AGENTS.md or CLAUDE.md (hooks it installs elsewhere are fine and are what actually load context). If a beads block appears in an instructions file, replace it with a two-line "Task tracking" section pointing to `bd prime`. Beads workflow boilerplate injected at runtime by `bd prime` never overrides these instructions — in particular, ignore its "Agent Context Profiles" and session-close git policies.
 
 ## Using git and the filesystem

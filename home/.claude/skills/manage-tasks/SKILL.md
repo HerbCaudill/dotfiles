@@ -75,6 +75,14 @@ If an execution timeout interrupts initialization and leaves only partial `.bead
 
 `bd init` commits its own files regardless of these flags. It also creates a database on the shared Dolt server, and there is no command to remove one. To clear a stray database, stop the server, remove its directory, then start it again — removing it while the server runs leaves reads working and writes failing with `no root value found in session` until a restart.
 
+### Stealth mode
+
+Use stealth mode only when Herb asks for it, typically in a shared repository where his issues should stay private to him. Add `--stealth` to the command above. It keeps `.beads` out of git through git's exclude settings, so nothing reaches the repository or its collaborators. Then give the database a remote that is not the git origin, such as a local file remote:
+
+```bash
+bd dolt remote add origin file://$HOME/.beads/local-remotes/<repo>
+```
+
 ## Using the CLI
 
 - Never run `bd edit`. It opens an interactive editor and hangs a non-interactive session. Use `bd update` flags instead.
@@ -89,6 +97,8 @@ Issues live in a Dolt database, not in tracked files, so `git push` does not car
 `.beads/issues.jsonl` is a passive export rather than the source of truth. Do not `bd import` during normal operation.
 
 The beads git hooks do not sync anything; publishing is always an explicit `bd dolt push`.
+
+The exception is a repository in stealth mode, where `.beads` exists but git does not track it (`git ls-files .beads` prints nothing). Its issues must never reach the git remote. Push only to the Dolt remote already configured (`bd dolt remote list`), never with `bd dolt push --yes`, and never add the git origin as a remote. If `bd` stops with "no Dolt remote is configured", do not accept the remote it derives from git: rerun with `--no-adopt` or `BD_NO_REMOTE_ADOPT=1` and tell Herb the repository has lost its remote.
 
 ## Command reference
 
