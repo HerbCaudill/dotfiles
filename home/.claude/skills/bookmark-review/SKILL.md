@@ -28,7 +28,7 @@ X authentication lives on the mini. Apply [mini](../mini/SKILL.md) and use `xurl
 - Preserve post IDs as the stable identities. Expand links from both normal and long-post URL entities. The maintained export can contain historical posts that are no longer bookmarked, so verify current presence through the live list.
 - Remove an authorized bookmark with `xurl --app bookmarks unbookmark <post-id>`. Then independently paginate the live list and verify the ID is absent. Apply the decision rules below before any removal.
 
-Use read-only commands to inspect or refresh the queue. Do not change other X account state while processing bookmarks. To show a post in the thread, use [tweet-cards](../tweet-cards/SKILL.md).
+Use read-only commands to inspect or refresh the queue. Do not change other X account state while processing bookmarks. To show a post in the thread, embed it as described in "Present and discuss".
 
 ### Bluesky bookmarks
 
@@ -39,7 +39,7 @@ Run these on the mini, where the app password lives, from `C:\Code\HerbCaudill\l
 
 Preserve the post's AT URI as its stable identity. Its link is `https://bsky.app/profile/<did>/post/<rkey>`. The maintained archive is `documents/bluesky-bookmarks/bookmarks.json` and `documents/Bluesky bookmarks.md`; like the X export, it retains removed items and must not be hand-edited.
 
-Keep Bluesky in its own review with its own queue and log, `documents/Bluesky bookmark review.md`. Everything below about research, presentation, capture, decisions, and the audit trail applies the same way, using the Bluesky commands in place of the X ones. Post cards are the same self-contained HTML, with Bluesky's author, handle, date, and link; `tweet-cards` itself is X-only. A bookmarked post deleted since it was saved no longer appears in the live list, so check the archive for its text.
+Keep Bluesky in its own review with its own queue and log, `documents/Bluesky bookmark review.md`. Everything below about research, presentation, capture, decisions, and the audit trail applies the same way, using the Bluesky commands in place of the X ones. Embed Bluesky posts with Bluesky's official embed, as described in "Present and discuss". `tweet-cards` is X-only. A bookmarked post deleted since it was saved no longer appears in the live list, so check the archive for its text.
 
 ### Save long-form reading to Matter
 
@@ -84,9 +84,30 @@ Background research may run ahead when authorized, but presentation and decision
 
 ### Present and discuss
 
-Show the verified full post inline before the brief, including quoted posts where permitted. Use a self-contained HTML card with the author, handle, date, original link, and supported images or playable video. Distinguish article summaries from the post itself. A static sourced card is fine; do not claim it is a live X widget or fall back to a truncated embed.
+Always embed the actual post inline before the brief, using the platform's official embed in an iframe. Herb wants to see the real post every time, not just a summary card. Don't use X's `widgets.js` or Bluesky's `embed.js` blockquote scripts. They don't render reliably in T3's frame.
 
-In T3 Code, call `html_preview` and then `html_render` with the HTML. Follow the renderer's theme and layout rules. Do not start a server just to show the card.
+- **X:** `https://platform.twitter.com/embed/Tweet.html?id=<post-id>&theme=dark&dnt=true`. The embed shows quoted posts, images and video itself.
+- **Bluesky:** `https://embed.bsky.app/embed/<did>/app.bsky.feed.post/<rkey>?id=<element-id>&colorMode=dark`.
+
+Give the iframe `width:100%; max-width:550px; border:0` and a starting height, and add a message listener that resizes it to the embed's reported height. The renderer's frame then grows to fit. X posts `{"twttr.embed": {"method": "twttr.private.resize", "params": [{"height": …}]}}`, often as a JSON string. Bluesky posts `{id, height}`, matching the `id` query parameter.
+
+```html
+<iframe id="post" src="…" style="display:block;width:100%;max-width:550px;border:0;height:600px"></iframe>
+<script>
+  addEventListener("message", e => {
+    try {
+      const d = typeof e.data === "string" ? JSON.parse(e.data) : e.data
+      const x = d?.["twttr.embed"]
+      const h = x?.method === "twttr.private.resize" ? x.params?.[0]?.height : d?.id === "post" ? d.height : undefined
+      if (h) document.getElementById("post").style.height = Math.ceil(h) + "px"
+    } catch {}
+  })
+</script>
+```
+
+The embed loads asynchronously, so an `html_preview` screenshot may show a blank frame. Preview again once. If the embed still doesn't appear, because the post is deleted, protected or the embed service is down, say so. Then show a self-contained static card with the author, handle, date, original link and images, built with [tweet-cards](../tweet-cards/SKILL.md) for X or from the Bluesky JSON. Distinguish article summaries from the post itself.
+
+In T3 Code, call `html_preview` and then `html_render` with the HTML. Follow the renderer's theme and layout rules. Do not start a server just to show the post.
 
 Keep each turn in reading order: wrap-up of the previous bookmark, then the next card, then its discussion. T3 places a rendered card above the turn's final reply, so write the wrap-up (what was saved, removed and logged) as interim text before calling `html_render`, and put only the new bookmark's discussion in the final reply. Render the card in the same turn as the decision question, immediately before asking it, so Herb can see the bookmark while he answers; never ask about a bookmark whose card was shown only in an earlier turn.
 
