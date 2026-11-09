@@ -97,6 +97,8 @@ The Mac and the mini can reach each other over Tailscale: `ssh mini` (or `ssh mi
 
 When serving a site or demo from the mini, always tunnel its port back to the MacBook and give Herb the MacBook-accessible URL. Assume he is working on the MacBook unless he says otherwise. Verify access from the MacBook before reporting the site ready. If the MacBook is unreachable, report that the tunnel is blocked rather than presenting a mini-local localhost URL as usable.
 
+For the same reason, when you point Herb to a file from the mini, give its MacBook path, such as `~/Code/HerbCaudill/notes/leo/Watching.md` rather than `C:\Code\HerbCaudill\notes\leo\Watching.md`. Repositories and the notes vault have MacBook copies at the same place under `~/Code`; say if a change hasn't reached the Mac yet because it isn't pushed or synced. For a file that exists only on the mini, such as one under `C:\Users\herb\setup`, say so and give a command that copies it to the Mac, like `scp mini:C:/Users/herb/setup/kernel-pool-diagnosis/findings.md ~/Downloads/`.
+
 When assigning work to another agent, use the shortest instruction that uniquely identifies it. If the authoritative task already has the requirements, give only the action and ID, such as `Complete ee-0sey.` Add context only when the agent cannot discover it or the assignment changes the task, workflow, or coordination rules.
 
 ## Browser use \[macOS only\]
