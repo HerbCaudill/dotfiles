@@ -62,12 +62,16 @@ in
   homebrew = {
     enable = true;
     onActivation.cleanup = "none";
-    taps = [ "minghinmatthewlam/tap" ];
+    taps = [
+      "anomalyco/tap"
+      "minghinmatthewlam/tap"
+    ];
     casks = [
       "1password-cli"
       "adobe-creative-cloud"
       "alt-tab"
       "amethyst"
+      "anomalyco/tap/hex"
       "discord"
       "iterm2"
       "macfuse"
