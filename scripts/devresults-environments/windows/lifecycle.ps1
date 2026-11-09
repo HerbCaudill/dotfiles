@@ -167,7 +167,7 @@ function Get-BuildArtifacts($Manifest,[string]$Root) {
         $parser=[Web.Script.Serialization.JavaScriptSerializer]::new()
         $parser.MaxJsonLength=[int]::MaxValue
         $entries=$parser.DeserializeObject([IO.File]::ReadAllText($manifestPath))
-        foreach($name in @('app','admin','prt','publicApp','Public','Bootstrap_Custom','word.mhtml','viz')) {
+        foreach($name in @('app','admin','publicApp','Public','Bootstrap_Custom','word.mhtml','viz')) {
             $matches=@($entries.GetEnumerator() | Where-Object {$_.Value.ContainsKey('name') -and $_.Value.name -ceq $name -and $_.Value.ContainsKey('isEntry') -and $_.Value.isEntry -eq $true})
             if($matches.Count -ne 1){Deny "Build manifest is missing a unique entry: $name"}
             if($name -notin @('admin','publicApp') -and (-not $matches[0].Value.ContainsKey('css') -or @($matches[0].Value.css).Count -eq 0)){Deny "Build manifest entry is missing styles: $name"}

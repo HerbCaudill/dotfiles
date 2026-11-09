@@ -6,7 +6,7 @@ function Refuses([string]$Message){$failed=$false;try{[void](Get-BuildArtifacts 
 try {
     foreach($name in @('DevResults','DevResults.Core','DevResults.Api')){Put "bin\$name.dll"}
     $entries=[ordered]@{}
-    foreach($name in @('app','admin','prt','publicApp','Public','Bootstrap_Custom','word.mhtml','viz')){
+    foreach($name in @('app','admin','publicApp','Public','Bootstrap_Custom','word.mhtml','viz')){
         $entry=@{file="scripts/$name-hash.js";name=$name;isEntry=$true}
         Put "Web\dist\scripts\$name-hash.js"
         if($name -notin @('admin','publicApp')){$entry.css=@("css/$name.css");Put "Web\dist\css\$name.css"}
@@ -22,7 +22,7 @@ try {
     $json=$json.TrimEnd().TrimEnd('}')+',"Case.png":{"file":"assets/image.png"},"case.png":{"file":"assets/image.png"}}'
     [IO.File]::WriteAllText($manifest,$json)
     $artifacts=Get-BuildArtifacts $null $root
-    Check ($artifacts.Count -eq 20) 'Manifest build must include all DLLs, entries, styles, dependencies and manifest'
+    Check ($artifacts.Count -eq 18) 'Manifest build without the retired prt entry must include all DLLs, entries, styles, dependencies and manifest'
     $before=($artifacts|Where-Object {$_.path -eq 'Web\dist\assets\image.png'}).sha256
     [IO.File]::WriteAllText((Join-Path $root 'Web\dist\assets\image.png'),'changed')
     $after=((Get-BuildArtifacts $null $root)|Where-Object {$_.path -eq 'Web\dist\assets\image.png'}).sha256
