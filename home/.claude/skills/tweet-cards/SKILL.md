@@ -5,7 +5,7 @@ description: Show tweets or X bookmarks inline in a T3 Code thread as static car
 
 # Tweet cards
 
-Show tweets as static HTML cards. Don't use X's `widgets.js` embed: it didn't appear in T3 Code's preview screenshots, and the renderer sized the frame for the plain text, not the card. When Herb wants the real post, as in bookmark reviews, use the official iframe embed (`platform.twitter.com/embed/Tweet.html`) that the [bookmark-review](../bookmark-review/SKILL.md) skill describes. Use these cards as its fallback.
+Show tweets as static HTML cards. Don't use X's official embeds. `widgets.js` didn't appear in T3 Code's preview screenshots, and the renderer sized the frame for the plain text, not the card. The iframe embed (`platform.twitter.com/embed/Tweet.html`) can appear in `html_preview` but shows only blank space in Herb's live T3 view (tested 2026-11-09).
 
 ## Steps
 
