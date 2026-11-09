@@ -34,7 +34,7 @@ Use `--format json` for structured agent results. Read the current source note b
 
 ## Mini
 
-The mini has QMD 2.8.3 installed globally with npm. The Radeon 780M can run embeddings through Vulkan with cooperative matrices disabled: `GGML_VK_DISABLE_COOPMAT=1`. Keep one embedding context and one document per batch. The refresh runner sets these options explicitly. See the 2026-11-01 investigation below before resuming its disabled scheduled task. Check `qmd status` for pending work before treating semantic results as complete. From the mini, the MacBook is another option when awake:
+The mini has QMD 2.8.3 installed globally with npm. The Radeon 780M can run embeddings through Vulkan with cooperative matrices disabled: `GGML_VK_DISABLE_COOPMAT=1`. Keep one embedding context and one document per batch. The refresh runner sets these options explicitly. The scheduled refresh task runs daily at 09:00; see the 2026-11-01 investigation below for its history. Check `qmd status` for pending work before treating semantic results as complete. From the mini, the MacBook is another option when awake:
 
 ```powershell
 ssh mac 'qmd query "your question" -c notes'
@@ -81,11 +81,11 @@ $env:QMD_EMBED_PARALLELISM = '1'
 
 The production database was backed up through SQLite's backup API to `C:\Users\herb\.cache\qmd\backups\20261101-before-vulkan\index.sqlite` before disposable-index validation. No production update, cleanup, or re-embed was run. Existing vectors include the earlier Metal import and subsequent CPU batches. GPU arithmetic can change vectors slightly even with the same model and fingerprint, so scores and close rankings can change. Completing only the pending documents preserves that mixed history. A full `qmd embed --force` would replace all vectors with local Vulkan results and give indexing and queries the same backend; run it only after explaining this tradeoff to Herb, confirming the e2e hold is released, checking for an active embed, and taking a fresh backup. Use `qmd doctor` and a known semantic query afterward.
 
-### Disabled refresh task
+### Refresh task pause, November 1–9
 
 The task was deliberately disabled at 10:47 local time on 2026-11-01 to release resources for DevResults e2e work. The earlier coordinator transcript records Herb's approval and says QMD must stay paused until e2e finishes. The process-exit receipt at `C:\Users\herb\lean-evidence\qmd-completion-boundary-20261101-080118-v2\result.json` records the embedding processes ending at `09:47:08Z`; the task file changed at 10:47:05 local time. Result `267014` (`0x41306`, terminated) therefore reflects the approved stop, not a successful refresh or evidence of an automatic memory kill. Task Scheduler's Operational log was disabled, so it cannot supply an independent event history for that run.
 
-The previous overnight run reached its intended 06:00 cutoff. The 09:00 run indexed successfully, reported 2,701 pending hashes, and was stopped before completion; the investigation found 2,582 pending documents and 20,091 embedded chunks. Completed batches survived. The task remains disabled. The runner is prepared to use Vulkan with the workaround when the e2e hold is released; its lock, one-context/one-document limits, low priority, and 06:00 cutoff remain in place. Do not re-register the task just to change the runner, because registration would undo the deliberate disabled state.
+The previous overnight run reached its intended 06:00 cutoff. The 09:00 run indexed successfully, reported 2,701 pending hashes, and was stopped before completion; the investigation found 2,582 pending documents and 20,091 embedded chunks. Completed batches survived. The runner uses Vulkan with the workaround; its lock, one-context/one-document limits, low priority, and 06:00 cutoff remain in place. Herb re-enabled the task on 2026-11-09, and a run started at 16:10 local time. After AMD driver 32.0.32015.7029 (Adrenalin 26.10.1) was installed that day, `qmd doctor` confirmed Vulkan offloading on the 780M with the same cooperative-matrix workaround, and the run embedded about 25 documents a minute.
 
 ### Memory findings
 
