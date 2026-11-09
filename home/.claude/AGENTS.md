@@ -41,6 +41,8 @@ Use an available question tool for discrete implementation choices and when a sk
 
 In Markdown files, keep each paragraph on one line without manual wrapping.
 
+Never put a URL Herb might want to open in backticks or a code block, since that stops it being clickable. Write it bare or as a Markdown link.
+
 ## Technology
 
 Prefer TypeScript, React, Vite, pnpm, oxfmt, Vitest, Playwright, Tabler icons, and IBM Plex fonts. Prefer TypeScript to bash, Python, or PowerShell for scripts. Follow the `code-style` skill whenever you write or edit code.
