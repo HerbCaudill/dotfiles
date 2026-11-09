@@ -4,7 +4,7 @@ import { prepareForFeedback } from "./prepareForFeedback.ts"
 
 const { values } = parseArgs({
   options: {
-    environment: { type: "string", default: "compare-design-refresh" },
+    environment: { type: "string", default: "compare-main" },
     instance: { type: "string", default: "loura" },
     "no-open": { type: "boolean", default: false },
   },

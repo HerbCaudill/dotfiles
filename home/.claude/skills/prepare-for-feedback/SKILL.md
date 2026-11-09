@@ -5,7 +5,7 @@ description: Use when Herb wants to review or record feedback on VibeResults nex
 
 # Prepare for feedback
 
-Herb compares VibeResults with DevResults on the design refresh branch, usually on the Mac. Both sites run on the mini.
+Herb compares VibeResults with DevResults on `main`, usually on the Mac. Both sites run on the mini.
 
 Run this from the Mac or the mini:
 
@@ -16,7 +16,7 @@ node --experimental-strip-types ~/.claude/skills/prepare-for-feedback/scripts/ru
 Options:
 
 - `--instance <subdomain>` opens another instance. The default is `loura`.
-- `--environment <id>` serves DevResults from another `drenv` environment on the mini. The default is `compare-design-refresh`.
+- `--environment <id>` serves DevResults from another `drenv` environment on the mini. The default is `compare-main`, which follows `origin/main`.
 - `--no-open` skips the browser windows.
 
 The script can take several minutes on a cold start, so run it in the background and wait for it to finish. It is safe to rerun, because it reuses whatever is already working:
@@ -26,7 +26,7 @@ The script can take several minutes on a cold start, so run it in the background
 3. It forwards the environment's port on `127.0.0.2` and port 9443 on `127.0.0.1`. It reuses SSH forwards with the same destination and stops with an error if another process holds a port.
 4. It checks both sites from the Mac, then opens two Chrome windows: VibeResults on the left and DevResults on the right.
 
-VibeResults uses its own backend, the primary DevResults site on `main`, so only the DevResults window shows the design refresh branch.
+VibeResults uses the primary DevResults site as its backend, not this environment, so only the DevResults window shows the environment's build.
 
 ## Report
 
