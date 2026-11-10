@@ -38,6 +38,9 @@ function defaultDependencies(): RunDelegatedGwsDependencies {
 
 const approvedScopes = [
   "https://www.googleapis.com/auth/calendar",
+  "https://www.googleapis.com/auth/contacts",
+  "https://www.googleapis.com/auth/contacts.other.readonly",
+  "https://www.googleapis.com/auth/directory.readonly",
   "https://www.googleapis.com/auth/documents",
   "https://www.googleapis.com/auth/drive",
   "https://www.googleapis.com/auth/gmail.modify",
