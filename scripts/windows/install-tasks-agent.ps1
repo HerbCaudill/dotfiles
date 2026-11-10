@@ -13,7 +13,8 @@ $pwsh = 'C:\Program Files\PowerShell\7\pwsh.exe'
 $runner = Join-Path $RepoRoot 'scripts\windows\run-tasks-agent.ps1'
 $action = New-ScheduledTaskAction -Execute $pwsh -Argument "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$runner`" -RepoRoot `"$RepoRoot`""
 $principal = New-ScheduledTaskPrincipal -UserId ([Security.Principal.WindowsIdentity]::GetCurrent().Name) -LogonType $PeerLogonType -RunLevel Limited
-$settings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1) -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
+# Task Scheduler defaults to below-normal priority (7), which starves the peer when builds or tests saturate the CPU.
+$settings = New-ScheduledTaskSettingsSet -Priority 4 -MultipleInstances IgnoreNew -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1) -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
 $arguments = @{TaskName='tasks-agent'; Action=$action; Principal=$principal; Settings=$settings; Force=$true}
 if ($AutoStart) {
   $arguments.Trigger = @(New-ScheduledTaskTrigger -AtLogOn -User $principal.UserId)
