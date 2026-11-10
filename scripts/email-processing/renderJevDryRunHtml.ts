@@ -1,11 +1,6 @@
 import { readFileSync } from "node:fs"
 
-import {
-  ARCHIVE_THRESHOLD,
-  PROMOTE_THRESHOLD,
-  ROUTINE_AUTHENTICATION_THRESHOLD,
-  MARKETING_THRESHOLD,
-} from "./decideFromJevAnswers.ts"
+import { KEEP_THRESHOLD, MARKETING_THRESHOLD } from "./decideFromJevAnswers.ts"
 import { dispositionOf, type CorrectionStore } from "./jevCorrections.ts"
 import type { ClassifiedRecord, DryRun } from "./renderJevDryRunReport.ts"
 
@@ -40,9 +35,7 @@ export function renderHtmlReport(
       latencyP95: percentile(latencies, 0.95),
       thresholds: {
         marketing: MARKETING_THRESHOLD,
-        archive: ARCHIVE_THRESHOLD,
-        promote: PROMOTE_THRESHOLD,
-        routineAuthentication: ROUTINE_AUTHENTICATION_THRESHOLD,
+        keep: KEEP_THRESHOLD,
       },
     },
     records: records.map(toViewRecord),
@@ -109,9 +102,11 @@ function toViewRecord(
       .filter(([, value]) => value)
       .map(([name]) => name),
     coldType: answers.cold_type.choice,
-    needsAttention: answers.needs_attention.noul,
+    keepInInbox: answers.keep_in_inbox?.noul ?? null,
+    calendarMethod: record.calendarMethod ?? null,
+    autoReply: record.autoReply ?? false,
     attentionReason: answers.attention_reason.choice,
-    routineAuthentication: answers.routine_authentication.noul,
+    routineAuthentication: answers.routine_authentication?.noul ?? 0,
     label: record.label,
   }
 }

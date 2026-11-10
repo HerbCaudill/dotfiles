@@ -5,6 +5,9 @@
  * unsubscribes. Message bodies go to TypeSafe for classification but are not written to disk.
  *
  * Usage: node --experimental-strip-types scripts/email-processing/runJevDryRun.ts [--days 30] [--labels sender-labels.json]
+ *        node --experimental-strip-types scripts/email-processing/runJevDryRun.ts --reclassify <earlier-dry-run.json>
+ * --reclassify asks Jev about exactly the messages in an earlier run, as of that run's time, so a
+ * changed question or rule can be scored against Herb's corrections for those messages.
  * Needs JEV_API_KEY and the delegated Google Workspace service-account key.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
@@ -28,20 +31,24 @@ async function main() {
       days: { type: "string", default: "30" },
       labels: { type: "string" },
       concurrency: { type: "string", default: "4" },
+      reclassify: { type: "string" },
     },
   })
   const apiKey = process.env.JEV_API_KEY
   if (!apiKey) throw new Error("JEV_API_KEY is not set")
-  const days = Number(values.days)
+  const earlier = values.reclassify ? loadEarlierRun(values.reclassify) : null
+  const days = earlier?.windowDays ?? Number(values.days)
   const labels = loadLabels(values.labels)
-  const evaluatedAt = new Date().toISOString()
+  const evaluatedAt = earlier?.createdAt ?? new Date().toISOString()
   const token = await getGmailToken()
 
   const sentRecipients = await getSentRecipients(token)
   console.error(`sent recipients known: ${sentRecipients.size}`)
-  const references = await listMessages(token, `newer_than:${days}d -in:sent -in:chats -in:drafts`)
+  const references =
+    earlier?.references ??
+    (await listMessages(token, `newer_than:${days}d -in:sent -in:chats -in:drafts`))
   const threadIds = [...new Set(references.map(reference => reference.threadId))]
-  console.error(`received messages: ${references.length}; threads: ${threadIds.length}`)
+  console.error(`messages: ${references.length}; threads: ${threadIds.length}`)
 
   const receivedIds = new Set(references.map(reference => reference.id))
   const dependencies = {
@@ -76,6 +83,7 @@ async function main() {
         dependencies,
         emptyState,
         labels,
+        token,
       })
     },
   )
@@ -84,15 +92,20 @@ async function main() {
   const output = {
     createdAt: evaluatedAt,
     windowDays: days,
+    reclassifiedFrom: values.reclassify ?? null,
     account: EMAIL_PROCESSING_ACCOUNT,
     questionsVersion: `sha256:${createHash("sha256").update(readFileSync(QUESTIONS_PATH)).digest("hex")}`,
     labelsSource: labels.source,
-    receivedMessages: references.length,
+    receivedMessages: earlier?.receivedMessages ?? references.length,
     threads: threadIds.length,
     records: results,
   }
   mkdirSync(OUTPUT_DIRECTORY, { recursive: true })
-  const outputPath = join(OUTPUT_DIRECTORY, `dry-run-${evaluatedAt.slice(0, 10)}.json`)
+  // A rerun keeps the original date and adds its own time, so it never overwrites the original.
+  const name = earlier
+    ? `dry-run-${evaluatedAt.slice(0, 10)}-rerun-${new Date().toISOString().slice(0, 16).replace(/[-:]/g, "")}`
+    : `dry-run-${evaluatedAt.slice(0, 10)}`
+  const outputPath = join(OUTPUT_DIRECTORY, `${name}.json`)
   writeFileSync(outputPath, JSON.stringify(output, null, 2))
   console.log(outputPath)
 }
@@ -108,6 +121,7 @@ async function classifyMessage(
     dependencies: GmailSupervisorDependencies
     emptyState: Parameters<typeof normalizeCandidate>[2]
     labels: Labels
+    token: string
   },
 ) {
   const { message, thread } = context
@@ -119,6 +133,10 @@ async function classifyMessage(
   const oneClickUnsubscribe =
     /<https:\/\/[^>]+>/.test(listUnsubscribe) &&
     /List-Unsubscribe=One-Click/i.test(header("List-Unsubscribe-Post"))
+  const autoReply =
+    /auto-replied/i.test(header("Auto-Submitted")) ||
+    header("X-Autoreply") !== "" ||
+    header("X-Autorespond") !== ""
 
   const base = {
     messageId: message.id,
@@ -128,8 +146,10 @@ async function classifyMessage(
     hasListUnsubscribe: listUnsubscribe.length > 0,
     oneClickUnsubscribe,
     listId,
+    autoReply,
   }
   try {
+    const calendarMethod = await readCalendarMethod(context.token, message)
     const candidate = await normalizeCandidate(
       message,
       thread,
@@ -151,6 +171,8 @@ async function classifyMessage(
       senderAddress: candidate.sender.address,
       listId,
       oneClickUnsubscribe,
+      calendarMethod,
+      autoReply,
       archiveProtections: candidate.archiveProtections,
     })
     const routine = jev.answers.routine_authentication.noul >= 0.5
@@ -165,6 +187,7 @@ async function classifyMessage(
           )
         : candidate.subject,
       category: candidate.category,
+      calendarMethod,
       archiveProtections: candidate.archiveProtections,
       jev: {
         model: jev.model,
@@ -177,6 +200,65 @@ async function classifyMessage(
     }
   } catch (error) {
     return { ...base, error: error instanceof Error ? error.message : String(error) }
+  }
+}
+
+/** Read the METHOD of an attached iCalendar invitation, such as REQUEST or REPLY, or null without one. */
+async function readCalendarMethod(
+  /** Access token. */
+  token: string,
+  /** Full-format message. */
+  message: GmailMessage,
+) {
+  const part = findPart(
+    message.payload as GmailPart | undefined,
+    candidate => candidate.mimeType === "text/calendar",
+  )
+  if (!part) return null
+  const attachmentId = part.body?.attachmentId
+  const data =
+    part.body?.data ??
+    (attachmentId
+      ? ((await gmailGet(token, `messages/${message.id}/attachments/${attachmentId}`, {}))
+          .data as string)
+      : undefined)
+  if (!data) return null
+  const text = Buffer.from(data, "base64url").toString("utf8")
+  return text.match(/^METHOD:\s*(\S+)/m)?.[1]?.toUpperCase() ?? null
+}
+
+/** Find the first MIME part matching a test, depth first. */
+function findPart(
+  /** Part to search. */
+  part: GmailPart | undefined,
+  /** Test for the wanted part. */
+  test: (part: GmailPart) => boolean,
+): GmailPart | undefined {
+  if (!part) return undefined
+  if (test(part)) return part
+  for (const child of part.parts ?? []) {
+    const found = findPart(child, test)
+    if (found) return found
+  }
+  return undefined
+}
+
+/** Load the message set, time and counts of an earlier run to reclassify. */
+function loadEarlierRun(
+  /** Earlier dry-run file. */
+  path: string,
+) {
+  const run = JSON.parse(readFileSync(path, "utf8")) as {
+    createdAt: string
+    windowDays: number
+    receivedMessages: number
+    records: { messageId: string; threadId: string }[]
+  }
+  return {
+    createdAt: run.createdAt,
+    windowDays: run.windowDays,
+    receivedMessages: run.receivedMessages,
+    references: run.records.map(record => ({ id: record.messageId, threadId: record.threadId })),
   }
 }
 
@@ -307,6 +389,16 @@ const OUTPUT_DIRECTORY = join(homedir(), ".local", "share", "email-processing", 
 const QUESTIONS_PATH = new URL("./jevQuestions.json", import.meta.url)
 
 // TYPES
+
+/** A MIME part as the Gmail API returns it. */
+type GmailPart = {
+  /** MIME type. */
+  mimeType?: string
+  /** Inline data or a reference to an attachment. */
+  body?: { data?: string; attachmentId?: string }
+  /** Child parts. */
+  parts?: GmailPart[]
+}
 
 type Labels = {
   /** Where the labels came from. */

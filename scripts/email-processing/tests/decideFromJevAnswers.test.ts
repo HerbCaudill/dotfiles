@@ -6,20 +6,35 @@ import {
 } from "../decideFromJevAnswers.ts"
 
 describe("decideFromJevAnswers", () => {
-  it("unsubscribes from clear marketing that offers one-click unsubscribe", () => {
+  it("archives clear marketing and unsubscribes when it offers one-click unsubscribe", () => {
     const result = decideFromJevAnswers(input({ answers: answers({ mailKind: "marketing" }) }))
 
-    expect(result.mailKind).toBe("marketing")
+    expect(result.decision).toBe("archive")
+    expect(result.classification).toBe("marketing")
     expect(result.unsubscribe).toEqual({ eligible: true, blockedBy: [] })
   })
 
-  it("never unsubscribes from a devresults.com mailing list", () => {
-    const result = decideFromJevAnswers(
+  it("archives marketing it cannot unsubscribe from", () => {
+    const withoutOneClick = decideFromJevAnswers(
+      input({ answers: answers({ mailKind: "marketing" }), oneClickUnsubscribe: false }),
+    )
+    const fromDevResultsList = decideFromJevAnswers(
       input({ answers: answers({ mailKind: "marketing" }), listId: "<support.devresults.com>" }),
     )
 
-    expect(result.unsubscribe.eligible).toBe(false)
-    expect(result.unsubscribe.blockedBy).toContain("devresults-list")
+    expect(withoutOneClick.decision).toBe("archive")
+    expect(withoutOneClick.unsubscribe.blockedBy).toContain("no-one-click")
+    expect(fromDevResultsList.decision).toBe("archive")
+    expect(fromDevResultsList.unsubscribe.blockedBy).toContain("devresults-list")
+  })
+
+  it("archives marketing from a sender Herb replied to, but does not unsubscribe", () => {
+    const result = decideFromJevAnswers(
+      input({ answers: answers({ mailKind: "marketing" }), protections: { priorReply: true } }),
+    )
+
+    expect(result.decision).toBe("archive")
+    expect(result.unsubscribe.blockedBy).toContain("priorReply")
   })
 
   it("does not unsubscribe when marketing is uncertain", () => {
@@ -29,69 +44,10 @@ describe("decideFromJevAnswers", () => {
       }),
     )
 
-    expect(result.unsubscribe.eligible).toBe(false)
     expect(result.unsubscribe.blockedBy).toContain("not-marketing")
   })
 
-  it("does not unsubscribe without a one-click unsubscribe header", () => {
-    const result = decideFromJevAnswers(
-      input({ answers: answers({ mailKind: "marketing" }), oneClickUnsubscribe: false }),
-    )
-
-    expect(result.unsubscribe.blockedBy).toContain("no-one-click")
-  })
-
-  it("does not unsubscribe from a sender Herb has replied to", () => {
-    const result = decideFromJevAnswers(
-      input({ answers: answers({ mailKind: "marketing" }), protections: { priorReply: true } }),
-    )
-
-    expect(result.unsubscribe.blockedBy).toContain("priorReply")
-  })
-
-  it("archives clear cold outreach with its pitch type", () => {
-    const result = decideFromJevAnswers(input({ answers: answers({ mailKind: "cold_outreach" }) }))
-
-    expect(result.decision).toBe("archive")
-    expect(result.classification).toBe("cold-vendor")
-  })
-
-  it("does not archive cold outreach when a protection applies", () => {
-    const result = decideFromJevAnswers(
-      input({
-        answers: answers({ mailKind: "cold_outreach" }),
-        protections: { activeConversation: true },
-      }),
-    )
-
-    expect(result.decision).toBe("none")
-  })
-
-  it("archives clear marketing in any category", () => {
-    for (const category of ["primary", "promotions", "updates", "forums"] as const) {
-      const result = decideFromJevAnswers(
-        input({ answers: answers({ mailKind: "marketing" }), category }),
-      )
-
-      expect(result.decision).toBe("archive")
-      expect(result.classification).toBe("marketing")
-    }
-  })
-
-  it("archives marketing that it cannot unsubscribe from", () => {
-    const result = decideFromJevAnswers(
-      input({
-        answers: answers({ mailKind: "marketing" }),
-        oneClickUnsubscribe: false,
-        protections: { devResultsSender: true, protectedCorrespondent: true, priorReply: true },
-      }),
-    )
-
-    expect(result.unsubscribe.eligible).toBe(false)
-    expect(result.decision).toBe("archive")
-  })
-
-  it("does not archive marketing from a sender whose archive Herb undid", () => {
+  it("keeps mail from a sender whose archive Herb undid", () => {
     const result = decideFromJevAnswers(
       input({
         answers: answers({ mailKind: "marketing" }),
@@ -100,55 +56,84 @@ describe("decideFromJevAnswers", () => {
     )
 
     expect(result.decision).toBe("none")
-    expect(result.unsubscribe.blockedBy).toContain("archiveReversal")
+    expect(result.unsubscribe.eligible).toBe(false)
   })
 
-  it("does not archive uncertain marketing", () => {
-    const result = decideFromJevAnswers(
+  it("archives by default, classified by mail kind", () => {
+    const result = decideFromJevAnswers(input({ answers: answers({ mailKind: "transactional" }) }))
+
+    expect(result.decision).toBe("archive")
+    expect(result.classification).toBe("transactional")
+    expect(result.unsubscribe.eligible).toBe(false)
+  })
+
+  it("archives cold outreach with its pitch type", () => {
+    const result = decideFromJevAnswers(input({ answers: answers({ mailKind: "cold_outreach" }) }))
+
+    expect(result.decision).toBe("archive")
+    expect(result.classification).toBe("cold-vendor")
+  })
+
+  it("keeps what Jev says Herb keeps, promoting it when it is outside Primary", () => {
+    const inPrimary = decideFromJevAnswers(
+      input({ answers: answers({ mailKind: "personal", keep: 0.9 }), category: "primary" }),
+    )
+    const inUpdates = decideFromJevAnswers(
+      input({ answers: answers({ mailKind: "notification", keep: 0.9 }), category: "updates" }),
+    )
+
+    expect(inPrimary.decision).toBe("none")
+    expect(inPrimary.classification).toBe("keep")
+    expect(inUpdates.decision).toBe("promote")
+    expect(inUpdates.classification).toBe("operational-failure")
+  })
+
+  it("keeps calendar invitations and archives calendar replies whatever Jev says", () => {
+    const invitation = decideFromJevAnswers(
       input({
-        answers: answers({ mailKind: "marketing", probability: 0.6, runnerUp: "editorial" }),
+        answers: answers({ mailKind: "notification", keep: 0.1 }),
+        category: "primary",
+        calendarMethod: "REQUEST",
+      }),
+    )
+    const reply = decideFromJevAnswers(
+      input({
+        answers: answers({ mailKind: "notification", keep: 0.9 }),
+        category: "primary",
+        calendarMethod: "REPLY",
       }),
     )
 
-    expect(result.decision).toBe("none")
+    expect(invitation.decision).toBe("none")
+    expect(invitation.classification).toBe("calendar-invitation")
+    expect(reply.decision).toBe("archive")
+    expect(reply.classification).toBe("calendar-reply")
   })
 
-  it("unsubscribes from marketing despite correspondent keywords", () => {
-    const result = decideFromJevAnswers(
+  it("keeps personal mail from someone Herb has written to, even when Jev would archive it", () => {
+    const correspondent = decideFromJevAnswers(
       input({
-        answers: answers({ mailKind: "marketing" }),
-        protections: { protectedCorrespondent: true },
+        answers: answers({ mailKind: "personal", keep: 0.1 }),
+        category: "primary",
+        protections: { priorReply: true },
       }),
     )
+    const stranger = decideFromJevAnswers(
+      input({ answers: answers({ mailKind: "personal", keep: 0.1 }), category: "primary" }),
+    )
 
-    expect(result.unsubscribe.eligible).toBe(true)
+    expect(correspondent.decision).toBe("none")
+    expect(correspondent.classification).toBe("correspondent")
+    expect(stranger.decision).toBe("archive")
   })
 
-  it("promotes a message outside Primary that needs attention", () => {
+  it("archives automatic replies whatever Jev says", () => {
     const result = decideFromJevAnswers(
-      input({
-        answers: answers({ mailKind: "notification", needsAttention: 0.9 }),
-        category: "updates",
-      }),
+      input({ answers: answers({ mailKind: "personal", keep: 0.9 }), autoReply: true }),
     )
 
-    expect(result.decision).toBe("promote")
-    expect(result.classification).toBe("operational-failure")
-  })
-
-  it("does not promote a routine one-time code", () => {
-    const result = decideFromJevAnswers(
-      input({
-        answers: answers({
-          mailKind: "transactional",
-          needsAttention: 0.9,
-          routineAuthentication: 0.95,
-        }),
-        category: "updates",
-      }),
-    )
-
-    expect(result.decision).toBe("none")
+    expect(result.decision).toBe("archive")
+    expect(result.classification).toBe("auto-reply")
   })
 })
 
@@ -159,8 +144,7 @@ function answers(
     mailKind: string
     probability?: number
     runnerUp?: string
-    needsAttention?: number
-    routineAuthentication?: number
+    keep?: number
   },
 ): JevAnswers {
   const probability = options.probability ?? 0.97
@@ -182,14 +166,14 @@ function answers(
         generic_solicitation: 0.01,
       },
     },
-    needs_attention: { type: "noul", noul: options.needsAttention ?? 0.05 },
+    keep_in_inbox: { type: "noul", noul: options.keep ?? 0.05 },
     attention_reason: {
       type: "choice",
       choice: "operational_failure",
       confidence: 0.8,
       probabilities: { operational_failure: 0.9, explicit_action: 0.1 },
     },
-    routine_authentication: { type: "noul", noul: options.routineAuthentication ?? 0.02 },
+    routine_authentication: { type: "noul", noul: 0.02 },
   }
 }
 
@@ -201,6 +185,8 @@ function input(
     category?: JevDecisionInput["category"]
     listId?: string
     oneClickUnsubscribe?: boolean
+    calendarMethod?: string | null
+    autoReply?: boolean
     protections?: Partial<JevDecisionInput["archiveProtections"]>
   },
 ): JevDecisionInput {
@@ -210,6 +196,8 @@ function input(
     senderAddress: "news@example.com",
     listId: options.listId ?? "",
     oneClickUnsubscribe: options.oneClickUnsubscribe ?? true,
+    calendarMethod: options.calendarMethod ?? null,
+    autoReply: options.autoReply ?? false,
     archiveProtections: {
       devResultsSender: false,
       priorReply: false,

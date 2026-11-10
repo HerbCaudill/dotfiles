@@ -21,13 +21,13 @@
 
   const REVIEW_FILTERS = {
     all: { label: "All", test: () => true },
-    unreviewed: { label: "Not reviewed", test: record => !review.corrections.has(record.id) },
-    reviewed: { label: "Reviewed", test: record => review.corrections.has(record.id) },
+    unreviewed: { label: "Not reviewed", test: record => !isReviewed(record.id) },
+    reviewed: { label: "Reviewed", test: record => isReviewed(record.id) },
     corrected: {
       label: "Corrected",
       test: record => {
         const correction = review.corrections.get(record.id)
-        return correction !== undefined && correction.disposition !== record.jevDisposition
+        return Boolean(correction?.disposition) && correction.disposition !== record.jevDisposition
       },
     },
   }
@@ -285,7 +285,7 @@
       </button>`
     })
     if (review) {
-      const reviewed = matching.filter(record => review.corrections.has(record.id))
+      const reviewed = matching.filter(record => isReviewed(record.id))
       const corrected = reviewed.filter(REVIEW_FILTERS.corrected.test)
       tiles.push(`<button class="tile" disabled>
         <span class="value">${reviewed.length} <span class="of">of ${matching.length}</span></span>
@@ -449,7 +449,7 @@
         <h3>Mail kind</h3>
         ${KINDS.map(kind => probabilityRow(KIND_LABELS[kind], record.kinds[kind] ?? 0, `var(--kind-${kind})`)).join("")}
         <h3 style="margin-top: 12px">Other questions</h3>
-        ${probabilityRow("Needs attention", record.needsAttention)}
+        ${record.keepInInbox === null ? "" : probabilityRow("Keep in inbox", record.keepInInbox)}
         ${probabilityRow("Routine sign-in", record.routineAuthentication)}
       </div>
       <dl class="facts">${facts.map(([term, value]) => `<dt>${term}</dt><dd>${value}</dd>`).join("")}</dl>
@@ -478,7 +478,7 @@
       ["Latency", `${summary.latencyP50} ms median, ${summary.latencyP95} ms p95`],
       [
         "Thresholds",
-        `Archive and unsubscribe at marketing ≥ ${thresholds.marketing}; archive cold outreach at ≥ ${thresholds.archive}; promote at needs attention ≥ ${thresholds.promote} unless routine sign-in ≥ ${thresholds.routineAuthentication}`,
+        `Keep calendar invitations and senders whose archive you undid; archive calendar replies, automatic replies and marketing (≥ ${thresholds.marketing}); otherwise keep at keep-in-inbox ≥ ${thresholds.keep}, promoting outside Primary, and archive the rest`,
       ],
       ["Earlier labels", escape(summary.labelsSource ?? "None")],
       ...errors.map(error => [
@@ -502,7 +502,7 @@
   function reviewControls(threads) {
     const jev = common(threads.map(record => record.jevDisposition))
     const chosen = common(threads.map(record => review.corrections.get(record.id)?.disposition))
-    const reviewed = threads.filter(record => review.corrections.has(record.id)).length
+    const reviewed = threads.filter(record => isReviewed(record.id)).length
     const progress =
       threads.length > 1 && reviewed > 0 && reviewed < threads.length
         ? `<span class="review-progress" title="Threads reviewed">${reviewed}/${threads.length}</span>`
@@ -536,10 +536,15 @@
   function saveNote(id, note) {
     const existing = review.corrections.get(id)
     if (!existing && note === "") return
-    const disposition = existing?.disposition ?? recordsById.get(id).jevDisposition
+    const disposition = existing?.disposition ?? null
     review.corrections.set(id, { disposition, note })
     refreshReviewMarks()
     save([{ messageId: id, note }])
+  }
+
+  /** Whether Herb has chosen a disposition for a thread; a note alone does not count. */
+  function isReviewed(id) {
+    return Boolean(review.corrections.get(id)?.disposition)
   }
 
   /** Message IDs covered by a thread or group summary. */

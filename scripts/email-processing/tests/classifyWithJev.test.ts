@@ -31,7 +31,7 @@ describe("classifyWithJev", () => {
     expect(Object.keys(request.body.questions)).toEqual([
       "mail_kind",
       "cold_type",
-      "needs_attention",
+      "keep_in_inbox",
       "attention_reason",
       "routine_authentication",
     ])

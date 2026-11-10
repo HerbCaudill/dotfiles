@@ -3,19 +3,19 @@
  *
  * Usage: node --experimental-strip-types scripts/email-processing/renderJevDryRunReport.ts <dry-run.json>
  */
-import { readFileSync, writeFileSync } from "node:fs"
-
-import { renderHtmlReport } from "./renderJevDryRunHtml.ts"
+import { existsSync, readFileSync, writeFileSync } from "node:fs"
+import { dirname, join } from "node:path"
 
 import {
-  ARCHIVE_THRESHOLD,
-  PROMOTE_THRESHOLD,
-  ROUTINE_AUTHENTICATION_THRESHOLD,
+  KEEP_THRESHOLD,
   MARKETING_THRESHOLD,
+  RULE_CLASSIFICATIONS,
   decideFromJevAnswers,
   type JevDecision,
   type JevAnswers,
 } from "./decideFromJevAnswers.ts"
+import { scoreAgainstCorrections, DISPOSITIONS, type CorrectionStore } from "./jevCorrections.ts"
+import { renderHtmlReport } from "./renderJevDryRunHtml.ts"
 import type { ArchiveProtections, GmailCategory } from "./types.ts"
 
 /** Read a results file, render both reports and print their paths. */
@@ -23,15 +23,22 @@ function main() {
   const inputPath = process.argv[2]
   if (!inputPath) throw new Error("Pass the dry-run JSON file")
   const run = redecide(JSON.parse(readFileSync(inputPath, "utf8")) as DryRun)
+  const correctionsPath = join(dirname(inputPath), "corrections.json")
+  const corrections = existsSync(correctionsPath)
+    ? (JSON.parse(readFileSync(correctionsPath, "utf8")) as CorrectionStore).corrections
+    : {}
   const markdownPath = inputPath.replace(/\.json$/, ".md")
   const htmlPath = inputPath.replace(/\.json$/, ".html")
-  writeFileSync(markdownPath, renderReport(run))
+  writeFileSync(markdownPath, renderReport(run, corrections))
   writeFileSync(htmlPath, renderHtmlReport(run))
   console.log(markdownPath)
   console.log(htmlPath)
 }
 
-/** Recompute each thread's decision from its stored Jev answers, so a report shows the current rules. */
+/**
+ * Recompute each thread's decision from its stored Jev answers, so a report shows the current rules.
+ * Runs made with an older question set keep the decisions they were made with.
+ */
 export function redecide(
   /** Dry-run results. */
   run: DryRun,
@@ -39,7 +46,7 @@ export function redecide(
   return {
     ...run,
     records: run.records.map(record =>
-      "error" in record
+      "error" in record || !record.jev.answers.keep_in_inbox
         ? record
         : {
             ...record,
@@ -49,6 +56,8 @@ export function redecide(
               senderAddress: record.sender.address,
               listId: record.listId,
               oneClickUnsubscribe: record.oneClickUnsubscribe,
+              calendarMethod: record.calendarMethod ?? null,
+              autoReply: record.autoReply ?? false,
               archiveProtections: record.archiveProtections as ArchiveProtections,
             }),
           },
@@ -60,6 +69,8 @@ export function redecide(
 export function renderReport(
   /** Dry-run results. */
   run: DryRun,
+  /** Herb's corrections by message ID, for scoring. */
+  corrections: CorrectionStore["corrections"] = {},
 ) {
   const records = run.records.filter((record): record is ClassifiedRecord => !("error" in record))
   const errors = run.records.filter(record => "error" in record)
@@ -67,14 +78,15 @@ export function renderReport(
     `# Jev dry run, ${run.createdAt.slice(0, 10)}`,
     `Read-only run over the last ${run.windowDays} days of ${run.account}. Nothing in Gmail was changed and nothing was unsubscribed. One decision per thread, for its newest message in the window, recomputed from Jev's stored answers with the current rules.`,
     renderSummary(run, records, errors.length),
+    Object.keys(corrections).length > 0 ? renderScore(records, corrections) : "",
     renderMailKinds(records),
+    renderKept(records),
+    renderArchiveReasons(records),
     renderUnsubscribes(records),
     renderBlockedMarketing(records),
-    renderArchives(records),
-    renderPromotions(records),
     renderAgreement(records, run.labelsSource),
     renderUncertain(records),
-    renderSensitivity(records),
+    renderSensitivity(records, corrections),
     errors.length > 0 ? renderErrors(errors) : "",
   ]
     .filter(Boolean)
@@ -125,7 +137,83 @@ function renderSummary(
         ],
       ],
     ),
-    `Thresholds: archive and unsubscribe at marketing ≥ ${MARKETING_THRESHOLD}, archive cold outreach at ≥ ${ARCHIVE_THRESHOLD}, promote at needs-attention ≥ ${PROMOTE_THRESHOLD} unless routine authentication ≥ ${ROUTINE_AUTHENTICATION_THRESHOLD}. Questions ${run.questionsVersion.slice(0, 19)}.`,
+    `Rules: keep after an undone archive or for a calendar invitation; archive calendar replies, automatic replies and marketing (≥ ${MARKETING_THRESHOLD}); otherwise keep when Jev's keep-in-inbox answer is ≥ ${KEEP_THRESHOLD}, promoting it outside Primary, and archive the rest. Questions ${run.questionsVersion.slice(0, 19)}.`,
+  ])
+}
+
+/** How the decisions compare with Herb's corrections. */
+function renderScore(
+  /** Classified records. */
+  records: ClassifiedRecord[],
+  /** Herb's corrections by message ID. */
+  corrections: CorrectionStore["corrections"],
+) {
+  const score = scoreAgainstCorrections(records, corrections)
+  const row = (entry: (typeof score.missedKeeps)[number]) => [
+    entry.record.receivedAt.slice(0, 10),
+    senderName(entry.record),
+    link(truncate(entry.record.subject, 60), entry.record.gmailUrl),
+    `${entry.predicted} (${entry.record.decision.classification})`,
+    entry.expected,
+    entry.record.jev.answers.keep_in_inbox?.noul.toFixed(2) ?? "–",
+    entry.note,
+  ]
+  const headings = ["Received", "Sender", "Subject", "Job", "Herb", "Keep p", "Note"]
+  return section("Agreement with Herb's corrections", [
+    `${score.labeled} corrected threads. Keep or archive agrees on ${score.keepAgreement} (${percent(score.keepAgreement, score.labeled)}); the exact disposition on ${score.exactAgreement} (${percent(score.exactAgreement, score.labeled)}).`,
+    table(
+      ["Herb \\ job", ...DISPOSITIONS],
+      score.confusion.map(row => [row.expected, ...DISPOSITIONS.map(key => row.predicted[key])]),
+    ),
+    `### Herb kept, the job archives (${score.missedKeeps.length})`,
+    score.missedKeeps.length > 0 ? table(headings, score.missedKeeps.map(row)) : "None.",
+    `### Herb archived, the job keeps (${score.wrongKeeps.length})`,
+    score.wrongKeeps.length > 0 ? table(headings, score.wrongKeeps.map(row)) : "None.",
+  ])
+}
+
+/** Threads the job would keep in the inbox. */
+function renderKept(
+  /** Classified records. */
+  records: ClassifiedRecord[],
+) {
+  const kept = records.filter(record => record.decision.decision !== "archive")
+  return section(`Would keep (${kept.length})`, [
+    kept.length > 0
+      ? table(
+          ["Received", "Sender", "Subject", "Category", "Action", "Reason", "Keep p"],
+          kept.map(record => [
+            record.receivedAt.slice(0, 10),
+            senderName(record),
+            link(truncate(record.subject, 60), record.gmailUrl),
+            record.category,
+            record.decision.decision === "promote" ? "promote" : "leave",
+            record.decision.classification,
+            record.jev.answers.keep_in_inbox?.noul.toFixed(2) ?? "–",
+          ]),
+        )
+      : "None.",
+  ])
+}
+
+/** Why the job archives what it archives. */
+function renderArchiveReasons(
+  /** Classified records. */
+  records: ClassifiedRecord[],
+) {
+  const archived = records.filter(record => record.decision.decision === "archive")
+  const rows = [...groupBy(archived, record => record.decision.classification).entries()]
+    .sort((a, b) => b[1].length - a[1].length)
+    .map(([classification, group]) => [
+      classification,
+      group.length,
+      group
+        .slice(0, 3)
+        .map(record => truncate(record.subject, 40))
+        .join("; "),
+    ])
+  return section(`Would archive (${archived.length})`, [
+    rows.length > 0 ? table(["Reason", "Threads", "Examples"], rows) : "None.",
   ])
 }
 
@@ -211,53 +299,6 @@ function renderBlockedMarketing(
   ])
 }
 
-/** Threads the job would archive. */
-function renderArchives(
-  /** Classified records. */
-  records: ClassifiedRecord[],
-) {
-  const archives = records.filter(record => record.decision.decision === "archive")
-  return section(`Would archive (${archives.length})`, [
-    archives.length > 0
-      ? table(
-          ["Received", "Sender", "Subject", "Category", "Classification", "p", "Now in Inbox"],
-          archives.map(record => [
-            record.receivedAt.slice(0, 10),
-            senderName(record),
-            link(truncate(record.subject, 60), record.gmailUrl),
-            record.category,
-            record.decision.classification,
-            (record.jev.answers.mail_kind.probabilities[record.decision.mailKind] ?? 0).toFixed(2),
-            record.labelIds.includes("INBOX") ? "yes" : "no",
-          ]),
-        )
-      : "None.",
-  ])
-}
-
-/** Threads the job would promote to Primary. */
-function renderPromotions(
-  /** Classified records. */
-  records: ClassifiedRecord[],
-) {
-  const promotions = records.filter(record => record.decision.decision === "promote")
-  return section(`Would promote (${promotions.length})`, [
-    promotions.length > 0
-      ? table(
-          ["Received", "Sender", "Subject", "Category", "Reason", "Needs attention p"],
-          promotions.map(record => [
-            record.receivedAt.slice(0, 10),
-            senderName(record),
-            link(truncate(record.subject, 60), record.gmailUrl),
-            record.category,
-            record.decision.classification,
-            record.jev.answers.needs_attention.noul.toFixed(2),
-          ]),
-        )
-      : "None.",
-  ])
-}
-
 /** Compare Jev's marketing judgment with the sender labels from the agent review Herb approved. */
 function renderAgreement(
   /** Classified records. */
@@ -340,32 +381,46 @@ function renderUncertain(
   ])
 }
 
-/** How the main counts change with the thresholds. */
+/**
+ * How the keep threshold changes what is kept and, with corrections, how well it agrees with Herb.
+ * Only threads Jev decides move; rule-decided threads keep their decision.
+ */
 function renderSensitivity(
   /** Classified records. */
   records: ClassifiedRecord[],
+  /** Herb's corrections by message ID. */
+  corrections: CorrectionStore["corrections"],
 ) {
-  const unsubscribeBase = records.filter(record =>
-    record.decision.unsubscribe.blockedBy.every(reason => reason === "not-marketing"),
-  )
-  const rows = [0.6, 0.7, 0.8, 0.9, 0.95].map(threshold => [
-    threshold,
-    uniqueSenders(unsubscribeBase.filter(record => marketingProbability(record) >= threshold))
-      .length,
-    records.filter(
-      record =>
-        Object.values(record.archiveProtections).every(value => !value) &&
-        (record.jev.answers.mail_kind.probabilities.cold_outreach ?? 0) >= threshold,
-    ).length,
-    records.filter(
-      record =>
-        record.category !== "primary" &&
-        record.jev.answers.needs_attention.noul >= threshold &&
-        record.jev.answers.routine_authentication.noul < ROUTINE_AUTHENTICATION_THRESHOLD,
-    ).length,
-  ])
-  return section("Threshold sensitivity", [
-    table(["Threshold", "Unsubscribe senders", "Cold outreach archives", "Promotions"], rows),
+  const decidedByJev = (record: ClassifiedRecord) =>
+    !RULE_CLASSIFICATIONS.has(record.decision.classification)
+  const keptAt = (record: ClassifiedRecord, threshold: number) =>
+    decidedByJev(record)
+      ? (record.jev.answers.keep_in_inbox?.noul ?? 0) >= threshold
+      : record.decision.decision !== "archive"
+  const labeled = records.filter(record => corrections[record.messageId]?.disposition)
+  const herbKeeps = (record: ClassifiedRecord) =>
+    ["leave", "promote"].includes(corrections[record.messageId].disposition ?? "")
+  const rows = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8].map(threshold => {
+    const agree = labeled.filter(record => keptAt(record, threshold) === herbKeeps(record)).length
+    return [
+      threshold,
+      records.filter(record => keptAt(record, threshold)).length,
+      labeled.length > 0 ? `${agree} (${percent(agree, labeled.length)})` : "–",
+      labeled.filter(record => herbKeeps(record) && !keptAt(record, threshold)).length,
+      labeled.filter(record => !herbKeeps(record) && keptAt(record, threshold)).length,
+    ]
+  })
+  return section("Keep threshold", [
+    table(
+      [
+        "Keep at ≥",
+        "Threads kept",
+        "Agrees with Herb",
+        "Herb kept, archived",
+        "Herb archived, kept",
+      ],
+      rows,
+    ),
   ])
 }
 
@@ -530,6 +585,10 @@ export type ClassifiedRecord = {
   gmailUrl: string
   /** Labels at run time. */
   labelIds: string[]
+  /** METHOD of an attached calendar invitation; missing in runs before it was recorded. */
+  calendarMethod?: string | null
+  /** Whether the message is an automatic reply; missing in runs before it was recorded. */
+  autoReply?: boolean
   /** Raw List-Id header, or an empty string. */
   listId: string
   /** Whether the message offers RFC 8058 one-click unsubscribe. */

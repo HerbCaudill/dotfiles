@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest"
-import { applyCorrectionUpdates, dispositionOf, emptyCorrectionStore } from "../jevCorrections.ts"
+import {
+  applyCorrectionUpdates,
+  dispositionOf,
+  emptyCorrectionStore,
+  scoreAgainstCorrections,
+  type CorrectionStore,
+} from "../jevCorrections.ts"
 import type { JevDecision } from "../decideFromJevAnswers.ts"
 import type { ClassifiedRecord } from "../renderJevDryRunReport.ts"
 
@@ -56,15 +62,16 @@ describe("applyCorrectionUpdates", () => {
     expect(second.corrections.m1.note).toBe("customer")
   })
 
-  it("treats a note without a disposition as agreeing with Jev", () => {
+  it("keeps a note without choosing a disposition", () => {
     const store = applyCorrectionUpdates(
       emptyCorrectionStore(),
-      [{ messageId: "m1", note: "fine as is" }],
+      [{ messageId: "m1", note: "all of these should be archived" }],
       records,
       context,
     )
 
-    expect(store.corrections.m1.disposition).toBe("leave")
+    expect(store.corrections.m1.disposition).toBeNull()
+    expect(store.corrections.m1.note).toBe("all of these should be archived")
   })
 
   it("removes a correction when the disposition is cleared", () => {
@@ -101,6 +108,31 @@ describe("applyCorrectionUpdates", () => {
         context,
       ),
     ).toThrow(/Unknown disposition/)
+  })
+})
+
+describe("scoreAgainstCorrections", () => {
+  it("scores keep-or-archive and exact dispositions over corrected messages only", () => {
+    const records = [
+      { ...record("kept"), decision: decision("none", false) },
+      { ...record("archived"), decision: decision("archive", false) },
+      { ...record("unsubscribed"), decision: decision("archive", true) },
+      { ...record("unlabeled"), decision: decision("archive", false) },
+    ] as ClassifiedRecord[]
+    const corrections = {
+      kept: { disposition: "promote" },
+      archived: { disposition: "leave" },
+      unsubscribed: { disposition: "archive" },
+    } as unknown as CorrectionStore["corrections"]
+
+    const score = scoreAgainstCorrections(records, corrections)
+
+    expect(score.labeled).toBe(3)
+    // promote and leave both keep; archive and unsubscribe both remove.
+    expect(score.keepAgreement).toBe(2)
+    expect(score.exactAgreement).toBe(0)
+    expect(score.missedKeeps.map(miss => miss.record.messageId)).toEqual(["archived"])
+    expect(score.wrongKeeps).toEqual([])
   })
 })
 

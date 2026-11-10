@@ -60,7 +60,7 @@ function dryRunWith(
               confidence: 0.5,
               probabilities: { cold_vendor: 0.6 },
             },
-            needs_attention: { type: "noul", noul: 0.1 },
+            keep_in_inbox: { type: "noul", noul: 0.1 },
             attention_reason: {
               type: "choice",
               choice: "active_work",

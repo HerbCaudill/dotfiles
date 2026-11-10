@@ -41,7 +41,7 @@ export function applyCorrectionUpdates(
     const existing = corrections[update.messageId]
     const jevDisposition = dispositionOf(record.decision)
     corrections[update.messageId] = {
-      disposition: update.disposition ?? existing?.disposition ?? jevDisposition,
+      disposition: update.disposition ?? existing?.disposition ?? null,
       note: update.note ?? existing?.note ?? "",
       jevDisposition,
       sender: record.sender,
@@ -53,6 +53,43 @@ export function applyCorrectionUpdates(
     }
   }
   return { updatedAt: context.now, corrections }
+}
+
+/**
+ * Score decisions against Herb's corrections. The main measure is whether a message stays in the
+ * inbox (leave or promote) or goes (archive or unsubscribe), because that is what Herb sees. The
+ * exact measure also counts unsubscribe versus archive and promote versus leave.
+ */
+export function scoreAgainstCorrections(
+  /** Classified records with current decisions. */
+  records: readonly ClassifiedRecord[],
+  /** Herb's corrections by message ID. */
+  corrections: CorrectionStore["corrections"],
+) {
+  const scored = records.flatMap(record => {
+    const correction = corrections[record.messageId]
+    if (!correction?.disposition) return []
+    const predicted = dispositionOf(record.decision)
+    return [{ record, predicted, expected: correction.disposition, note: correction.note }]
+  })
+  const keeps = (disposition: Disposition) => disposition === "leave" || disposition === "promote"
+  return {
+    labeled: scored.length,
+    keepAgreement: scored.filter(entry => keeps(entry.predicted) === keeps(entry.expected)).length,
+    exactAgreement: scored.filter(entry => entry.predicted === entry.expected).length,
+    missedKeeps: scored.filter(entry => keeps(entry.expected) && !keeps(entry.predicted)),
+    wrongKeeps: scored.filter(entry => !keeps(entry.expected) && keeps(entry.predicted)),
+    confusion: DISPOSITIONS.map(expected => ({
+      expected,
+      predicted: Object.fromEntries(
+        DISPOSITIONS.map(predicted => [
+          predicted,
+          scored.filter(entry => entry.expected === expected && entry.predicted === predicted)
+            .length,
+        ]),
+      ) as Record<Disposition, number>,
+    })),
+  }
 }
 
 // CONSTANTS
@@ -67,8 +104,11 @@ export type Disposition = "leave" | "archive" | "unsubscribe" | "promote"
 
 /** Herb's disposition for one message, with what Jev said when he gave it. */
 export type Correction = {
-  /** Correct disposition. Equal to jevDisposition when Herb confirmed Jev's call. */
-  disposition: Disposition
+  /**
+   * Correct disposition. Equal to jevDisposition when Herb confirmed Jev's call, and null when he
+   * left only a note.
+   */
+  disposition: Disposition | null
   /** Herb's optional explanation. */
   note: string
   /** Jev's disposition under the rules in force at the time. */

@@ -43,17 +43,17 @@
       "generic_solicitation": "A generic solicitation, repeated cold follow-up, unsolicited promotional event, pay-to-play award or vanity-publication offer."
     }
   },
-  "needs_attention": {
+  "keep_in_inbox": {
     "type": "noul",
-    "instructions": "As of evaluatedAt, this message gives Herb a current, material reason to notice it soon: a direct personal message, an explicit request, decision, approval or deadline for him, a cancelled or changed meeting, a concrete security incident on his account, a production failure, bounced mail or failed payment, a medical result or action, an unusual charge or other financial exception, an imminent cancellation or loss of service, or a concrete problem or assignment in active work. Routine receipts, statements, confirmations, newsletters, promotions, one-time codes and digests that repeat old events are not reasons.",
+    "instructions": "Herb Caudill keeps his inbox nearly empty. He archives almost everything and keeps only mail he himself still has to read, answer or act on. As of evaluatedAt, does he keep this message?\n\nHe keeps: messages a person he knows or works with wrote to him, and replies in a conversation he is part of, including with a company or office he contacted himself; a colleague sharing a document with him or commenting to him in one; security alerts about a new sign-in, new device, new key or passkey, or password or recovery change on an account that guards money, identity, code or other accounts, such as Google, Microsoft, Apple, Amazon, 1Password, OpenAI, GitHub, Facebook, his bank or his domain registrar; failed deployments or builds of his own projects; and updates on something he is arranging himself right now, such as an appointment or booking he asked for, a document waiting for his signature, a service request or call he started, a problem with one of his orders, or a purchase or setup he is in the middle of.\n\nHe archives everything else, even when it looks important: receipts, order and shipping updates, statements, invoices, payment and autopay reminders, renewal and subscription notices, trial expirations, plan cancellations, price and policy changes, form and demo-request notifications, task and project-tool reminders and digests, account codes and routine sign-ins to minor services, bounce notices, government filing reminders and notices, newsletters (including ones he reads), marketing and surveys, and cold outreach of every kind (sales pitches, partnership and media offers, job and internship applications), even when it names DevResults, sounds urgent or claims an earlier conversation. Mail from an outside company that reached him through a DevResults group address such as accounting@, engineering@, support@ or security@devresults.com is archived because someone else on the team handles it.",
     "criteria": {
-      "true": "There is a current, material reason for Herb to notice this message soon.",
-      "false": "The message is routine, promotional, informational or out of date."
+      "true": "Herb still has to read, answer or act on this himself, so it stays in his inbox.",
+      "false": "Herb would archive this."
     }
   },
   "attention_reason": {
     "type": "choice",
-    "instructions": "If Herb needs to notice this message, the main reason why.",
+    "instructions": "If Herb keeps this message in his inbox, the main reason why.",
     "criteria": {
       "personal_message": "A direct personal message or meaningful message from an active correspondent.",
       "explicit_action": "A current request, decision, approval, deadline or other action explicitly required from Herb.",
