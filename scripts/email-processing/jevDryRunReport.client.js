@@ -1,10 +1,36 @@
 // Browser side of the Jev dry-run HTML report. renderJevDryRunHtml.ts inlines this file and the
-// report data; nothing is fetched.
+// report data. In review mode, served by serveJevReview.ts, it also saves Herb's corrections.
 ;(() => {
-  const { summary, records, errors } = JSON.parse(
-    document.getElementById("report-data").textContent,
-  )
+  const data = JSON.parse(document.getElementById("report-data").textContent)
+  const { summary, records, errors } = data
   const app = document.getElementById("app")
+  const recordsById = new Map(records.map(record => [record.id, record]))
+
+  /** Herb's corrections by message ID, or null for a read-only report. */
+  const review = data.review
+    ? { corrections: new Map(Object.entries(data.review.corrections)) }
+    : null
+
+  /** Dispositions Herb can choose, with their keyboard shortcuts. */
+  const DISPOSITIONS = [
+    { key: "leave", label: "Leave", shortcut: "l", hint: "Leave it in the inbox" },
+    { key: "archive", label: "Archive", shortcut: "a", hint: "Archive it" },
+    { key: "unsubscribe", label: "Unsub", shortcut: "u", hint: "Unsubscribe and archive" },
+    { key: "promote", label: "Promote", shortcut: "p", hint: "Move it to Primary" },
+  ]
+
+  const REVIEW_FILTERS = {
+    all: { label: "All", test: () => true },
+    unreviewed: { label: "Not reviewed", test: record => !review.corrections.has(record.id) },
+    reviewed: { label: "Reviewed", test: record => review.corrections.has(record.id) },
+    corrected: {
+      label: "Corrected",
+      test: record => {
+        const correction = review.corrections.get(record.id)
+        return correction !== undefined && correction.disposition !== record.jevDisposition
+      },
+    },
+  }
 
   /** Mail kinds in fixed palette order. */
   const KINDS = [
@@ -106,7 +132,12 @@
     groupBy: "sender",
     disagreements: false,
     uncertain: false,
+    reviewFilter: "all",
   }
+
+  const REVIEW_HELP = `<p class="keys">Pick the right disposition for each thread, or for a whole group from its header. Jev's call is underlined. Yours is filled in: blue when it agrees with Jev, orange when it corrects it. Click your choice again to clear it. Keys: <kbd>↑</kbd> <kbd>↓</kbd> move, <kbd>L</kbd> leave, <kbd>A</kbd> archive, <kbd>U</kbd> unsubscribe and archive, <kbd>P</kbd> promote, <kbd>X</kbd> clear, <kbd>Enter</kbd> open.</p>`
+
+  let saveTimer
 
   renderShell()
   update()
@@ -135,7 +166,9 @@
             .join("")}</select></label>
           <label title="Threads from senders labeled in the earlier review where Jev disagrees about marketing"><input type="checkbox" id="disagreements"> Disagrees with earlier label</label>
           <label title="Jev's top mail kind is below 0.6"><input type="checkbox" id="uncertain"> Uncertain kind</label>
+          ${review ? `<label>Review <select id="review-filter">${reviewFilterOptions()}</select></label>` : ""}
         </div>
+        ${review ? REVIEW_HELP : ""}
         <div class="result-line" id="result-line"></div>
         <div id="results"></div>
       </section>
@@ -143,6 +176,7 @@
         <h2>Run details</h2>
         <dl class="facts" id="run-details"></dl>
       </section>
+      <div class="save-status" id="save-status" role="status"></div>
     `
     renderRunDetails()
 
@@ -155,6 +189,10 @@
       state.groupBy = event.target.value
       update()
     })
+    document.getElementById("review-filter")?.addEventListener("change", event => {
+      state.reviewFilter = event.target.value
+      update()
+    })
     for (const name of ["disagreements", "uncertain"])
       document.getElementById(name).addEventListener("change", event => {
         state[name] = event.target.checked
@@ -162,6 +200,15 @@
       })
 
     app.addEventListener("click", event => {
+      const setButton = event.target.closest("[data-set]")
+      if (setButton) {
+        // The buttons sit inside <summary>, so stop the click from opening the row.
+        event.preventDefault()
+        const summaryElement = setButton.closest("summary")
+        chooseDisposition(summaryElement, setButton.dataset.set)
+        summaryElement.focus()
+        return
+      }
       const actionButton = event.target.closest("[data-action]")
       if (actionButton) {
         state.action = actionButton.dataset.action
@@ -179,6 +226,13 @@
       const command = event.target.closest("[data-command]")
       if (command) runCommand(command.dataset.command)
     })
+
+    app.addEventListener("change", event => {
+      const note = event.target.closest("textarea[data-note-for]")
+      if (note) saveNote(note.dataset.noteFor, note.value.trim())
+    })
+
+    document.addEventListener("keydown", handleKey)
 
     // Thread details are built the first time a thread opens, which keeps the page light.
     app.addEventListener(
@@ -210,6 +264,7 @@
     }
     if (state.disagreements && !disagreesWithLabel(record)) return false
     if (state.uncertain && topProbability(record) >= 0.6) return false
+    if (review && !REVIEW_FILTERS[state.reviewFilter].test(record)) return false
     return true
   }
 
@@ -229,6 +284,15 @@
         <span class="sub">${senders} sender${senders === 1 ? "" : "s"}</span>
       </button>`
     })
+    if (review) {
+      const reviewed = matching.filter(record => review.corrections.has(record.id))
+      const corrected = reviewed.filter(REVIEW_FILTERS.corrected.test)
+      tiles.push(`<button class="tile" disabled>
+        <span class="value">${reviewed.length} <span class="of">of ${matching.length}</span></span>
+        <span class="label">Reviewed</span>
+        <span class="sub">${corrected.length} corrected</span>
+      </button>`)
+    }
     tiles.push(`<button class="tile" disabled>
         <span class="value">$${summary.cost.toFixed(2)}</span>
         <span class="label">Jev cost</span>
@@ -282,6 +346,9 @@
       state.search ? `“${escape(state.search)}”` : "",
       state.disagreements ? "disagrees with earlier label" : "",
       state.uncertain ? "uncertain kind" : "",
+      review && state.reviewFilter !== "all"
+        ? REVIEW_FILTERS[state.reviewFilter].label.toLowerCase()
+        : "",
     ].filter(Boolean)
     document.getElementById("result-line").innerHTML = `
       <span>${matching.length} thread${matching.length === 1 ? "" : "s"} in ${sorted.length} group${sorted.length === 1 ? "" : "s"}${filters.length > 0 ? ` · ${filters.join(", ")}` : ""}</span>
@@ -300,11 +367,11 @@
   function renderGroup(group, grouping, open) {
     const threads = group.records.slice().sort((a, b) => b.receivedAt.localeCompare(a.receivedAt))
     const sub = grouping.sub(group)
-    return `<details class="group"${open ? " open" : ""}>
+    return `<details class="group"${open ? " open" : ""} data-ids="${threads.map(record => record.id).join(" ")}">
       <summary>
         <span class="group-title">${escape(grouping.title(group))}</span>
         ${sub ? `<span class="group-sub">${escape(sub)}</span>` : ""}
-        <span class="group-meta">${state.groupBy === "sender" ? senderBadges(threads) : ""}<span class="group-count">${threads.length}</span></span>
+        <span class="group-meta">${state.groupBy === "sender" ? senderBadges(threads) : ""}<span class="group-count">${threads.length}</span>${review ? reviewControls(threads) : ""}</span>
       </summary>
       <div class="threads">${threads.map(record => renderThreadSummary(record)).join("")}</div>
     </details>`
@@ -331,13 +398,13 @@
       state.groupBy === "sender"
         ? ""
         : `<span class="from">${escape(record.name || record.address)}</span>`
-    return `<details class="thread" data-index="${index}">
+    return `<details class="thread" data-index="${index}" data-id="${record.id}">
       <summary>
         <span class="date">${date}</span>
         <span class="subject" title="${escape(record.subject)}">${from}${escape(record.subject || "(no subject)")}</span>
         <span class="badges">${actionKeys(record)
           .map(key => actionBadge(key))
-          .join("")}${kindBadge(record.kind)}</span>
+          .join("")}${kindBadge(record.kind)}${review ? reviewControls([record]) : ""}</span>
       </summary>
     </details>`
   }
@@ -372,8 +439,12 @@
       ["If cold outreach", escape(record.coldType.replaceAll("_", " "))],
       ["If it needs you", escape(record.attentionReason.replaceAll("_", " "))],
     ]
+    const note = review
+      ? `<label class="note">Note <textarea data-note-for="${record.id}" rows="2" placeholder="Why? Optional, saved when you click away">${escape(review.corrections.get(record.id)?.note ?? "")}</textarea></label>`
+      : ""
     return `<div class="detail">
       <div class="full-subject">${escape(record.subject || "(no subject)")}<a href="${escape(record.url)}" target="_blank" rel="noopener">Open in Gmail ↗</a></div>
+      ${note}
       <div>
         <h3>Mail kind</h3>
         ${KINDS.map(kind => probabilityRow(KIND_LABELS[kind], record.kinds[kind] ?? 0, `var(--kind-${kind})`)).join("")}
@@ -420,17 +491,158 @@
       .join("")
   }
 
+  /** Options for the review filter. */
+  function reviewFilterOptions() {
+    return Object.entries(REVIEW_FILTERS)
+      .map(([key, filter]) => `<option value="${key}">${filter.label}</option>`)
+      .join("")
+  }
+
+  /** Disposition buttons for one thread or a group, showing Jev's call and Herb's. */
+  function reviewControls(threads) {
+    const jev = common(threads.map(record => record.jevDisposition))
+    const chosen = common(threads.map(record => review.corrections.get(record.id)?.disposition))
+    const reviewed = threads.filter(record => review.corrections.has(record.id)).length
+    const progress =
+      threads.length > 1 && reviewed > 0 && reviewed < threads.length
+        ? `<span class="review-progress" title="Threads reviewed">${reviewed}/${threads.length}</span>`
+        : ""
+    const buttons = DISPOSITIONS.map(disposition => {
+      const classes = [
+        disposition.key === jev ? "jev" : "",
+        disposition.key === chosen ? (chosen === jev ? "confirmed" : "corrected") : "",
+      ].filter(Boolean)
+      const hint = `${disposition.hint}${disposition.key === jev ? " (Jev's call)" : ""}. Key: ${disposition.shortcut.toUpperCase()}`
+      return `<button type="button" tabindex="-1" data-set="${disposition.key}" class="${classes.join(" ")}" title="${hint}">${disposition.label}</button>`
+    })
+    return `<span class="review">${progress}<span class="dispo">${buttons.join("")}</span></span>`
+  }
+
+  /** Apply a disposition to the thread or group a summary belongs to. Choosing it again clears it. */
+  function chooseDisposition(summaryElement, disposition) {
+    const ids = idsFor(summaryElement)
+    const alreadyChosen = ids.every(id => review.corrections.get(id)?.disposition === disposition)
+    const next = disposition === null || alreadyChosen ? null : disposition
+    for (const id of ids) {
+      if (next === null) review.corrections.delete(id)
+      else
+        review.corrections.set(id, { note: "", ...review.corrections.get(id), disposition: next })
+    }
+    refreshReviewMarks()
+    save(ids.map(messageId => ({ messageId, disposition: next })))
+  }
+
+  /** Save a note, which also confirms Jev's call when no disposition was chosen yet. */
+  function saveNote(id, note) {
+    const existing = review.corrections.get(id)
+    if (!existing && note === "") return
+    const disposition = existing?.disposition ?? recordsById.get(id).jevDisposition
+    review.corrections.set(id, { disposition, note })
+    refreshReviewMarks()
+    save([{ messageId: id, note }])
+  }
+
+  /** Message IDs covered by a thread or group summary. */
+  function idsFor(summaryElement) {
+    const details = summaryElement.parentElement
+    return details.classList.contains("group")
+      ? details.dataset.ids.split(" ")
+      : [details.dataset.id]
+  }
+
+  /** Redraw every disposition control and the review tile without rebuilding the list. */
+  function refreshReviewMarks() {
+    for (const summaryElement of document.querySelectorAll("#results summary")) {
+      const threads = idsFor(summaryElement).map(id => recordsById.get(id))
+      summaryElement.querySelector(".review").outerHTML = reviewControls(threads)
+    }
+    renderTiles(records.filter(passesSharedFilters).filter(passesKindFilter))
+  }
+
+  /** Send corrections to the review server, reporting the outcome in the corner. */
+  async function save(updates) {
+    const status = document.getElementById("save-status")
+    clearTimeout(saveTimer)
+    status.className = "save-status visible"
+    status.textContent = "Saving…"
+    try {
+      const response = await fetch("/api/corrections", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ updates }),
+      })
+      if (!response.ok) throw new Error((await response.json()).error ?? response.statusText)
+      status.textContent = "Saved"
+      saveTimer = setTimeout(() => (status.className = "save-status"), 1500)
+    } catch (error) {
+      status.className = "save-status visible failed"
+      status.textContent = `Not saved: ${error.message}. Reload the page before going on.`
+    }
+  }
+
+  /** Keyboard review: move between rows and set dispositions. */
+  function handleKey(event) {
+    if (!review || event.metaKey || event.ctrlKey || event.altKey) return
+    if (event.target.closest?.("input, textarea, select")) return
+    const key = event.key.toLowerCase()
+    if (["arrowdown", "j", "arrowup", "k"].includes(key)) {
+      event.preventDefault()
+      moveFocus(key === "arrowdown" || key === "j" ? 1 : -1)
+      return
+    }
+    const disposition = DISPOSITIONS.find(candidate => candidate.shortcut === key)
+    if (!disposition && key !== "x") return
+    const summaryElement = document.activeElement?.closest?.("#results summary")
+    if (!summaryElement) return
+    event.preventDefault()
+    const isGroup = summaryElement.parentElement.classList.contains("group")
+    chooseDisposition(summaryElement, disposition?.key ?? null)
+    if (isGroup) focusNextGroup(summaryElement)
+    else moveFocus(1)
+  }
+
+  /** Focus the next or previous visible row. */
+  function moveFocus(step) {
+    const summaries = [...document.querySelectorAll("#results summary")].filter(
+      element => element.offsetParent !== null,
+    )
+    const current = summaries.indexOf(document.activeElement)
+    const next = summaries[Math.max(0, Math.min(summaries.length - 1, current + step))]
+    next?.focus()
+    next?.scrollIntoView({ block: "nearest" })
+  }
+
+  /** Focus the header of the group after this one. */
+  function focusNextGroup(summaryElement) {
+    const next = summaryElement.parentElement.nextElementSibling?.querySelector("summary")
+    next?.focus()
+    next?.scrollIntoView({ block: "nearest" })
+  }
+
+  /** The value every item shares, or undefined when they differ. */
+  function common(values) {
+    return values.every(value => value === values[0]) ? values[0] : undefined
+  }
+
   /** Handle the result-line buttons. */
   function runCommand(command) {
     if (command === "expand" || command === "collapse")
       for (const group of document.querySelectorAll("details.group"))
         group.open = command === "expand"
     if (command === "clear") {
-      Object.assign(state, { action: "all", search: "", disagreements: false, uncertain: false })
+      Object.assign(state, {
+        action: "all",
+        search: "",
+        disagreements: false,
+        uncertain: false,
+        reviewFilter: "all",
+      })
       state.kinds.clear()
       document.getElementById("search").value = ""
       document.getElementById("disagreements").checked = false
       document.getElementById("uncertain").checked = false
+      const reviewFilter = document.getElementById("review-filter")
+      if (reviewFilter) reviewFilter.value = "all"
       update()
     }
   }

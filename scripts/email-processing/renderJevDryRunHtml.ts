@@ -6,15 +6,19 @@ import {
   ROUTINE_AUTHENTICATION_THRESHOLD,
   MARKETING_THRESHOLD,
 } from "./decideFromJevAnswers.ts"
+import { dispositionOf, type CorrectionStore } from "./jevCorrections.ts"
 import type { ClassifiedRecord, DryRun } from "./renderJevDryRunReport.ts"
 
 /**
  * Render a self-contained HTML report for a Jev dry run. The page filters and groups threads in the
- * browser, so every subject line is one or two clicks from the summary.
+ * browser, so every subject line is one or two clicks from the summary. With review options, the page
+ * also lets Herb record the correct disposition for each thread through the review server.
  */
 export function renderHtmlReport(
   /** Dry-run results. */
   run: DryRun,
+  /** Review mode: Herb's saved corrections. Omit for a read-only report. */
+  options: { review?: { corrections: CorrectionStore } } = {},
 ) {
   const records = run.records.filter((record): record is ClassifiedRecord => !("error" in record))
   const errors = run.records.filter(record => "error" in record)
@@ -42,6 +46,16 @@ export function renderHtmlReport(
       },
     },
     records: records.map(toViewRecord),
+    review: options.review
+      ? {
+          corrections: Object.fromEntries(
+            Object.entries(options.review.corrections.corrections).map(([id, correction]) => [
+              id,
+              { disposition: correction.disposition, note: correction.note },
+            ]),
+          ),
+        }
+      : null,
     errors: errors.map(record => ({
       url: record.gmailUrl,
       error: "error" in record ? record.error : "",
@@ -74,6 +88,8 @@ function toViewRecord(
 ) {
   const { answers } = record.jev
   return {
+    id: record.messageId,
+    jevDisposition: dispositionOf(record.decision),
     url: record.gmailUrl,
     receivedAt: record.receivedAt,
     name: record.sender.name,
