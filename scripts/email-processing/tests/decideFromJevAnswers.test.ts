@@ -67,17 +67,61 @@ describe("decideFromJevAnswers", () => {
     expect(result.decision).toBe("none")
   })
 
-  it("archives marketing that landed in Primary but leaves it alone in Promotions", () => {
-    const inPrimary = decideFromJevAnswers(
-      input({ answers: answers({ mailKind: "marketing" }), category: "primary" }),
-    )
-    const inPromotions = decideFromJevAnswers(
-      input({ answers: answers({ mailKind: "marketing" }), category: "promotions" }),
+  it("archives clear marketing in any category", () => {
+    for (const category of ["primary", "promotions", "updates", "forums"] as const) {
+      const result = decideFromJevAnswers(
+        input({ answers: answers({ mailKind: "marketing" }), category }),
+      )
+
+      expect(result.decision).toBe("archive")
+      expect(result.classification).toBe("marketing")
+    }
+  })
+
+  it("archives marketing that it cannot unsubscribe from", () => {
+    const result = decideFromJevAnswers(
+      input({
+        answers: answers({ mailKind: "marketing" }),
+        oneClickUnsubscribe: false,
+        protections: { devResultsSender: true, protectedCorrespondent: true, priorReply: true },
+      }),
     )
 
-    expect(inPrimary.decision).toBe("archive")
-    expect(inPrimary.classification).toBe("misfiled-marketing")
-    expect(inPromotions.decision).toBe("none")
+    expect(result.unsubscribe.eligible).toBe(false)
+    expect(result.decision).toBe("archive")
+  })
+
+  it("does not archive marketing from a sender whose archive Herb undid", () => {
+    const result = decideFromJevAnswers(
+      input({
+        answers: answers({ mailKind: "marketing" }),
+        protections: { archiveReversal: true },
+      }),
+    )
+
+    expect(result.decision).toBe("none")
+    expect(result.unsubscribe.blockedBy).toContain("archiveReversal")
+  })
+
+  it("does not archive uncertain marketing", () => {
+    const result = decideFromJevAnswers(
+      input({
+        answers: answers({ mailKind: "marketing", probability: 0.6, runnerUp: "editorial" }),
+      }),
+    )
+
+    expect(result.decision).toBe("none")
+  })
+
+  it("unsubscribes from marketing despite correspondent keywords", () => {
+    const result = decideFromJevAnswers(
+      input({
+        answers: answers({ mailKind: "marketing" }),
+        protections: { protectedCorrespondent: true },
+      }),
+    )
+
+    expect(result.unsubscribe.eligible).toBe(true)
   })
 
   it("promotes a message outside Primary that needs attention", () => {

@@ -4,7 +4,7 @@ import {
   ARCHIVE_THRESHOLD,
   PROMOTE_THRESHOLD,
   ROUTINE_AUTHENTICATION_THRESHOLD,
-  UNSUBSCRIBE_THRESHOLD,
+  MARKETING_THRESHOLD,
 } from "./decideFromJevAnswers.ts"
 import type { ClassifiedRecord, DryRun } from "./renderJevDryRunReport.ts"
 
@@ -35,7 +35,7 @@ export function renderHtmlReport(
       latencyP50: percentile(latencies, 0.5),
       latencyP95: percentile(latencies, 0.95),
       thresholds: {
-        unsubscribe: UNSUBSCRIBE_THRESHOLD,
+        marketing: MARKETING_THRESHOLD,
         archive: ARCHIVE_THRESHOLD,
         promote: PROMOTE_THRESHOLD,
         routineAuthentication: ROUTINE_AUTHENTICATION_THRESHOLD,

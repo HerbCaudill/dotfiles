@@ -35,9 +35,10 @@
     {
       key: "blocked",
       label: "Marketing kept",
-      hint: "Marketing the job would not unsubscribe from",
+      hint: "Marketing the job would leave in the inbox",
       test: record =>
-        !record.unsubscribe && (record.kinds.marketing ?? 0) >= summary.thresholds.unsubscribe,
+        record.decision !== "archive" &&
+        (record.kinds.marketing ?? 0) >= summary.thresholds.marketing,
     },
     {
       key: "none",
@@ -119,7 +120,7 @@
     })
     app.innerHTML = `
       <h1>Jev dry run</h1>
-      <p class="lede">${escape(summary.account)}, last ${summary.windowDays} days, run ${escape(date)}. Read-only: nothing in Gmail was changed and nothing was unsubscribed. One row per thread, judged on its newest message.</p>
+      <p class="lede">${escape(summary.account)}, last ${summary.windowDays} days, run ${escape(date)}. Read-only: nothing in Gmail was changed and nothing was unsubscribed. One row per thread, judged on its newest message. Decisions use the current rules.</p>
       <div class="tiles" id="tiles"></div>
       <section class="panel">
         <h2>Mail kinds</h2>
@@ -312,10 +313,7 @@
   /** Mail kinds and actions across one sender's threads. */
   function senderBadges(threads) {
     const kinds = countBy(threads, record => record.kind)
-    const actions = countBy(
-      threads.filter(record => actionKey(record) !== "none"),
-      record => actionKey(record),
-    )
+    const actions = countBy(threads.flatMap(actionKeys), key => key)
     return [
       ...[...actions].map(([key, count]) => actionBadge(key, count)),
       ...[...kinds].map(([kind, count]) => kindBadge(kind, kinds.size > 1 ? count : 0)),
@@ -333,12 +331,13 @@
       state.groupBy === "sender"
         ? ""
         : `<span class="from">${escape(record.name || record.address)}</span>`
-    const action = actionKey(record)
     return `<details class="thread" data-index="${index}">
       <summary>
         <span class="date">${date}</span>
         <span class="subject" title="${escape(record.subject)}">${from}${escape(record.subject || "(no subject)")}</span>
-        <span class="badges">${action !== "none" ? actionBadge(action) : ""}${kindBadge(record.kind)}</span>
+        <span class="badges">${actionKeys(record)
+          .map(key => actionBadge(key))
+          .join("")}${kindBadge(record.kind)}</span>
       </summary>
     </details>`
   }
@@ -408,7 +407,7 @@
       ["Latency", `${summary.latencyP50} ms median, ${summary.latencyP95} ms p95`],
       [
         "Thresholds",
-        `Unsubscribe at marketing ≥ ${thresholds.unsubscribe}; archive at ≥ ${thresholds.archive}; promote at needs attention ≥ ${thresholds.promote} unless routine sign-in ≥ ${thresholds.routineAuthentication}`,
+        `Archive and unsubscribe at marketing ≥ ${thresholds.marketing}; archive cold outreach at ≥ ${thresholds.archive}; promote at needs attention ≥ ${thresholds.promote} unless routine sign-in ≥ ${thresholds.routineAuthentication}`,
       ],
       ["Earlier labels", escape(summary.labelsSource ?? "None")],
       ...errors.map(error => [
@@ -436,20 +435,22 @@
     }
   }
 
-  /** The single action shown on a thread's badge. */
-  function actionKey(record) {
-    if (record.unsubscribe) return "unsubscribe"
-    return record.decision
+  /** Actions the job would take on a thread: unsubscribing, then any label change. */
+  function actionKeys(record) {
+    return [
+      ...(record.unsubscribe ? ["unsubscribe"] : []),
+      ...(record.decision === "none" ? [] : [record.decision]),
+    ]
   }
 
   /** Readable action for grouping. */
   function actionLabel(record) {
-    const key = actionKey(record)
-    if (key === "archive") return `Archive: ${record.classification}`
-    if (key === "promote") return `Promote: ${record.classification}`
-    if (key === "unsubscribe")
-      return record.decision === "none" ? "Unsubscribe" : `Unsubscribe and ${record.decision}`
-    return "No action"
+    const label =
+      record.decision === "none"
+        ? ""
+        : `${capitalize(record.decision)}: ${record.classification.replaceAll("-", " ")}`
+    if (record.unsubscribe) return label ? `Unsubscribe and ${label.toLowerCase()}` : "Unsubscribe"
+    return label || "No action"
   }
 
   /** Badge for an action, with an optional count. */

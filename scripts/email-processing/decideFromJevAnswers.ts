@@ -15,12 +15,15 @@ export function decideFromJevAnswers(
   const probabilityOf = (kind: MailKind) => answers.mail_kind.probabilities[kind] ?? 0
   const protections = PROTECTIONS.filter(name => archiveProtections[name])
   const unprotected = protections.length === 0
+  const isMarketing = probabilityOf("marketing") >= MARKETING_THRESHOLD
+  const marketingProtections = MARKETING_PROTECTIONS.filter(name => archiveProtections[name])
 
   const unsubscribeBlockedBy = [
-    ...(probabilityOf("marketing") < UNSUBSCRIBE_THRESHOLD ? ["not-marketing"] : []),
+    ...(isMarketing ? [] : ["not-marketing"]),
     ...(input.oneClickUnsubscribe ? [] : ["no-one-click"]),
     ...(isDevResultsList(input) ? ["devresults-list"] : []),
-    ...protections,
+    ...(archiveProtections.priorReply ? ["priorReply"] : []),
+    ...marketingProtections,
   ]
   const unsubscribe = {
     eligible: unsubscribeBlockedBy.length === 0,
@@ -31,12 +34,9 @@ export function decideFromJevAnswers(
     const classification = toKebab(answers.cold_type.choice) as ArchiveClassification
     return { mailKind, decision: "archive", classification, unsubscribe }
   }
-  if (
-    unprotected &&
-    input.category === "primary" &&
-    probabilityOf("marketing") >= ARCHIVE_THRESHOLD
-  ) {
-    return { mailKind, decision: "archive", classification: "misfiled-marketing", unsubscribe }
+  // Herb wants no marketing at all, so it leaves the inbox in every tab, unsubscribed or not.
+  if (isMarketing && marketingProtections.length === 0) {
+    return { mailKind, decision: "archive", classification: "marketing", unsubscribe }
   }
   if (
     input.category !== "primary" &&
@@ -67,10 +67,10 @@ function toKebab(
 
 // CONSTANTS
 
-/** Minimum probability that a message is marketing before unsubscribing. */
-export const UNSUBSCRIBE_THRESHOLD = 0.8
+/** Minimum probability that a message is marketing before archiving it or unsubscribing. */
+export const MARKETING_THRESHOLD = 0.8
 
-/** Minimum probability of cold outreach, or of marketing in Primary, before archiving. */
+/** Minimum probability of cold outreach before archiving. */
 export const ARCHIVE_THRESHOLD = 0.85
 
 /** Minimum probability that a message needs attention before promoting it. */
@@ -85,6 +85,17 @@ const PROTECTIONS = [
   "priorReply",
   "archiveReversal",
   "protectedCorrespondent",
+  "activeConversation",
+  "requestedWork",
+  "herbInitiated",
+] as const satisfies readonly (keyof ArchiveProtections)[]
+
+// Signals strong enough to keep clear marketing. The others misfire on marketing: Google Groups
+// forwarding makes vendors look like DevResults senders, promotional copy trips the correspondent
+// keywords, and one old reply to a company doesn't mean Herb wants its campaigns. Unsubscribing
+// also respects a prior reply, because it is harder to undo than an archive.
+const MARKETING_PROTECTIONS = [
+  "archiveReversal",
   "activeConversation",
   "requestedWork",
   "herbInitiated",
@@ -159,7 +170,7 @@ export type JevDecision = {
   /** Label action. */
   decision: "archive" | "promote" | "none"
   /** Stable classification for the decision log. */
-  classification: ArchiveClassification | PromoteClassification | "no-action"
+  classification: ArchiveClassification | "marketing" | PromoteClassification | "no-action"
   /** Whether to send a one-click unsubscribe, and what blocked it otherwise. */
   unsubscribe: { eligible: boolean; blockedBy: string[] }
 }

@@ -11,22 +11,49 @@ import {
   ARCHIVE_THRESHOLD,
   PROMOTE_THRESHOLD,
   ROUTINE_AUTHENTICATION_THRESHOLD,
-  UNSUBSCRIBE_THRESHOLD,
+  MARKETING_THRESHOLD,
+  decideFromJevAnswers,
   type JevDecision,
   type JevAnswers,
 } from "./decideFromJevAnswers.ts"
+import type { ArchiveProtections, GmailCategory } from "./types.ts"
 
 /** Read a results file, render both reports and print their paths. */
 function main() {
   const inputPath = process.argv[2]
   if (!inputPath) throw new Error("Pass the dry-run JSON file")
-  const run = JSON.parse(readFileSync(inputPath, "utf8")) as DryRun
+  const run = redecide(JSON.parse(readFileSync(inputPath, "utf8")) as DryRun)
   const markdownPath = inputPath.replace(/\.json$/, ".md")
   const htmlPath = inputPath.replace(/\.json$/, ".html")
   writeFileSync(markdownPath, renderReport(run))
   writeFileSync(htmlPath, renderHtmlReport(run))
   console.log(markdownPath)
   console.log(htmlPath)
+}
+
+/** Recompute each thread's decision from its stored Jev answers, so a report shows the current rules. */
+export function redecide(
+  /** Dry-run results. */
+  run: DryRun,
+): DryRun {
+  return {
+    ...run,
+    records: run.records.map(record =>
+      "error" in record
+        ? record
+        : {
+            ...record,
+            decision: decideFromJevAnswers({
+              answers: record.jev.answers,
+              category: record.category as GmailCategory,
+              senderAddress: record.sender.address,
+              listId: record.listId,
+              oneClickUnsubscribe: record.oneClickUnsubscribe,
+              archiveProtections: record.archiveProtections as ArchiveProtections,
+            }),
+          },
+    ),
+  }
 }
 
 /** Render the whole report. */
@@ -38,7 +65,7 @@ export function renderReport(
   const errors = run.records.filter(record => "error" in record)
   return [
     `# Jev dry run, ${run.createdAt.slice(0, 10)}`,
-    `Read-only run over the last ${run.windowDays} days of ${run.account}. Nothing in Gmail was changed and nothing was unsubscribed. One decision per thread, for its newest message in the window.`,
+    `Read-only run over the last ${run.windowDays} days of ${run.account}. Nothing in Gmail was changed and nothing was unsubscribed. One decision per thread, for its newest message in the window, recomputed from Jev's stored answers with the current rules.`,
     renderSummary(run, records, errors.length),
     renderMailKinds(records),
     renderUnsubscribes(records),
@@ -98,7 +125,7 @@ function renderSummary(
         ],
       ],
     ),
-    `Thresholds: unsubscribe at marketing ≥ ${UNSUBSCRIBE_THRESHOLD}, archive at ≥ ${ARCHIVE_THRESHOLD}, promote at needs-attention ≥ ${PROMOTE_THRESHOLD} unless routine authentication ≥ ${ROUTINE_AUTHENTICATION_THRESHOLD}. Questions ${run.questionsVersion.slice(0, 19)}.`,
+    `Thresholds: archive and unsubscribe at marketing ≥ ${MARKETING_THRESHOLD}, archive cold outreach at ≥ ${ARCHIVE_THRESHOLD}, promote at needs-attention ≥ ${PROMOTE_THRESHOLD} unless routine authentication ≥ ${ROUTINE_AUTHENTICATION_THRESHOLD}. Questions ${run.questionsVersion.slice(0, 19)}.`,
   ])
 }
 
@@ -164,8 +191,7 @@ function renderBlockedMarketing(
 ) {
   const blocked = records.filter(
     record =>
-      !record.decision.unsubscribe.eligible &&
-      marketingProbability(record) >= UNSUBSCRIBE_THRESHOLD,
+      !record.decision.unsubscribe.eligible && marketingProbability(record) >= MARKETING_THRESHOLD,
   )
   const reasons = groupBy(
     blocked.flatMap(record =>
