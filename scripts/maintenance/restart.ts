@@ -17,21 +17,28 @@ import { restartBlocker } from "./restartBlocker.ts"
 
 /** Check for a driver release, then pause sessions and restart the mini when a restart is due. */
 export async function prepare(
-  /** Report only: send no messages, change no tasks and don't restart. */
-  dryRun = false,
+  /**
+   * `scheduled` restarts only inside the night window and once the blocker clears. `now` is Herb asking for a restart
+   * right away, so it skips both checks but still pauses sessions and waits for work to finish. `dry-run` reports only:
+   * it sends no messages, changes no tasks and doesn't restart.
+   */
+  mode: PrepareMode = "scheduled",
 ): Promise<void> {
+  const dryRun = mode === "dry-run"
   const state = readState()
   await checkAmdRelease(state, dryRun)
 
-  const hour = new Date().getHours()
-  if (!dryRun && (hour < 1 || hour >= 5))
-    return log(`No restart: ${hour}:00 is outside the 01:00 to 05:00 maintenance window`)
-  const blocker = restartBlocker({
-    uptimeHours: uptime() / 3600,
-    sessions: parseQuser(run("quser.exe", []).output),
-  })
-  if (blocker) log(`No restart tonight: ${blocker}`)
-  if (blocker && !dryRun) return
+  if (mode !== "now") {
+    const hour = new Date().getHours()
+    if (!dryRun && (hour < 1 || hour >= 5))
+      return log(`No restart: ${hour}:00 is outside the 01:00 to 05:00 maintenance window`)
+    const blocker = restartBlocker({
+      uptimeHours: uptime() / 3600,
+      sessions: parseQuser(run("quser.exe", []).output),
+    })
+    if (blocker) log(`No restart tonight: ${blocker}`)
+    if (blocker && !dryRun) return
+  }
 
   if (dryRun) {
     log(`Would pause: ${describeThreads(activeThreads())}`)
@@ -65,7 +72,7 @@ export async function prepare(
     }
   } catch (error) {
     const reason = error instanceof DeferError ? error.message : String(error)
-    log(`Restart deferred to the next night: ${reason}`)
+    log(`Restart deferred${mode === "now" ? "" : " to the next night"}: ${reason}`)
     notice(`Maintenance restart deferred: ${reason}`)
     for (const threadId of paused) sendToThread(threadId, RESUME_PROMPT)
     setTaskEnabled(HEARTBEAT_TASK, true)
@@ -73,7 +80,8 @@ export async function prepare(
     return
   }
 
-  const reason = `Mini maintenance: scheduled restart every 3 days to clear the AMD graphics driver's kernel pool leak. Paused ${paused.size} agent session(s); no jobs, builds or tests running.`
+  const when = mode === "now" ? "restart requested by Herb" : "scheduled restart every 3 days"
+  const reason = `Mini maintenance: ${when} to clear the AMD graphics driver's kernel pool leak. Paused ${paused.size} agent session(s); no jobs, builds or tests running.`
   appendFileSync(REBOOTS_LOG, `${new Date().toISOString()} ${reason}\n`)
   saveState({ ...readState(), phase: "restarting", restartRequestedAt: new Date().toISOString() })
   log(`Restarting: ${reason}`)
@@ -359,6 +367,7 @@ const SERVICE_TASKS = [
   "DevResults site",
   "drenv mini controller",
   "mini-maintenance-restart",
+  "mini-maintenance-restart-now",
   "mini-maintenance-resume",
   "Obsidian desktop",
   "qmd-refresh",
@@ -393,6 +402,9 @@ type MaintenanceState = {
   updatedAt?: string
 }
 
+/** How `prepare` decides whether to restart. */
+type PrepareMode = "scheduled" | "now" | "dry-run"
+
 /** The fields this script reads from `t3 thread list --json`. */
 type T3Thread = {
   /** Thread id. */
@@ -421,11 +433,11 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   const action =
     command === "prepare"
       ? prepare()
-      : command === "resume"
-        ? resume()
-        : command === "dry-run"
-          ? prepare(true)
-          : Promise.reject(new Error("Usage: restart.ts prepare | resume | dry-run"))
+      : command === "now" || command === "dry-run"
+        ? prepare(command)
+        : command === "resume"
+          ? resume()
+          : Promise.reject(new Error("Usage: restart.ts prepare | now | resume | dry-run"))
   action.catch(error => {
     console.error(error)
     process.exitCode = 1

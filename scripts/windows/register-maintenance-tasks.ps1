@@ -21,4 +21,9 @@ $trigger.Delay = 'PT3M'
 $settings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Hours 1) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
 Register-ScheduledTask -TaskName 'mini-maintenance-resume' -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force | Out-Null
 
-Write-Host 'Registered mini-maintenance-restart (daily 02:00) and mini-maintenance-resume (startup + 3 min)'
+# On demand, no trigger: when Herb asks for a restart now, Start-ScheduledTask runs it outside the SSH session.
+$action = New-ScheduledTaskAction -Execute $pwsh -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$runner`" -Node `"$node`" -Command now"
+$settings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Hours 2) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
+Register-ScheduledTask -TaskName 'mini-maintenance-restart-now' -Action $action -Principal $principal -Settings $settings -Force | Out-Null
+
+Write-Host 'Registered mini-maintenance-restart (daily 02:00), mini-maintenance-resume (startup + 3 min) and mini-maintenance-restart-now (on demand)'
