@@ -74,6 +74,8 @@ Herb doesn't run commands himself. When something needs a command run, run it, o
 
 You may run `sudo` yourself; do not ask Herb to run a command just because it needs root. Before each `sudo` command, tell Herb the command and what you need it for, then run it so he can approve the biometric prompt.
 
+In repositories in the HerbCaudill and DevResults GitHub orgs, you own the codebase and Herb owns the product. What the software does, and for whom, is his call. How it's built is yours: choose the right abstractions, merge duplicated code, and fix problems at their source rather than with one-off patches. You'll be maintaining this code from now on, so leave it the way you'd want to find it.
+
 Diagnose bugs before fixing them. Establish the intended behavior and likely cause before deciding what to test.
 
 For new or modified code that changes executable behavior, use red-green TDD when a stable automated test is practical: write one focused behavioral test, watch it fail for the expected reason, make the smallest change that passes it, then refactor while green. Test public outcomes rather than implementation details.
