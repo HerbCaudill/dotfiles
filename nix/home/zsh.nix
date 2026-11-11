@@ -1,4 +1,10 @@
-{ dotfilesRoot, pkgs, ... }:
+{
+  config,
+  dotfilesRoot,
+  lib,
+  pkgs,
+  ...
+}:
 {
   home.sessionPath = [
     "$HOME/.local/bin"
@@ -14,6 +20,20 @@
     enableCompletion = true;
     syntaxHighlighting.enable = true;
     envExtra = ''
+      # A parent process can pass on the "already sourced" guards from nix-darwin
+      # and home-manager without the PATH they built (T3 Code does), so zsh skips
+      # that setup and every Nix package vanishes. Put the directories back.
+      () {
+        local dir
+        local -a sessionPath=(${lib.concatMapStringsSep " " (dir: ''"${dir}"'') config.home.sessionPath})
+        for dir in ''${(z)NIX_PROFILES}; do
+          (( ''${path[(Ie)$dir/bin]} )) || path=($dir/bin $path)
+        done
+        for dir in ''${(Oa)sessionPath}; do
+          (( ''${path[(Ie)$dir]} )) || path=($dir $path)
+        done
+      }
+
       [[ -f ~/.secrets ]] && source ~/.secrets
       [[ -f ~/.localenv ]] && source ~/.localenv
 
