@@ -2,7 +2,7 @@ import type { ArchiveProtections, GmailCategory } from "./types.ts"
 
 /**
  * Turn Jev's calibrated answers into the supervisor's decisions. Herb keeps his inbox nearly empty,
- * so mail is archived unless something says to keep it: a calendar invitation, an undone archive,
+ * so mail is archived unless something says to keep it: his Keep label, a calendar invitation, an undone archive,
  * personal mail from someone he knows, or Jev's judgment that Herb still has to read, answer or act
  * on it. Clear marketing is also
  * unsubscribed from when that is safe.
@@ -28,6 +28,7 @@ export function decideFromJevAnswers(
   })
 
   // Herb's own signals and message structure come before Jev's judgment.
+  if (input.keepLabeled) return keep("keep-label")
   if (archiveProtections.archiveReversal) return keep("archive-reversal")
   if (input.calendarMethod === "REPLY") return archive("calendar-reply")
   if (input.calendarMethod) return keep("calendar-invitation")
@@ -99,6 +100,7 @@ export const PERSONAL_THRESHOLD = 0.5
 
 /** Classifications decided by rules before Jev's keep answer is consulted. */
 export const RULE_CLASSIFICATIONS: ReadonlySet<string> = new Set([
+  "keep-label",
   "archive-reversal",
   "calendar-reply",
   "calendar-invitation",
@@ -184,6 +186,8 @@ export type JevDecisionInput = {
   calendarMethod: string | null
   /** Whether the message is an automatic reply, from its Auto-Submitted header. */
   autoReply: boolean
+  /** Whether the message has Herb's Keep label, set by his Gmail filters or by hand. */
+  keepLabeled: boolean
   /** Deterministic protections computed by the supervisor. */
   archiveProtections: ArchiveProtections
 }

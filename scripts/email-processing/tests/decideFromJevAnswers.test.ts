@@ -127,6 +127,16 @@ describe("decideFromJevAnswers", () => {
     expect(stranger.decision).toBe("archive")
   })
 
+  it("leaves mail labeled Keep alone whatever Jev says", () => {
+    const result = decideFromJevAnswers(
+      input({ answers: answers({ mailKind: "marketing", keep: 0.01 }), keepLabeled: true }),
+    )
+
+    expect(result.decision).toBe("none")
+    expect(result.classification).toBe("keep-label")
+    expect(result.unsubscribe.eligible).toBe(false)
+  })
+
   it("archives automatic replies whatever Jev says", () => {
     const result = decideFromJevAnswers(
       input({ answers: answers({ mailKind: "personal", keep: 0.9 }), autoReply: true }),
@@ -187,6 +197,7 @@ function input(
     oneClickUnsubscribe?: boolean
     calendarMethod?: string | null
     autoReply?: boolean
+    keepLabeled?: boolean
     protections?: Partial<JevDecisionInput["archiveProtections"]>
   },
 ): JevDecisionInput {
@@ -198,6 +209,7 @@ function input(
     oneClickUnsubscribe: options.oneClickUnsubscribe ?? true,
     calendarMethod: options.calendarMethod ?? null,
     autoReply: options.autoReply ?? false,
+    keepLabeled: options.keepLabeled ?? false,
     archiveProtections: {
       devResultsSender: false,
       priorReply: false,

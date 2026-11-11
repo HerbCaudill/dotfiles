@@ -58,6 +58,7 @@ export function redecide(
               oneClickUnsubscribe: record.oneClickUnsubscribe,
               calendarMethod: record.calendarMethod ?? null,
               autoReply: record.autoReply ?? false,
+              keepLabeled: record.keepLabeled ?? false,
               archiveProtections: record.archiveProtections as ArchiveProtections,
             }),
           },
@@ -589,6 +590,8 @@ export type ClassifiedRecord = {
   calendarMethod?: string | null
   /** Whether the message is an automatic reply; missing in runs before it was recorded. */
   autoReply?: boolean
+  /** Whether the message had Herb's Keep label. Absent in runs made before the label existed. */
+  keepLabeled?: boolean
   /** Raw List-Id header, or an empty string. */
   listId: string
   /** Whether the message offers RFC 8058 one-click unsubscribe. */

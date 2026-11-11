@@ -41,6 +41,7 @@ async function main() {
   const labels = loadLabels(values.labels)
   const evaluatedAt = earlier?.createdAt ?? new Date().toISOString()
   const token = await getGmailToken()
+  const keepLabelId = await getKeepLabelId(token)
 
   const sentRecipients = await getSentRecipients(token)
   console.error(`sent recipients known: ${sentRecipients.size}`)
@@ -84,6 +85,7 @@ async function main() {
         emptyState,
         labels,
         token,
+        keepLabelId,
       })
     },
   )
@@ -122,6 +124,8 @@ async function classifyMessage(
     emptyState: Parameters<typeof normalizeCandidate>[2]
     labels: Labels
     token: string
+    /** ID of Herb's Keep label, or null when he has none. */
+    keepLabelId: string | null
   },
 ) {
   const { message, thread } = context
@@ -137,6 +141,8 @@ async function classifyMessage(
     /auto-replied/i.test(header("Auto-Submitted")) ||
     header("X-Autoreply") !== "" ||
     header("X-Autorespond") !== ""
+  const keepLabeled =
+    context.keepLabelId !== null && (message.labelIds ?? []).includes(context.keepLabelId)
 
   const base = {
     messageId: message.id,
@@ -147,6 +153,7 @@ async function classifyMessage(
     oneClickUnsubscribe,
     listId,
     autoReply,
+    keepLabeled,
   }
   try {
     const calendarMethod = await readCalendarMethod(context.token, message)
@@ -173,6 +180,7 @@ async function classifyMessage(
       oneClickUnsubscribe,
       calendarMethod,
       autoReply,
+      keepLabeled,
       archiveProtections: candidate.archiveProtections,
     })
     const routine = jev.answers.routine_authentication.noul >= 0.5
@@ -241,6 +249,17 @@ function findPart(
     if (found) return found
   }
   return undefined
+}
+
+/** Find the ID of Herb's Keep label, which tells the job to leave a message alone. */
+async function getKeepLabelId(
+  /** Access token. */
+  token: string,
+): Promise<string | null> {
+  const { labels = [] } = (await gmailGet(token, "labels", {})) as {
+    labels?: { id: string; name: string }[]
+  }
+  return labels.find(label => label.name === KEEP_LABEL_NAME)?.id ?? null
 }
 
 /** Load the message set, time and counts of an earlier run to reclassify. */
@@ -387,6 +406,9 @@ function loadLabels(
 const OUTPUT_DIRECTORY = join(homedir(), ".local", "share", "email-processing", "jev-dry-run")
 
 const QUESTIONS_PATH = new URL("./jevQuestions.json", import.meta.url)
+
+// Gmail label Herb or his filters put on mail the job must leave alone.
+const KEEP_LABEL_NAME = "Keep"
 
 // TYPES
 
