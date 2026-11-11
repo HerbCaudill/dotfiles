@@ -20,7 +20,7 @@ The `gws` binary must be on `$PATH`. See the project README for install options.
 
 On Herb's Mac and on the mini, use `gws-delegated` in place of `gws` for API commands. On the mini it's a PowerShell shim (`~/.local/bin/gws-delegated.ps1` and `.cmd`), so run it from PowerShell; Git Bash's `which` won't find it, and plain `gws` there isn't signed in. It creates a short-lived service-account token for `herb@devresults.com` using the domain-wide delegation scopes approved by the Workspace administrator. It does not use interactive OAuth or the `gws` credential cache.
 
-The approved scopes cover Calendar, Contacts (`people`), Docs, Drive, Gmail (read, label, archive, draft, send), Sheets and Tasks. In Contacts, Herb's saved contacts are read-write; Other contacts (addresses Gmail saves automatically) and the DevResults directory are read-only. Anything else, such as Admin SDK calls, will fail until Herb approves the scope in the admin console and it is added to `scripts/google-workspace/runDelegatedGws.ts` – in that order, because a single unapproved scope makes every call fail.
+The approved scopes cover Calendar, Contacts (`people`), Docs, Drive, Gmail (read, label, archive, draft, send, plus filters and other basic settings), Sheets and Tasks. In Contacts, Herb's saved contacts are read-write; Other contacts (addresses Gmail saves automatically) and the DevResults directory are read-only. Anything else, such as Admin SDK calls, will fail until Herb approves the scope in the admin console and it is added to `scripts/google-workspace/runDelegatedGws.ts` – in that order, because a single unapproved scope makes every call fail.
 
 Use the underlying `gws` binary only for authentication diagnostics, schema discovery, `--help`, and `generate-skills`.
 
