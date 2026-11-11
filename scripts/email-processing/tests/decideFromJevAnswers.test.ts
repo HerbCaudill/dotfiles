@@ -211,10 +211,8 @@ function input(
     autoReply: options.autoReply ?? false,
     keepLabeled: options.keepLabeled ?? false,
     archiveProtections: {
-      devResultsSender: false,
       priorReply: false,
       archiveReversal: false,
-      protectedCorrespondent: false,
       activeConversation: false,
       requestedWork: false,
       herbInitiated: false,

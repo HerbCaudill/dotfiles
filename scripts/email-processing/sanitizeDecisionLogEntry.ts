@@ -20,6 +20,7 @@ export function sanitizeDecisionLogEntry(
     decision: entry.decision,
     classification: entry.classification,
     confidence: entry.confidence,
+    ...(entry.logOnly ? { logOnly: true as const } : {}),
     reason: containsMedicalDetails ? "[REDACTED MEDICAL DETAIL]" : sanitizeLogText(entry.reason),
     ...(entry.decision === "error" && entry.exception !== undefined
       ? { exception: entry.exception }
@@ -38,18 +39,29 @@ export function sanitizeDecisionLogEntry(
           ),
         }
       : {}),
+    ...(entry.jev !== undefined
+      ? { jev: { ...entry.jev, model: cleanControls(entry.jev.model) } }
+      : {}),
+    ...(entry.unsubscribe !== undefined
+      ? {
+          unsubscribe: {
+            eligible: entry.unsubscribe.eligible,
+            blockedBy: entry.unsubscribe.blockedBy.map(value => sanitizePolicySignal(value, false)),
+          },
+        }
+      : {}),
     gmailUrl: entry.gmailUrl,
   }
 }
 
 /** Preserve stable labels while redacting free-form medical signal details. */
 function sanitizePolicySignal(
-  /** Untrusted classifier policy signal. */
+  /** Policy signal. */
   value: string,
   /** Whether the surrounding decision is medical. */
   containsMedicalDetails: boolean,
 ): string {
-  if (TRUSTED_POLICY_SIGNALS.has(value)) return sanitizeLogText(value, false)
+  if (TRUSTED_POLICY_SIGNALS.has(value)) return value
   return containsMedicalDetails || MEDICAL_DETAIL_PATTERN.test(value)
     ? "[REDACTED MEDICAL DETAIL]"
     : "[REDACTED]"
@@ -114,31 +126,65 @@ const IBAN_PATTERN = /\b[A-Z]{2}\d{2}(?:[ -]?[A-Z0-9]){10,30}\b/gi
 /** Financial identifiers written as long digit sequences with spaces or hyphens. */
 const GROUPED_FINANCIAL_NUMBER_PATTERN = /\b(?:\d[ -]?){6,}\d\b/g
 
-/** Exact detail-free policy labels permitted in the audit log. */
+/** Exact detail-free labels the supervisor uses as policy signals and unsubscribe blockers. */
 const TRUSTED_POLICY_SIGNALS = new Set([
-  "account-security",
-  "action-request",
-  "active-work",
-  "approval-request",
-  "archive-reversed",
-  "cold-investor",
-  "cold-job-inquiry",
+  // Mail kinds and classifications from decideFromJevAnswers and the supervisor's guards.
+  "personal",
+  "cold-outreach",
+  "marketing",
+  "editorial",
+  "transactional",
+  "notification",
+  "government",
   "cold-vendor",
-  "delegated-customer",
-  "explicit-action",
-  "financial-anomaly",
+  "cold-job-inquiry",
+  "cold-investor",
   "generic-solicitation",
-  "medical-action",
-  "misfiled-marketing",
-  "no-action",
-  "operational-failure",
   "personal-message",
-  "promotion-missed",
-  "promotion-reversed",
-  "retry",
-  "routine",
-  "routine-receipt",
+  "explicit-action",
   "scheduling-exception",
+  "account-security",
+  "operational-failure",
+  "medical-action",
+  "financial-anomaly",
   "service-decision",
-  "unsolicited-sales",
+  "active-work",
+  "keep",
+  "keep-label",
+  "archive-reversal",
+  "calendar-reply",
+  "calendar-invitation",
+  "auto-reply",
+  "correspondent",
+  "devresults-sender",
+  "no-action",
+  // Message facts.
+  "list-unsubscribe",
+  "one-click",
+  "calendar",
+  "calendar-request",
+  "calendar-cancel",
+  "calendar-publish",
+  "calendar-counter",
+  "calendar-refresh",
+  "calendar-add",
+  "calendar-declinecounter",
+  "prior-reply",
+  "active-conversation",
+  "requested-work",
+  "herb-initiated",
+  // Unsubscribe blockers.
+  "kept",
+  "not-marketing",
+  "no-one-click",
+  "devresults-list",
+  "priorReply",
+  "activeConversation",
+  "requestedWork",
+  "herbInitiated",
+  // Corrections and retries.
+  "archive-reversed",
+  "promotion-reversed",
+  "promotion-missed",
+  "retry",
 ])

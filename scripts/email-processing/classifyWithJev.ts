@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto"
 import { readFileSync } from "node:fs"
 
 import type { JevAnswers } from "./decideFromJevAnswers.ts"
@@ -5,7 +6,7 @@ import type { ClassifierCandidate, NormalizedThreadMessage } from "./types.ts"
 
 /** Ask Jev the email policy questions about one candidate message. */
 export async function classifyWithJev(
-  /** Candidate message and the bulk-mail facts read from its headers. */
+  /** Candidate message and the run's evaluation time. */
   input: JevClassifyInput,
   /** API key and injectable fetch. */
   options: JevClientOptions,
@@ -63,7 +64,10 @@ function buildState(
       to: candidate.recipients.slice(0, 10),
       subject: candidate.subject,
       gmailCategory: candidate.category,
-      bulkMail: { listUnsubscribe: input.listUnsubscribe, listId: input.listId },
+      bulkMail: {
+        listUnsubscribe: candidate.bulkMail.listUnsubscribe,
+        listId: candidate.bulkMail.listId,
+      },
       body: compactText(candidate.body, MAX_BODY_CHARACTERS),
     },
     earlierInThread: candidate.thread.slice(-MAX_THREAD_MESSAGES).map(toThreadState),
@@ -102,7 +106,18 @@ function compactText(
 
 const JEV_URL = "https://api.typesafe.ai/v1/systemone"
 
-const QUESTIONS = JSON.parse(readFileSync(new URL("./jevQuestions.json", import.meta.url), "utf8"))
+const QUESTIONS_TEXT = readFileSync(new URL("./jevQuestions.json", import.meta.url), "utf8")
+
+const QUESTIONS = JSON.parse(QUESTIONS_TEXT)
+
+/**
+ * Version of the email policy: the Jev questions plus the rules that turn answers into decisions.
+ * Logged with each decision so later changes can be traced.
+ */
+export const POLICY_VERSION = `sha256:${createHash("sha256")
+  .update(QUESTIONS_TEXT)
+  .update(readFileSync(new URL("./decideFromJevAnswers.ts", import.meta.url), "utf8"))
+  .digest("hex")}`
 
 // Jev allows 32k tokens per question including state; these keep a message well under that.
 const MAX_BODY_CHARACTERS = 12_000
@@ -113,14 +128,10 @@ const MAX_THREAD_BODY_CHARACTERS = 2_000
 
 /** One message to classify. */
 export type JevClassifyInput = {
-  /** Candidate normalized the same way as for the Codex classifier. */
+  /** Candidate normalized by the supervisor. */
   candidate: ClassifierCandidate
   /** Stable wall-clock time for freshness judgments. */
   evaluatedAt: string
-  /** Raw List-Id header, or an empty string. */
-  listId: string
-  /** Whether the message carries a List-Unsubscribe header. */
-  listUnsubscribe: boolean
 }
 
 /** Client configuration. */

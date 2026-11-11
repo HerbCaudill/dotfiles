@@ -1,17 +1,20 @@
 /** Gmail account authorized for supervised email processing. */
 export const EMAIL_PROCESSING_ACCOUNT = "herb@devresults.com" as const
 
-/** Maximum Gmail-changing decisions accepted in one supervisor run. */
-export const MAX_ACTIONS_PER_RUN = 10
+/**
+ * Maximum messages inspected, and so Gmail changes made, in one run. The policy archives by
+ * default, so nearly every message is an action; anything beyond the cap waits for the next run.
+ */
+export const MAX_ACTIONS_PER_RUN = 50
 
-/** Maximum messages inspected and classified in one scheduled run. */
-export const MAX_CANDIDATES_PER_RUN = 10
+/** Gmail label Herb or his filters put on mail the job must leave alone. */
+export const KEEP_LABEL_NAME = "Keep"
 
-/** Maximum candidates accepted by one classifier invocation. */
-export const MAX_CLASSIFIER_CANDIDATES = 20
+/** Archives of one sender, with no reversal, before the job proposes a Gmail filter for it. */
+export const FILTER_PROPOSAL_MIN_ARCHIVES = 3
 
-/** Maximum UTF-8 bytes accepted by one classifier invocation. */
-export const MAX_CLASSIFIER_INPUT_BYTES = 1_000_000
+/** Window in days over which archives count toward a filter proposal. */
+export const FILTER_PROPOSAL_WINDOW_DAYS = 30
 
 /** Gmail categories from which a message may be promoted to Primary. */
 export const PROMOTABLE_CATEGORIES = ["updates", "promotions", "social", "forums"] as const

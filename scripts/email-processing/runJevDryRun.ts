@@ -19,10 +19,9 @@ import { parseArgs } from "node:util"
 import { loadServiceAccountCredentials } from "../google-workspace/loadServiceAccountCredentials.ts"
 import { requestDelegatedAccessToken } from "../google-workspace/requestDelegatedAccessToken.ts"
 import { classifyWithJev } from "./classifyWithJev.ts"
-import { EMAIL_PROCESSING_ACCOUNT } from "./constants.ts"
-import { decideFromJevAnswers } from "./decideFromJevAnswers.ts"
-import { normalizeCandidate } from "./runGmailSupervisor.ts"
-import type { GmailMessage, GmailSupervisorDependencies, GmailThread } from "./supervisorTypes.ts"
+import { EMAIL_PROCESSING_ACCOUNT, KEEP_LABEL_NAME } from "./constants.ts"
+import { normalizeCandidate, planDecision } from "./runGmailSupervisor.ts"
+import type { GmailMessage, GmailThread } from "./supervisorTypes.ts"
 
 /** Run the dry run and write its JSON results. */
 async function main() {
@@ -52,15 +51,6 @@ async function main() {
   console.error(`messages: ${references.length}; threads: ${threadIds.length}`)
 
   const receivedIds = new Set(references.map(reference => reference.id))
-  const dependencies = {
-    gmail: { hasPriorReplyTo: async (address: string) => sentRecipients.has(address) },
-  } as unknown as GmailSupervisorDependencies
-  const emptyState = {
-    lastHistoryId: null,
-    lastCompletedAt: null,
-    retryMessageIds: [],
-    archiveReversalSenders: [],
-  }
 
   let done = 0
   const records = await mapWithConcurrency(
@@ -81,8 +71,7 @@ async function main() {
         thread,
         evaluatedAt,
         apiKey,
-        dependencies,
-        emptyState,
+        sentRecipients,
         labels,
         token,
         keepLabelId,
@@ -120,8 +109,7 @@ async function classifyMessage(
     thread: GmailThread
     evaluatedAt: string
     apiKey: string
-    dependencies: GmailSupervisorDependencies
-    emptyState: Parameters<typeof normalizeCandidate>[2]
+    sentRecipients: ReadonlySet<string>
     labels: Labels
     token: string
     /** ID of Herb's Keep label, or null when he has none. */
@@ -129,73 +117,47 @@ async function classifyMessage(
   },
 ) {
   const { message, thread } = context
-  const header = (name: string) =>
-    message.payload?.headers?.find(entry => entry.name.toLowerCase() === name.toLowerCase())
-      ?.value ?? ""
-  const listUnsubscribe = header("List-Unsubscribe")
-  const listId = header("List-Id")
-  const oneClickUnsubscribe =
-    /<https:\/\/[^>]+>/.test(listUnsubscribe) &&
-    /List-Unsubscribe=One-Click/i.test(header("List-Unsubscribe-Post"))
-  const autoReply =
-    /auto-replied/i.test(header("Auto-Submitted")) ||
-    header("X-Autoreply") !== "" ||
-    header("X-Autorespond") !== ""
-  const keepLabeled =
-    context.keepLabelId !== null && (message.labelIds ?? []).includes(context.keepLabelId)
-
   const base = {
     messageId: message.id,
     threadId: message.threadId,
     gmailUrl: `https://mail.google.com/mail/#all/${message.threadId}`,
     labelIds: message.labelIds ?? [],
-    hasListUnsubscribe: listUnsubscribe.length > 0,
-    oneClickUnsubscribe,
-    listId,
-    autoReply,
-    keepLabeled,
   }
   try {
-    const calendarMethod = await readCalendarMethod(context.token, message)
+    // Build the candidate exactly as the job does, from a precomputed Sent list instead of searches.
     const candidate = await normalizeCandidate(
       message,
       thread,
-      context.emptyState,
-      context.dependencies,
+      { archiveReversalSenders: new Set(), keepLabelId: context.keepLabelId },
+      {
+        hasPriorReplyTo: async address => context.sentRecipients.has(address),
+        getAttachmentData: async (messageId, attachmentId) =>
+          (await gmailGet(context.token, `messages/${messageId}/attachments/${attachmentId}`, {}))
+            .data as string,
+      },
     )
     const jev = await classifyWithJev(
-      {
-        candidate,
-        evaluatedAt: context.evaluatedAt,
-        listId,
-        listUnsubscribe: listUnsubscribe.length > 0,
-      },
+      { candidate, evaluatedAt: context.evaluatedAt },
       { apiKey: context.apiKey },
     )
-    const decision = decideFromJevAnswers({
-      answers: jev.answers,
-      category: candidate.category,
-      senderAddress: candidate.sender.address,
-      listId,
-      oneClickUnsubscribe,
-      calendarMethod,
-      autoReply,
-      keepLabeled,
-      archiveProtections: candidate.archiveProtections,
-    })
-    const routine = jev.answers.routine_authentication.noul >= 0.5
+    const plan = planDecision(candidate, jev)
     return {
       ...base,
+      hasListUnsubscribe: candidate.bulkMail.listUnsubscribe,
+      oneClickUnsubscribe: candidate.bulkMail.oneClickUnsubscribeUrl !== null,
+      listId: candidate.bulkMail.listId,
+      autoReply: candidate.autoReply,
+      keepLabeled: candidate.keepLabeled,
       receivedAt: candidate.receivedAt,
       sender: candidate.sender,
       // Keep one-time codes out of the results file, as the decision log does.
-      subject: routine
-        ? candidate.subject.replace(/\b[A-Z0-9-]{4,10}\b/g, code =>
-            /\d/.test(code) ? "[code]" : code,
+      subject: plan.routineAuthentication
+        ? candidate.subject.replace(/[A-Z0-9-]{4,10}/g, code =>
+            /d/.test(code) ? "[code]" : code,
           )
         : candidate.subject,
       category: candidate.category,
-      calendarMethod,
+      calendarMethod: candidate.calendarMethod,
       archiveProtections: candidate.archiveProtections,
       jev: {
         model: jev.model,
@@ -203,52 +165,17 @@ async function classifyMessage(
         latencyMs: jev.latencyMs,
         answers: jev.answers,
       },
-      decision,
+      decision: {
+        mailKind: plan.mailKind,
+        decision: plan.decision,
+        classification: plan.classification,
+        unsubscribe: plan.unsubscribe,
+      },
       label: context.labels.labels[candidate.sender.address] ?? null,
     }
   } catch (error) {
     return { ...base, error: error instanceof Error ? error.message : String(error) }
   }
-}
-
-/** Read the METHOD of an attached iCalendar invitation, such as REQUEST or REPLY, or null without one. */
-async function readCalendarMethod(
-  /** Access token. */
-  token: string,
-  /** Full-format message. */
-  message: GmailMessage,
-) {
-  const part = findPart(
-    message.payload as GmailPart | undefined,
-    candidate => candidate.mimeType === "text/calendar",
-  )
-  if (!part) return null
-  const attachmentId = part.body?.attachmentId
-  const data =
-    part.body?.data ??
-    (attachmentId
-      ? ((await gmailGet(token, `messages/${message.id}/attachments/${attachmentId}`, {}))
-          .data as string)
-      : undefined)
-  if (!data) return null
-  const text = Buffer.from(data, "base64url").toString("utf8")
-  return text.match(/^METHOD:\s*(\S+)/m)?.[1]?.toUpperCase() ?? null
-}
-
-/** Find the first MIME part matching a test, depth first. */
-function findPart(
-  /** Part to search. */
-  part: GmailPart | undefined,
-  /** Test for the wanted part. */
-  test: (part: GmailPart) => boolean,
-): GmailPart | undefined {
-  if (!part) return undefined
-  if (test(part)) return part
-  for (const child of part.parts ?? []) {
-    const found = findPart(child, test)
-    if (found) return found
-  }
-  return undefined
 }
 
 /** Find the ID of Herb's Keep label, which tells the job to leave a message alone. */
@@ -407,20 +334,7 @@ const OUTPUT_DIRECTORY = join(homedir(), ".local", "share", "email-processing", 
 
 const QUESTIONS_PATH = new URL("./jevQuestions.json", import.meta.url)
 
-// Gmail label Herb or his filters put on mail the job must leave alone.
-const KEEP_LABEL_NAME = "Keep"
-
 // TYPES
-
-/** A MIME part as the Gmail API returns it. */
-type GmailPart = {
-  /** MIME type. */
-  mimeType?: string
-  /** Inline data or a reference to an attachment. */
-  body?: { data?: string; attachmentId?: string }
-  /** Child parts. */
-  parts?: GmailPart[]
-}
 
 type Labels = {
   /** Where the labels came from. */

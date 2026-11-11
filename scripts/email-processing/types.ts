@@ -1,7 +1,4 @@
-import type { EMAIL_PROCESSING_ACCOUNT, PROMOTABLE_CATEGORIES } from "./constants.ts"
-
-/** Fixed Gmail account accepted by the classifier contract. */
-export type EmailProcessingAccount = typeof EMAIL_PROCESSING_ACCOUNT
+import type { PROMOTABLE_CATEGORIES } from "./constants.ts"
 
 /** Gmail category normalized for policy evaluation. */
 export type GmailCategory = "primary" | (typeof PROMOTABLE_CATEGORIES)[number]
@@ -28,59 +25,35 @@ export type NormalizedThreadMessage = {
   body: string
 }
 
-/** Deterministic archive protections computed outside the classifier. */
+/** Signals of Herb's relationship with the sender, computed by the supervisor rather than Jev. */
 export type ArchiveProtections = {
-  /** Whether the sender belongs to the supervised DevResults account domain. */
-  devResultsSender: boolean
-  /** Whether Herb previously replied to this exact sender. */
+  /** Whether Herb previously sent mail to this exact sender. */
   priorReply: boolean
   /** Whether Herb previously reversed an archive for this exact sender. */
   archiveReversal: boolean
-  /** Whether the sender is a protected personal or professional correspondent. */
-  protectedCorrespondent: boolean
-  /** Whether the message belongs to an active conversation. */
+  /** Whether Herb has written in this thread. */
   activeConversation: boolean
-  /** Whether the message concerns work Herb requested. */
+  /** Whether Herb asked for something earlier in this thread. */
   requestedWork: boolean
-  /** Whether the message responds to something Herb initiated. */
+  /** Whether Herb started this thread. */
   herbInitiated: boolean
 }
 
-/** Deterministic facts for the delegated-customer archive exception. */
-export type DelegatedCustomerFacts = {
-  /** Whether the message is a legitimate customer, demo, or procurement inquiry. */
-  customerInquiry: boolean
-  /** Whether another DevResults person is a recipient. */
-  otherDevResultsRecipient: boolean
-  /** Whether the message explicitly requires Herb to decide, reply, approve, attend, or act. */
-  requiresHerbAction: boolean
+/** Bulk-mail headers read from the message. */
+export type BulkMailFacts = {
+  /** Raw List-Id header, or an empty string. */
+  listId: string
+  /** Whether the message carries any List-Unsubscribe header. */
+  listUnsubscribe: boolean
+  /** The https URL for an RFC 8058 one-click unsubscribe, or null when the sender doesn't offer one. */
+  oneClickUnsubscribeUrl: string | null
 }
 
-/** Sanitized prior promotion correction supplied as inert classifier evidence. */
-export type PromotionCorrectionEvidence = {
-  /** Timestamp of the observed manual correction. */
-  timestamp: string
-  /** Direction of the manual promotion correction. */
-  correction: "promotion-reversed" | "promotion-missed"
-  /** Exact sender from the corrected message. */
-  sender: NormalizedMailbox
-  /** Sanitized subject from the corrected message. */
-  subject: string
-  /** Whether the correction sender exactly matches the current candidate sender. */
-  exactSender: boolean
-  /** Stable category assigned before Herb corrected the promotion decision. */
-  priorClassification: string
-  /** Sanitized explanation recorded before Herb corrected the promotion decision. */
-  priorReason: string
-  /** Sanitized evidence labels recorded before Herb corrected the promotion decision. */
-  priorPolicySignals: string[]
-}
-
-/** Normalized candidate supplied to the isolated classifier. */
+/** One normalized message the supervisor decides about. */
 export type ClassifierCandidate = {
   /** Gmail message ID used as the opaque decision key. */
   messageId: string
-  /** Gmail thread ID used by the supervisor after validation. */
+  /** Gmail thread ID used by the supervisor for label changes. */
   threadId: string
   /** Trusted Gmail mailbox receipt time in RFC 3339 format. */
   receivedAt: string
@@ -92,101 +65,20 @@ export type ClassifierCandidate = {
   subject: string
   /** Complete meaningful message body kept as inert text. */
   body: string
-  /** Relevant thread messages kept as inert text. */
+  /** Earlier thread messages kept as inert text. */
   thread: NormalizedThreadMessage[]
-  /** Current Gmail category. */
+  /** Gmail category when the message arrived. */
   category: GmailCategory
-  /** Archive protections computed by the supervisor. */
+  /** Relationship signals computed by the supervisor. */
   archiveProtections: ArchiveProtections
-  /** Facts used only for the delegated-customer exception. */
-  delegatedCustomer: DelegatedCustomerFacts
-  /** Recent sanitized promotion corrections for specific-example evidence. */
-  promotionCorrections: PromotionCorrectionEvidence[]
-}
-
-/** Strict input contract supplied to the classifier. */
-export type ClassifierInput = {
-  /** Stable wall-clock time for freshness comparisons. */
-  evaluatedAt: string
-  /** Content-derived version of the canonical classifier prompt. */
-  policyVersion: string
-  /** Fixed supervised Gmail account. */
-  account: EmailProcessingAccount
-  /** Exact set of candidates the classifier may name. */
-  candidates: ClassifierCandidate[]
-}
-
-/** Stable archive classifications recognized by policy. */
-export type ArchiveClassification =
-  | "cold-vendor"
-  | "cold-job-inquiry"
-  | "cold-investor"
-  | "generic-solicitation"
-  | "misfiled-marketing"
-  | "delegated-customer"
-
-/** Stable promotion classifications recognized by policy. */
-export type PromoteClassification =
-  | "personal-message"
-  | "explicit-action"
-  | "scheduling-exception"
-  | "account-security"
-  | "operational-failure"
-  | "medical-action"
-  | "financial-anomaly"
-  | "service-decision"
-  | "active-work"
-
-/** Stable classification used when no Gmail action is warranted. */
-export type NoneClassification = "no-action"
-
-/** Evidence and explanation fields common to every classifier decision. */
-export type ClassifierDecisionEvidence = {
-  /** Candidate message ID copied from the offered input. */
-  messageId: string
-  /** One concise explanation that contains no executable authority. */
-  reason: string
-  /** Short inert evidence labels supporting the classification. */
-  policySignals: string[]
-}
-
-/** High-confidence request to archive an eligible message. */
-export type ArchiveDecision = ClassifierDecisionEvidence & {
-  /** Requested policy action. */
-  decision: "archive"
-  /** Stable unwanted-mail or delegated-customer category. */
-  classification: ArchiveClassification
-  /** Archive decisions require high confidence. */
-  confidence: "high"
-}
-
-/** Medium- or high-confidence request to promote an eligible message. */
-export type PromoteDecision = ClassifierDecisionEvidence & {
-  /** Requested policy action. */
-  decision: "promote"
-  /** Stable attention-worthy category. */
-  classification: PromoteClassification
-  /** Promotion decisions reject ambiguous low-confidence results. */
-  confidence: "high" | "medium"
-}
-
-/** Request to leave a message unchanged. */
-export type NoneDecision = ClassifierDecisionEvidence & {
-  /** Requested policy action. */
-  decision: "none"
-  /** Stable no-action category. */
-  classification: NoneClassification
-  /** Classifier certainty for a no-action decision. */
-  confidence: "high" | "medium" | "low"
-}
-
-/** One strict classifier decision variant. */
-export type ClassifierDecision = ArchiveDecision | PromoteDecision | NoneDecision
-
-/** Strict structured result returned by the classifier. */
-export type ClassifierOutput = {
-  /** One decision for every offered candidate. */
-  decisions: ClassifierDecision[]
+  /** Bulk-mail headers. */
+  bulkMail: BulkMailFacts
+  /** METHOD of an attached iCalendar invitation (REQUEST, REPLY, CANCEL…), or null. */
+  calendarMethod: string | null
+  /** Whether the message is an automatic reply, from its Auto-Submitted or X-Autoreply headers. */
+  autoReply: boolean
+  /** Whether the message has Herb's Keep label, set by his Gmail filters or by hand. */
+  keepLabeled: boolean
 }
 
 /** One of the two exact Gmail label deltas authorized by policy. */
@@ -196,14 +88,3 @@ export type LabelMutation = {
   /** Labels to remove at thread level. */
   removeLabelIds: readonly string[]
 }
-
-/** Classifier decision enriched only with supervisor-controlled execution data. */
-export type ValidatedClassification = ClassifierDecision & {
-  /** Thread ID resolved from the offered candidate rather than classifier output. */
-  threadId: string
-  /** Exact authorized mutation, or null for no action. */
-  mutation: LabelMutation | null
-}
-
-/** JSON Schema shape exported for structured classifier invocation. */
-export type JsonSchema = Readonly<Record<string, unknown>>

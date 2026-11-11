@@ -155,14 +155,49 @@ function parseDecisionLogEntry(
     decision: decision as DecisionLogEntry["decision"],
     classification: requiredString(value.classification),
     confidence: confidence as DecisionLogEntry["confidence"],
+    ...(value.logOnly === true ? { logOnly: true as const } : {}),
     reason: requiredString(value.reason),
     ...(exception !== undefined ? { exception } : {}),
     policySignals: stringArray(value.policySignals),
     ...(priorClassification !== undefined ? { priorClassification } : {}),
     ...(priorReason !== undefined ? { priorReason } : {}),
     ...(priorPolicySignals !== undefined ? { priorPolicySignals } : {}),
+    ...parseJevSummary(value.jev),
+    ...parseUnsubscribe(value.unsubscribe),
     gmailUrl: requiredString(value.gmailUrl),
   }
+}
+
+/** Keep a well-formed Jev summary, dropping anything else. */
+function parseJevSummary(
+  /** Unknown decoded value. */
+  value: unknown,
+): Pick<DecisionLogEntry, "jev"> {
+  if (
+    !isRecord(value) ||
+    typeof value.model !== "string" ||
+    typeof value.mailKind !== "string" ||
+    typeof value.marketing !== "number" ||
+    typeof value.keep !== "number"
+  )
+    return {}
+  return {
+    jev: {
+      model: value.model,
+      mailKind: value.mailKind,
+      marketing: value.marketing,
+      keep: value.keep,
+    },
+  }
+}
+
+/** Keep a well-formed unsubscribe eligibility record, dropping anything else. */
+function parseUnsubscribe(
+  /** Unknown decoded value. */
+  value: unknown,
+): Pick<DecisionLogEntry, "unsubscribe"> {
+  if (!isRecord(value) || typeof value.eligible !== "boolean") return {}
+  return { unsubscribe: { eligible: value.eligible, blockedBy: stringArray(value.blockedBy) } }
 }
 
 /** Read one optional string field. */

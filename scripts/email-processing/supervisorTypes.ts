@@ -1,4 +1,5 @@
-import type { ClassifierInput, LabelMutation } from "./types.ts"
+import type { JevClassification, JevClassifyInput } from "./classifyWithJev.ts"
+import type { LabelMutation } from "./types.ts"
 
 /** Durable supervisor state stored outside the repository. */
 export type EmailProcessingState = {
@@ -16,7 +17,7 @@ export type EmailProcessingState = {
 
 /** Append-only record of one processing outcome. */
 export type DecisionLogEntry = {
-  /** Content-derived version of the classifier prompt used for the decision. */
+  /** Content-derived version of the Jev questions and decision rules used for the decision. */
   policyVersion: string
   /** RFC 3339 timestamp for the outcome. */
   timestamp: string
@@ -34,8 +35,14 @@ export type DecisionLogEntry = {
   decision: "archive" | "promote" | "none" | "correction" | "error"
   /** Stable policy category. */
   classification: string
-  /** Qualitative classifier certainty. */
+  /** Qualitative certainty: high for rules, otherwise from Jev's probability for the deciding answer. */
   confidence: "high" | "medium" | "low"
+  /** True when the job ran in log-only mode, so the decision was recorded but Gmail was not changed. */
+  logOnly?: true
+  /** Jev's model and the answers that drove the decision, rounded to two decimals. */
+  jev?: JevLogSummary
+  /** Whether the sender could be unsubscribed from, and what blocked it otherwise. */
+  unsubscribe?: { eligible: boolean; blockedBy: string[] }
   /** Sanitized concise explanation. */
   reason: string
   /** Raw inspected exception for an error outcome, including stack and custom properties. */
@@ -142,18 +149,66 @@ export type GmailThread = {
 export type GmailClient = {
   /** Fetch the current mailbox profile. */
   getProfile: () => Promise<GmailProfile>
-  /** Find current Inbox messages received after a timestamp. */
-  listRecentInboxMessages: (after: Date) => Promise<GmailMessageReference[]>
   /** Fetch changes after a durable Gmail history ID. */
   listHistory: (startHistoryId: string) => Promise<GmailHistory>
-  /** Fetch one message with its current labels and full inline content. */
-  getMessage: (messageId: string) => Promise<GmailMessage>
+  /** Fetch one message with its current labels and full inline content, or null when it's gone. */
+  getMessage: (messageId: string) => Promise<GmailMessage | null>
   /** Fetch one complete thread. */
   getThread: (threadId: string) => Promise<GmailThread>
+  /** Check whether any message in a thread is in Inbox, or null when the thread is gone. */
+  isThreadInInbox: (threadId: string) => Promise<boolean | null>
+  /** Fetch one attachment's base64url data. Used only for iCalendar parts. */
+  getAttachmentData: (messageId: string, attachmentId: string) => Promise<string>
+  /** Find a user label's ID by its exact name, or null when there is none. */
+  getLabelIdByName: (name: string) => Promise<string | null>
   /** Check Sent mail for a prior exact-address reply. */
   hasPriorReplyTo: (address: string) => Promise<boolean>
   /** Apply one validated thread-level label mutation. */
   modifyThreadLabels: (threadId: string, mutation: LabelMutation) => Promise<void>
+  /** List the mailbox's Gmail filters. */
+  listFilters: () => Promise<GmailFilter[]>
+  /** Create a filter that archives all mail from one exact address, returning its ID. */
+  createArchiveFilter: (address: string) => Promise<string>
+}
+
+/** The parts of a Gmail filter used to check whether a sender is already covered. */
+export type GmailFilter = {
+  /** Filter ID. */
+  id: string
+  /** Gmail's from criterion, such as an address, a domain or an OR list. */
+  from: string
+  /** Labels the filter removes. */
+  removeLabelIds: string[]
+}
+
+/** Jev's model and the answers that drove one decision. */
+export type JevLogSummary = {
+  /** Versioned Jev model. */
+  model: string
+  /** Most likely mail kind. */
+  mailKind: string
+  /** Probability that the message is marketing. */
+  marketing: number
+  /** Probability that Herb keeps the message in his inbox. */
+  keep: number
+}
+
+/** A one-click unsubscribe the job found and queued for Herb's approval. */
+export type UnsubscribeCandidate = {
+  /** Exact lowercase sender address. */
+  address: string
+  /** Sender display name. */
+  name: string
+  /** Sanitized subject of the latest message, as an example. */
+  sampleSubject: string
+  /** RFC 8058 one-click https URL from the latest message. */
+  url: string
+  /** Gmail message ID of the latest message. */
+  messageId: string
+  /** Gmail thread ID of the latest message. */
+  threadId: string
+  /** Receipt time of the latest message. */
+  receivedAt: string
 }
 
 /** Injectable side effects used by one supervisor run. */
@@ -162,8 +217,12 @@ export type GmailSupervisorDependencies = {
   now: () => Date
   /** Fixed-account Gmail boundary. */
   gmail: GmailClient
-  /** Run the isolated classifier adapter. */
-  classify: (input: ClassifierInput) => Promise<unknown>
+  /** Ask Jev the policy questions about one message. */
+  classify: (input: JevClassifyInput) => Promise<JevClassification>
+  /** Record decisions without changing Gmail. */
+  logOnly: boolean
+  /** Queue a sender for Herb to approve unsubscribing from. */
+  queueUnsubscribe: (candidate: UnsubscribeCandidate) => Promise<void>
   /** Load durable state. */
   loadState: () => Promise<EmailProcessingState>
   /** Persist durable state. */
@@ -176,9 +235,9 @@ export type GmailSupervisorDependencies = {
 
 /** Compact counts returned after a complete run. */
 export type GmailSupervisorResult = {
-  /** Successfully archived messages. */
+  /** Archived messages, or messages that would have been archived in log-only mode. */
   archived: number
-  /** Successfully promoted messages. */
+  /** Promoted messages, or messages that would have been promoted in log-only mode. */
   promoted: number
   /** Messages intentionally left unchanged. */
   unchanged: number

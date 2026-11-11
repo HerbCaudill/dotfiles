@@ -55,7 +55,7 @@ describe("email processing storage", () => {
       },
       archiveReversalSenders: ["person@example.com"],
     })
-    expect((await stat(path)).mode & 0o777).toBe(0o600)
+    await expectOwnerOnly(path)
   })
 
   it("appends sanitized decisions and ignores a truncated final JSONL record", async () => {
@@ -96,7 +96,7 @@ describe("email processing storage", () => {
       },
       { ...decision, messageId: "message-2" },
     ])
-    expect((await stat(path)).mode & 0o777).toBe(0o600)
+    await expectOwnerOnly(path)
   })
 
   it("repairs a truncated JSONL tail at a byte boundary after multibyte text", async () => {
@@ -114,6 +114,25 @@ describe("email processing storage", () => {
       unicodeDecision,
       { ...createDecision(), messageId: "message-2" },
     ])
+  })
+
+  it("round-trips the log-only flag, Jev summary and unsubscribe eligibility", async () => {
+    const directory = await createTemporaryDirectory()
+    const path = join(directory, "decisions.jsonl")
+    const decision: DecisionLogEntry = {
+      ...createDecision(),
+      decision: "archive",
+      classification: "marketing",
+      confidence: "high",
+      logOnly: true,
+      policySignals: ["marketing", "one-click"],
+      jev: { model: "jev-1.14.0", mailKind: "marketing", marketing: 0.97, keep: 0.02 },
+      unsubscribe: { eligible: false, blockedBy: ["priorReply"] },
+    }
+
+    await appendEmailDecision(decision, path)
+
+    await expect(loadEmailDecisionLog(path)).resolves.toEqual([decision])
   })
 
   it("round-trips the sanitized evidence retained by a promotion correction", async () => {
@@ -301,6 +320,15 @@ describe("email processing storage", () => {
   })
 })
 
+/** Check owner-only permissions where the platform has them; Windows has no POSIX modes. */
+async function expectOwnerOnly(
+  /** File path. */
+  path: string,
+): Promise<void> {
+  if (process.platform === "win32") return
+  expect((await stat(path)).mode & 0o777).toBe(0o600)
+}
+
 /** Create and track one isolated test directory. */
 async function createTemporaryDirectory(): Promise<string> {
   const directory = await mkdtemp(join(tmpdir(), "email-processing-test-"))
@@ -322,7 +350,7 @@ function createDecision(): DecisionLogEntry {
     classification: "no-action",
     confidence: "low",
     reason: "No action required.",
-    policySignals: ["routine"],
+    policySignals: ["no-action"],
     gmailUrl: "https://mail.google.com/mail/#all/thread-1",
   }
 }

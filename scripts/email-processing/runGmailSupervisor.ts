@@ -1,51 +1,51 @@
 import { inspect } from "node:util"
 
+import { POLICY_VERSION, type JevClassification } from "./classifyWithJev.ts"
 import {
+  ARCHIVE_LABEL_MUTATION,
   EMAIL_PROCESSING_ACCOUNT,
+  KEEP_LABEL_NAME,
   MAX_ACTIONS_PER_RUN,
-  MAX_CANDIDATES_PER_RUN,
-  MAX_CLASSIFIER_CANDIDATES,
-  MAX_CLASSIFIER_INPUT_BYTES,
+  PROMOTE_LABEL_MUTATION,
 } from "./constants.ts"
-import { parseClassifierInput } from "./parseClassifierInput.ts"
-import { parseClassifierOutput } from "./parseClassifierOutput.ts"
+import {
+  decideFromJevAnswers,
+  MARKETING_THRESHOLD,
+  type JevDecision,
+} from "./decideFromJevAnswers.ts"
 import { sanitizeDecisionLogEntry } from "./sanitizeDecisionLogEntry.ts"
-import { loadClassifierPolicy } from "./loadClassifierPolicy.ts"
 import type {
+  BulkMailFacts,
   ClassifierCandidate,
-  ClassifierInput,
+  LabelMutation,
   NormalizedMailbox,
   NormalizedThreadMessage,
-  PromotionCorrectionEvidence,
 } from "./types.ts"
 import type {
   DecisionLogEntry,
   EmailProcessingState,
+  GmailClient,
+  GmailHistory,
   GmailMessage,
+  GmailMessagePart,
   GmailSupervisorDependencies,
   GmailSupervisorResult,
   GmailThread,
 } from "./supervisorTypes.ts"
 import { ExpiredGmailHistoryError } from "./supervisorTypes.ts"
-import { validateClassifications } from "./validateClassifications.ts"
 
-/** Process one mailbox synchronization window through the supervised classifier. */
+/** Process one mailbox synchronization window with Jev and the tuned email rules. */
 export async function runGmailSupervisor(
   /** External boundaries and durable storage for the run. */
   dependencies: GmailSupervisorDependencies,
 ): Promise<GmailSupervisorResult> {
   const now = dependencies.now()
   const timestamp = now.toISOString()
-  const [state, priorDecisions, profile, classifierPolicy] = await Promise.all([
+  const [state, priorDecisions, profile] = await Promise.all([
     dependencies.loadState(),
     dependencies.loadDecisionLog(),
     dependencies.gmail.getProfile(),
-    loadClassifierPolicy(),
   ])
-  const classifierContext: ClassifierContext = {
-    evaluatedAt: timestamp,
-    policyVersion: classifierPolicy.version,
-  }
   const result = emptyResult()
   const archiveReversalSenders = getArchiveReversalSenders(state, priorDecisions)
   if (!state.lastHistoryId) {
@@ -62,7 +62,6 @@ export async function runGmailSupervisor(
   }
 
   const { discovered, labelChanges } = await discoverWork(state, dependencies)
-  const protectedCorrespondentSenders = getProtectedCorrespondentSenders(priorDecisions)
   const correctedMessageIds = await recordCorrections(
     timestamp,
     labelChanges,
@@ -85,12 +84,9 @@ export async function runGmailSupervisor(
     ...discovered.map(message => message.messageId),
     ...retryMessageIds,
   ]).filter(messageId => !correctedMessageIds.has(messageId) && !completedMessageIds.has(messageId))
-  const pendingMessageIds = new Set(candidateIds.slice(MAX_CANDIDATES_PER_RUN))
+  const pendingMessageIds = new Set(candidateIds.slice(MAX_ACTIONS_PER_RUN))
   pendingMessageIds.forEach(messageId => retryMessageIds.add(messageId))
-  const selectedCandidateIds = candidateIds.slice(0, MAX_CANDIDATES_PER_RUN)
-  const candidates: ClassifierCandidate[] = []
-  const messagesById = new Map<string, GmailMessage>()
-  const threadsById = new Map<string, GmailThread>()
+  const selectedCandidateIds = candidateIds.slice(0, MAX_ACTIONS_PER_RUN)
   const retryOriginalLabels = getRetryOriginalLabels(state, priorDecisions, retryMessageIds)
   const inboxMutationRetryMessageIds = new Set(
     [...retryOriginalLabels]
@@ -99,19 +95,49 @@ export async function runGmailSupervisor(
   )
   const candidateIdSet = new Set(candidateIds)
   const plannedThreadIds = new Set<string>()
-  const supersededRetriesByMessageId = new Map<string, string[]>()
+  const keepLabelId =
+    selectedCandidateIds.length > 0
+      ? await dependencies.gmail.getLabelIdByName(KEEP_LABEL_NAME)
+      : null
+
+  /** Save state mid-run without advancing the history checkpoint. */
+  const saveRetryCheckpoint = () =>
+    dependencies.saveState(
+      createStateSnapshot(
+        state.lastHistoryId,
+        state.lastCompletedAt,
+        retryMessageIds,
+        archiveReversalSenders,
+        retryOriginalLabels,
+      ),
+    )
+
+  /** Log one failure and keep the message for another attempt. */
+  const recordFailure = async (entry: DecisionLogEntry) => {
+    retryMessageIds.add(entry.messageId)
+    await dependencies.appendDecision(sanitizeDecisionLogEntry(entry))
+  }
 
   for (const messageId of selectedCandidateIds) {
     let inspectedMessageId = messageId
+    let candidate: ClassifierCandidate
+    let message: GmailMessage
+    let thread: GmailThread
+    let supersededRetries: string[]
     try {
-      const message = await dependencies.gmail.getMessage(messageId)
-      if (plannedThreadIds.has(message.threadId)) continue
-      if (!isProcessable(message, inboxMutationRetryMessageIds.has(messageId))) {
+      const discoveredMessage = await dependencies.gmail.getMessage(messageId)
+      // Drafts that were sent or deleted, and deleted mail, show up in history and then vanish.
+      if (!discoveredMessage) {
+        pendingMessageIds.delete(messageId)
+        retryMessageIds.delete(messageId)
+        retryOriginalLabels.delete(messageId)
+        continue
+      }
+      if (plannedThreadIds.has(discoveredMessage.threadId)) continue
+      if (!isProcessable(discoveredMessage, inboxMutationRetryMessageIds.has(messageId))) {
         if (retryMessageIds.has(messageId)) {
           await dependencies.appendDecision(
-            sanitizeDecisionLogEntry(
-              createRetryNoActionLogEntry(classifierPolicy.version, timestamp, message),
-            ),
+            sanitizeDecisionLogEntry(createRetryNoActionLogEntry(timestamp, discoveredMessage)),
           )
           retryMessageIds.delete(messageId)
           retryOriginalLabels.delete(messageId)
@@ -119,7 +145,7 @@ export async function runGmailSupervisor(
         }
         continue
       }
-      const thread = await dependencies.gmail.getThread(message.threadId)
+      thread = await dependencies.gmail.getThread(discoveredMessage.threadId)
       const targetMessage = findNewestThreadCandidate(
         thread,
         candidateIdSet,
@@ -129,312 +155,199 @@ export async function runGmailSupervisor(
       inspectedMessageId = targetMessage.id
       pendingMessageIds.delete(targetMessage.id)
       plannedThreadIds.add(thread.id)
-      const targetIndex = thread.messages.findIndex(
-        threadMessage => threadMessage.id === targetMessage.id,
-      )
-      supersededRetriesByMessageId.set(
-        targetMessage.id,
-        thread.messages
-          .slice(0, targetIndex)
-          .map(threadMessage => threadMessage.id)
-          .filter(threadMessageId => retryMessageIds.has(threadMessageId)),
-      )
-      const candidate = await normalizeCandidate(
+      const targetIndex = thread.messages.findIndex(item => item.id === targetMessage.id)
+      supersededRetries = thread.messages
+        .slice(0, targetIndex)
+        .map(item => item.id)
+        .filter(item => retryMessageIds.has(item))
+      const originalLabelIds = retryOriginalLabels.get(targetMessage.id)
+      message = originalLabelIds ? { ...targetMessage, labelIds: originalLabelIds } : targetMessage
+      candidate = await normalizeCandidate(
         targetMessage,
         thread,
-        { ...state, archiveReversalSenders: [...archiveReversalSenders] },
-        dependencies,
-        retryOriginalLabels.get(targetMessage.id),
-        protectedCorrespondentSenders,
-        priorDecisions,
+        { archiveReversalSenders, keepLabelId },
+        dependencies.gmail,
+        originalLabelIds,
       )
-      candidates.push(candidate)
-      messagesById.set(
-        targetMessage.id,
-        retryOriginalLabels.has(targetMessage.id)
-          ? { ...targetMessage, labelIds: retryOriginalLabels.get(targetMessage.id) }
-          : targetMessage,
-      )
-      threadsById.set(targetMessage.id, thread)
     } catch (error) {
-      retryMessageIds.add(inspectedMessageId)
-      await dependencies.appendDecision(
-        sanitizeDecisionLogEntry(
-          createErrorLogEntry(
-            classifierPolicy.version,
-            timestamp,
-            inspectedMessageId,
-            "",
-            "Candidate inspection failed",
-            undefined,
-            undefined,
-            formatException(error),
-          ),
+      await recordFailure(
+        createErrorLogEntry(
+          timestamp,
+          inspectedMessageId,
+          "",
+          "Candidate inspection failed",
+          undefined,
+          undefined,
+          formatException(error),
         ),
       )
+      continue
     }
-  }
 
-  if (candidates.length > 0) {
-    let decisions: ReturnType<typeof validateClassifications> = []
-    let requestedActionCount = 0
-    const classifierCandidates: ClassifierCandidate[] = []
-    for (const candidate of candidates) {
-      try {
-        classifierCandidates.push(prepareClassifierCandidate(candidate, classifierContext))
-      } catch (error) {
-        await recordClassifierFailures(
-          classifierPolicy.version,
+    let plan: PlannedDecision
+    try {
+      plan = planDecision(
+        candidate,
+        await dependencies.classify({ candidate, evaluatedAt: timestamp }),
+      )
+    } catch (error) {
+      await recordFailure(
+        createErrorLogEntry(
           timestamp,
-          [candidate],
-          messagesById,
-          retryMessageIds,
-          dependencies,
-          "Candidate validation failed",
-          formatException(error),
-        )
-      }
-    }
-    for (const batch of createClassifierBatches(classifierCandidates, classifierContext)) {
-      try {
-        const input: ClassifierInput = {
-          ...classifierContext,
-          account: EMAIL_PROCESSING_ACCOUNT,
-          candidates: batch,
-        }
-        const output = await dependencies.classify(input)
-        const parsedOutput = parseClassifierOutput(output)
-        requestedActionCount += parsedOutput.decisions.filter(
-          decision => decision.decision !== "none",
-        ).length
-        decisions.push(...validateClassifications(input, parsedOutput))
-      } catch (error) {
-        await recordClassifierFailures(
-          classifierPolicy.version,
-          timestamp,
-          batch,
-          messagesById,
-          retryMessageIds,
-          dependencies,
+          candidate.messageId,
+          candidate.threadId,
           "Classifier failed",
+          message,
+          candidate,
           formatException(error),
-        )
-      }
-    }
-    if (requestedActionCount > MAX_ACTIONS_PER_RUN) {
-      await recordClassifierFailures(
-        classifierPolicy.version,
-        timestamp,
-        decisions.map(
-          decision => candidates.find(candidate => candidate.messageId === decision.messageId)!,
         ),
-        messagesById,
-        retryMessageIds,
-        dependencies,
       )
-      decisions = []
+      continue
     }
 
-    for (const decision of decisions) {
-      const message = messagesById.get(decision.messageId)!
-      const thread = threadsById.get(decision.messageId)!
-      if (decision.mutation) {
-        retryMessageIds.add(decision.messageId)
-        retryOriginalLabels.set(decision.messageId, [...(message.labelIds ?? [])])
-        await dependencies.saveState(
-          createStateSnapshot(
-            state.lastHistoryId,
-            state.lastCompletedAt,
-            retryMessageIds,
-            archiveReversalSenders,
-            retryOriginalLabels,
-          ),
-        )
-        try {
-          if (!threadHasMutation(thread, decision.mutation, decision.messageId)) {
-            await dependencies.gmail.modifyThreadLabels(decision.threadId, decision.mutation)
-          }
-          const verifiedThread = await dependencies.gmail.getThread(decision.threadId)
-          if (!threadHasMutation(verifiedThread, decision.mutation, decision.messageId)) {
-            throw new Error("Gmail label verification failed")
-          }
-        } catch (error) {
-          retryMessageIds.add(decision.messageId)
-          await dependencies.appendDecision(
-            sanitizeDecisionLogEntry(
-              toErrorLogEntry(
-                classifierPolicy.version,
-                timestamp,
-                message,
-                candidates,
-                decision,
-                "Gmail mutation failed",
-                formatException(error),
-              ),
-            ),
-          )
-          continue
-        }
-      }
-
+    if (plan.mutation && !dependencies.logOnly) {
+      retryMessageIds.add(candidate.messageId)
+      retryOriginalLabels.set(candidate.messageId, [...(message.labelIds ?? [])])
+      await saveRetryCheckpoint()
       try {
-        await dependencies.appendDecision(
-          sanitizeDecisionLogEntry(
-            toDecisionLogEntry(classifierPolicy.version, timestamp, message, candidates, decision),
-          ),
-        )
-      } catch {
-        retryMessageIds.add(decision.messageId)
-        if (decision.mutation) {
-          retryOriginalLabels.set(decision.messageId, [...(message.labelIds ?? [])])
-        } else {
-          retryOriginalLabels.delete(decision.messageId)
+        if (!threadHasMutation(thread, plan.mutation, candidate.messageId)) {
+          await dependencies.gmail.modifyThreadLabels(candidate.threadId, plan.mutation)
         }
-        await dependencies.saveState(
-          createStateSnapshot(
-            state.lastHistoryId,
-            state.lastCompletedAt,
-            retryMessageIds,
-            archiveReversalSenders,
-            retryOriginalLabels,
+        const verifiedThread = await dependencies.gmail.getThread(candidate.threadId)
+        if (!threadHasMutation(verifiedThread, plan.mutation, candidate.messageId)) {
+          throw new Error("Gmail label verification failed")
+        }
+      } catch (error) {
+        await recordFailure(
+          toErrorLogEntry(
+            timestamp,
+            message,
+            candidate,
+            plan,
+            "Gmail mutation failed",
+            formatException(error),
           ),
         )
         continue
       }
-      retryMessageIds.delete(decision.messageId)
-      retryOriginalLabels.delete(decision.messageId)
-      for (const supersededMessageId of supersededRetriesByMessageId.get(decision.messageId) ??
-        []) {
-        retryMessageIds.delete(supersededMessageId)
-        retryOriginalLabels.delete(supersededMessageId)
-      }
-      if (decision.decision === "archive") result.archived += 1
-      if (decision.decision === "promote") result.promoted += 1
-      if (decision.decision === "none") result.unchanged += 1
     }
+
+    const entry = sanitizeDecisionLogEntry(
+      toDecisionLogEntry(timestamp, message, candidate, plan, dependencies.logOnly),
+    )
+    try {
+      // Queue before logging: the queue is keyed by sender, so a retry after a failed log is harmless.
+      if (plan.decision === "archive" && plan.unsubscribe.eligible) {
+        await dependencies.queueUnsubscribe({
+          address: candidate.sender.address,
+          name: candidate.sender.name,
+          sampleSubject: entry.subject,
+          url: candidate.bulkMail.oneClickUnsubscribeUrl!,
+          messageId: candidate.messageId,
+          threadId: candidate.threadId,
+          receivedAt: candidate.receivedAt,
+        })
+      }
+      await dependencies.appendDecision(entry)
+    } catch {
+      retryMessageIds.add(candidate.messageId)
+      if (plan.mutation && !dependencies.logOnly) {
+        retryOriginalLabels.set(candidate.messageId, [...(message.labelIds ?? [])])
+      } else {
+        retryOriginalLabels.delete(candidate.messageId)
+      }
+      await saveRetryCheckpoint()
+      continue
+    }
+    retryMessageIds.delete(candidate.messageId)
+    retryOriginalLabels.delete(candidate.messageId)
+    for (const supersededMessageId of supersededRetries) {
+      retryMessageIds.delete(supersededMessageId)
+      retryOriginalLabels.delete(supersededMessageId)
+    }
+    if (plan.decision === "archive") result.archived += 1
+    if (plan.decision === "promote") result.promoted += 1
+    if (plan.decision === "none") result.unchanged += 1
   }
 
-  const nextState = createStateSnapshot(
-    profile.historyId,
-    timestamp,
-    retryMessageIds,
-    archiveReversalSenders,
-    retryOriginalLabels,
+  await dependencies.saveState(
+    createStateSnapshot(
+      profile.historyId,
+      timestamp,
+      retryMessageIds,
+      archiveReversalSenders,
+      retryOriginalLabels,
+    ),
   )
-  await dependencies.saveState(nextState)
   result.pending = [...pendingMessageIds].filter(messageId => retryMessageIds.has(messageId)).length
   result.retried = retryMessageIds.size - result.pending
   return result
 }
 
-/** Record classifier failures for one bounded batch without blocking later batches. */
-async function recordClassifierFailures(
-  /** Content-derived classifier prompt version. */
-  policyVersion: string,
-  /** Run timestamp. */
-  timestamp: string,
-  /** Candidates whose classifier call failed validation or execution. */
-  candidates: ClassifierCandidate[],
-  /** Fetched Gmail messages keyed by candidate ID. */
-  messagesById: ReadonlyMap<string, GmailMessage>,
-  /** Mutable retry IDs for this run. */
-  retryMessageIds: Set<string>,
-  /** Supervisor boundaries used for durable logging. */
-  dependencies: GmailSupervisorDependencies,
-  /** Stable audit reason for this failed batch. */
-  reason = "Classifier failed",
-  /** Raw exception inspection, when a failure was thrown. */
-  exception?: string,
-): Promise<void> {
-  for (const candidate of candidates) {
-    retryMessageIds.add(candidate.messageId)
-    await dependencies.appendDecision(
-      sanitizeDecisionLogEntry(
-        createErrorLogEntry(
-          policyVersion,
-          timestamp,
-          candidate.messageId,
-          candidate.threadId,
-          reason,
-          messagesById.get(candidate.messageId),
-          candidate,
-          exception,
-        ),
-      ),
-    )
-  }
-}
-
-/** Split candidates into schema- and byte-bounded classifier inputs. */
-function createClassifierBatches(
-  /** All candidates normalized for this supervisor run. */
-  candidates: ClassifierCandidate[],
-  /** Stable input fields shared by every batch. */
-  context: ClassifierContext,
-): ClassifierCandidate[][] {
-  const batches: ClassifierCandidate[][] = []
-  let currentBatch: ClassifierCandidate[] = []
-
-  for (const candidate of candidates) {
-    const nextBatch = [...currentBatch, candidate]
-    if (
-      currentBatch.length > 0 &&
-      (nextBatch.length > MAX_CLASSIFIER_CANDIDATES ||
-        classifierInputBytes(nextBatch, context) > MAX_CLASSIFIER_INPUT_BYTES)
-    ) {
-      batches.push(currentBatch)
-      currentBatch = [candidate]
-    } else {
-      currentBatch = nextBatch
-    }
-  }
-  if (currentBatch.length > 0) batches.push(currentBatch)
-  return batches
-}
-
-/** Bound one candidate by bytes and then validate every strict per-field schema limit. */
-function prepareClassifierCandidate(
-  /** Candidate normalized from Gmail. */
+/**
+ * Turn Jev's answers into a decision, then apply the guards that stay in code whatever Jev says:
+ * never archive mail from a devresults.com sender, and only ever use the two authorized label deltas.
+ */
+export function planDecision(
+  /** Normalized message and its facts. */
   candidate: ClassifierCandidate,
-  /** Stable input fields shared by every batch. */
-  context: ClassifierContext,
-): ClassifierCandidate {
-  const boundedCandidate = fitCandidateToClassifierLimit(candidate, context)
-  return parseClassifierInput({
-    ...context,
-    account: EMAIL_PROCESSING_ACCOUNT,
-    candidates: [boundedCandidate],
-  }).candidates[0]!
-}
-
-/** Drop only oldest thread context until one candidate fits the classifier byte boundary. */
-function fitCandidateToClassifierLimit(
-  /** Candidate whose current message must remain complete. */
-  candidate: ClassifierCandidate,
-  /** Stable input fields shared by every batch. */
-  context: ClassifierContext,
-): ClassifierCandidate {
-  let boundedCandidate = candidate
-  while (classifierInputBytes([boundedCandidate], context) > MAX_CLASSIFIER_INPUT_BYTES) {
-    if (boundedCandidate.thread.length === 0) {
-      throw new Error(`Classifier candidate exceeds byte limit: ${candidate.messageId}`)
-    }
-    boundedCandidate = { ...boundedCandidate, thread: boundedCandidate.thread.slice(1) }
+  /** Jev's answers for the message. */
+  jev: JevClassification,
+): PlannedDecision {
+  const decided = decideFromJevAnswers({
+    answers: jev.answers,
+    category: candidate.category,
+    senderAddress: candidate.sender.address,
+    listId: candidate.bulkMail.listId,
+    oneClickUnsubscribe: candidate.bulkMail.oneClickUnsubscribeUrl !== null,
+    calendarMethod: candidate.calendarMethod,
+    autoReply: candidate.autoReply,
+    keepLabeled: candidate.keepLabeled,
+    archiveProtections: candidate.archiveProtections,
+  })
+  const guarded: JevDecision =
+    decided.decision === "archive" && candidate.sender.address.endsWith("@devresults.com")
+      ? {
+          ...decided,
+          decision: "none",
+          classification: "devresults-sender",
+          unsubscribe: { eligible: false, blockedBy: ["kept"] },
+        }
+      : decided
+  const marketing = jev.answers.mail_kind.probabilities.marketing ?? 0
+  const keep = jev.answers.keep_in_inbox.noul
+  const ruleDecided = guarded.classification in RULE_REASONS
+  return {
+    ...guarded,
+    mutation:
+      guarded.decision === "archive"
+        ? ARCHIVE_LABEL_MUTATION
+        : guarded.decision === "promote"
+          ? PROMOTE_LABEL_MUTATION
+          : null,
+    confidence: ruleDecided ? "high" : confidenceFor(keep),
+    reason: ruleDecided
+      ? RULE_REASONS[guarded.classification]!
+      : `Jev: ${keep >= 0.5 ? "keep" : "archive"} (keep ${round(keep)}, ${kebab(guarded.mailKind)}).`,
+    routineAuthentication: jev.answers.routine_authentication.noul >= 0.5,
+    jev: {
+      model: jev.model,
+      mailKind: kebab(guarded.mailKind),
+      marketing: round(marketing),
+      keep: round(keep),
+    },
   }
-  return boundedCandidate
 }
 
-/** Count UTF-8 bytes for one exact classifier input batch. */
-function classifierInputBytes(
-  /** Candidate batch. */
-  candidates: ClassifierCandidate[],
-  /** Stable input fields shared by every batch. */
-  context: ClassifierContext,
-): number {
-  return Buffer.byteLength(
-    JSON.stringify({ ...context, account: EMAIL_PROCESSING_ACCOUNT, candidates }),
-    "utf8",
-  )
+/** Map the distance of Jev's keep probability from the 0.5 threshold to a qualitative certainty. */
+function confidenceFor(
+  /** Probability that Herb keeps the message. */
+  keep: number,
+): DecisionLogEntry["confidence"] {
+  const distance = Math.abs(keep - 0.5)
+  if (distance >= 0.35) return "high"
+  if (distance >= 0.15) return "medium"
+  return "low"
 }
 
 /** Return message IDs whose latest durable record requires another attempt. */
@@ -513,11 +426,9 @@ async function discoverWork(
   dependencies: GmailSupervisorDependencies,
 ): Promise<{
   /** Discovered message references. */
-  discovered: Awaited<ReturnType<GmailSupervisorDependencies["gmail"]["listRecentInboxMessages"]>>
+  discovered: GmailHistory["addedMessages"]
   /** Incremental label changes. */
-  labelChanges: Awaited<
-    ReturnType<GmailSupervisorDependencies["gmail"]["listHistory"]>
-  >["labelChanges"]
+  labelChanges: GmailHistory["labelChanges"]
 }> {
   try {
     const history = await dependencies.gmail.listHistory(state.lastHistoryId!)
@@ -533,9 +444,7 @@ async function recordCorrections(
   /** Run timestamp. */
   timestamp: string,
   /** Incremental Gmail label changes. */
-  labelChanges: Awaited<
-    ReturnType<GmailSupervisorDependencies["gmail"]["listHistory"]>
-  >["labelChanges"],
+  labelChanges: GmailHistory["labelChanges"],
   /** Prior sanitized decisions. */
   priorDecisions: DecisionLogEntry[],
   /** Mutable run-local archive reversal set. */
@@ -558,8 +467,9 @@ async function recordCorrections(
       const senderAddress = extractLoggedAddress(prior.sender)
       if (senderAddress) archiveReversalSenders.add(senderAddress)
     }
+    const { logOnly: _logOnly, jev: _jev, unsubscribe: _unsubscribe, ...priorFields } = prior
     const correction = sanitizeDecisionLogEntry({
-      ...prior,
+      ...priorFields,
       timestamp,
       decision: "correction",
       classification,
@@ -583,17 +493,18 @@ function getCorrectionClassification(
   /** Latest prior decision for the message. */
   prior: DecisionLogEntry,
   /** New Gmail label transition. */
-  change: Awaited<
-    ReturnType<GmailSupervisorDependencies["gmail"]["listHistory"]>
-  >["labelChanges"][number],
+  change: GmailHistory["labelChanges"][number],
 ): "archive-reversed" | "promotion-reversed" | "promotion-missed" | null {
+  // In log-only mode the job changed nothing, so there is nothing for Herb to reverse.
   if (
+    !prior.logOnly &&
     (prior.decision === "archive" || prior.classification === "archive-error") &&
     change.addedLabelIds.includes("INBOX")
   ) {
     return "archive-reversed"
   }
   if (
+    !prior.logOnly &&
     (prior.decision === "promote" || prior.classification === "promote-error") &&
     (change.removedLabelIds.includes("CATEGORY_PERSONAL") ||
       change.addedLabelIds.some(label => NON_PRIMARY_CATEGORY_LABELS.has(label)))
@@ -620,22 +531,23 @@ function correctionReason(
   return "Herb promoted or starred a previously untouched message."
 }
 
-/** Normalize one processable Gmail message and its meaningful thread context. */
+/** Normalize one processable Gmail message, its thread context and the facts the rules need. */
 export async function normalizeCandidate(
   /** Target message. */
   message: GmailMessage,
   /** Complete Gmail thread. */
   thread: GmailThread,
-  /** Durable supervisor protections. */
-  state: EmailProcessingState,
-  /** External boundaries used for deterministic facts. */
-  dependencies: GmailSupervisorDependencies,
-  /** Original category labels recovered for an idempotent retry. */
+  /** Run-wide facts. */
+  context: {
+    /** Exact senders whose archive Herb has undone. */
+    archiveReversalSenders: ReadonlySet<string>
+    /** ID of Herb's Keep label, or null when he has none. */
+    keepLabelId: string | null
+  },
+  /** Gmail reads used for relationship and calendar facts. */
+  gmail: Pick<GmailClient, "hasPriorReplyTo" | "getAttachmentData">,
+  /** Original labels recovered for an idempotent retry. */
   originalLabelIds?: string[],
-  /** Exact senders established as protected correspondents by prior decisions. */
-  protectedCorrespondentSenders = new Set<string>(),
-  /** Recent sanitized promotion-correction log entries. */
-  promotionCorrectionEntries: DecisionLogEntry[] = [],
 ): Promise<ClassifierCandidate> {
   const sender = parseMailbox(getHeader(message, "From"))
   const recipients = parseMailboxes([
@@ -643,16 +555,14 @@ export async function normalizeCandidate(
     getHeader(message, "Cc"),
     getHeader(message, "Bcc"),
   ])
-  const priorReply = await dependencies.gmail.hasPriorReplyTo(sender.address)
+  const priorReply = await gmail.hasPriorReplyTo(sender.address)
   const normalizedThread = thread.messages
     .filter(threadMessage => threadMessage.id !== message.id)
     .map(toNormalizedThreadMessage)
   const herbMessages = normalizedThread.filter(
     threadMessage => threadMessage.sender.address === EMAIL_PROCESSING_ACCOUNT,
   )
-  const subject = getHeader(message, "Subject")
-  const body = getMeaningfulBody(message)
-  const requestedWork = herbMessages.some(message => herbRequestedWork(message.body))
+  const labelIds = originalLabelIds ?? message.labelIds ?? []
 
   return {
     messageId: message.id,
@@ -660,130 +570,74 @@ export async function normalizeCandidate(
     receivedAt: toReceivedAt(message),
     sender,
     recipients,
-    subject,
-    body,
+    subject: getHeader(message, "Subject"),
+    body: getMeaningfulBody(message),
     thread: normalizedThread,
-    category: getCategory(originalLabelIds ?? message.labelIds ?? []),
+    category: getCategory(labelIds),
     archiveProtections: {
-      devResultsSender: sender.address.endsWith("@devresults.com"),
       priorReply,
-      archiveReversal: state.archiveReversalSenders.includes(sender.address),
-      protectedCorrespondent:
-        protectedCorrespondentSenders.has(sender.address) ||
-        requestedWork ||
-        hasProtectedCorrespondentSignals(subject, body),
+      archiveReversal: context.archiveReversalSenders.has(sender.address),
       activeConversation: herbMessages.length > 0,
-      requestedWork,
+      requestedWork: herbMessages.some(herbMessage => herbRequestedWork(herbMessage.body)),
       herbInitiated: normalizedThread[0]?.sender.address === EMAIL_PROCESSING_ACCOUNT,
     },
-    delegatedCustomer: {
-      customerInquiry: isCustomerInquiry(subject, body),
-      otherDevResultsRecipient: recipients.some(
-        recipient =>
-          recipient.address !== EMAIL_PROCESSING_ACCOUNT &&
-          recipient.address.endsWith("@devresults.com"),
-      ),
-      requiresHerbAction: requiresHerbAction(subject, body),
-    },
-    promotionCorrections: selectPromotionCorrectionEntries(
-      promotionCorrectionEntries,
-      sender.address,
-      subject,
-    ).map(entry => toPromotionCorrectionEvidence(entry, sender.address)),
+    bulkMail: readBulkMailFacts(message),
+    calendarMethod: await readCalendarMethod(message, gmail),
+    autoReply:
+      /auto-replied/i.test(getHeader(message, "Auto-Submitted")) ||
+      getHeader(message, "X-Autoreply") !== "" ||
+      getHeader(message, "X-Autorespond") !== "",
+    keepLabeled: context.keepLabelId !== null && labelIds.includes(context.keepLabelId),
   }
 }
 
-/** Check whether a log entry carries one supported promotion correction. */
-function isPromotionCorrectionEntry(
-  /** Prior sanitized decision. */
-  entry: DecisionLogEntry,
-): boolean {
-  return (
-    entry.decision === "correction" &&
-    (entry.classification === "promotion-reversed" ||
-      entry.classification === "promotion-missed") &&
-    entry.priorClassification !== undefined &&
-    entry.priorReason !== undefined &&
-    entry.priorPolicySignals !== undefined
-  )
-}
-
-/** Convert a sanitized correction log entry into bounded inert classifier evidence. */
-function toPromotionCorrectionEvidence(
-  /** Prior sanitized promotion correction. */
-  entry: DecisionLogEntry,
-  /** Exact current candidate sender address. */
-  candidateSenderAddress: string,
-): PromotionCorrectionEvidence {
-  const sender = parseMailbox(entry.sender)
+/** Read List-Id and the RFC 8058 one-click unsubscribe URL, which needs both headers. */
+function readBulkMailFacts(
+  /** Gmail message. */
+  message: GmailMessage,
+): BulkMailFacts {
+  const listUnsubscribe = getHeader(message, "List-Unsubscribe")
+  const oneClick = /List-Unsubscribe=One-Click/i.test(getHeader(message, "List-Unsubscribe-Post"))
+  const url = listUnsubscribe.match(/<(https:\/\/[^>]+)>/)?.[1] ?? null
   return {
-    timestamp: entry.timestamp,
-    correction: entry.classification as PromotionCorrectionEvidence["correction"],
-    sender,
-    subject: entry.subject,
-    exactSender: sender.address === candidateSenderAddress,
-    priorClassification: entry.priorClassification!,
-    priorReason: entry.priorReason!,
-    priorPolicySignals: [...entry.priorPolicySignals!],
+    listId: getHeader(message, "List-Id"),
+    listUnsubscribe: listUnsubscribe.length > 0,
+    oneClickUnsubscribeUrl: oneClick ? url : null,
   }
 }
 
-/** Select bounded corrections that match the current sender or normalized subject pattern. */
-function selectPromotionCorrectionEntries(
-  /** Complete prior decision history. */
-  priorDecisions: DecisionLogEntry[],
-  /** Exact current sender address. */
-  senderAddress: string,
-  /** Current subject text. */
-  subject: string,
-): DecisionLogEntry[] {
-  const subjectPattern = normalizeSubjectPattern(subject)
-  return priorDecisions
-    .filter(isPromotionCorrectionEntry)
-    .filter(entry => {
-      const correctionSender = extractLoggedAddress(entry.sender)
-      return (
-        correctionSender === senderAddress ||
-        normalizeSubjectPattern(entry.subject) === subjectPattern
-      )
-    })
-    .sort((left, right) => {
-      const senderDifference =
-        Number(extractLoggedAddress(right.sender) === senderAddress) -
-        Number(extractLoggedAddress(left.sender) === senderAddress)
-      return senderDifference || right.timestamp.localeCompare(left.timestamp)
-    })
-    .slice(0, MAX_PROMOTION_CORRECTIONS)
+/** Read the METHOD of an attached iCalendar invitation, such as REQUEST or REPLY, or null without one. */
+async function readCalendarMethod(
+  /** Full-format message. */
+  message: GmailMessage,
+  /** Gmail attachment reader. */
+  gmail: Pick<GmailClient, "getAttachmentData">,
+): Promise<string | null> {
+  const part = findPart(message.payload, candidate => candidate.mimeType === "text/calendar")
+  if (!part) return null
+  const attachmentId = part.body?.attachmentId
+  const data =
+    part.body?.data ??
+    (attachmentId ? await gmail.getAttachmentData(message.id, attachmentId) : undefined)
+  if (!data) return null
+  const text = Buffer.from(data, "base64url").toString("utf8")
+  return text.match(/^METHOD:\s*(\S+)/m)?.[1]?.toUpperCase() ?? null
 }
 
-/** Normalize one subject into a stable, secret-free matching pattern. */
-function normalizeSubjectPattern(
-  /** Untrusted subject text. */
-  subject: string,
-): string {
-  return subject
-    .toLowerCase()
-    .replace(/^(?:(?:re|fwd?):\s*)+/i, "")
-    .replace(/\b\d{2,}\b/g, "#")
-    .replace(/\s+/g, " ")
-    .trim()
-}
-
-/** Derive exact protected correspondents from stable prior personal and medical decisions. */
-function getProtectedCorrespondentSenders(
-  /** Prior sanitized decisions. */
-  priorDecisions: DecisionLogEntry[],
-): Set<string> {
-  return new Set(
-    priorDecisions
-      .filter(
-        entry =>
-          entry.decision === "promote" &&
-          PROTECTED_CORRESPONDENT_CLASSIFICATIONS.has(entry.classification),
-      )
-      .map(entry => extractLoggedAddress(entry.sender))
-      .filter(Boolean),
-  )
+/** Find the first MIME part matching a test, depth first. */
+function findPart(
+  /** Part to search. */
+  part: GmailMessagePart | undefined,
+  /** Test for the wanted part. */
+  test: (part: GmailMessagePart) => boolean,
+): GmailMessagePart | undefined {
+  if (!part) return undefined
+  if (test(part)) return part
+  for (const child of part.parts ?? []) {
+    const found = findPart(child, test)
+    if (found) return found
+  }
+  return undefined
 }
 
 /** Rebuild permanent exact-sender archive reversals from both state and durable corrections. */
@@ -829,17 +683,6 @@ function getRetryOriginalLabels(
   return labelsByMessageId
 }
 
-/** Identify explicit current-message evidence of a protected personal or medical relationship. */
-function hasProtectedCorrespondentSignals(
-  /** Message subject. */
-  subject: string,
-  /** Complete meaningful body. */
-  body: string,
-): boolean {
-  const content = `${subject}\n${body}`
-  return PERSONAL_RELATIONSHIP_PATTERN.test(content) || MEDICAL_PROVIDER_PATTERN.test(content)
-}
-
 /** Build one normalized durable state snapshot without empty optional retry metadata. */
 function createStateSnapshot(
   /** Gmail history ID safe for this checkpoint. */
@@ -875,36 +718,6 @@ function herbRequestedWork(
   return /\b(?:please|can you|could you|would you)\b/i.test(body)
 }
 
-/** Conservatively identify an explicit customer, demo, or procurement inquiry. */
-function isCustomerInquiry(
-  /** Message subject. */
-  subject: string,
-  /** Complete meaningful body. */
-  body: string,
-): boolean {
-  return /\b(?:demo|procurement|request for proposal|rfp|pricing|purchase|evaluate|evaluation|trial)\b/i.test(
-    `${subject}\n${body}`,
-  )
-}
-
-/** Conservatively identify text that explicitly requires Herb to act. */
-function requiresHerbAction(
-  /** Message subject. */
-  subject: string,
-  /** Complete meaningful body. */
-  body: string,
-): boolean {
-  const text = `${subject}\n${body}`
-  return (
-    /\b(?:Herb|you)[,:]?\s+(?:please\s+)?(?:reply|respond|approve|decide|confirm|attend|review|send|choose|schedule)\b/i.test(
-      text,
-    ) ||
-    /\b(?:action required|your approval|your decision|please (?:reply|respond|approve|confirm|review))\b/i.test(
-      text,
-    )
-  )
-}
-
 /** Convert a prior Gmail message into inert classifier context. */
 function toNormalizedThreadMessage(
   /** Prior Gmail message. */
@@ -931,75 +744,105 @@ function toReceivedAt(
   return new Date(milliseconds).toISOString()
 }
 
-/** Build a sanitized decision record without including message content. */
+/** Build a decision record without message content. */
 function toDecisionLogEntry(
-  /** Content-derived classifier prompt version. */
-  policyVersion: string,
   /** Run timestamp. */
   timestamp: string,
   /** Original Gmail message. */
   message: GmailMessage,
-  /** Offered candidates. */
-  candidates: ClassifierCandidate[],
-  /** Validated decision. */
-  decision: ReturnType<typeof validateClassifications>[number],
+  /** Normalized candidate. */
+  candidate: ClassifierCandidate,
+  /** Planned decision. */
+  plan: PlannedDecision,
+  /** Whether Gmail was left unchanged. */
+  logOnly: boolean,
 ): DecisionLogEntry {
-  const candidate = candidates.find(item => item.messageId === decision.messageId)!
   return {
-    policyVersion,
+    policyVersion: POLICY_VERSION,
     timestamp,
-    messageId: decision.messageId,
-    threadId: decision.threadId,
+    messageId: candidate.messageId,
+    threadId: candidate.threadId,
     sender: formatMailbox(candidate.sender),
-    subject: candidate.subject,
+    // Keep one-time codes out of the log; Jev flags mail that is only a code or sign-in link.
+    subject: plan.routineAuthentication ? redactCodes(candidate.subject) : candidate.subject,
     originalLabels: [...(message.labelIds ?? [])],
-    decision: decision.decision,
-    classification: decision.classification,
-    confidence: decision.confidence,
-    reason: decision.reason,
-    policySignals: [...decision.policySignals],
-    gmailUrl: `https://mail.google.com/mail/#all/${encodeURIComponent(decision.threadId)}`,
+    decision: plan.decision,
+    classification: plan.classification,
+    confidence: plan.confidence,
+    ...(logOnly ? { logOnly: true as const } : {}),
+    reason: plan.reason,
+    policySignals: policySignalsFor(candidate, plan),
+    jev: plan.jev,
+    unsubscribe: plan.unsubscribe,
+    gmailUrl: gmailUrl(candidate.threadId),
   }
 }
 
-/** Build a sanitized error record from an inspected candidate. */
+/** List the stable facts behind a decision, for reading the log. */
+function policySignalsFor(
+  /** Normalized candidate. */
+  candidate: ClassifierCandidate,
+  /** Planned decision. */
+  plan: PlannedDecision,
+): string[] {
+  const protections = candidate.archiveProtections
+  return [
+    plan.jev.mailKind,
+    ...(plan.jev.marketing >= MARKETING_THRESHOLD ? ["marketing"] : []),
+    ...(candidate.bulkMail.listUnsubscribe ? ["list-unsubscribe"] : []),
+    ...(candidate.bulkMail.oneClickUnsubscribeUrl ? ["one-click"] : []),
+    ...(candidate.calendarMethod ? [calendarSignal(candidate.calendarMethod)] : []),
+    ...(candidate.autoReply ? ["auto-reply"] : []),
+    ...(candidate.keepLabeled ? ["keep-label"] : []),
+    ...(protections.priorReply ? ["prior-reply"] : []),
+    ...(protections.archiveReversal ? ["archive-reversal"] : []),
+    ...(protections.activeConversation ? ["active-conversation"] : []),
+    ...(protections.requestedWork ? ["requested-work"] : []),
+    ...(protections.herbInitiated ? ["herb-initiated"] : []),
+  ].filter((signal, index, signals) => signals.indexOf(signal) === index)
+}
+
+/** Name an iCalendar method as a signal, without passing through unknown header text. */
+function calendarSignal(
+  /** METHOD value from the attachment. */
+  method: string,
+): string {
+  const name = method.toLowerCase()
+  return CALENDAR_METHODS.has(name) ? `calendar-${name}` : "calendar"
+}
+
+/** Build an error record for a decision whose Gmail change failed. */
 function toErrorLogEntry(
-  /** Content-derived classifier prompt version. */
-  policyVersion: string,
   /** Run timestamp. */
   timestamp: string,
   /** Original Gmail message. */
   message: GmailMessage,
-  /** Offered candidates. */
-  candidates: ClassifierCandidate[],
+  /** Normalized candidate. */
+  candidate: ClassifierCandidate,
   /** Decision whose action failed. */
-  decision: ReturnType<typeof validateClassifications>[number],
+  plan: PlannedDecision,
   /** Stable error reason with no external response content. */
   reason: string,
   /** Raw inspected exception including stack and custom properties. */
   exception: string,
 ): DecisionLogEntry {
-  const candidate = candidates.find(item => item.messageId === decision.messageId)!
   return {
     ...createErrorLogEntry(
-      policyVersion,
       timestamp,
-      decision.messageId,
-      decision.threadId,
+      candidate.messageId,
+      candidate.threadId,
       reason,
       message,
       candidate,
       exception,
     ),
-    classification: `${decision.decision}-error`,
-    policySignals: [decision.classification, ...decision.policySignals, "retry"],
+    classification: `${plan.decision}-error`,
+    policySignals: [plan.classification, "retry"],
   }
 }
 
 /** Build an error log with a stable reason and optional raw exception. */
 function createErrorLogEntry(
-  /** Content-derived classifier prompt version. */
-  policyVersion: string,
   /** Run timestamp. */
   timestamp: string,
   /** Gmail message ID. */
@@ -1016,7 +859,7 @@ function createErrorLogEntry(
   exception?: string,
 ): DecisionLogEntry {
   return {
-    policyVersion,
+    policyVersion: POLICY_VERSION,
     timestamp,
     messageId,
     threadId,
@@ -1029,7 +872,7 @@ function createErrorLogEntry(
     reason,
     ...(exception !== undefined ? { exception } : {}),
     policySignals: ["retry"],
-    gmailUrl: threadId ? `https://mail.google.com/mail/#all/${encodeURIComponent(threadId)}` : "",
+    gmailUrl: threadId ? gmailUrl(threadId) : "",
   }
 }
 
@@ -1052,15 +895,13 @@ function formatException(
 
 /** Complete a retry safely when its message has left Inbox before any valid mutation. */
 function createRetryNoActionLogEntry(
-  /** Content-derived classifier prompt version. */
-  policyVersion: string,
   /** Run timestamp. */
   timestamp: string,
   /** Current Gmail message. */
   message: GmailMessage,
 ): DecisionLogEntry {
   return {
-    policyVersion,
+    policyVersion: POLICY_VERSION,
     timestamp,
     messageId: message.id,
     threadId: message.threadId,
@@ -1072,7 +913,7 @@ function createRetryNoActionLogEntry(
     confidence: "high",
     reason: "Message left Inbox before retry; no action taken.",
     policySignals: ["no-action"],
-    gmailUrl: `https://mail.google.com/mail/#all/${encodeURIComponent(message.threadId)}`,
+    gmailUrl: gmailUrl(message.threadId),
   }
 }
 
@@ -1080,8 +921,8 @@ function createRetryNoActionLogEntry(
 function threadHasMutation(
   /** Current Gmail thread. */
   thread: GmailThread,
-  /** Validated intended label delta. */
-  mutation: NonNullable<ReturnType<typeof validateClassifications>[number]["mutation"]>,
+  /** Intended label delta. */
+  mutation: LabelMutation,
   /** Inbound message whose Inbox retention matters for promotion. */
   targetMessageId: string,
 ): boolean {
@@ -1208,7 +1049,7 @@ function formatMailbox(
   return mailbox.name ? `${mailbox.name} <${mailbox.address}>` : mailbox.address
 }
 
-/** Map Gmail system labels to the classifier's stable category. */
+/** Map Gmail system labels to a stable category. */
 function getCategory(
   /** Current message label IDs. */
   labelIds: string[],
@@ -1220,6 +1061,38 @@ function getCategory(
   return "primary"
 }
 
+/** Replace code-like tokens that contain a digit, such as "AB12-CD34". */
+function redactCodes(
+  /** Subject text. */
+  subject: string,
+): string {
+  return subject.replace(/\b[A-Z0-9-]{4,10}\b/g, code => (/\d/.test(code) ? "[code]" : code))
+}
+
+/** Build the Gmail web link for a thread. */
+function gmailUrl(
+  /** Gmail thread ID. */
+  threadId: string,
+): string {
+  return `https://mail.google.com/mail/#all/${encodeURIComponent(threadId)}`
+}
+
+/** Round a probability to two decimals. */
+function round(
+  /** Probability. */
+  value: number,
+): number {
+  return Math.round(value * 100) / 100
+}
+
+/** Convert a snake_case option name to kebab-case. */
+function kebab(
+  /** Snake-case name. */
+  value: string,
+): string {
+  return value.replaceAll("_", "-")
+}
+
 /** Deduplicate strings without changing first-seen order. */
 function unique(
   /** Values to deduplicate. */
@@ -1229,7 +1102,7 @@ function unique(
 }
 
 /** Extract an exact lowercase address from a previously formatted sender. */
-function extractLoggedAddress(
+export function extractLoggedAddress(
   /** Sanitized sender string. */
   sender: string,
 ): string {
@@ -1242,6 +1115,8 @@ function emptyResult(): GmailSupervisorResult {
   return { archived: 0, promoted: 0, unchanged: 0, retried: 0, pending: 0, corrected: 0 }
 }
 
+// CONSTANTS
+
 /** Gmail labels that place a message outside Primary. */
 const NON_PRIMARY_CATEGORY_LABELS = new Set([
   "CATEGORY_UPDATES",
@@ -1250,21 +1125,45 @@ const NON_PRIMARY_CATEGORY_LABELS = new Set([
   "CATEGORY_FORUMS",
 ])
 
-/** Maximum relevant promotion corrections supplied with one candidate. */
-const MAX_PROMOTION_CORRECTIONS = 20
-
-/** Prior promotion categories that establish an exact protected correspondent. */
-const PROTECTED_CORRESPONDENT_CLASSIFICATIONS = new Set(["personal-message", "medical-action"])
+/** iCalendar METHOD values (RFC 5546). */
+const CALENDAR_METHODS = new Set([
+  "publish",
+  "request",
+  "reply",
+  "add",
+  "cancel",
+  "refresh",
+  "counter",
+  "declinecounter",
+])
 
 /** Mutation failures whose durable log preserves pre-mutation labels for idempotent replay. */
 const MUTATION_ERROR_CLASSIFICATIONS = new Set(["archive-error", "promote-error"])
 
-/** Explicit relationship terms that conservatively identify personal correspondents. */
-const PERSONAL_RELATIONSHIP_PATTERN =
-  /\b(?:(?:my|your|our)\s+)?(?:family|friend|mother|father|mom|dad|parent|wife|husband|spouse|partner|son|daughter|child|brother|sister|sibling|cousin|aunt|uncle|niece|nephew|grandmother|grandfather|grandparent)\b/i
+/** Reasons for decisions made by a rule rather than by Jev's keep answer. */
+const RULE_REASONS: Partial<Record<string, string>> = {
+  "keep-label": "Herb's Keep label is on the message.",
+  "archive-reversal": "Herb has returned this sender's mail to the inbox before.",
+  "calendar-reply": "A reply to a calendar invitation.",
+  "calendar-invitation": "A calendar invitation, which stays so it remains on the calendar.",
+  "auto-reply": "An automatic reply.",
+  marketing: "Marketing, by Jev's mail kind.",
+  correspondent: "Personal mail from someone Herb writes to.",
+  "devresults-sender": "The sender is at devresults.com, which the job never archives.",
+}
 
-/** Explicit care-provider terms that conservatively identify medical correspondents. */
-const MEDICAL_PROVIDER_PATTERN =
-  /\b(?:medical provider|doctor|physician|cardiologist|dentist|orthodontist|therapist|psychologist|psychiatrist|clinician|clinic|hospital|pharmacy|pharmacist|laboratory|radiologist|specialist)\b/i
+// TYPES
 
-type ClassifierContext = Pick<ClassifierInput, "evaluatedAt" | "policyVersion">
+/** A decision with the label change, log fields and Jev summary the supervisor needs. */
+export type PlannedDecision = JevDecision & {
+  /** Exact authorized label delta, or null to leave the thread alone. */
+  mutation: LabelMutation | null
+  /** Qualitative certainty for the log. */
+  confidence: DecisionLogEntry["confidence"]
+  /** One sentence for the log. */
+  reason: string
+  /** Whether Jev says the message is only a code or sign-in link. */
+  routineAuthentication: boolean
+  /** Jev's model and deciding answers. */
+  jev: NonNullable<DecisionLogEntry["jev"]>
+}
