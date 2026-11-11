@@ -376,7 +376,8 @@ const SERVICE_TASKS = [
   "tasks-agent",
   "VibeResults dev",
 ]
-const SERVICE_TASK_PATTERNS = [/^drenv-watch-/]
+// drenv names its environment supervisors, Vibe servers and watchers drenv-*; its tools install job has spaces instead.
+const SERVICE_TASK_PATTERNS = [/^drenv-/]
 
 // Tasks with no startup trigger that were restarted by hand after earlier restarts.
 const RESTORE_TASKS = ["VibeResults dev", "Obsidian desktop"]
