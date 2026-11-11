@@ -121,6 +121,10 @@ The hourly `process-inbox` and 07:00 `morning-briefing` jobs use the Briefings r
 
 The old Tickler mover is no longer installed or scheduled. Tasks Snoozed visibility changes with the calendar date without a mutation. Historical Google helper source and tests remain for reference, not as active personal workflows. The `gws-tasks` skill is restricted to explicitly requested legacy access.
 
+## Email processing
+
+`scripts/email-processing/` is Herb's Gmail triage job: Gmail history discovery, Jev answers to the questions in `jevQuestions.json`, the rules in `decideFromJevAnswers.ts`, verified thread-level label changes and an append-only decision log. It runs on the mini as Windows scheduled tasks, not on the Mac. Unsubscribes and new Gmail filters are only proposed, as Tasks Inbox items, and carried out by `email-processing approve` after Herb approves. The `email-processing` skill documents commands, policy and data; `plans/004-jev-email-job.md` has the design. `runJevDryRun.ts`, `serveJevReview.ts` and the report scripts are the read-only tuning tools behind the vault note `documents/Unsubscribing from marketing email.md`.
+
 ## Claude chat sync
 
 `nix/home/claude-chats.nix` runs `scripts/claude-chats/runClaudeChatSync.ts` nightly at 03:00 and logs to `/tmp/claude-chat-sync.log`. Headless Codex clicks **Export data** in the signed-in Chrome (`requestExport.prompt.md`). The script then polls Gmail for the "ready" email, opens the manifest and conversations links in separate Chrome tabs, updates `chats/` in the notes vault by chat ID, and commits only that folder. Export links are single-use and Chrome allows one automatic download per tab, so each link is opened once in its own tab and never retried. Chats that match a secret pattern are withheld and reported in a macOS notification. Other export files are not downloaded.
