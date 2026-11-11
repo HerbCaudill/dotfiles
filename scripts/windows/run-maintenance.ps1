@@ -1,6 +1,6 @@
 param(
   [Parameter(Mandatory)][string]$Node,
-  [Parameter(Mandatory)][ValidateSet('prepare', 'resume')][string]$Command
+  [Parameter(Mandatory)][ValidateSet('prepare', 'now', 'resume')][string]$Command
 )
 $ErrorActionPreference = 'Stop'
 $state = Join-Path $env:USERPROFILE '.local/state/mini-maintenance'
