@@ -74,7 +74,7 @@ export async function prepare(
     const reason = error instanceof DeferError ? error.message : String(error)
     log(`Restart deferred${mode === "now" ? "" : " to the next night"}: ${reason}`)
     notice(`Maintenance restart deferred: ${reason}`)
-    for (const threadId of paused) sendToThread(threadId, RESUME_PROMPT)
+    for (const threadId of paused) sendToThread(threadId, DEFERRED_PROMPT)
     setTaskEnabled(HEARTBEAT_TASK, true)
     saveState({ ...readState(), phase: "idle", pausedThreadIds: [], heartbeatDisabled: false })
     return
@@ -339,6 +339,7 @@ function sleep(
 const HERE = dirname(fileURLToPath(import.meta.url))
 const PAUSE_PROMPT = readFileSync(join(HERE, "pause.prompt.md"), "utf8")
 const RESUME_PROMPT = readFileSync(join(HERE, "resume.prompt.md"), "utf8")
+const DEFERRED_PROMPT = readFileSync(join(HERE, "deferred.prompt.md"), "utf8")
 
 const STATE_DIR = join(homedir(), ".local/state/mini-maintenance")
 const STATE_FILE = join(STATE_DIR, "state.json")
