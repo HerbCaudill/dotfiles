@@ -34,6 +34,7 @@ in
     ".local/bin/email-processing".source = mkRepoSymlink "home/.local/bin/email-processing";
     ".local/bin/devresults-vm".source = mkRepoSymlink "home/.local/bin/devresults-vm";
     ".local/bin/gh-sync".source = mkRepoSymlink "home/.local/bin/gh-sync";
+    ".local/bin/gh-upload-image".source = mkRepoSymlink "scripts/github-attachments/ghUploadImage.ts";
     ".local/bin/github-pr-task-sync".source = mkRepoSymlink "home/.local/bin/github-pr-task-sync";
     ".local/bin/gws-delegated".source = mkRepoSymlink "home/.local/bin/gws-delegated";
     ".local/bin/index-project".source = mkRepoSymlink "home/.local/bin/index-project";

@@ -76,6 +76,8 @@ gh api graphql -f query='{ repository(owner: "pingdotgg", name: "t3code") { id d
 gh api graphql -f query='mutation($repo: ID!, $cat: ID!, $title: String!, $body: String!) { createDiscussion(input: {repositoryId: $repo, categoryId: $cat, title: $title, body: $body}) { discussion { url } } }' -f repo=<repoId> -f cat=<ideas or q-a id> -f title='<title>' -f body="$(cat <file>)"
 ```
 
+For screenshots or mockups, run `gh-upload-image pingdotgg/t3code <file...>` and put the tags it prints in the body. Strip personal details from images first. Don't host images in gists or other repos.
+
 ### PR
 
 The maintainers aren't seeking outside contributions. Offer a PR only for a very small, focused fix to an obvious bug, and only if Herb wants one. Anything that changes intended behavior needs a maintainer-approved Ideas discussion first; link that approval in the PR.
