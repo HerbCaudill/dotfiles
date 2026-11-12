@@ -45,7 +45,9 @@ Give each parallel worker its own worktree when the repository supports it, with
 
 Create a standalone top-level task only when the user asks for one, or the work needs sustained user interaction. Name it `{id}: {title}`.
 
-Use the default model and reasoning effort for clear, localized tasks, and the strongest model with high effort for ambiguous or cross-cutting work. Honor any explicit user preference.
+Run implementation workers on the `author` role from the model roles table in the global instructions, since they are high-volume authoring. Use the `default` role only for ambiguous or cross-cutting work that needs judgment, and keep coordination and review there too. Always set the model and effort explicitly. Honor any explicit user preference.
+
+Start a fresh worker for each task group rather than handing new work to a finished worker. Long-lived sessions reread their whole history on every turn, so their cost grows with age.
 
 ### Dispatch workers
 
