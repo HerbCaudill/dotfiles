@@ -87,7 +87,6 @@ in
       "signal"
       "slack"
       "spotify"
-      "superwhisper"
       "typora"
     ];
   };
