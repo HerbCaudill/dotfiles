@@ -38,5 +38,25 @@ try {
     Put 'spec.json' $contract
     Restore-GeneratorMetadata (Join-Path $root 'spec.json') $before
     Check ([IO.File]::ReadAllText((Join-Path $root 'spec.json')) -ceq $contract) 'Actual contract changes must remain visible to the source cleanliness gate'
+    $log=Join-Path $root 'calls.log'
+    Put 'bin/node.cmd' ("@echo node %* %DOCXTEMPLATER_HTML_URL%>>`"$log`"`r`n@exit /b %NODE_EXIT%`r`n")
+    Put 'bin/pnpm.cmd' ("@echo pnpm %*>>`"$log`"`r`n")
+    Put 'home/.secrets' "export OTHER_TOKEN=unrelated`nexport DOCXTEMPLATER_HTML_URL=https://modules.example/html.tgz`n"
+    function Invoke-PackagesStep([string]$NodeExit='0') {
+        if(Test-Path -LiteralPath $log){Remove-Item -LiteralPath $log}
+        $saved=@{Path=$env:Path;USERPROFILE=$env:USERPROFILE;NODE_EXIT=$env:NODE_EXIT}
+        $env:Path=(Join-Path $root 'bin')+';'+$env:Path;$env:USERPROFILE=Join-Path $root 'home';$env:NODE_EXIT=$NodeExit
+        Push-Location $root
+        try{& 'C:\Program Files\PowerShell\7\pwsh.exe' -NoProfile -NonInteractive -EncodedCommand ([Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes((Get-PackagesStep))));$exit=$LASTEXITCODE}
+        finally{Pop-Location;foreach($name in $saved.Keys){Set-Item -Path "Env:$name" -Value $saved[$name]}}
+        return @{exit=$exit;calls=@(if(Test-Path -LiteralPath $log){[IO.File]::ReadAllLines($log)})}
+    }
+    $older=Invoke-PackagesStep
+    Check ($older.exit -eq 0 -and $older.calls.Count -eq 1 -and $older.calls[0] -ceq 'pnpm install --frozen-lockfile') 'Revisions without licensed modules install packages directly'
+    Put 'scripts/prepare-docxtemplater.ts' ''
+    $licensed=Invoke-PackagesStep
+    Check ($licensed.exit -eq 0 -and $licensed.calls.Count -eq 2 -and $licensed.calls[0] -ceq 'node --experimental-strip-types scripts\prepare-docxtemplater.ts https://modules.example/html.tgz' -and $licensed.calls[1] -ceq 'pnpm install --frozen-lockfile') 'Licensed modules are prepared with access from ~/.secrets before packages install'
+    $failed=Invoke-PackagesStep '3'
+    Check ($failed.exit -eq 3 -and $failed.calls.Count -eq 1) 'A failed licensed module download stops the install with its exit code'
     @{passed=$script:checks}|ConvertTo-Json -Compress
 } finally {Remove-Item -LiteralPath $root -Recurse -Force}

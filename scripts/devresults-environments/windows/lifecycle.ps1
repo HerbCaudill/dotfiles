@@ -234,6 +234,17 @@ function Restore-GeneratorMetadata([string]$Path,[byte[]]$Before) {
     $old=[regex]::Match($original,$pattern);$new=[regex]::Match($current,$pattern)
     if($old.Success -and $new.Success){$normalized=$current.Substring(0,$new.Index)+$old.Value+$current.Substring($new.Index+$new.Length);if($normalized.Replace("`r`n","`n") -ceq $original.Replace("`r`n","`n")){[IO.File]::WriteAllBytes($Path,$Before)}}
 }
+# Licensed docxtemplater archives must exist before pnpm reads their file: paths, so revisions that ship the
+# repo's prepare script (as `just pnpm-install` does) run it first. Access URLs come from ~/.secrets at run time,
+# because no Windows shell sources that file.
+function Get-PackagesStep {
+    return @'
+$secrets=Join-Path $env:USERPROFILE '.secrets'
+if(Test-Path -LiteralPath $secrets){foreach($line in [IO.File]::ReadAllLines($secrets)){if($line -match '^\s*(?:export\s+)?(DOCXTEMPLATER_[A-Z0-9_]+)=(.*)$'){Set-Item -Path ('Env:'+$Matches[1]) -Value $Matches[2].Trim().Trim('"',"'")}}}
+if(Test-Path -LiteralPath 'scripts\prepare-docxtemplater.ts'){& node --experimental-strip-types scripts\prepare-docxtemplater.ts;if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}}
+& pnpm install --frozen-lockfile;exit $LASTEXITCODE
+'@
+}
 function Build-OwnedSource($Manifest,$Assets) {
     Stop-OwnedSupervisor $Manifest
     Assert-OwnedSource $Manifest
@@ -265,7 +276,7 @@ function Build-OwnedSource($Manifest,$Assets) {
         }
     }
     foreach($step in $steps) {
-        $text=if($step -eq 'packages'){'& pnpm install --frozen-lockfile; exit $LASTEXITCODE'}else{'& just --dotenv-path '+(Quote-Argument $envFile)+' '+$step+'; exit $LASTEXITCODE'}
+        $text=if($step -eq 'packages'){Get-PackagesStep}else{'& just --dotenv-path '+(Quote-Argument $envFile)+' '+$step+'; exit $LASTEXITCODE'}
         if(Test-NativeMini $Manifest){$text="& { "+$text+" } *> "+(Quote-Argument (Join-Path $control ($step+'.log')));$text="& mise exec node@24 -- 'C:\Program Files\PowerShell\7\pwsh.exe' -NoProfile -EncodedCommand "+[Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($text))+";exit `$LASTEXITCODE"};$commands+=@{name=$step;executable=$pwsh;arguments='-NoProfile -NonInteractive -EncodedCommand '+[Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($text))}
     }
     $completed=Start-OwnedSupervisor $Manifest 'build' $Assets $commands
