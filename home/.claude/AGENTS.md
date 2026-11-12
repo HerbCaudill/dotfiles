@@ -96,6 +96,8 @@ End plans with unresolved questions, if any. Use hard cutovers unless Herb asks 
 
 Never publish claude.ai artifacts (the `Artifact` tool) for mockups, reports, dashboards, explainers or other HTML. Write a standalone HTML file to the local filesystem, in the relevant repository when it belongs there, and give Herb its absolute path.
 
+When you make a visual change, show Herb before and after screenshots in your reply before you end your turn. Capture the before state before you edit. When you ask Herb to make a visual design decision, show a screenshot of each alternative. Embed screenshots in the reply as Markdown images with absolute file paths.
+
 When scheduling meetings, use Zoom rather than Google Meet.
 
 When Herb asks you to put an agent on something, or for any involved delegated work, launch a standalone top-level T3 Code thread (`t3_thread_launch`, with settings from the model roles above) so he can open it and talk to the agent directly. Do not use an in-thread subagent for that. Use subagents only for quick, narrow actions he will not need to follow up on.
