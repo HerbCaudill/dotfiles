@@ -25,7 +25,9 @@ const appleWords = bundle.transcript.words
 const whisperWords = whisper.segments
   .flatMap(segment => segment.words ?? [])
   .map(word => ({ t0: word.start * 1000, t1: word.end * 1000, text: word.word.trim() }))
-  .filter(word => appleWords.some(apple => apple.t1 > word.t0 - toleranceMs && apple.t0 < word.t1 + toleranceMs))
+  .filter(word =>
+    appleWords.some(apple => apple.t1 > word.t0 - toleranceMs && apple.t0 < word.t1 + toleranceMs),
+  )
 
 const moments = findMomentStarts(bundle.keyframes, appleWords)
 
@@ -36,8 +38,15 @@ for (const [index, moment] of moments.entries()) {
     .map(word => word.text)
     .join(" ")
     .replace(/ (?=[,.;:!?])/g, "")
-  const action = moment.keyframe.reason === "click" ? " [clicked]" : moment.keyframe.reason === "mark" ? " [drew]" : ""
-  console.log(`- #${moment.keyframe.index} (${formatTime(moment.keyframe.t)})${action} ${moment.keyframe.file}`)
+  const action =
+    moment.keyframe.reason === "click"
+      ? " [clicked]"
+      : moment.keyframe.reason === "mark"
+        ? " [drew]"
+        : ""
+  console.log(
+    `- #${moment.keyframe.index} (${formatTime(moment.keyframe.t)})${action} ${moment.keyframe.file}`,
+  )
   if (said) console.log(`  Whisper: “${said}”`)
   if (moment.keyframe.said && normalize(moment.keyframe.said) !== normalize(said))
     console.log(`  Apple:   “${moment.keyframe.said}”`)
@@ -54,7 +63,11 @@ function findMomentStarts(keyframes: Keyframe[], words: Word[]) {
     if (!keyframe.said) return { keyframe, start: keyframe.t }
     const first = words[next]
     const previous = words[next - 1]
-    const start = first ? (previous ? (previous.t1 + first.t0) / 2 : first.t0 - toleranceMs) : keyframe.t
+    const start = first
+      ? previous
+        ? (previous.t1 + first.t0) / 2
+        : first.t0 - toleranceMs
+      : keyframe.t
     next += keyframe.said.split(/\s+/).filter(Boolean).length
     return { keyframe, start }
   })
@@ -68,7 +81,11 @@ function formatTime(ms: number) {
 
 /** Reduce text to lowercase words, to compare two transcripts. */
 function normalize(text: string) {
-  return text.toLowerCase().replace(/[^a-z0-9' ]/g, " ").replace(/\s+/g, " ").trim()
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9' ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
 }
 
 type Word = { t0: number; t1: number; text: string }

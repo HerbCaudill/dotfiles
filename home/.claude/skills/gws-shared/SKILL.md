@@ -81,6 +81,7 @@ gws-delegated <service> <resource> [sub-resource] <method> [flags]
   ```
 
 - **JSON with double quotes:** Wrap `--params` and `--json` values in single quotes so the shell does not interpret the inner double quotes:
+
   ```bash
   gws-delegated drive files list --params '{"pageSize": 5}'
   ```

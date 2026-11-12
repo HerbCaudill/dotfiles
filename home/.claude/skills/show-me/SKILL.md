@@ -1,6 +1,6 @@
 ---
 name: show-me
-description: "Use when Herb says \"show me\" (or \"let me see it\") about something just changed: open the changed route, page or story in his browser."
+description: 'Use when Herb says "show me" (or "let me see it") about something just changed: open the changed route, page or story in his browser.'
 ---
 
 # Show me

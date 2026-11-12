@@ -33,6 +33,6 @@ Check `.success` and `.errors` on every response. `ttl: 1` means automatic. Leav
 
 ## Known records
 
-| Name | Points at | Serves |
-| --- | --- | --- |
+| Name                | Points at                                     | Serves                                        |
+| ------------------- | --------------------------------------------- | --------------------------------------------- |
 | `x3.devresults.com` | CNAME `x3-qf7dpqqe.eastus.cloudapp.azure.com` | x3's Azure VM (`DevResults/x3`, `infra/host`) |

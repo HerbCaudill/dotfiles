@@ -22,4 +22,3 @@ Use the 2025 identity for new internal work and drafts. Before using it in anyth
 5. Do not invent clear-space, minimum-size, or typography-role rules. The identity source does not state them.
 
 The selection notes in the reference are concise practical guidance inferred from each asset's shape and color treatment. The asset names, dimensions, colors, and type families are factual inventory.
-

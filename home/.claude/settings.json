@@ -3,9 +3,7 @@
     "CLAUDE_CODE_ENABLE_CFC": "1"
   },
   "model": "opus",
-  "deniedMcpServers": [
-    { "serverName": "claude.ai Vercel" }
-  ],
+  "deniedMcpServers": [{ "serverName": "claude.ai Vercel" }],
   "skillOverrides": {
     "anthropic-skills:format-flights": "user-invocable-only",
     "gws-calendar-agenda": "off",

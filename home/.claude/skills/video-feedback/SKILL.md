@@ -32,6 +32,7 @@ Steps:
    ```
 
    The script prints each moment with its frame and Whisper's text, plus Apple's text where the two differ. A word or two can land in the neighboring moment. Where the versions disagree in a way that changes the meaning, look at the frame before choosing, and say in the task which reading you chose.
+
 3. **Look at the frames** for moments with feedback. A drawing marks exactly what Herb means. For more context, use `frames-full/`; for what happened between moments, `scrawl zoom "$BUNDLE" --at 1:07` (a time or a phrase) makes a dense contact sheet around it.
 
 In tasks, cite the bundle path and `summary.md`, and quote the merged wording.

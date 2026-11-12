@@ -55,4 +55,4 @@
 
 dolt.shared-server: true
 sync:
-    remote: "git+https://github.com/HerbCaudill/dotfiles.git"
+  remote: "git+https://github.com/HerbCaudill/dotfiles.git"

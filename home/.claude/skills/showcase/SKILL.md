@@ -13,12 +13,12 @@ Follow applicable global instructions, repository instructions, and environment 
 
 Record the starting branch or detached commit and relevant runtime state. Resolve the target and code baseline:
 
-| Target | Default baseline | Target revision |
-| --- | --- | --- |
-| Pull request | Merge base with the PR's base branch | PR head |
-| Branch | Merge base with its inferred base branch | Branch head |
-| Single commit | First parent | The commit |
-| Commit range | Range start | Range end |
+| Target        | Default baseline                         | Target revision |
+| ------------- | ---------------------------------------- | --------------- |
+| Pull request  | Merge base with the PR's base branch     | PR head         |
+| Branch        | Merge base with its inferred base branch | Branch head     |
+| Single commit | First parent                             | The commit      |
+| Commit range  | Range start                              | Range end       |
 
 The code baseline defines the diff for stage 3. The site used to demonstrate existing behavior may run a different revision if it exhibits the relevant old behavior and differences in data, permissions, configuration, or intervening changes do not invalidate the comparison. Identify that site and its revision when available; never describe it as the exact code baseline without verification.
 
