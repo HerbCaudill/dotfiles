@@ -15,7 +15,7 @@ Open pull requests that are easy to review: pushed branch, focused summary, clea
 2. Check whether the branch already has an open PR against the intended base. Update that PR when it is the requested target rather than opening a duplicate. Confirm the live head, base, and diff before updating its description.
 3. Review the diff against the target branch.
 4. Check for project PR templates or repo-specific instructions.
-5. If there are UI changes, use screenshots for static changes and the `video-evidence` skill for motion or interaction changes.
+5. If there are UI changes, use screenshots for static changes and the `video-evidence` skill for motion or interaction changes. Upload screenshots with `gh-upload` (see the global instructions).
 6. Do not rewrite commits as part of opening a PR. Leave existing history intact unless Herb explicitly authorizes a separate history change.
 
 ## Opening a PR

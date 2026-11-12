@@ -76,7 +76,7 @@ gh api graphql -f query='{ repository(owner: "pingdotgg", name: "t3code") { id d
 gh api graphql -f query='mutation($repo: ID!, $cat: ID!, $title: String!, $body: String!) { createDiscussion(input: {repositoryId: $repo, categoryId: $cat, title: $title, body: $body}) { discussion { url } } }' -f repo=<repoId> -f cat=<ideas or q-a id> -f title='<title>' -f body="$(cat <file>)"
 ```
 
-For screenshots or mockups, run `gh-upload-image pingdotgg/t3code <file...>` and put the tags it prints in the body. Strip personal details from images first. Don't host images in gists or other repos.
+For screenshots or mockups, run `gh-upload pingdotgg/t3code <file...>` and put what it prints in the body. Strip personal details from images first.
 
 ### PR
 

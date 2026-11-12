@@ -65,7 +65,7 @@ These are installed into `~/.local/bin` by Home Manager rather than a custom sym
 | `update-agent-harnesses` | Update Claude Code, Pi, Codex, pnpm, and bd                                                                                                                          | Zsh      |
 | `beads`                  | Wrapper for `bd`                                                                                                                                                     | Shell    |
 | `gh-sync`                | Sync `~/Code/HerbCaudill` with all HerbCaudill repos, and `~/Code/DevResults` with DevResults repos pushed in the last 30 days, including each repo's beads database | Bash     |
-| `gh-upload-image`        | Upload images through a repo's web editor in the signed-in browser (via `browse`) and print GitHub's attachment tags, without posting anything                       | Node.js  |
+| `gh-upload`              | Upload images and videos through a repo's web editor in the signed-in browser (via `browse`) and print GitHub's attachment tags or URLs, without posting anything    | Node.js  |
 | `serena`                 | Invoke Serena CLI                                                                                                                                                    | Python   |
 | `serena-mcp-server`      | Start the Serena MCP server                                                                                                                                          | Python   |
 | `index-project`          | Invoke Serena's project indexing                                                                                                                                     | Python   |

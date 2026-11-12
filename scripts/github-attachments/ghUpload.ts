@@ -1,16 +1,17 @@
 #!/usr/bin/env -S node --experimental-strip-types
 
-// Upload images to GitHub through a repo's web editor in Herb's signed-in browser, and print the
-// tag GitHub returns for each one. Nothing is posted: the editor is cleared and its tab closed.
+// Upload images and videos to GitHub through a repo's web editor in Herb's signed-in browser, and
+// print what GitHub writes for each one. Nothing is posted: the editor is cleared and its tab closed.
 
 import { execFileSync, spawnSync } from "node:child_process"
 import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { basename, dirname, join, resolve } from "node:path"
 
-const usage = `Usage: gh-upload-image <owner/repo> <file...>
+const usage = `Usage: gh-upload <owner/repo> <file...>
 
 Uploads each file through the repo's new-discussion editor in your signed-in browser (via browse)
-and prints the tag GitHub writes for it, one per line, in argument order. Nothing is posted.
+and prints what GitHub writes for it, one per line, in argument order: an <img> tag for an image,
+or a bare URL for a video, which renders as a player only on a line of its own. Nothing is posted.
 
 An upload stays private to you until a post in that repo uses it, so put the tags in a discussion,
 issue or comment on the same repo. The repo must have Discussions enabled.`
@@ -19,7 +20,7 @@ const [repo, ...files] = process.argv.slice(2)
 if (!repo || files.length === 0 || !/^[\w.-]+\/[\w.-]+$/.test(repo)) fail(usage)
 
 // browse reads local files only from its file roots, which include /tmp.
-const staging = mkdtempSync("/tmp/gh-upload-image-")
+const staging = mkdtempSync("/tmp/gh-upload-")
 try {
   // One folder per file keeps the original names, which GitHub uses as alt text.
   const staged = files.map((file, i) => {

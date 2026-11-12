@@ -1,11 +1,11 @@
 ---
 name: video-evidence
-description: Use to record or upload a UI video and embed it in a GitHub pull request or issue with gh --attach.
+description: Use to record or upload a UI video and embed it in a GitHub pull request, issue or discussion.
 ---
 
 # Video evidence
 
-Produce a short, reviewable video and publish it with GitHub CLI's supported `--attach` flag. Keep recording, upload, and posting as separate authorization decisions. The CLI uploads and posts in one command, so complete review and confirm authorization before running it.
+Produce a short, reviewable video and publish it with GitHub CLI's `--attach` flag or with `gh-upload`. Keep recording, upload, and posting as separate authorization decisions. `--attach` uploads and posts in one command, so complete review and confirm authorization before running it.
 
 ## Choose the starting point
 
@@ -26,7 +26,9 @@ A request to attach a video to a named GitHub pull request or issue authorizes t
 
 ## Attach and post
 
-Require GitHub CLI 2.99 or later, an authenticated `gh` session, and push access to the target repository. Check `gh --version` and the relevant command's `--help` if needed. Never print, log, or pass the token as a command-line argument. GitHub Enterprise Server is not supported by this attachment feature.
+`--attach` requires GitHub CLI 2.99 or later, an authenticated `gh` session, and push access to the target repository, and it covers only pull requests and issues. Check `gh --version` and the relevant command's `--help` if needed. Never print, log, or pass the token as a command-line argument. GitHub Enterprise Server is not supported by this attachment feature.
+
+When `--attach` isn't available – an older `gh`, no push access, or a discussion – run `gh-upload <owner/repository> <video-path>`. It uploads through the repository's web editor in Herb's Chrome without posting and prints the video's URL. Put that URL alone in its own paragraph of the body file, then post with `gh pr comment`, `gh issue comment` or, for a discussion, GraphQL. The upload stays private until a post in that same repository uses it, so the authorization boundary above still applies to the post.
 
 When the user authorizes posting, prefer a new comment so existing authored content is not overwritten. Write a concise scenario description to a local Markdown body file. Follow the repository's attribution rules; under Herb's account, begin with `> Codex posting on behalf of Herb Caudill` (use your own agent name). Then run the appropriate command:
 
@@ -41,11 +43,11 @@ MP4 and WebM attachments render as GitHub's native video player. For a specific 
 
 Update a pull request or issue body only when the user asks for that placement; `gh pr edit` and `gh issue edit` also support `--attach`. Use `gh pr create` or `gh issue create` with `--attach` only when creation is explicitly authorized. Do not commit generated recordings to the repository unless explicitly requested.
 
-If uploading fails, report the error without exposing credentials. Do not use a custom uploader or undocumented endpoint, and do not build retries around authentication or persistent client errors. Do not post to a real issue or pull request merely to test rendering without the user's approval.
+If uploading fails, report the error without exposing credentials. Apart from `gh-upload`, do not use a custom uploader or undocumented endpoint, and do not build retries around authentication or persistent client errors. Do not post to a real issue or pull request merely to test rendering without the user's approval.
 
 ## Return
 
-Read back the posted body to verify the attachment and obtain its URL. Report the scenario recorded, local path, duration and resolution when available, GitHub attachment URL, and the PR or issue URL if posted. State whether the repository is public or private when that affects who can view the result.
+Read back the posted body to verify the attachment and obtain its URL. Report the scenario recorded, local path, duration and resolution when available, GitHub attachment URL, and the PR, issue or discussion URL if posted. State whether the repository is public or private when that affects who can view the result.
 
 ## References
 
