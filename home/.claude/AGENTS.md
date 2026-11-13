@@ -96,7 +96,7 @@ End plans with unresolved questions, if any. Use hard cutovers unless Herb asks 
 
 Never publish claude.ai artifacts (the `Artifact` tool) for mockups, reports, dashboards, explainers or other HTML. Write a standalone HTML file to the local filesystem, in the relevant repository when it belongs there, and give Herb its absolute path.
 
-When you make a visual change, show Herb before and after screenshots in your reply before you end your turn. Capture the before state before you edit. When you ask Herb to make a visual design decision, show a screenshot of each alternative. Embed every screenshot in the reply as a full-size Markdown image with its absolute file path. Never show a screenshot only as a link or a thumbnail.
+When you make a visual change, show Herb before and after screenshots in your reply before you end your turn. Capture the before state before you edit. When you ask Herb to make a visual design decision, show a screenshot of each alternative. Embed every screenshot in the reply as a full-size Markdown image with its absolute file path. Never show a screenshot only as a link or a thumbnail. Screenshots shown to Herb must be pixel-perfect: lossless PNG at device scale factor 2, to match his Retina display. Capture them directly, for example with Playwright's `page.screenshot()` or `playwright screenshot --device "Desktop Chrome HiDPI"`. Never reuse the images that browser-control or preview tools (Claude in Chrome, T3 preview, browse) take for your own inspection: they are downscaled JPEGs. Never convert, resize or recompress a screenshot.
 
 When scheduling meetings, use Zoom rather than Google Meet.
 
