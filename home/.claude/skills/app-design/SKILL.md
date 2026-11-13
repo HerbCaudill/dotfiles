@@ -21,6 +21,8 @@ Scope hotkeys to the active context. Preserve normal typing and text selection i
 
 Hide desktop hotkey hints and the keyboard reference on mobile layouts. Retain accessible controls and focus behavior; mobile users do not need shortcut labels competing with the content.
 
+DevResults exception: DevResults has no hotkeys yet. For DevResults designs and code, don't add custom hotkeys, hotkey hints, or a keyboard reference. Keep normal Tab navigation, native control behavior, visible focus, and focus restoration.
+
 ## Many search results
 
 Prefer showing all matching results. Do not introduce an arbitrary result cap, numbered pages, or a “Show more” button merely because the list is long. For lightweight items, render the full list first and check it with realistic data. Use measured loading, rendering, or interaction problems to decide when the result set is truly too large to show at once.
