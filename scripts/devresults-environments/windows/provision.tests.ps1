@@ -27,6 +27,10 @@ try {
     Expect-Refusal { Assert-Owner @{ environmentId = 'foreign'; ownerToken = $manifest.ownerToken } $manifest } 'Foreign'
     Expect-Refusal { Assert-Owner @{ environmentId = 'test'; ownerToken = 'other' } $manifest } 'Foreign'
     $passed += 2
+    Assert-True (Test-CommandLineReferences 'node "C:\DevResultsEnvironments\runtime\test\server.js"' $manifest.paths.runtime) 'A process inside the environment folder uses it'
+    Assert-True (Test-CommandLineReferences 'pwsh -File C:\devresultsenvironments\runtime\TEST' $manifest.paths.runtime) 'The folder itself matches regardless of case'
+    Assert-True (-not (Test-CommandLineReferences 'node C:\DevResultsEnvironments\runtime\test-brent\server.js' $manifest.paths.runtime)) 'A sibling environment whose name starts with this one does not use it'
+    $passed += 3
     $blobs = Join-Path $testRoot 'blobs'; [void][IO.Directory]::CreateDirectory($blobs)
     [IO.File]::WriteAllText((Join-Path $blobs 'one.json'), 'before')
     $before = Get-BlobDigest $blobs

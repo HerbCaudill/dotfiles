@@ -193,9 +193,13 @@ function Assert-NoReparse([string]$Path, [bool]$Recurse = $true) {
         }
     }
 }
+# The path must end at a separator, quote or space, so a running `blackbox-brent` doesn't count as using `blackbox`.
+function Test-CommandLineReferences([string]$CommandLine, [string]$Path) {
+    return [regex]::IsMatch($CommandLine, [regex]::Escape($Path.TrimEnd('\')) + '(?=$|[\\/"\s])', [Text.RegularExpressions.RegexOptions]::IgnoreCase)
+}
 function Assert-NotInUse($Manifest) {
     foreach ($process in @(Get-CimInstance Win32_Process)) {
-        if ($process.ProcessId -ne $PID -and $process.CommandLine -and ($process.CommandLine.IndexOf($Manifest.paths.runtime, [StringComparison]::OrdinalIgnoreCase) -ge 0 -or $process.CommandLine.IndexOf($Manifest.paths.windows, [StringComparison]::OrdinalIgnoreCase) -ge 0)) {
+        if ($process.ProcessId -ne $PID -and $process.CommandLine -and ((Test-CommandLineReferences $process.CommandLine $Manifest.paths.runtime) -or (Test-CommandLineReferences $process.CommandLine $Manifest.paths.windows))) {
             Deny 'A process still references this environment; stop the verified owned runtime/build before deployment refresh.'
         }
     }
