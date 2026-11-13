@@ -53,6 +53,26 @@ describe("prepareForFeedback", () => {
     expect(() => prepareForFeedback(world.deps, options)).toThrow(/9443.*node vite/)
   })
 
+  it("uses a local VibeResults dev server instead of the mini's", () => {
+    const world = createWorld({
+      listening: [8443, 30039],
+      macListeners: { "127.0.0.1:9443": LOCAL_DEV_SERVER },
+    })
+    const result = prepareForFeedback(world.deps, options)
+    expect(world.miniScripts.join("\n")).not.toContain("'VibeResults dev'")
+    expect(world.macScripts.join("\n")).not.toContain("-L 127.0.0.1:9443")
+    expect(result).toMatchObject({
+      vibeResults: "https://loura.devresultsnext.localhost:9443",
+      vibeResultsSource: "mac",
+      started: [],
+    })
+  })
+
+  it("reports the mini as the VibeResults source when it forwards from there", () => {
+    const world = createWorld({ listening: [8443, 9443, 30039] })
+    expect(prepareForFeedback(world.deps, options).vibeResultsSource).toBe("mini")
+  })
+
   it("reloads the Mac tunnel service when its loopback address is missing", () => {
     const world = createWorld({ listening: [8443, 9443, 30039], macAlias: false })
     prepareForFeedback(world.deps, options)
@@ -79,6 +99,9 @@ describe("prepareForFeedback", () => {
     expect(world.macScripts.join("\n")).not.toContain("Google Chrome")
   })
 })
+
+const LOCAL_DEV_SERVER =
+  "node /Users/herbcaudill/Code/DevResults/devresults-next/apps/web/node_modules/.bin/../@react-router/dev/bin.js dev"
 
 /** Fake the mini and Mac so sites come up when they are started. */
 function createWorld({

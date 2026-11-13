@@ -1,4 +1,7 @@
-/** Bring up VibeResults and a DevResults environment on the mini, forward both to the Mac, and open them. */
+/**
+ * Bring up VibeResults and a DevResults environment on the mini, forward both to the Mac, and open them.
+ * A VibeResults dev server already running on the Mac is used in place of the mini's.
+ */
 export function prepareForFeedback(deps: Deps, options: Options): FeedbackSetup {
   const { mini, mac, wait, log = () => {} } = deps
   const environment = findEnvironment(mini, options.environment)
@@ -23,14 +26,20 @@ export function prepareForFeedback(deps: Deps, options: Options): FeedbackSetup 
   }
 
   ensureListening(PRIMARY_PORT, "primary DevResults", "Start-ScheduledTask 'DevResults site'")
-  ensureListening(VIBE_PORT, "VibeResults", "Start-ScheduledTask 'VibeResults dev'")
+  const vibeResultsSource = isLocalVibeResults(getMacListener(mac, "127.0.0.1", VIBE_PORT))
+    ? "mac"
+    : "mini"
+  if (vibeResultsSource === "mini")
+    ensureListening(VIBE_PORT, "VibeResults", "Start-ScheduledTask 'VibeResults dev'")
   ensureListening(legacyPort, options.environment, `${DRENV} start ${options.environment}`)
 
   ensureMacTunnelService(deps)
   ensureForward(deps, "127.0.0.2", legacyPort)
-  ensureForward(deps, "127.0.0.1", VIBE_PORT)
+  if (vibeResultsSource === "mini") ensureForward(deps, "127.0.0.1", VIBE_PORT)
 
-  const vibeResults = `https://${options.instance}.viberesults.dev:${VIBE_PORT}`
+  const vibeResultsHost =
+    vibeResultsSource === "mac" ? "devresultsnext.localhost" : "viberesults.dev"
+  const vibeResults = `https://${options.instance}.${vibeResultsHost}:${VIBE_PORT}`
   const devResults = `https://${options.instance}.devlocal.us:${legacyPort}`
   for (const url of [vibeResults, devResults]) {
     log(`Waiting for ${url}`)
@@ -41,6 +50,7 @@ export function prepareForFeedback(deps: Deps, options: Options): FeedbackSetup 
 
   return {
     vibeResults,
+    vibeResultsSource,
     devResults,
     started,
     revision: environment.revision,
@@ -73,12 +83,22 @@ function ensureMacTunnelService({ mac, wait, log = () => {} }: Deps) {
   )
 }
 
+/** The command line of whatever listens on an address and port on the Mac, or an empty string. */
+function getMacListener(mac: Deps["mac"], address: string, port: number) {
+  return mac(
+    `pid=$(lsof -nP -a -t -iTCP@${address}:${port} -sTCP:LISTEN | head -n 1); if [ -n "$pid" ]; then ps -p "$pid" -o command=; fi`,
+  ).trim()
+}
+
+/** `pnpm dev` in a devresults-next checkout's apps/web, which serves VibeResults on the same port as the mini. */
+function isLocalVibeResults(listener: string) {
+  return /\/apps\/web\/node_modules\/.*@react-router\/dev\//.test(listener)
+}
+
 /** Open a forward, reusing only an SSH listener with the same destination. */
 function ensureForward({ mac }: Deps, address: string, port: number) {
   const forward = `${address}:${port}:127.0.0.1:${port}`
-  const listener = mac(
-    `pid=$(lsof -nP -a -t -iTCP@${address}:${port} -sTCP:LISTEN | head -n 1); if [ -n "$pid" ]; then ps -p "$pid" -o command=; fi`,
-  ).trim()
+  const listener = getMacListener(mac, address, port)
   if (listener) {
     const isOwned =
       /^(?:\S*\/)?ssh\s/.test(listener) &&
@@ -92,10 +112,13 @@ function ensureForward({ mac }: Deps, address: string, port: number) {
   )
 }
 
-/** A redirect counts, because DevResults answers its root with one. */
+/**
+ * A redirect counts, because DevResults answers its root with one. Certificates aren't checked, since curl
+ * doesn't trust the local dev server's mkcert authority.
+ */
 function respondsFromMac(mac: Deps["mac"], url: string) {
   const status = mac(
-    `curl -sS -o /dev/null -m 120 -w '%{http_code}' ${url} 2>/dev/null || true`,
+    `curl -ksS -o /dev/null -m 120 -w '%{http_code}' ${url} 2>/dev/null || true`,
   ).trim()
   return /^[23]\d\d$/.test(status)
 }
@@ -191,6 +214,8 @@ export type Options = {
 export type FeedbackSetup = {
   /** VibeResults URL on the Mac. */
   vibeResults: string
+  /** Where VibeResults runs: a local dev server on the Mac, or the mini. */
+  vibeResultsSource: "mac" | "mini"
   /** DevResults URL on the Mac. */
   devResults: string
   /** The sites that had to be started. */

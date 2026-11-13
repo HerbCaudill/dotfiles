@@ -23,12 +23,14 @@ The script can take several minutes on a cold start, so run it in the background
 
 1. On the mini, it starts the primary DevResults site, the `VibeResults dev` task and the environment, but only if nothing is listening on their ports. It never creates, syncs or resets the environment.
 2. On the Mac, it reloads `devlocal-mini-tunnel` if `127.0.0.2` is missing. Launchd can leave that service stuck after a reboot, and restarting it with `kickstart` hangs. This opens a Terminal window where Herb approves `sudo`, so tell him before you run it if you can.
-3. It forwards the environment's port on `127.0.0.2` and port 9443 on `127.0.0.1`. It reuses SSH forwards with the same destination and stops with an error if another process holds a port.
+3. It forwards the environment's port on `127.0.0.2` and port 9443 on `127.0.0.1`. It reuses SSH forwards with the same destination and stops with an error if another process holds a port. The exception is a VibeResults dev server already running on the Mac (`pnpm dev` in a devresults-next `apps/web`): the script uses it at `https://<instance>.devresultsnext.localhost:9443` and skips the mini's VibeResults and its forward.
 4. It checks both sites from the Mac, then opens two Chrome windows: VibeResults on the left and DevResults on the right.
 
 VibeResults uses the primary DevResults site as its backend, not this environment, so only the DevResults window shows the environment's build.
 
 ## Report
+
+The script prints `vibeResultsSource`. If it's `mac`, say VibeResults is the local dev server, so it shows the Mac checkout rather than the mini's.
 
 Give Herb both URLs and say which sites had to be started. The script prints `commitsBehind`; if it isn't 0, say the DevResults site is that many commits behind its branch. Don't sync the environment unless Herb asks, because that means a rebuild and restart. If a step fails, report the error. Don't fall back to another environment or site.
 
