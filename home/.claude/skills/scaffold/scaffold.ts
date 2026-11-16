@@ -44,7 +44,8 @@ function copyTemplate(
   let content = readFileSync(join(TEMPLATES_DIR, templatePath), "utf-8")
   if (vars) {
     for (const [key, value] of Object.entries(vars)) {
-      content = content.replaceAll(`{{${key}}}`, value)
+      // Formatters may pad JSX placeholders to `{{ KEY }}`.
+      content = content.replace(new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, "g"), value)
     }
   }
   writeFileSync(destPath, content)
@@ -90,6 +91,11 @@ function main() {
 
   // Create Vite project
   run(`pnpm create vite ${projectName} --template react-ts`, PROJECT_DIR)
+  // pnpm refuses to install packages whose build scripts have not been approved.
+  writeFileSync(
+    join(projectPath, "pnpm-workspace.yaml"),
+    "allowBuilds:\n  esbuild: true\n  sharp: true\n",
+  )
   run("pnpm install", projectPath)
 
   // Install dependencies
