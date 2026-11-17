@@ -27,6 +27,8 @@ In the morning session, the briefing has already been presented. Continue in tha
 
 ## Review one item
 
+Before presenting an item, check whether an active or snoozed T3 thread on either machine is already handling it, for example the thread that raised an agent's question or one Herb opened on the same topic. Settled threads don't count. If one is, don't bring it to Herb: complete the task, since the thread owns the decision, and list it with the thread's link in the end summary.
+
 Present the task title and only the context needed for the next decision. Establish the desired outcome, current status, next action, blocker, timing and possible agent help, skipping questions already answered by the task or Herb's instructions.
 
 Before asking factual questions, inspect relevant existing context in Obsidian, messages, documents, calendars and linked sources. Read referenced Codex tasks before relying on their results. Use the narrowest applicable skill. An unknown preference need not block independent research.
