@@ -8,11 +8,15 @@ Before starting anything, the supervisor refuses occupied primary ports. It neve
 
 `status.json`, `Azurite.log`, and `IIS.log` are written under the configured log directory. The status distinguishes starting, storage-ready, running, stopped, and failed and includes child PIDs. A failed launch exits nonzero. The installer registers an unlimited-duration limited-S4U `DevResults site` task one minute after boot, with duplicate invocations ignored. It copies the supervisor and explicit configuration into a new release directory, refuses an existing release, and does not start the task. Future source updates therefore do not rewrite files that a running release uses.
 
-## Deployment boundary
+## Deployment
 
-**This source has not been deployed to primary.** The original IIS and triggerless `DevResults primary Azurite recovery` ownership has not been handed over. Their scripts, scheduled-task definitions, executable installation, blob data, and debug paths were preserved. The November 2 read-only check found the primary task running and port 8443 listening, but no listeners on storage ports 10000–10002: the storage defect is currently active. The primary data remains `C:\Code\DevResults\devresults\DevResults\.azurite\data`; the debug log remains `C:\Code\DevResults\devresults\DevResults\azurite_debug.log`.
+Deployed to the mini on 2026-11-17 as release `64edb2b`, in `%LOCALAPPDATA%\devresults-site\releases\64edb2b`. The reviewed configuration is `C:\Users\herb\setup\primary-site\primary.json`. Its first candidate is a dedicated Azurite 3.37.0 install in `C:\Users\herb\setup\primary-site\azurite-3.37.0`, made with `npm install --prefix`; the npm-cache copy from October stays as a fallback. The data and debug paths are unchanged.
 
-A live handoff requires a coordinated maintenance window with the photo/runtime owner. The installer deliberately refuses while the primary task is running or any primary port is listening. During that future window, record exact IIS/recovery identities, stop only the coordinated primary writers, confirm ports 8443 and 10000–10002 are free, and run `pwsh -NoProfile -File install-primary-site.ps1 -ConfigPath <reviewed-primary.json> -ReleaseName <commit>`. Start `DevResults site` only after the old recovery owner has yielded the ports. Check dependency status, read-only API health, and the owned-contact photo workflow before retiring the transient recovery task. Do not change data paths, copy live storage, restart any private/e2e lane, or edit open runtime files. If handoff fails, retain logs and coordinate restoration of the original task action and unchanged recovery; never run two storage writers on the primary directory.
+Before the handoff, the old task's `pnpm dlx` Azurite launcher had hung since the 15 November reboot, so the primary data folder had no Azurite. A separate `azurite-blob` started by hand on 16 November, with data in `C:\Users\herb\.local\state\azurite-next`, held port 10000, and the site used it. Its `development` container was copied into the primary data folder before it was stopped. That folder is left on disk. The triggerless `DevResults primary Azurite recovery` task is disabled, so it can't start a second writer on the primary data folder.
+
+The task runs with limited rights, so IIS Express needs a URL reservation for its HTTPS binding: `netsh http add urlacl url=https://127.0.0.1:8443/ user=herb listen=yes`, which is in place on the mini.
+
+To restart the site, stop the `DevResults site` task, then end the Azurite and IIS PIDs listed in `status.json`. Stopping the task ends the supervisor without letting it stop its children, and the next start refuses ports that are still held. The handoff was checked with a task start, not a reboot.
 
 ## Verification
 

@@ -2,6 +2,11 @@
   "candidates": [
     {
       "node": "C:\\Users\\herb\\AppData\\Local\\mise\\installs\\node\\24.22.1\\node.exe",
+      "entry": "C:\\Users\\herb\\setup\\primary-site\\azurite-3.37.0\\node_modules\\azurite\\dist\\src\\azurite.js",
+      "version": "3.37.0"
+    },
+    {
+      "node": "C:\\Users\\herb\\AppData\\Local\\mise\\installs\\node\\24.22.1\\node.exe",
       "entry": "C:\\Users\\herb\\AppData\\Local\\npm-cache\\_npx\\0f244c8e667cf24b\\node_modules\\azurite\\dist\\src\\azurite.js",
       "version": "3.37.0"
     }
