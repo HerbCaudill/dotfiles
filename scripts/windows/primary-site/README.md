@@ -10,7 +10,7 @@ Before starting anything, the supervisor refuses occupied primary ports. It neve
 
 ## Deployment
 
-Deployed to the mini on 2026-11-17 as release `64edb2b`, in `%LOCALAPPDATA%\devresults-site\releases\64edb2b`. The reviewed configuration is `C:\Users\herb\setup\primary-site\primary.json`. Its first candidate is a dedicated Azurite 3.37.0 install in `C:\Users\herb\setup\primary-site\azurite-3.37.0`, made with `npm install --prefix`; the npm-cache copy from October stays as a fallback. The data and debug paths are unchanged.
+Deployed to the mini on 2026-11-17 as release `64edb2b`, then replaced the same day by release `ac9fb12` in `%LOCALAPPDATA%\devresults-site\releases\ac9fb12`, which added the storage grace window. Release `ac9fb12` was started with a task start and verified from the MacBook through the `devlocal-mini` tunnel. The reviewed configuration is `C:\Users\herb\setup\primary-site\primary.json`. Its first candidate is a dedicated Azurite 3.37.0 install in `C:\Users\herb\setup\primary-site\azurite-3.37.0`, made with `npm install --prefix`; the npm-cache copy from October stays as a fallback. The data and debug paths are unchanged.
 
 Before the handoff, the old task's `pnpm dlx` Azurite launcher had hung since the 15 November reboot, so the primary data folder had no Azurite. A separate `azurite-blob` started by hand on 16 November, with data in `C:\Users\herb\.local\state\azurite-next`, held port 10000, and the site used it. Its `development` container was copied into the primary data folder before it was stopped. That folder is left on disk. The triggerless `DevResults primary Azurite recovery` task is disabled, so it can't start a second writer on the primary data folder.
 
