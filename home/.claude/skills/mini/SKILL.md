@@ -49,7 +49,7 @@ winget works over SSH. Pass `--accept-source-agreements --accept-package-agreeme
 
 ## Dotfiles and agent config
 
-`C:\Code\HerbCaudill\dotfiles` is a normal clone with `core.autocrlf=false`. Only the agent config applies on Windows. `scripts/windows/install-claude-shared-config.ps1 -RepoRoot C:\Code\HerbCaudill\dotfiles` symlinks the shared global instructions and skills into `~/.claude` and `~/.codex`, plus the Claude status line and `~/.ssh/config`. Because these are symlinks into the clone, a pull updates them. Rerun the installer only when the list of linked items changes. Nix, launchd, and macOS-only sections do not apply.
+`C:\Code\HerbCaudill\dotfiles` is a normal clone with `core.autocrlf=false`. Only the agent config applies on Windows. `scripts/windows/install-claude-shared-config.ps1 -RepoRoot C:\Code\HerbCaudill\dotfiles` symlinks the shared global instructions and skills into `~/.claude` and `~/.codex`, plus the Claude status line and `~/.ssh/config`. Because these are symlinks into the clone, a pull updates them. The mini keeps its own `~/.claude/settings.json` (it runs in `bypassPermissions` mode), so the installer copies only the repo file's `env` and `statusLine` keys into it. Rerun the installer when the list of linked items changes or when those keys change. The copied `CLAUDE_CODE_ENABLE_CFC=1` turns on Claude in Chrome for every session, including T3's. The extension it should drive is in the Agent Chrome profile (`install-agent-chrome.ps1`, debug port 9223), which has to be signed in to Claude; while it is offline, the bridge routes Chrome tool calls to the Mac's Chrome if that one is online. Nix, launchd, and macOS-only sections do not apply.
 
 ## Repo sync
 

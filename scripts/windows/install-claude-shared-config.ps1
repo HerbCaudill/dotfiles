@@ -79,21 +79,40 @@ function Install-SharedItem {
   }
 }
 
-function Read-Settings {
-  if (-not (Test-Path -LiteralPath $settingsPath)) { return [pscustomobject]@{} }
+function Read-Json {
+  param(
+    [string]$Path
+  )
 
-  $raw = Get-Content -LiteralPath $settingsPath -Raw
+  if (-not (Test-Path -LiteralPath $Path)) { return [pscustomobject]@{} }
+
+  $raw = Get-Content -LiteralPath $Path -Raw
   if ([string]::IsNullOrWhiteSpace($raw)) { return [pscustomobject]@{} }
 
   return $raw | ConvertFrom-Json
 }
 
-function Write-StatusLineSettings {
-  $settings = Read-Settings
-  $settings | Add-Member -Force -NotePropertyName statusLine -NotePropertyValue ([ordered]@{
-    type = "command"
-    command = "node ~/.claude/statusline.js"
-  })
+# Windows keeps its own settings.json (for example, the mini runs in bypassPermissions mode), so
+# copy only the shared keys from the repo file. `env` carries CLAUDE_CODE_ENABLE_CFC, which turns on
+# Claude in Chrome for non-interactive sessions such as the ones T3 Code starts.
+function Write-SharedSettings {
+  $sharedSettings = Read-Json -Path (Join-Path $RepoRoot "home\.claude\settings.json")
+  $settings = Read-Json -Path $settingsPath
+
+  foreach ($key in @("env", "statusLine")) {
+    $value = $sharedSettings.$key
+    if ($null -eq $value) { throw "Missing $key in the repo's home\.claude\settings.json" }
+
+    if ($key -eq "env" -and $null -ne $settings.env) {
+      # Keep machine-specific variables; repo values win on conflict.
+      foreach ($variable in $value.PSObject.Properties) {
+        $settings.env | Add-Member -Force -NotePropertyName $variable.Name -NotePropertyValue $variable.Value
+      }
+      continue
+    }
+
+    $settings | Add-Member -Force -NotePropertyName $key -NotePropertyValue $value
+  }
 
   $settings | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $settingsPath -Encoding utf8
   Write-Host "Updated $settingsPath"
@@ -105,5 +124,5 @@ foreach ($item in $items) {
   Install-SharedItem -Name $item.Name -Source $item.Source
 }
 
-Write-StatusLineSettings
-Write-Host "Claude and Codex now use repo-managed skills and global instructions, plus the Claude status line and SSH config."
+Write-SharedSettings
+Write-Host "Claude and Codex now use repo-managed skills and global instructions, plus the Claude status line, shared environment variables and SSH config."

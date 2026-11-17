@@ -78,7 +78,7 @@ A LaunchAgent in `nix/darwin/default.nix` watches `home/.claude` and runs `scrip
 
 ## Windows mini PC
 
-The always-on Windows mini PC (`mini` on the tailnet, a Minisforum) keeps a plain clone of this repo at `C:\Code\HerbCaudill\dotfiles`. Only the agent config applies there: `scripts/windows/install-claude-shared-config.ps1 -RepoRoot C:\Code\HerbCaudill\dotfiles` links the shared instructions and skills into `~/.claude` and `~/.codex`. `scripts/windows/register-gh-sync-task.ps1` schedules `gh-sync` through Git Bash, which also keeps that clone current. `.gitattributes` keeps `gh-sync` and `*.sh` LF so Git Bash can run them. The `mini` skill covers access and operation.
+The always-on Windows mini PC (`mini` on the tailnet, a Minisforum) keeps a plain clone of this repo at `C:\Code\HerbCaudill\dotfiles`. Only the agent config applies there: `scripts/windows/install-claude-shared-config.ps1 -RepoRoot C:\Code\HerbCaudill\dotfiles` links the shared instructions and skills into `~/.claude` and `~/.codex`. It also copies the `env` and `statusLine` keys of `home/.claude/settings.json` into the mini's own `settings.json`; that `env` block's `CLAUDE_CODE_ENABLE_CFC=1` is what gives non-interactive sessions, including T3's, the Claude in Chrome tools. `scripts/windows/register-gh-sync-task.ps1` schedules `gh-sync` through Git Bash, which also keeps that clone current. `.gitattributes` keeps `gh-sync` and `*.sh` LF so Git Bash can run them. The `mini` skill covers access and operation.
 
 ## Installing shared agent skills
 
