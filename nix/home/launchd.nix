@@ -3,6 +3,7 @@
   lib,
   pkgs,
   username,
+  dotfilesRoot,
   ...
 }:
 let
@@ -13,6 +14,32 @@ let
   automationPath = "${userBin}:${homeDirectory}/Library/pnpm/bin:${userProfileBin}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin";
 in
 {
+  launchd.agents."personal-files-sync" = {
+    enable = true;
+    config = {
+      Label = "com.herbcaudill.personal-files-sync";
+      ProgramArguments = [
+        "${pkgs.nodejs_24}/bin/node"
+        "${userBin}/personal-info-sync"
+        "mini"
+      ];
+      WatchPaths = [
+        "${dotfilesRoot}/home/.claude/skills/personal-info"
+        "${dotfilesRoot}/home/.claude/skills/personal-info/personal-info.md"
+        "${dotfilesRoot}/home/.claude/skills/personal-info/low-stakes-passwords.json"
+      ];
+      RunAtLoad = true;
+      StartInterval = 300;
+      ThrottleInterval = 10;
+      StandardOutPath = "/tmp/personal-files-sync.log";
+      StandardErrorPath = "/tmp/personal-files-sync.log";
+      EnvironmentVariables = {
+        HOME = homeDirectory;
+        PATH = automationPath;
+      };
+    };
+  };
+
   # bd treats the shared server as external and doesn't restart it, so without
   # this every repo's beads are down after a reboot until someone runs
   # `bd dolt start`.
