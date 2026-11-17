@@ -1,5 +1,5 @@
 import { spawn, type ChildProcess } from "node:child_process"
-import { access, mkdir, open, writeFile } from "node:fs/promises"
+import { access, appendFile, mkdir, open, writeFile } from "node:fs/promises"
 import { get } from "node:http"
 import { createServer } from "node:net"
 import { join } from "node:path"
@@ -18,21 +18,18 @@ export async function supervisePrimarySite(
   const children: { name: string; process: ChildProcess }[] = []
   const logs: Awaited<ReturnType<typeof open>>[] = []
   const pollMs = config.pollMs ?? 1000
-  /** Persist the current dependency state for operators and task diagnostics. */
+  const probeTimeoutMs = config.probeTimeoutMs ?? 5000
+  const storageGraceMs = config.storageGraceMs ?? 60000
+  /** Persist the current dependency state, and append it to a history that outlives restarts. */
   async function status(state: string, message: string) {
-    await writeFile(
-      join(config.logPath, "status.json"),
-      JSON.stringify(
-        {
-          state,
-          message,
-          at: new Date().toISOString(),
-          pids: children.map(child => ({ name: child.name, pid: child.process.pid })),
-        },
-        null,
-        2,
-      ),
-    )
+    const entry = {
+      state,
+      message,
+      at: new Date().toISOString(),
+      pids: children.map(child => ({ name: child.name, pid: child.process.pid })),
+    }
+    await writeFile(join(config.logPath, "status.json"), JSON.stringify(entry, null, 2))
+    await appendFile(join(config.logPath, "status.log"), JSON.stringify(entry) + "\n")
     report(message)
   }
   /** Start a direct executable with durable output and no package manager or shell. */
@@ -88,7 +85,7 @@ export async function supervisePrimarySite(
     const deadline = Date.now() + (config.readinessTimeoutMs ?? 120000)
     while (!signal.aborted) {
       checkChildren()
-      if (await storageReady(config.ports, executable.version)) break
+      if (await storageReady(config.ports, executable.version, probeTimeoutMs)) break
       if (Date.now() >= deadline)
         throw new Error(
           `Storage readiness timed out on ${config.ports.join(", ")}; see ${join(config.logPath, "Azurite.log")}`,
@@ -99,15 +96,29 @@ export async function supervisePrimarySite(
     checkChildren()
     await status("storage-ready", `Storage ready on ${config.ports.join(", ")}; starting IIS`)
     await start("IIS", config.app.executable, config.app.args)
-    await status(
-      "running",
-      "IIS launched; storage supervision active (application HTTP health is separate)",
-    )
+    const running = "IIS launched; storage supervision active (application HTTP health is separate)"
+    await status("running", running)
+    // A busy host can stall Azurite for seconds at a time. Only sustained unresponsiveness
+    // counts as lost storage; a child exiting still fails immediately.
+    let unhealthySince: number | undefined
     while (!signal.aborted) {
       await delay(pollMs)
       checkChildren()
-      if (!(await storageReady(config.ports, executable.version)))
-        throw new Error(`Storage health lost on ${config.ports.join(", ")}; stopping owned IIS`)
+      if (await storageReady(config.ports, executable.version, probeTimeoutMs)) {
+        if (unhealthySince !== undefined) await status("running", running)
+        unhealthySince = undefined
+        continue
+      }
+      if (unhealthySince === undefined) {
+        unhealthySince = Date.now()
+        await status(
+          "storage-degraded",
+          `Storage unresponsive on ${config.ports.join(", ")}; allowing ${storageGraceMs} ms to recover`,
+        )
+      } else if (Date.now() - unhealthySince >= storageGraceMs)
+        throw new Error(
+          `Storage health lost on ${config.ports.join(", ")} for ${Date.now() - unhealthySince} ms; stopping owned IIS`,
+        )
     }
     await status("stopped", "Primary startup stopped")
   } catch (error) {
@@ -181,14 +192,14 @@ export async function selectInstalledAzurite(
 }
 
 /** Verify all three configured endpoints identify the selected Azurite version. */
-async function storageReady(ports: number[], version: string) {
+async function storageReady(ports: number[], version: string, timeoutMs: number) {
   return (
     await Promise.all(
       ports.map(
         (port, index) =>
           new Promise<boolean>(resolve => {
             const request = get(
-              { host: "127.0.0.1", port, path: "/devstoreaccount1", timeout: 500 },
+              { host: "127.0.0.1", port, path: "/devstoreaccount1", timeout: timeoutMs },
               response => {
                 response.resume()
                 resolve(
@@ -238,4 +249,8 @@ export type PrimarySiteConfig = {
   readinessTimeoutMs?: number
   executableTimeoutMs?: number
   pollMs?: number
+  /** How long one storage probe may take before it counts as unresponsive. */
+  probeTimeoutMs?: number
+  /** How long storage may stay unresponsive after readiness before supervision fails. */
+  storageGraceMs?: number
 }

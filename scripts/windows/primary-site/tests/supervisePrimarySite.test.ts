@@ -38,6 +38,10 @@ const ports = ${JSON.stringify(ports.slice(0, 3))};
 if(${JSON.stringify(mode)} === 'exit') process.exit(7);
 if(${JSON.stringify(mode)} !== 'unready') for (const [i, port] of ports.entries()) http.createServer((req,res) => {res.writeHead(400, {Server: 'Azurite-' + ['Blob','Queue','Table'][i] + '/3.37.0'});res.end();}).listen(port, '127.0.0.1');
 if(${JSON.stringify(mode)} === 'late-exit') setTimeout(() => process.exit(8), 600);
+// Block the event loop, like a GC pause or CPU starvation on a busy host.
+const block = ms => { const end = Date.now() + ms; while (Date.now() < end) {} };
+if(${JSON.stringify(mode)} === 'stall') setTimeout(() => block(1200), 800);
+if(${JSON.stringify(mode)} === 'hang') setTimeout(() => block(60000), 800);
 setInterval(() => {}, 1000);
 `,
   )
@@ -144,6 +148,38 @@ test("bounds readiness failure and preserves diagnostic status", async () => {
 test("storage loss after readiness fails supervision and stops owned IIS", async () => {
   const f = await fixture("late-exit")
   await expect(f.run()).rejects.toThrow(/Azurite exited.*8/)
+  const pid = Number(await readFile(f.started, "utf8"))
+  expect(() => process.kill(pid, 0)).toThrow()
+})
+
+test("rides out a storage stall shorter than the grace window and records it", async () => {
+  const f = await fixture("stall")
+  f.config.probeTimeoutMs = 100
+  f.config.storageGraceMs = 5000
+  const run = f.run()
+  const history = () =>
+    readFile(join(f.config.logPath, "status.log"), "utf8")
+      .then(text =>
+        text
+          .trim()
+          .split("\n")
+          .map(line => JSON.parse(line).state),
+      )
+      .catch(() => [] as string[])
+  await expect
+    .poll(async () => (await history()).slice(-2), { timeout: 8000 })
+    .toEqual(["storage-degraded", "running"])
+  const pid = Number(await readFile(f.started, "utf8"))
+  expect(() => process.kill(pid, 0)).not.toThrow()
+  f.controller.abort()
+  await run
+})
+
+test("storage unresponsive past the grace window fails supervision and stops owned IIS", async () => {
+  const f = await fixture("hang")
+  f.config.probeTimeoutMs = 100
+  f.config.storageGraceMs = 300
+  await expect(f.run()).rejects.toThrow(/Storage health lost/)
   const pid = Number(await readFile(f.started, "utf8"))
   expect(() => process.kill(pid, 0)).toThrow()
 })
