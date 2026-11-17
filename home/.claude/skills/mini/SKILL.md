@@ -99,6 +99,8 @@ The `drenv mini controller` scheduled task handles elevated SQL, HTTP.sys and ta
 
 Requests survive SSH disconnection. The CLI prints a request UUID; `drenv --host mini request <UUID>` reads its receipt. Repeating an identical command attaches to an active request. One expensive lifecycle operation runs at a time to bound RAM use; independent runtime tasks run concurrently. Logs live beside the source ownership receipts (`<worktree>.drenv-source`), and `status <id>` reports both sides and the client watcher. Do not delete locks or kill all Node/IIS processes to recover an environment.
 
+The mini's heavy test capacity is reserved for DevResults parity verification (Herb, 2026-11-17): the e2e lanes, the parity build/record permit and SQL Server. Other `devresults-next` work on the mini may edit and commit in its own worktree, but runs builds, Storybook, Vitest browser runs and Playwright on the MacBook. Never work in the shared checkout `C:\Code\DevResults\devresults-next` or in parity's own clone `C:\Code\DevResults\parity`, and never ask the parity coordinator for the permit.
+
 The primary `DevResults site` and `VibeResults dev` tasks remain separate. Do not restart them, reuse 443/9443, touch the e2e lanes on 20415/20615/21415, or modify `C:\Users\herb\setup\mini-migration.md` to prepare an isolated stack. `drenv url <id>` returns assigned origins and Mac SSH forwards. Forward both HTTPS ports unchanged for side-by-side viewing; closing a forward does not stop the remote stack.
 
 ## Maintenance
