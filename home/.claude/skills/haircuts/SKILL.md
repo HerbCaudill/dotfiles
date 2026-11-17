@@ -46,6 +46,12 @@ Read the matching confirmation email and follow its **Cancel·lar reserva** link
 
 Verify the reference, date, time, services, barber, and branch on the cancellation page. Click **Sí, cancel·lar reserva** once when cancellation is authorized. Verify **Reserva cancelada!** and **La teva reserva ha estat cancel·lada amb èxit** before reporting success. Update the note and task so the canceled appointment is not mistaken for an upcoming cut.
 
+## Move an existing appointment
+
+Verified November 17, 2026: the site rejects a new reservation for the same services within 72 hours of an existing reservation. The page only says **Error al realizar la reserva**; the booking response explains the 72-hour rule. Do not keep retrying that rejection. When Herb has authorized the reschedule and both cancellation and booking, check the replacement slot first, cancel the old reservation, verify cancellation, then immediately confirm the replacement. Keep the selected replacement slot open while canceling in a separate tab. If Herb explicitly requires the new booking to be confirmed before cancellation, explain that the site prevents that order and ask him how to proceed. Verify both confirmation emails before updating records.
+
 ## Verified behavior
 
 On November 2, 2026, Herb authorized a one-time booking-and-cancellation test. His Chrome and the inline 1Password suggestion worked. A reservation with Argent at Consell de Cent for November 3, 16:00–17:00, with both services was confirmed and then canceled using the email link. Do not repeat test bookings as routine verification.
+
+On November 17, Codex signed in successfully using the saved local credential for `herb@devresults.com`. Moving the real cut from Tuesday November 24 to Monday November 23 at 16:00 required canceling Tuesday first because of the 72-hour rule. Both services with Argent at Consell de Cent were then confirmed for Monday, 16:00–17:00.
