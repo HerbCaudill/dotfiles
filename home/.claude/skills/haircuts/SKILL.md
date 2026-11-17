@@ -1,6 +1,6 @@
 ---
 name: haircuts
-description: Arrange Herb's haircuts around his Barcelona stays using Barcelona Barber Shop, his Chrome session, and 1Password. Use for haircut availability, booking, cancellation, or the recurring haircut task.
+description: Arrange Herb's haircuts around his Barcelona stays using Barcelona Barber Shop, his Chrome session, and local credentials or 1Password. Use for haircut availability, booking, cancellation, or the recurring haircut task.
 ---
 
 # Haircuts
@@ -28,7 +28,9 @@ Open https://www.barbershop.cat/reserves. Its booking form is embedded from http
 
 ## Sign in and book
 
-Selecting a slot can lead to **Identifica't**. Use the 1Password browser extension's matching **Sign in with barbershop.cat** suggestion, then **Iniciar sessió** if filling does not submit automatically. Do not retrieve the password through a CLI or inspect filled password values. Ask Herb to unlock 1Password or complete a blocked authentication step if needed.
+Selecting a slot can lead to **Identifica't**. For Codex, use the `barbershop.cat` entry in the local password file described by the [personal-info skill](../personal-info/SKILL.md), when the current browser tool permits credential entry. Read only that entry within the command or tool that needs it, and never print the credential. Verify that the sign-in form belongs to `barbershop.cat` or `booking.barbershop.cat` before entering it. Select **Iniciar sessió** if filling does not submit automatically. This replaces the earlier 1Password-only procedure for Codex; it does not override another harness's restrictions.
+
+The 1Password browser extension's matching **Sign in with barbershop.cat** suggestion remains a fallback. Do not inspect filled password values. If a missing credential, browser limitation, biometric prompt, or harness rule blocks sign-in, report the actual block and ask Herb only for the step needed to proceed.
 
 Before **Sí, confirmar**, verify the account name, date, time, both services, barber, and branch against the authorized booking. Submit once. If the response is delayed, inspect the resulting page and confirmation email before retrying to avoid duplicate reservations.
 
