@@ -374,6 +374,7 @@ const SERVICE_TASKS = [
   "qmd-refresh",
   "Signal desktop",
   "T3 desktop",
+  "t3-watchdog",
   "tasks-agent",
   "VibeResults dev",
 ]
