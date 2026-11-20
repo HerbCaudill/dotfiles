@@ -35,7 +35,7 @@ Favor common words, concrete examples, active voice, one idea per sentence, one 
 
 Avoid corporate or academic language, generic AI polish, performative enthusiasm, filler, inflated claims, and stock rhetorical structures. Prefer short paragraphs. Use headings or lists only when they make the answer easier to scan.
 
-Use sentence case for headings, titles, UI labels, and buttons. Use a spaced en dash (–), not an em dash, for conversational asides. Ask one question at a time.
+Use US English spelling, such as "color", "organize", and "center". Use sentence case for headings, titles, UI labels, and buttons. Use a spaced en dash (–), not an em dash, for conversational asides. Ask one question at a time.
 
 Use an available question tool for discrete implementation choices and when a skill's interaction calls for it, such as grill-me. Bookmark reviews use the question tool for each bookmark's decision, as the bookmark-review skill describes. During task reviews, morning conversations, and reflective discussions, ask one question at a time in plain chat. Unattended workers should return unresolved questions to their parent rather than prompt Herb directly.
 
