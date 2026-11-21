@@ -255,6 +255,25 @@ export function describeBatch(
   ].join("\n")
 }
 
+/** Most redirects to follow for one unsubscribe request. */
+const MAX_UNSUBSCRIBE_REDIRECTS = 3
+
+/** POST the RFC 8058 one-click body to one URL without following redirects. */
+function postOneClick(
+  /** Unsubscribe endpoint. */
+  url: URL,
+  /** Fetch implementation. */
+  dependencies: ProposalDependencies,
+): Promise<Response> {
+  return dependencies.fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: "List-Unsubscribe=One-Click",
+    redirect: "manual",
+    signal: AbortSignal.timeout(30_000),
+  })
+}
+
 /** Send one RFC 8058 one-click unsubscribe request and log it. */
 async function unsubscribe(
   /** Approved sender. */
@@ -270,17 +289,20 @@ async function unsubscribe(
   let detail: string
   let endpointHost = ""
   try {
-    const url = new URL(item.url!)
+    let url = new URL(item.url!)
     if (url.protocol !== "https:") throw new Error("Unsubscribe URL is not https")
     endpointHost = url.host
-    // Redirects are not followed: a one-click endpoint answers the POST itself.
-    const response = await dependencies.fetch(url, {
-      method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
-      body: "List-Unsubscribe=One-Click",
-      redirect: "manual",
-      signal: AbortSignal.timeout(30_000),
-    })
+    // Follow redirects by hand so each hop gets the same one-click POST; fetch would turn a
+    // 301 or 302 into a GET. Some senders redirect, such as an apex domain to www.
+    let response = await postOneClick(url, dependencies)
+    for (let hop = 0; hop < MAX_UNSUBSCRIBE_REDIRECTS; hop += 1) {
+      const location = response.headers.get("location")
+      if (response.status < 300 || response.status >= 400 || !location) break
+      const next = new URL(location, url)
+      if (next.protocol !== "https:") break
+      url = next
+      response = await postOneClick(url, dependencies)
+    }
     outcome =
       response.status >= 200 && response.status < 300
         ? "unsubscribed"

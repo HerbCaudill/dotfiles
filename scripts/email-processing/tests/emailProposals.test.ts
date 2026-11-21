@@ -52,6 +52,28 @@ describe("unsubscribe proposals", () => {
     })
   })
 
+  it("follows an https redirect with the same one-click request", async () => {
+    const { dependencies, paths, fetch } = await setup()
+    fetch
+      .mockResolvedValueOnce(
+        new Response(null, {
+          status: 301,
+          headers: { location: "https://www.unsubscribe.example.com/a@shop.example" },
+        }),
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 200 }))
+    await queueUnsubscribe(candidate("a@shop.example"), paths.store)
+    await proposeBatches(dependencies)
+
+    const lines = await approveBatch(dependencies, "unsubscribe-2026-11-12", [])
+
+    expect(lines).toEqual(["unsubscribed a@shop.example (HTTP 200)"])
+    expect(fetch).toHaveBeenCalledTimes(2)
+    const [url, init] = fetch.mock.calls[1]!
+    expect(url.toString()).toBe("https://www.unsubscribe.example.com/a@shop.example")
+    expect(init).toMatchObject({ method: "POST", body: "List-Unsubscribe=One-Click" })
+  })
+
   it("waits for Herb to deal with an open batch before proposing more", async () => {
     const { dependencies, paths, tasks } = await setup()
     await queueUnsubscribe(candidate("a@shop.example"), paths.store)
