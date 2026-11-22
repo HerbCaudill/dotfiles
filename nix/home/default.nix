@@ -1,6 +1,7 @@
 { username, ... }:
 {
   imports = [
+    ./ci-watch.nix
     ./claude-chats.nix
     ./codex.nix
     ./files.nix
