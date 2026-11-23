@@ -3,8 +3,13 @@
   home.packages = with pkgs; [
     azure-cli
     bat
+    # Colima runs a headless Docker VM, with no root and no GUI app, for
+    # devresults-next's Postgres and Azurite containers.
+    colima
     coreutils
     curl
+    docker
+    docker-compose
     dolt
     duti
     exiftool
