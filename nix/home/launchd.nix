@@ -62,6 +62,35 @@ in
     };
   };
 
+  # devresults-next runs Postgres and Azurite in Docker Compose; this starts
+  # Colima's Docker VM at login. Rosetta runs the amd64-only PostGIS image.
+  launchd.agents."colima" = {
+    enable = true;
+    config = {
+      Label = "com.herbcaudill.colima";
+      ProgramArguments = [
+        "${pkgs.colima}/bin/colima"
+        "start"
+        "--vm-type"
+        "vz"
+        "--vz-rosetta"
+        "--cpu"
+        "6"
+        "--memory"
+        "12"
+        "--disk"
+        "100"
+      ];
+      RunAtLoad = true;
+      StandardOutPath = "/tmp/colima.log";
+      StandardErrorPath = "/tmp/colima.log";
+      EnvironmentVariables = {
+        HOME = homeDirectory;
+        PATH = automationPath;
+      };
+    };
+  };
+
   launchd.agents."watch-beads" = {
     enable = true;
     config = {
