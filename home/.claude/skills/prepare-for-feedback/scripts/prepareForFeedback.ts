@@ -1,74 +1,95 @@
 /**
- * Bring up VibeResults and a DevResults environment on the mini, forward both to the Mac, and open them.
- * A VibeResults dev server already running on the Mac is used in place of the mini's.
+ * Serve VibeResults and DevResults side by side from the Mac: DevResults from the Parallels VM, forwarded to
+ * the Mac, and VibeResults from a dedicated checkout of main whose dev server uses the VM as its backend.
  */
 export function prepareForFeedback(deps: Deps, options: Options): FeedbackSetup {
-  const { mini, mac, wait, log = () => {} } = deps
-  const environment = findEnvironment(mini, options.environment)
-  const legacyPort = environment.ports.https
+  const { mac, wait, log = () => {} } = deps
   const started: string[] = []
 
-  const isListening = (port: number) =>
-    mini(
-      `if (Get-NetTCPConnection -State Listen -LocalPort ${port} -ErrorAction SilentlyContinue) { 'yes' } else { 'no' }`,
-    ).trim() === "yes"
-
-  const ensureListening = (port: number, name: string, start: string) => {
-    if (isListening(port)) return
-    log(`Starting ${name}`)
-    mini(start)
-    started.push(name)
-    poll(
-      wait,
-      () => isListening(port),
-      `${name} did not start listening on port ${port} on the mini`,
-    )
-  }
-
-  ensureListening(PRIMARY_PORT, "primary DevResults", "Start-ScheduledTask 'DevResults site'")
-  const vibeResultsSource = isLocalVibeResults(getMacListener(mac, "127.0.0.1", VIBE_PORT))
-    ? "mac"
-    : "mini"
-  if (vibeResultsSource === "mini")
-    ensureListening(VIBE_PORT, "VibeResults", "Start-ScheduledTask 'VibeResults dev'")
-  ensureListening(legacyPort, options.environment, `${DRENV} start ${options.environment}`)
-
+  if (ensureVmRunning(deps)) started.push("VM")
+  started.push(...ensureVmSite(deps))
   ensureMacTunnelService(deps)
-  ensureForward(deps, "127.0.0.2", legacyPort)
-  if (vibeResultsSource === "mini") ensureForward(deps, "127.0.0.1", VIBE_PORT)
+  ensureForward(deps, "127.0.0.2", DEVRESULTS_PORT, VM_SITE_PORT)
+  const vibe = ensureVibeResults(deps, options)
+  if (vibe.started) started.push("VibeResults")
 
-  // Either server answers only on *.devresultsnext.localhost, which Chrome sends to 127.0.0.1.
-  const vibeResults = `https://${options.instance}.devresultsnext.localhost:${VIBE_PORT}`
-  const devResults = `https://${options.instance}.devlocal.us:${legacyPort}`
-  for (const url of [vibeResults, devResults]) {
+  // VibeResults answers only on *.devresultsnext.localhost, which Chrome sends to 127.0.0.1.
+  const vibeResults = `https://${options.instance}.devresultsnext.localhost:${vibe.port}`
+  const devResults = `https://${options.instance}.devlocal.us:${DEVRESULTS_PORT}`
+  const checks = [
+    { url: devResults, isUp: isReachable },
+    { url: vibeResults, isUp: isReachable },
+    // A 401 without a sign-in means the dev server reached the VM's API.
+    {
+      url: `${vibeResults}/api/admin/data/appsettings`,
+      isUp: (status: string) => status === "401",
+    },
+  ]
+  for (const { url, isUp } of checks) {
     log(`Waiting for ${url}`)
-    poll(wait, () => respondsFromMac(mac, url), `${url} did not respond from the Mac`)
+    poll(wait, () => isUp(getStatus(mac, url)), `${url} did not respond from the Mac`)
   }
 
   if (options.open) mac(getOpenScript(vibeResults, devResults))
 
   return {
     vibeResults,
-    vibeResultsSource,
     devResults,
     started,
-    revision: environment.revision,
-    commitsBehind: getCommitsBehind(mini, environment),
+    vibeResultsRevision: vibe.revision,
+    vibeResultsUpdated: vibe.updated,
+    ...getDevResultsRevision(deps),
   }
 }
 
-/** Read one environment from the mini's registry. */
-function findEnvironment(mini: Deps["mini"], id: string) {
-  const output = mini(`${DRENV} status`)
-  const environments = JSON.parse(output.slice(output.indexOf("["))) as Environment[]
-  const environment = environments.find(candidate => candidate.id === id)
-  if (!environment) throw new Error(`The mini has no environment named ${id}`)
-  if (!["running", "stopped"].includes(environment.phase))
-    throw new Error(`Environment ${id} is ${environment.phase}; inspect it with drenv first`)
-  return environment
+/** Start or resume the VM and wait for SSH. Returns whether it had to. */
+function ensureVmRunning({ mac, vm, wait, log = () => {} }: Deps) {
+  const status = mac(`prlctl status ${quote(VM_NAME)}`)
+    .trim()
+    .split(/\s+/)
+    .at(-1)
+  if (status === "running") return false
+  log(`Starting the ${VM_NAME} VM`)
+  mac(
+    `prlctl ${status === "suspended" || status === "paused" ? "resume" : "start"} ${quote(VM_NAME)}`,
+  )
+  poll(
+    wait,
+    () => {
+      try {
+        return vm("'ok'").trim() === "ok"
+      } catch {
+        return false
+      }
+    },
+    `The ${VM_NAME} VM did not accept SSH`,
+  )
+  return true
 }
 
-/** Restore the service behind *.devlocal.us, which launchd can leave stuck after a Mac reboot. */
+/** Start SQL Server and the primary site in the VM if they're down. Returns what it started. */
+function ensureVmSite({ vm, wait, log = () => {} }: Deps) {
+  const started: string[] = []
+  if (vm("(Get-Service MSSQLSERVER).Status").trim() !== "Running") {
+    log("Starting SQL Server in the VM")
+    vm("Start-Service MSSQLSERVER")
+    started.push("SQL Server")
+  }
+  const isListening = () =>
+    vm(
+      `if (Get-NetTCPConnection -State Listen -LocalPort ${VM_SITE_PORT} -ErrorAction SilentlyContinue) { 'yes' } else { 'no' }`,
+    ).trim() === "yes"
+  if (!isListening()) {
+    log("Starting DevResults in the VM")
+    // Starts Azurite and IIS Express, each only if its port is free.
+    vm(`Start-ScheduledTask '${VM_SITE_TASK}'`)
+    started.push("DevResults")
+    poll(wait, isListening, `DevResults did not start listening on port ${VM_SITE_PORT} in the VM`)
+  }
+  return started
+}
+
+/** The 127.0.0.2 loopback alias behind *.devlocal.us comes from this service, which launchd can leave stuck after a reboot. */
 function ensureMacTunnelService({ mac, wait, log = () => {} }: Deps) {
   const hasAlias = () =>
     mac(`ifconfig lo0 | grep -q 'inet 127.0.0.2 ' && echo yes || echo no`).trim() === "yes"
@@ -82,6 +103,92 @@ function ensureMacTunnelService({ mac, wait, log = () => {} }: Deps) {
   )
 }
 
+/** Forward a Mac address and port to a VM port, reusing only an SSH listener with the same destination. */
+function ensureForward({ mac }: Deps, address: string, port: number, vmPort: number) {
+  const forward = `${address}:${port}:127.0.0.1:${vmPort}`
+  const listener = getMacListener(mac, address, port)
+  if (listener) {
+    const isOwned =
+      /^(?:\S*\/)?ssh\s/.test(listener) &&
+      listener.includes(` -L ${forward} `) &&
+      listener.endsWith(` ${VM_HOST}`)
+    if (isOwned) return
+    throw new Error(`Port ${port} on the Mac is in use by another process: ${listener}`)
+  }
+  mac(
+    `ssh -fN -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -L ${forward} ${VM_HOST} > /tmp/feedback-tunnel-${port}.log 2>&1 < /dev/null`,
+  )
+}
+
+/**
+ * Bring the feedback checkout to origin/main and make sure its dev server runs against the VM. The checkout
+ * is a worktree of the main checkout, so it never shares Vite's dependency cache with Herb's own dev server.
+ */
+function ensureVibeResults(deps: Deps, { repository, checkout }: Options) {
+  const { mac, wait, log = () => {} } = deps
+  const exists = mac(`[ -d ${quote(checkout)} ] && echo yes || echo no`).trim() === "yes"
+  if (!exists) {
+    log(`Creating ${checkout} at origin/main`)
+    mac(
+      `git -C ${quote(repository)} fetch --quiet origin main && git -C ${quote(repository)} worktree add --quiet --detach ${quote(checkout)} origin/main && cd ${quote(checkout)} && node scripts/worktree.mjs setup --no-db > /tmp/feedback-setup.log 2>&1`,
+    )
+  }
+  const isBehind =
+    exists &&
+    new Set(
+      mac(
+        `git -C ${quote(checkout)} fetch --quiet origin main && git -C ${quote(checkout)} rev-parse HEAD origin/main`,
+      )
+        .trim()
+        .split("\n"),
+    ).size > 1
+  if (isBehind && mac(`git -C ${quote(checkout)} status --porcelain`).trim())
+    throw new Error(`${checkout} has local changes, so it can't move to origin/main`)
+
+  const port = Number(mac(`sed -n 's/^APP_HTTPS_PORT=//p' ${quote(`${checkout}/.env`)}`).trim())
+  if (!port) throw new Error(`${checkout}/.env has no APP_HTTPS_PORT`)
+
+  const server = getDevServer(mac, port)
+  if (server && !server.command.includes(`${checkout}/apps/web/`))
+    throw new Error(`Port ${port} on the Mac is in use by another process: ${server.command}`)
+  const isCurrent = !isBehind && server?.command.includes(`DEVRESULTS_ORIGIN=${VM_ORIGIN}`) === true
+  if (server && !isCurrent) {
+    mac(`kill ${server.pid}`)
+    poll(wait, () => !getDevServer(mac, port), `The dev server on port ${port} did not stop`)
+  }
+  if (isBehind) {
+    log(`Moving ${checkout} to origin/main`)
+    mac(
+      `cd ${quote(checkout)} && git checkout --quiet --detach origin/main && pnpm install --prefer-offline --frozen-lockfile > /tmp/feedback-install.log 2>&1`,
+    )
+  }
+  if (!isCurrent) {
+    log("Starting VibeResults")
+    mac(
+      // The app imports the SDK's build, which a new or moved checkout lacks. It takes a few seconds.
+      // The whole list runs detached, with its own output, so it doesn't hold this script's pipe open.
+      `(cd ${quote(checkout)} && pnpm sdk:build && cd apps/web && DEVRESULTS_ORIGIN=${VM_ORIGIN} BROWSER=none exec nohup pnpm dev) > /tmp/feedback-vibe-results.log 2>&1 < /dev/null &`,
+    )
+    poll(wait, () => Boolean(getDevServer(mac, port)), `VibeResults did not start on port ${port}`)
+  }
+
+  return {
+    port,
+    started: !isCurrent,
+    updated: !exists || isBehind,
+    revision: mac(`git -C ${quote(checkout)} rev-parse --short HEAD`).trim(),
+  }
+}
+
+/** The process listening on a loopback port, with its environment, since that names the dev server's backend. */
+function getDevServer(mac: Deps["mac"], port: number) {
+  const output = mac(
+    `pid=$(lsof -nP -a -t -iTCP@127.0.0.1:${port} -sTCP:LISTEN | head -n 1); if [ -n "$pid" ]; then ps eww -o pid=,command= -p "$pid"; fi`,
+  ).trim()
+  const match = output.match(/^(\d+)\s+(.*)$/s)
+  return match ? { pid: Number(match[1]), command: match[2] } : undefined
+}
+
 /** The command line of whatever listens on an address and port on the Mac, or an empty string. */
 function getMacListener(mac: Deps["mac"], address: string, port: number) {
   return mac(
@@ -89,48 +196,30 @@ function getMacListener(mac: Deps["mac"], address: string, port: number) {
   ).trim()
 }
 
-/** `pnpm dev` in a devresults-next checkout's apps/web, which serves VibeResults on the same port as the mini. */
-function isLocalVibeResults(listener: string) {
-  return /\/apps\/web\/node_modules\/.*@react-router\/dev\//.test(listener)
-}
-
-/** Open a forward, reusing only an SSH listener with the same destination. */
-function ensureForward({ mac }: Deps, address: string, port: number) {
-  const forward = `${address}:${port}:127.0.0.1:${port}`
-  const listener = getMacListener(mac, address, port)
-  if (listener) {
-    const isOwned =
-      /^(?:\S*\/)?ssh\s/.test(listener) &&
-      listener.includes(` -L ${forward} `) &&
-      listener.endsWith(" mini")
-    if (isOwned) return
-    throw new Error(`Port ${port} on the Mac is in use by another process: ${listener}`)
+/** The VM checkout's branch and commit, and how many commits of origin/main it lacks. */
+function getDevResultsRevision({ vm }: Deps) {
+  const git = `git -C ${VM_CHECKOUT}`
+  const [branch, revision, behind] = vm(
+    `${git} fetch --quiet origin main; ${git} rev-parse --abbrev-ref HEAD; ${git} rev-parse --short HEAD; ${git} rev-list --count HEAD..origin/main`,
+  )
+    .trim()
+    .split(/\r?\n/)
+  const count = Number.parseInt(behind ?? "", 10)
+  return {
+    devResultsBranch: branch,
+    devResultsRevision: revision,
+    devResultsCommitsBehind: Number.isNaN(count) ? null : count,
   }
-  mac(
-    `ssh -fN -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -L ${forward} mini > /tmp/feedback-tunnel-${port}.log 2>&1 < /dev/null`,
-  )
 }
 
-/**
- * A redirect counts, because DevResults answers its root with one. Certificates aren't checked, since curl
- * doesn't trust the local dev server's mkcert authority.
- */
-function respondsFromMac(mac: Deps["mac"], url: string) {
-  const status = mac(
-    `curl -ksS -o /dev/null -m 120 -w '%{http_code}' ${url} 2>/dev/null || true`,
-  ).trim()
+/** Certificates aren't checked, since curl doesn't trust the local dev server's mkcert authority. */
+function getStatus(mac: Deps["mac"], url: string) {
+  return mac(`curl -ksS -o /dev/null -m 120 -w '%{http_code}' ${url} 2>/dev/null || true`).trim()
+}
+
+/** A redirect counts, because DevResults answers its root with one. */
+function isReachable(status: string) {
   return /^[23]\d\d$/.test(status)
-}
-
-/** Count the commits the environment's build lacks, when it follows a remote branch. */
-function getCommitsBehind(mini: Deps["mini"], { requestedRevision, revision }: Environment) {
-  if (!requestedRevision?.startsWith("origin/")) return null
-  const branch = requestedRevision.slice("origin/".length)
-  const output = mini(
-    `git -C ${PRIMARY_CHECKOUT} fetch --quiet origin ${branch}; git -C ${PRIMARY_CHECKOUT} rev-list --count ${revision}..${requestedRevision}`,
-  )
-  const count = Number.parseInt(output.trim(), 10)
-  return Number.isNaN(count) ? null : count
 }
 
 /** Retry a check for up to five minutes, since a cold site can take that long. */
@@ -142,7 +231,11 @@ function poll(wait: Deps["wait"], check: () => boolean, failure: string) {
   throw new Error(failure)
 }
 
-/** Sudo needs a real terminal to prompt, which an SSH session doesn't have. */
+function quote(value: string) {
+  return `'${value.replaceAll("'", `'\\''`)}'`
+}
+
+/** Sudo needs a real terminal to prompt, which a script run by an agent doesn't have. */
 function getReloadScript() {
   const plist = `/Library/LaunchDaemons/${TUNNEL_SERVICE}.plist`
   return `cat > /tmp/reload-devlocal.command <<'EOF'
@@ -177,10 +270,15 @@ EOF`
 
 // CONSTANTS
 
-const DRENV = `& "$env:USERPROFILE\\.local\\bin\\drenv.cmd"`
-const PRIMARY_CHECKOUT = "C:\\Code\\DevResults\\devresults"
-const PRIMARY_PORT = 8443
-const VIBE_PORT = 9443
+const VM_NAME = "Windows 11"
+const VM_HOST = "devresults-vm"
+/** The VM's Parallels address, as in the `devresults-vm` SSH host. */
+const VM_ORIGIN = "https://10.211.55.3"
+const VM_CHECKOUT = "C:\\Code\\DevResults"
+const VM_SITE_PORT = 443
+const VM_SITE_TASK = "DevResults Local Services"
+/** The Mac port for DevResults on 127.0.0.2, which leaves 443 to the mini's primary site. */
+const DEVRESULTS_PORT = 8443
 const TUNNEL_SERVICE = "com.herbcaudill.devlocal-mini-tunnel"
 const POLL_ATTEMPTS = 60
 const POLL_INTERVAL_MS = 5000
@@ -189,8 +287,8 @@ const POLL_INTERVAL_MS = 5000
 
 /** How the setup reaches each machine. */
 export type Deps = {
-  /** Run a PowerShell script on the mini and return its output. */
-  mini: (script: string) => string
+  /** Run a PowerShell script in the VM and return its output. Throws when the VM can't be reached. */
+  vm: (script: string) => string
   /** Run a Bash script on the Mac and return its output. */
   mac: (script: string) => string
   /** Pause between checks. */
@@ -201,34 +299,32 @@ export type Deps = {
 
 /** What to set up. */
 export type Options = {
-  /** The drenv environment that serves DevResults. */
-  environment: string
   /** The instance subdomain to open on both sites. */
   instance: string
-  /** Whether to open the browser windows on the Mac. */
+  /** Whether to open the browser windows. */
   open: boolean
+  /** The main devresults-next checkout. */
+  repository: string
+  /** The worktree that serves VibeResults for feedback. */
+  checkout: string
 }
 
 /** The finished setup. */
 export type FeedbackSetup = {
   /** VibeResults URL on the Mac. */
   vibeResults: string
-  /** Where VibeResults runs: a local dev server on the Mac, or the mini. */
-  vibeResultsSource: "mac" | "mini"
   /** DevResults URL on the Mac. */
   devResults: string
-  /** The sites that had to be started. */
+  /** What had to be started. */
   started: string[]
-  /** The commit the DevResults environment was built from. */
-  revision: string
-  /** Commits on the environment's branch that its build lacks, if it follows one. */
-  commitsBehind: number | null
-}
-
-type Environment = {
-  id: string
-  phase: string
-  revision: string
-  requestedRevision?: string
-  ports: { https: number }
+  /** The commit VibeResults serves. */
+  vibeResultsRevision: string
+  /** Whether the VibeResults checkout was created or moved to origin/main on this run. */
+  vibeResultsUpdated: boolean
+  /** The VM checkout's branch. */
+  devResultsBranch: string | undefined
+  /** The VM checkout's commit, which is normally what its site was last built from. */
+  devResultsRevision: string | undefined
+  /** Commits on origin/main that the VM checkout lacks. */
+  devResultsCommitsBehind: number | null
 }

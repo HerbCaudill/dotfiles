@@ -1,16 +1,17 @@
 import { execFileSync } from "node:child_process"
+import { homedir } from "node:os"
+import { join } from "node:path"
 import { parseArgs } from "node:util"
 import { prepareForFeedback } from "./prepareForFeedback.ts"
 
 const { values } = parseArgs({
   options: {
-    environment: { type: "string", default: "compare-main" },
     instance: { type: "string", default: "loura" },
     "no-open": { type: "boolean", default: false },
   },
 })
 
-const isOnMini = process.platform === "win32"
+if (process.platform !== "darwin") throw new Error("Run this on the Mac, which hosts the VM")
 
 const run = (command: string, args: string[], input?: string) =>
   execFileSync(command, args, {
@@ -31,22 +32,28 @@ ${script}`,
   ).toString("base64"),
 ]
 
+const devResults = join(homedir(), "Code", "DevResults")
+
 const setup = prepareForFeedback(
   {
-    mini: script =>
-      isOnMini
-        ? run("powershell.exe", powershellArgs(script))
-        : run("ssh", ["mini", "powershell", ...powershellArgs(script)]),
-    mac: script =>
-      isOnMini ? run("ssh", ["mac", "/bin/bash", "-s"], script) : run("/bin/bash", ["-s"], script),
+    vm: script =>
+      run("ssh", [
+        "-o",
+        "ConnectTimeout=5",
+        "devresults-vm",
+        "powershell",
+        ...powershellArgs(script),
+      ]),
+    mac: script => run("/bin/bash", ["-s"], script),
     wait: milliseconds =>
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds),
     log: message => console.log(message),
   },
   {
-    environment: values.environment,
     instance: values.instance,
     open: !values["no-open"],
+    repository: join(devResults, "devresults-next"),
+    checkout: join(devResults, "devresults-next-feedback"),
   },
 )
 
