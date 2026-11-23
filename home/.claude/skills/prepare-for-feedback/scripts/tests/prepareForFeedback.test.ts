@@ -23,7 +23,7 @@ describe("prepareForFeedback", () => {
     const result = prepareForFeedback(world.deps, options)
     expect(world.miniScripts.join("\n")).not.toMatch(/Start-ScheduledTask| start /)
     expect(result).toMatchObject({
-      vibeResults: "https://loura.viberesults.dev:9443",
+      vibeResults: "https://loura.devresultsnext.localhost:9443",
       devResults: "https://loura.devlocal.us:30039",
     })
   })

@@ -37,9 +37,8 @@ export function prepareForFeedback(deps: Deps, options: Options): FeedbackSetup 
   ensureForward(deps, "127.0.0.2", legacyPort)
   if (vibeResultsSource === "mini") ensureForward(deps, "127.0.0.1", VIBE_PORT)
 
-  const vibeResultsHost =
-    vibeResultsSource === "mac" ? "devresultsnext.localhost" : "viberesults.dev"
-  const vibeResults = `https://${options.instance}.${vibeResultsHost}:${VIBE_PORT}`
+  // Either server answers only on *.devresultsnext.localhost, which Chrome sends to 127.0.0.1.
+  const vibeResults = `https://${options.instance}.devresultsnext.localhost:${VIBE_PORT}`
   const devResults = `https://${options.instance}.devlocal.us:${legacyPort}`
   for (const url of [vibeResults, devResults]) {
     log(`Waiting for ${url}`)
