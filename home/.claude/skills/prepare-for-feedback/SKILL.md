@@ -40,6 +40,10 @@ Give Herb both URLs and say what had to be started. The script prints:
 
 If a step fails, report the error. Don't fall back to the mini or another site.
 
+## Shared sites
+
+Several agents use these two sites at once. Don't switch or rebuild the VM's checkout for your own work; the `devresults` skill says what to use instead. If the review server is down or stale, rerun this script rather than killing it and starting `pnpm dev` by hand: a server started from an agent's shell can stop when that session ends.
+
 ## After the session
 
 The sites can stay running, but the VM uses a lot of the MacBook's memory. To free it, run these on the Mac:

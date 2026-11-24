@@ -205,6 +205,8 @@ For the primary checkout, run Windows `just watch` (the Vite `build --watch` rec
 
 ## Primary-checkout working pattern
 
+The primary VM checkout (`C:\Code\DevResults`) is shared. It serves the VM site at `*.devlocal.us:8443` and is the backend for the VibeResults review server that `prepare-for-feedback` runs on the Mac. Switching its branch or rebuilding it breaks other agents' work and Herb's review session. Use a `drenv` environment for branch work by default. Use the primary checkout only when Herb asks for it or no other agent depends on it, and before you finish, put it back on `main`, rebuild, and confirm the login page loads.
+
 1. Start in a separate macOS DevResults clone, not the mounted `/Volumes/...` path.
 2. Read the repo root `AGENTS.md` before making changes.
 3. Check the repo's `.claude/skills` directory and use any relevant repo-specific skills.
