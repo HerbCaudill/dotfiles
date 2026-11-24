@@ -72,7 +72,9 @@ in
         KeepAlive = cfg.autoStart;
         ThrottleInterval = 60;
         ExitTimeOut = 75;
-        ProcessType = "Background";
+        # Background I/O throttling stalls the peer's synchronous SQLite and its cold tsx compile:
+        # a fresh release took minutes to start and could miss its own startup deadline.
+        ProcessType = "Standard";
         Umask = 63;
         StandardOutPath = "${root}/agent/stdout.log";
         StandardErrorPath = "${root}/agent/stderr.log";
