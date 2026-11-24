@@ -15,8 +15,7 @@ $items = @(
   @{ Name = ".claude\skills"; Source = Join-Path $RepoRoot "home\.claude\skills" },
   @{ Name = ".claude\statusline.js"; Source = Join-Path $RepoRoot "home\.claude\statusline.js" },
   @{ Name = ".codex\AGENTS.md"; Source = Join-Path $RepoRoot "home\.claude\AGENTS.md" },
-  @{ Name = ".codex\skills"; Source = Join-Path $RepoRoot "home\.claude\skills" },
-  @{ Name = ".ssh\config"; Source = Join-Path $RepoRoot "home\.ssh\config.windows" }
+  @{ Name = ".codex\skills"; Source = Join-Path $RepoRoot "home\.claude\skills" }
 )
 
 function Remove-ExistingLink {
@@ -79,6 +78,20 @@ function Install-SharedItem {
   }
 }
 
+# Windows OpenSSH rejects a config that other users can read, and files under C:\Code inherit
+# access for Authenticated Users, so copy the repo's config into the private ~/.ssh instead of
+# linking it. Re-run this script after changing home\.ssh\config.windows.
+function Install-SshConfig {
+  $source = Join-Path $RepoRoot "home\.ssh\config.windows"
+  if (-not (Test-Path -LiteralPath $source)) { throw "Missing source item: $source" }
+
+  $target = Join-Path $UserProfile ".ssh\config"
+  New-Item -ItemType Directory -Path (Split-Path $target) -Force | Out-Null
+  Backup-ExistingItem -Path $target
+  Get-Content -LiteralPath $source -Raw | Set-Content -LiteralPath $target -NoNewline -Encoding ascii
+  Write-Host "Copied .ssh\config"
+}
+
 function Read-Json {
   param(
     [string]$Path
@@ -123,6 +136,8 @@ New-Item -ItemType Directory -Path $claudeDirectory -Force | Out-Null
 foreach ($item in $items) {
   Install-SharedItem -Name $item.Name -Source $item.Source
 }
+
+Install-SshConfig
 
 Write-SharedSettings
 Write-Host "Claude and Codex now use repo-managed skills and global instructions, plus the Claude status line, shared environment variables and SSH config."
