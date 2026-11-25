@@ -45,6 +45,10 @@ if (!body) return null
 
 Use `//` comments to explain why code exists, not to restate what it does. Use `/* ... */` for a long introductory comment.
 
+Before you write a comment that defends code, ask whether the code should change instead. A comment that justifies a fixed sleep, a weakened assertion, a skipped check or a known bug is an excuse. Fix the code, or record the problem where it will get fixed, call it a bug in the comment and point there.
+
+Explain a workaround once, in the one place that applies it, such as a shared test setup file. Don't copy a workaround or its comment into another file. If the shared place doesn't cover your case yet, extend it there.
+
 Add a `/** ... */` JSDoc comment to every function, class, property, parameter, and method. Keep the comment itself to a single line when possible, but always put it on its own line directly above the declaration – never on the same line as the code it documents, even for a parameter. Document parameters this way instead of using `@param`.
 
 ```ts
