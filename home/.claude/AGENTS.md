@@ -54,7 +54,7 @@ When you start a thread, subagent, or delegated task, choose its settings by rol
 | Role       | Harness     | Model             | Effort | Use for                                                                                |
 | ---------- | ----------- | ----------------- | ------ | -------------------------------------------------------------------------------------- |
 | `default`  | Claude Code | `claude-opus-5-5` | high   | Anything not listed below, especially architecture and planning, review, and UI design |
-| `author`   | Codex       | `gpt-6.1-sol`     | high   | High-volume authoring                                                                  |
+| `author`   | Codex       | `gpt-6.2-sol`     | high   | High-volume authoring                                                                  |
 | `bulk`     | Codex       | `gpt-6.1-terra`   | low    | Simple tasks at high volume                                                            |
 | `bulk-min` | Codex       | `gpt-6-luna`      | low    | Trivial tasks at very high volume                                                      |
 
