@@ -102,8 +102,9 @@ const antigravity: Harness = {
     const event = result.stdout
       .split("\n")
       .filter(line => line.startsWith("{"))
-      .map(line => JSON.parse(line))
-      .findLast(event => event.event === "result")
+      .map(line => JSON.parse(line) as AntigravityEvent)
+      .reverse()
+      .find(event => event.event === "result")
     if (!event) throw new Error(`Antigravity returned no result: ${result.stderr.trim()}`)
     const { error, response, status, structured_output: structuredOutput } = event.result
     if (status !== "SUCCESS") throw new Error(`Antigravity failed: ${error ?? status}`)
@@ -137,4 +138,17 @@ function getClaudeSandboxArgs(
   if (request.sandbox === "danger-full-access") return ["--dangerously-skip-permissions"]
   if (request.sandbox === "workspace-write") return ["--permission-mode", "acceptEdits"]
   return ["--tools", "Read,Grep,Glob"]
+}
+
+/** One line of Antigravity's stream-json output. */
+type AntigravityEvent = {
+  /** Event name, such as `init` or `result`. */
+  event: string
+  /** The turn's outcome, on a `result` event. */
+  result: {
+    error?: string
+    response: string
+    status: string
+    structured_output?: unknown
+  }
 }
