@@ -15,7 +15,9 @@ $items = @(
   @{ Name = ".claude\skills"; Source = Join-Path $RepoRoot "home\.claude\skills" },
   @{ Name = ".claude\statusline.js"; Source = Join-Path $RepoRoot "home\.claude\statusline.js" },
   @{ Name = ".codex\AGENTS.md"; Source = Join-Path $RepoRoot "home\.claude\AGENTS.md" },
-  @{ Name = ".codex\skills"; Source = Join-Path $RepoRoot "home\.claude\skills" }
+  @{ Name = ".codex\skills"; Source = Join-Path $RepoRoot "home\.claude\skills" },
+  @{ Name = ".gemini\config\AGENTS.md"; Source = Join-Path $RepoRoot "home\.claude\AGENTS.md" },
+  @{ Name = ".gemini\config\skills"; Source = Join-Path $RepoRoot "home\.claude\skills" }
 )
 
 function Remove-ExistingLink {

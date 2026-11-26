@@ -2,7 +2,7 @@ This repo manages global configuration files with **Nix**, using `nix-darwin` fo
 
 ## Global and project instructions
 
-`home/.claude/AGENTS.md` is the shared global agent instructions file. Home Manager links it into `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, and `~/.pi/agent/AGENTS.md`. Likewise, `home/.claude/skills` is linked into Claude, Codex, and Pi via `nix/home/files.nix`. Only selected durable Claude config files are linked; runtime state such as transcripts, cache, telemetry, and backups should stay outside the repo. The root `AGENTS.md` in this repo is project-specific instructions for working within this repo.
+`home/.claude/AGENTS.md` is the shared global agent instructions file. Home Manager links it into `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.pi/agent/AGENTS.md`, and Antigravity's `~/.gemini/config/AGENTS.md`. Likewise, `home/.claude/skills` is linked into Claude, Codex, Pi, and Antigravity via `nix/home/files.nix`. Only selected durable Claude config files are linked; runtime state such as transcripts, cache, telemetry, and backups should stay outside the repo. The root `AGENTS.md` in this repo is project-specific instructions for working within this repo.
 
 ## Key commands
 

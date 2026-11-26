@@ -11,6 +11,8 @@ in
     ".claude/statusline.js".source = mkRepoSymlink "home/.claude/statusline.js";
     ".codex/AGENTS.md".source = mkRepoSymlink "home/.claude/AGENTS.md";
     ".codex/skills".source = mkRepoSymlink "home/.claude/skills";
+    ".gemini/config/AGENTS.md".source = mkRepoSymlink "home/.claude/AGENTS.md";
+    ".gemini/config/skills".source = mkRepoSymlink "home/.claude/skills";
     ".config/bd/config.yaml".source = mkRepoSymlink "home/.config/bd/config.yaml";
     ".oh-my-zsh/custom/themes/herb.zsh-theme".source =
       mkRepoSymlink "home/.oh-my-zsh/custom/themes/herb.zsh-theme";
