@@ -14,7 +14,7 @@ The prompt comes from standard input and the final message goes to standard outp
 
 ## Where roles come from
 
-The roles are the "Model roles" table in `home/.claude/AGENTS.md`, the global instructions every agent already reads. `llm` parses that table on each call, so agents and scripts use the same settings, and changing a role is a one-line edit there. The Harness column uses each adapter's title ("Claude Code", "Codex"), and the Model column holds the exact model ID the harness expects. `llm` fails loudly if the table is missing or names a harness or effort it doesn't know.
+The roles are the "Model roles" table in `home/.claude/AGENTS.md`, the global instructions every agent already reads. `llm` parses that table on each call, so agents and scripts use the same settings, and changing a role is a one-line edit there. The Harness column uses each adapter's title ("Antigravity", "Claude Code", "Codex"), and the Model column holds the exact model ID the harness expects. `llm` fails loudly if the table is missing or names a harness or effort it doesn't know.
 
 Use `llm resolve --role <name>` when a script has to start a harness itself, such as a Codex run that streams JSONL events or a T3 thread. It prints the role as JSON, with `harness`, `model` and `effort`. Pass all three on; a tool's default effort is not the role's effort.
 
@@ -22,7 +22,9 @@ A failed run is reported, not retried on another model, because the role is a de
 
 ## Images
 
-`--image` attaches a file and can be repeated. Codex gets each one through `--image`. `claude -p` has no image flag, so `llm` lists the paths at the end of the prompt, gives Claude read access to their folders and asks it to read them with its Read tool.
+`--image` attaches a file and can be repeated. Codex gets each one through `--image`. `claude -p` has no image flag, so `llm` lists the paths at the end of the prompt, gives Claude read access to their folders and asks it to read them with its Read tool. Antigravity gets the same treatment.
+
+Antigravity takes the prompt as a stream-json message on standard input, since a long prompt can exceed the Windows command line limit. Its headless default lets the agent write files, so a read-only run passes session settings that deny every action except reading.
 
 ## Adding a harness
 

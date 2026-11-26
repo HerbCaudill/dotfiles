@@ -57,8 +57,9 @@ When you start a thread, subagent, or delegated task, choose its settings by rol
 | `author`   | Codex       | `gpt-6.2-sol`     | high   | High-volume authoring                                                                  |
 | `bulk`     | Codex       | `gpt-6.1-terra`   | low    | Simple tasks at high volume                                                            |
 | `bulk-min` | Codex       | `gpt-6-luna`      | low    | Trivial tasks at very high volume                                                      |
+| `writer`   | Antigravity | `gemini-4-neon`   | high   | Prose people read, such as the morning briefing                                        |
 
-The bulk roles are starting points, not proven picks. Before committing a high-volume job to one, benchmark it against the next role up on a sample of the real task. Herb curates this table by hand; propose changes rather than editing it. This table is the single source of truth for model choice: the `llm` CLI in dotfiles reads it, so keep its columns and the exact model IDs.
+The bulk roles are starting points, not proven picks. Before committing a high-volume job to one, benchmark it against the next role up on a sample of the real task. The `writer` role is a trial, started on 2026-11-26, of whether Gemini 4 Neon writes more naturally than the other frontier models. Herb curates this table by hand; propose changes rather than editing it. This table is the single source of truth for model choice: the `llm` CLI in dotfiles reads it, so keep its columns and the exact model IDs.
 
 ## Workflow
 
