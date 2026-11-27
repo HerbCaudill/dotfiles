@@ -19,6 +19,16 @@ describe("parseQuser", () => {
     ])
   })
 
+  it("treats a session with no input since sign-in as idle indefinitely", () => {
+    const output = [
+      " USERNAME              SESSIONNAME        ID  STATE   IDLE TIME  LOGON TIME",
+      " herb                  console             1  Active      none   11/24/2026 10:03 AM",
+    ].join("\r\n")
+    expect(parseQuser(output)).toEqual([
+      { user: "herb", state: "Active", idleMinutes: Number.POSITIVE_INFINITY },
+    ])
+  })
+
   it("returns no sessions when nobody is signed in", () => {
     expect(parseQuser("No User exists for *")).toEqual([])
   })

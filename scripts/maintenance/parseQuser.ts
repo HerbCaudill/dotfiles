@@ -14,11 +14,13 @@ export function parseQuser(
     }))
 }
 
-/** Convert quser's idle column ("." , "12", "3:46" or "2+03:04") to minutes. */
+/** Convert quser's idle column ("." , "12", "3:46", "2+03:04" or "none") to minutes. */
 function idleMinutes(
   /** The idle column. */
   idle: string,
 ): number {
+  // "none" means no input since sign-in, as with the mini's automatic console sign-in.
+  if (idle === "none") return Number.POSITIVE_INFINITY
   const match = /^(?:(\d+)\+)?(?:(\d+):)?(\d+)$/.exec(idle)
   if (!match) return 0
   const [, days = "0", hours = "0", minutes] = match
