@@ -202,4 +202,22 @@ in
       echo "Rebuilt $target; grant it Full Disk Access in System Settings › Privacy & Security."
     fi
   '';
+
+  # Claude Code's normal login lasts about a month. This loads a one-year token
+  # from `claude setup-token`, kept in the login Keychain, into the launchd user
+  # environment so T3 and headless jobs started afterwards stay signed in.
+  # Renew with `claude setup-token` and store it under the same service name.
+  launchd.agents."claude-oauth-token" = {
+    enable = true;
+    config = {
+      Label = "com.herbcaudill.claude-oauth-token";
+      ProgramArguments = [
+        "/bin/sh"
+        "-c"
+        ''token=$(/usr/bin/security find-generic-password -a ${username} -s claude-code-oauth-token -w) && /bin/launchctl setenv CLAUDE_CODE_OAUTH_TOKEN "$token"''
+      ];
+      RunAtLoad = true;
+      StandardErrorPath = "/tmp/claude-oauth-token.log";
+    };
+  };
 }
