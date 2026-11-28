@@ -26,11 +26,15 @@ in
   ];
   system.activationScripts.preActivation.text = lib.mkAfter ''
     ${pkgs.coreutils}/bin/install -d -m 0700 -o ${username} -g staff "${stateDir}"
-    ${pkgs.coreutils}/bin/env \
-      PORTLESS_STATE_DIR="${stateDir}" \
-      SUDO_UID="$(/usr/bin/id -u ${username})" \
-      SUDO_GID="$(/usr/bin/id -g ${username})" \
-      ${portless}/bin/portless trust
+    # Trusting the CA needs a macOS authorization dialog, which can't appear
+    # over SSH, so skip it once the CA already verifies.
+    if ! /usr/bin/security verify-cert -q -c "${stateDir}/ca.pem" -p ssl 2>/dev/null; then
+      ${pkgs.coreutils}/bin/env \
+        PORTLESS_STATE_DIR="${stateDir}" \
+        SUDO_UID="$(/usr/bin/id -u ${username})" \
+        SUDO_GID="$(/usr/bin/id -g ${username})" \
+        ${portless}/bin/portless trust
+    fi
   '';
   launchd.daemons."localhost-router".serviceConfig = {
     Label = "com.herbcaudill.localhost-router";
